@@ -1,0 +1,108 @@
+\documentclass[11pt]{article}
+
+\usepackage[a4paper]{geometry}
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage{makecell}
+\usepackage{listings}
+\usepackage{stackengine}
+\usepackage{enumitem}
+\usepackage{bbm}
+\usepackage{amsmath}
+\usepackage{bbold}
+\usepackage[colorlinks=true,citecolor=blue,urlcolor=blue]{hyperref}%
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+\usepackage[round]{natbib}
+\usepackage{titling} % Customising the title section
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{multirow}
+%% The amsthm package provides extended theorem environments
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{amsmath}
+\usepackage{fancyvrb}
+\usepackage{dsfont}
+\usepackage{algorithm}
+\usepackage{algorithmicx}
+\usepackage{algpseudocode}
+%\usepackage{stackengine}
+\usepackage[toc,page]{appendix}
+\usepackage{stmaryrd}
+\usepackage{hyperref}% http://ctan.org/pkg/hyperref
+\usepackage{cleveref}% http://ctan.org/pkg/cleveref
+\usepackage{lipsum}%
+  {
+      \theoremstyle{plain}
+      \newtheorem{assumption}{M}
+      \newtheorem{lemma}{Lemma}
+      \newtheorem{remark}{Remark}
+      \newtheorem{prop}{Proposition}
+      \newtheorem{assumption_saem}{ISAEM}
+      \newtheorem{assumption_rm}{SA}
+      \newtheorem{assumption_iem}{IEM}
+      \newtheorem{assumption_imcem}{IMCEM}
+      \newtheorem{assumption_expo}{E}
+  }
+\crefname{lemma}{Lemma}{Lemmas}
+\crefname{assumption}{M}{assumption}
+\usepackage{amssymb,amsthm,mathrsfs,amsfonts,dsfont}
+\usepackage{mathtools}
+\usepackage{xargs}
+\usepackage{shortcuts}
+
+\lstset{% setup listings 
+        language=R,% set programming language 
+        basicstyle=\ttfamily\small,% basic font style 
+        keywordstyle=\color{blue},% keyword style 
+        commentstyle=\color{blue},% comment style 
+        numbers=left,% display line numbers on the left side 
+        numberstyle=\scriptsize,% use small line numbers 
+        numbersep=10pt,% space between line numbers and code 
+        tabsize=3,% sizes of tabs 
+        showstringspaces=false,% do not replace spaces in strings by a certain character 
+        captionpos=b,% positioning of the caption below 
+        breaklines=true,% automatic line breaking 
+        escapeinside={(*}{*)},% escaping to LaTeX 
+        fancyvrb=true,% verbatim code is typset by listings 
+        extendedchars=false,% prohibit extended chars (chars of codes 128--255) 
+        literate={"}{{\texttt{"}}}1{<-}{{$\leftarrow$}}1{<<-}{{$\twoheadleftarrow$}}1 
+        {~}{{$\sim$}}1{<=}{{$\le$}}1{>=}{{$\ge$}}1{!=}{{$\neq$}}1{^}{{$^{\wedge}$}}1,% item to replace, text, length of chars 
+        alsoletter={.<-},% becomes a letter 
+        alsoother={$},% becomes other 
+        otherkeywords={!=, ~, $, \&, \%/\%, \%*\%, \%\%, <-, <<-, /},% other keywords 
+        deletekeywords={c}% remove keywords 
+} 
+
+
+
+
+
+\title{Doc: extension of the saemix R package} 
+
+\author{%
+\textsc{Belhal Karimi}\\
+\normalsize  CMAP, Ecole Polytechnique, Universite Paris-Saclay, 91128 Palaiseau, France\\ % Your institution
+\normalsize \href{mailto:belhal.karimi@polytechnique.edu}{belhal.karimi@polytechnique.edu} % Your email address
+}
+\date{\today} % Leave empty to omit a date
+
+\begin{document}
+
+
+\maketitle
+
+
+
+\input{analysis.tex}
+
+\clearpage
+
+
+\bibliographystyle{apalike}
+\bibliography{ref}
+\end{document} 

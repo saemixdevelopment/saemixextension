@@ -1,0 +1,69 @@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%    Comments shorcuts   			       %%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%  		 latin abbreviations                  %%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\renewcommand\appendixpagename{Proofs}
+
+\DeclarePairedDelimiterX{\infdivx}[2]{(}{)}{%
+  #1\;\delimsize\|\;#2%
+}
+
+\newcommand{\beq}{\begin{equation}}
+\newcommand{\eeq}{\end{equation}}
+\newcommand{\beo}{\begin{array}{rl}}
+\newcommand{\eeo}{\end{array}}
+\newcommand{\ds}{\displaystyle}
+
+
+\newcommand{\map}{\hat{\psi}_i}
+\newcommand{\phimap}{\hat{\phi}_i}
+\newcommand{\expec}{\mathbb{E}}
+\newcommand{\logl}{\texttt{L}}
+\newcommand{\dens}{\texttt{p}}
+\newcommand{\prob}{\mathbb{P}}
+\newcommand{\indic}{\mathbb{1}}
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\Time}{Time_{ij}}
+\DeclareMathOperator*{\dose}{Dose_i}
+\def\eqs{\;}
+\def\argmax{\operatorname{argmax}}
+\newcommandx{\CPE}[3][1=]{{\mathbb E}_{#1}\left[\left. #2 \, \right| #3 \right]} %%%% esperance conditionnelle
+\newcommandx{\Zset}[1][1=i]{\mathsf{Z}_{#1}}
+\newcommandx{\Zsigma}[1][1=i]{\mathcal{Z}_{#1}}
+\newcommandx{\Eset}[1][1=i]{\mathsf{E}_{#1}}
+\newcommandx{\Esigma}[1][1=i]{\mathcal{E}_{#1}}
+\newcommand{\vois}{\mathcal{T}(\Theta)}
+\newcommand{\infdiv}{\operatorname{KL} \infdivx}
+\newcommand{\interi}{\llbracket1, n_i \rrbracket}
+\newcommand{\loglike}{\ell}
+\newcommand{\inter}{\llbracket1,N\rrbracket}
+\newcommand{\intersim}{\llbracket0,M_{k}-1\rrbracket}
+\newcommand{\obs}{y_{1:N}}
+\newcommand{\rset}{\mathbb{R}}
+\newcommand{\nset}{\mathbb{N}}
+
+\newcommand{\lat}{z_{1:N}}
+\DeclarePairedDelimiter{\norm}{\lVert}{\rVert}
+\newcommand{\partition}{\mathcal{P}_{[1,N]}}
+\DeclareMathOperator{\logit}{logit}
+\DeclareMathOperator*{\E}{\mathbb{E}}
+\DeclareMathOperator*{\St}{\tilde{S}}
+\DeclareMathOperator*{\s}{\barbelow{s}}
+\DeclareMathOperator{\Tr}{Tr}
+\theoremstyle{plain}
+\newtheorem{thm}{Theorem}
+\theoremstyle{definition}
+\newtheorem{defn}{Definition} % definition numbers are dependent on theorem numbers
+\newtheorem{exmp}{Example} % same for example numbers
+\newcommand{\Pt}{\~P}
+
+\newcommand{\dz}{\mathrm{d}z}
+\newcommand{\MC}{\mathrm{MC}}
+\newcommand\barbelow[1]{\stackunder[1.2pt]{$#1$}{\rule{.8ex}{.075ex}}}
+
