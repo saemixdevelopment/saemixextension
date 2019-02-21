@@ -97,7 +97,7 @@ fim.saemix<-function(saemixObject) {
   hat.phi<-saemix.res["cond.mean.phi"]
   nphi<-dim(hat.phi)[2]
   nomega<-sum(covariance.model[lower.tri(covariance.model,diag=TRUE)])
-  if (saemixObject["model"]["type"]=="structural"){
+  if (saemixObject["model"]["modeltype"]=="structural"){
     nres<-length(saemix.res["indx.res"])
   } else{
     nres <- 0
@@ -124,7 +124,7 @@ fim.saemix<-function(saemixObject) {
   ind.covariates<-which(saemix.model["betaest.model"]>0)
   f0<-F[,1,1]
   # g0<-cutoff(saemix.res["respar"][1]+saemix.res["respar"][2]*abs(f0))
-  if (saemixObject["model"]["type"]=="structural"){
+  if (saemixObject["model"]["modeltype"]=="structural"){
     g0<-error(f0,saemix.res@respar,saemix.data["data"]["ytype"]) 
   }
   #  DF<-(F[,,3]-F[,,2])/matrix(rep(dphi,each=saemix.data["ntot.obs"]), ncol=length(dphi))/2 
@@ -138,7 +138,7 @@ fim.saemix<-function(saemixObject) {
     j1<-j2+1
     j2<-j2+ni
     z[j1:j2]<-yobs[j1:j2] - f0[j1:j2] + DF[j1:j2,,drop=FALSE]%*%hat.phi[i,]
-    if (saemixObject["model"]["type"]=="structural"){
+    if (saemixObject["model"]["modeltype"]=="structural"){
       Vi<- DF[j1:j2,,drop=FALSE] %*% omega %*% t(DF[j1:j2,,drop=FALSE]) + mydiag((g0[j1:j2])^2, nrow=ni)
     } else{
       Vi<- DF[j1:j2,,drop=FALSE] %*% t(DF[j1:j2,,drop=FALSE])+ mydiag(1, nrow=ni)
@@ -178,7 +178,7 @@ fim.saemix<-function(saemixObject) {
     yi<-yobs[j1:j2]
     DFi<-DF[j1:j2,,drop=FALSE]
     f0i<-f0[j1:j2]
-    if (saemixObject["model"]["type"]=="structural"){
+    if (saemixObject["model"]["modeltype"]=="structural"){
       g0i<-g0[j1:j2]
     }
     zi<-z[j1:j2]
@@ -201,7 +201,7 @@ fim.saemix<-function(saemixObject) {
           domega<-omega.null
           domega[iom,jom]<-domega[jom,iom]<-1 
           #          if(iom==jom) domega[iom,jom]<-1*sqrt(omega[iom,jom]) else domega[iom,jom]<-1 # if parameterised in omega and not omega2,
-          if (saemixObject["model"]["type"]=="structural"){
+          if (saemixObject["model"]["modeltype"]=="structural"){
             DV[[ipar]]<-DFi %*% domega %*% t(DFi)
           }else{
             DV[[ipar]]<-DFi %*% t(DFi)
@@ -215,7 +215,7 @@ fim.saemix<-function(saemixObject) {
     #   DV[[ipar+npar]] <- DFi %*% t(DFi)
     # }
     
-    if (saemixObject["model"]["type"]=="structural"){
+    if (saemixObject["model"]["modeltype"]=="structural"){
       for(ipar.res in 1:(2*nytype)) {
         if(!is.na(match(ipar.res,saemix.res@indx.res))) {
           ipar<-ipar+1
@@ -226,7 +226,7 @@ fim.saemix<-function(saemixObject) {
     # for(ipar.res in 1:(2*nytype)) {
     #   if(!is.na(match(ipar.res,saemix.res@indx.res))) {
     #     ipar<-ipar+1
-    #     if (saemixObject["model"]["type"]=="structural"){
+    #     if (saemixObject["model"]["modeltype"]=="structural"){
     #       if(ipar.res%%2 == 1) DV[[ipar]]<-mydiag(2*g0i, nrow=ni) else DV[[ipar]]<-mydiag(2*g0i*f0i, nrow=ni)
     #     } else{
     #       DV[[ipar]]<-mydiag(0, nrow=ni)

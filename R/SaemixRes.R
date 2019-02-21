@@ -774,7 +774,7 @@ fitted.SaemixRes<-function (object, type = c("ipred", "ypred", "ppred", "icpred"
 }
 
 ####################################################################################
-####            SaemixRes class - variance-covariance matrix        ####
+####            SaemixRes class - extract variance-covariance matrix            ####
 ####################################################################################
 
 #' Extracts the Variance-Covariance Matrix for a Fitted Model Object
@@ -792,20 +792,13 @@ fitted.SaemixRes<-function (object, type = c("ipred", "ypred", "ppred", "icpred"
 #' @export
 
 vcov.SaemixRes<-function(object, ...) {
-  object@fim
-}
-
-#' @rdname vcov
-#' @export
-
-vcov.SaemixObject<-function(object, ...) {
-  vcov(object@results)
+  try(solve(object@fim))
 }
 
 # setMethod("vcov","SaemixRes",
 #           function (object, ...) 
 #           {
-#             object@fim
+#             try(solve(object@fim))
 #           }
 # )
 # 
@@ -820,5 +813,141 @@ vcov.SaemixObject<-function(object, ...) {
 ####################################################################################
 ####            SaemixRes class - method to plot            ####
 ####################################################################################
+
+
+####################################################################################
+####				SaemixRes class - summary method			####
+####################################################################################
+#' @rdname summary-methods
+#' 
+#' @exportMethod summary
+
+setMethod("summary","SaemixRes",
+          function(object, print=TRUE, ...) {
+            if(length(object@fixed.effects)==0) {
+              cat("Object of class SaemixRes, no fit performed yet.\n")
+              return()
+            }
+            digits<-2;nsmall<-2
+            if(print) {
+              cat("----------------------------------------------------\n")
+              cat("-----------------  Fixed effects  ------------------\n")
+              cat("----------------------------------------------------\n")
+            }
+            #    browser()
+            if(length(object@se.fixed)==0) {
+              if(object@modeltype=="structural") {
+                tab<-data.frame(c(object@name.fixed, object@name.sigma[object@indx.res]), c(object@fixed.effects,object@respar[object@indx.res]))
+              }else{
+                tab<-data.frame(c(object@name.fixed), c(object@fixed.effects))
+              }
+              colnames(tab)<-c("Parameter","Estimate")
+            } else {
+              if(object@modeltype=="structural") {
+                tab<-data.frame(c(object@name.fixed, object@name.sigma[object@indx.res]), c(object@fixed.effects,object@respar[object@indx.res]),c(object@se.fixed,object@se.respar[object@indx.res]), stringsAsFactors=FALSE)
+              }else{
+                tab<-data.frame(c(object@name.fixed), c(object@fixed.effects),c(object@se.fixed), stringsAsFactors=FALSE)
+              }
+              tab<-cbind(tab,100*abs(as.double(tab[,3])/as.double(tab[,2])))
+              colnames(tab)<-c("Parameter","Estimate","SE","CV(%)")
+              if(length(object@indx.cov)>0) {
+                wstat<-as.double(tab[,2])/as.double(tab[,3])
+                pval<-rep("-",length(wstat))
+                pval[object@indx.cov]<-1-normcdf(abs(wstat[object@indx.cov]))
+                tab<-cbind(tab,"p-value"=pval,stringsAsFactors=FALSE)
+              }
+            }
+            tab.fix<-tab
+            for(i in 2:dim(tab)[2]) {
+              xcol<-as.double(as.character(tab[,i]))
+              idx<-which(!is.na(xcol) & xcol!="-")
+              tab[idx,i]<-format(xcol[idx],digits=digits,nsmall=nsmall)
+            }
+            if(print) {
+              print(tab,quote=FALSE)
+              cat("----------------------------------------------------\n")
+              cat("-----------  Variance of random effects  -----------\n")
+              cat("----------------------------------------------------\n")
+              #  cat("   ECO TODO: check if Omega or Omega2 (SD or variances) and can we choose ?\n")
+            }
+            if(length(object@se.omega)==0) {
+              tab<-data.frame(object@name.random, diag(object@omega)[object@indx.omega])
+              colnames(tab)<-c("Parameter","Estimate")
+            } else {
+              tab<-data.frame(object@name.random, diag(object@omega)[object@indx.omega], object@se.omega[object@indx.omega])
+              tab<-cbind(tab,100*as.double(tab[,3])/as.double(tab[,2]))
+              colnames(tab)<-c("Parameter","Estimate","SE","CV(%)")
+            }
+            tab.random<-tab
+            for(i in 2:dim(tab)[2]) 
+              tab[,i]<-format(as.double(as.character(tab[,i])),digits=digits,nsmall=nsmall)
+            if(print) {
+              print(tab,quote=FALSE)
+              cat("----------------------------------------------------\n")
+              cat("------  Correlation matrix of random effects  ------\n")
+              cat("----------------------------------------------------\n")
+            }
+            tab<-cov2cor(object@omega[object@indx.omega, object@indx.omega,drop=FALSE])
+            tab.corr<-tab
+            for(i in 1:dim(tab)[2])
+              tab[,i]<-format(as.double(as.character(tab[,i])),digits=digits,nsmall=nsmall)
+            try(colnames(tab)<-rownames(tab)<-object@name.random)
+            if(print) print(tab,quote=FALSE)
+            l1<-rep(NA,3)
+            tab.ll<-data.frame(Method=c("Linearisation","Importance Sampling","Gaussian Quadrature"),"-2xLL"=l1,AIC=l1,BIC=l1)
+            if(length(object@ll.lin)>0 | length(object@ll.is)>0 | length(object@ll.gq)>0) {
+              if(print) {
+                cat("----------------------------------------------------\n")
+                cat("---------------  Statistical criteria  -------------\n")
+                cat("----------------------------------------------------\n")
+              }
+              if(length(object@ll.lin)>0) {
+                if(print) {
+                  cat("Likelihood computed by linearisation\n")
+                  cat("      -2LL=",(-2*object@ll.lin),"\n")
+                  cat("      AIC =",object@aic.lin,"\n")
+                  cat("      BIC =",object@bic.lin,"\n")
+                }
+                tab.ll[1,2:4]<-c((-2*object@ll.lin),object@aic.lin, object@bic.lin)
+              }
+              if(length(object@ll.is)>0) {
+                if(print) {
+                  cat("\nLikelihood computed by importance sampling\n")
+                  cat("      -2LL=",(-2*object@ll.is),"\n")
+                  cat("      AIC =",object@aic.is,"\n")
+                  cat("      BIC =",object@bic.is,"\n")
+                }
+                tab.ll[2,2:4]<-c((-2*object@ll.is),object@aic.is, object@bic.is)
+              }  
+              if(length(object@ll.gq)>0) {
+                if(print) {
+                  cat("\nLikelihood computed by Gaussian quadrature\n")
+                  cat("      -2LL=",(-2*object@ll.gq),"\n")
+                  cat("      AIC =",object@aic.gq,"\n")
+                  cat("      BIC =",object@bic.gq,"\n")
+                }
+                tab.ll[3,2:4]<-c((-2*object@ll.gq),object@aic.gq, object@bic.gq)
+              }
+              if(print) cat("----------------------------------------------------\n")
+            }
+            tab<-data.frame(Id=1:dim(object@cond.mean.phi)[1], object@cond.mean.psi)
+            namparfix<-object@name.fixed
+            try(colnames(tab)[-c(1)]<-namparfix(-grep("beta",object@name.fixed)),silent=TRUE)
+            npar<-length(object@name.fixed)
+            coef<-list(fixed=tab.fix[1:npar,2],random=list(map.psi=object@map.psi, cond.mean.psi=tab))
+            sigma<-tab.fix[-c(1:npar),2]
+            
+            res<-list(modeltype=object@modeltype,fixed.effects=tab.fix,sigma=sigma,random.effects=tab.random, correlation.matrix=tab.corr,logLik=tab.ll,coefficients=coef)
+            if(length(object@fim)>0) res$FIM<-object@fim
+            if(length(object@ypred)>0 | length(object@ipred)>0  | length(object@ppred)>0 | length(object@icpred)>0) {
+              res$fitted<-list(population=list(pop.param=object@ppred, pop.mean=object@ypred),individual=list(map.ipred=object@ipred, cond.ipred=object@icpred))
+            }
+            if(length(object@wres)>0 | length(object@iwres)>0  | length(object@icwres)>0 | length(object@pd)>0) {
+              res$residuals<-list(population=list(wres=object@wres), individual=list(map.iwres=object@iwres,cond.iwres=object@icwres, pd=object@pd, npde=object@npde))
+            }
+            
+            invisible(res)
+          }
+)
 
 ####################################################################################

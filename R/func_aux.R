@@ -83,7 +83,7 @@ map.saemix<-function(saemixObject) {
     mean.phi1<-saemixObject["results"]["mean.phi"][i,i1.omega2]
     phii<-saemixObject["results"]["phi"][i,]
     phi1<-phii[i1.omega2]
-    if(saemixObject["model"]["type"]=="structural"){
+    if(saemixObject["model"]["modeltype"]=="structural"){
       phi1.opti<-optim(par=phi1, fn=conditional.distribution_c, phii=phii,idi=idi,xi=xi,yi=yi,mphi=mean.phi1,idx=i1.omega2,iomega=iomega.phi1, trpar=saemixObject["model"]["transform.par"], model=saemixObject["model"]["model"], pres=saemixObject["results"]["respar"], err=saemixObject["model"]["error.model"])
     } else {
       phi1.opti<-optim(par=phi1, fn=conditional.distribution_d, phii=phii,idi=idi,xi=xi,yi=yi,mphi=mean.phi1,idx=i1.omega2,iomega=iomega.phi1, trpar=saemixObject["model"]["transform.par"], model=saemixObject["model"]["model"])
@@ -328,7 +328,7 @@ compute.Uy<-function(b0,phiM,pres,args,Dargs,DYF) {
   phi0<-args$COV0 %*% args$MCOV0
   phiM[,args$i0.omega2]<-do.call(rbind,rep(list(phi0),args$nchains))
   psiM<-transphi(phiM,Dargs$transform.par)
-  if (Dargs$type=="structural"){
+  if (Dargs$modeltype=="structural"){
     fpred<-Dargs$structural.model(psiM,Dargs$IdM,Dargs$XM)
     for(ityp in Dargs$etype.exp) fpred[Dargs$XM$ytype==ityp]<-log(cutoff(fpred[Dargs$XM$ytype==ityp]))
     gpred<-error(fpred,pres,Dargs$XM$ytype)
@@ -346,7 +346,7 @@ compute.LLy<-function(phiM,args,Dargs,DYF,pres) {
   psiM<-transphi(phiM,Dargs$transform.par)
   fpred<-Dargs$structural.model(psiM,Dargs$IdM,Dargs$XM)
   for(ityp in Dargs$etype.exp) fpred[Dargs$XM$ytype==ityp]<-log(cutoff(fpred[Dargs$XM$ytype==ityp]))
-  if (Dargs$type=="structural"){
+  if (Dargs$modeltype=="structural"){
     gpred<-error(fpred,pres,Dargs$XM$ytype)
     DYF[args$ind.ioM]<-0.5*((Dargs$yM-fpred)/gpred)**2+log(gpred)
   } else {

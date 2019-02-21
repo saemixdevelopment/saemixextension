@@ -27,6 +27,7 @@ NULL
 #'     @slot sep Object of class \code{"character"}: the field separator character
 #'     @slot na Object of class \code{"character"}: a character vector of the strings which are to be interpreted as NA values
 #'     @slot messages Object of class \code{"logical"}: if TRUE, the program will display information about the creation of the data object
+#'     @slot automatic Object of class \code{"logical"}: if TRUE, automatic name recognition is on (used at the creation of the object)
 #'     @slot name.group Object of class \code{"character"}: name of the column containing the subject id
 #'     @slot name.predictors Object of class \code{"character"}: name of the column(s) containing the predictors
 #'     @slot name.response Object of class \code{"character"}: name of the column containing the response variable y modelled by predictor(s) x
@@ -97,6 +98,7 @@ setClass(
     name.data="character",	# name of dataset
     header="logical",		# for file, whether has header
     messages="logical",		# whether to output messages when creating the object
+    automatic="logical",		# whether to use automatic name recognition when creating the object
     sep="character",		# if file, separator
     na="character",		# if file, NA symbol(s)
     name.group="character",	# name of column with ID
@@ -119,26 +121,48 @@ setClass(
     nind.obs="numeric"		# number of observations for each subject
   ),
   validity=function(object){
-#    cat ("--- Checking SaemixData object ---\n")
+    #    cat ("--- Checking SaemixData object ---\n")
     if (length(object@name.data)==0) {
-      stop ("[ SaemixData : validation ] Please provide a name for the data (dataset or datafile on disk).")
+      if(object@messages) message("[ SaemixData : validation ] Please provide a name for the data (dataset or datafile on disk).")
+      return("No dataset provided")
     }
-# Ici ou a la creation, detection automatique ?
-    if (nchar(object@name.group)==0 & object@messages) {cat("Missing Id column\n")}
-    if (nchar(object@name.predictors[1])==0 & object@messages) {cat("No predictors found\n")}
-    if (nchar(object@name.response)==0 & object@messages) {cat("No response found\n")}
-    N<-object@N
-    if(length(object@data)>0) {
-     if(N<2) {
-       if (object@messages) cat("Warning: There is only",N,"subject in the dataset, the SAEM algorithm is a population algorithm designed to analyse longitudinal data from non-linear mixed effect models and may not work with too few subjects.\n")
-     }
-     # if(length(unique(object@data[,object@name.response]))<3& object@messages) {
-     #   cat("Warning: The SAEM algorithm currently handles only continuous responses. It seems that the response --",object@name.response,"-- has too few modalities and the statistical model may not be appropriate.\n")
-     # }
+    # Ici ou a la creation, detection automatique ?
+    misVar<-0
+    errors<-c()
+    if ( length(object@name.group)==0) {
+      if(object@messages) cat("Missing Id column and automatic recognition is off\n")
+      errors<-c(errors,"Missing Id column")
+      misVar<-1
     }
-    return(TRUE)
+    if (length(object@name.predictors)==0) {
+      if(object@messages) cat("No predictors found and automatic recognition is off\n")
+      errors<-c(errors,"Missing predictors")
+      misVar<-1
+    }
+    if (length(object@name.response)==0) {
+      if(object@messages) cat("No response found and automatic recognition is off\n")
+      errors<-c(errors,"Missing response")
+      misVar<-1
+    }
+    if(misVar==1) {
+      if(object@messages) message("[ SaemixData : validation ] At least one of group, predictor or response variable name is missing, and automatic recognition is off.")
+    }
+    if(length(errors)==0) {
+      N<-object@N
+      if(length(object@data)>0) {
+        if(N<2) {
+          if (object@messages) cat("Warning: There is only",N,"subject in the dataset, the SAEM algorithm is a population algorithm designed to analyse longitudinal data from non-linear mixed effect models and may not work with too few subjects.\n")
+        }
+      }
+    }
+    # if(length(unique(object@data[,object@name.response]))<3& object@messages) {
+    #   cat("Warning: The SAEM algorithm currently handles only continuous responses. It seems that the response --",object@name.response,"-- has too few modalities and the statistical model may not be appropriate.\n")
+    # }
+    
+    if(length(errors)==0) TRUE else errors
   }
 )
+
 
 #' @rdname SaemixData-class
 #' @exportClass SaemixSimData
@@ -202,13 +226,14 @@ setClass(
 #' @param name.occ name of the column containing the occasion
 #' @param name.ytype name of the column containing the index of the response
 #' @param verbose a boolean indicating whether messages should be printed out during the creation of the object
+#' @param automatic a boolean indicating whether to attempt automatic name recognition when some colum names are missing or wrong (defaults to TRUE)
 #' 
 #' @exportMethod initialize
 
 setMethod(
   f="initialize",
   signature="SaemixData",
-  definition= function (.Object,name.data,header,sep,na,name.group, name.predictors, name.response, name.covariates, name.X, units, name.mdv, name.cens, name.occ, name.ytype, verbose){
+  definition= function (.Object,name.data,header,sep,na,name.group, name.predictors, name.response, name.covariates, name.X, units, name.mdv, name.cens, name.occ, name.ytype, verbose=TRUE, automatic=TRUE){
 #    cat ("--- initialising SaemixData Object --- \n")
     if(missing(name.data)) stop ("Please provide a name for the data (dataset or datafile on disk).")
     .Object@name.data<-name.data
@@ -216,29 +241,37 @@ setMethod(
     .Object@header<-header
     if(missing(verbose)) verbose<-TRUE
     .Object@messages<-verbose
+    .Object@automatic<-automatic
     if(missing(sep)) sep<-""
     .Object@sep<-sep
     if(missing(na)) na<-"NA"
     .Object@na<-na
     if(missing(name.group)) {
-      if(verbose) cat("   Missing ID identifier, assuming the ID is in column 1 of the dataset.\n")
-      name.group<-"1"
+      if(automatic) {
+        if(verbose) cat("   Missing ID identifier, assuming the ID is in column 1 of the dataset.\n")
+        name.group<-"1"
+      } else name.group<-character()
     }
 # ECO TODO: reconnaissance automatique (avant affectation a la valeur 2) ?
     if(missing(name.predictors)) {
-      name.predictors<-"2"      
+      if(automatic) {
+        name.predictors<-"2"      
       if(verbose) cat("   Missing predictors identifier, assuming there is one predictor in column 2 of the dataset.\n")
+      } else name.predictors<-character()
     }
     if(missing(name.response)) {
-    	if(verbose) cat("   Missing response identifier, assuming the response is in column 3 of the dataset.\n")
-      name.response<-"3"
+      if(automatic) {
+        if(verbose) cat("   Missing response identifier, assuming the response is in column 3 of the dataset.\n")
+        name.response<-"3"
+      } else name.response<-character()
     }
     if(missing(name.covariates)) name.covariates<-character()
 		if(missing(name.mdv)) name.mdv<-character()
 		if(missing(name.cens)) name.cens<-character()
 		if(missing(name.occ)) name.occ<-character()
 		if(missing(name.ytype)) name.ytype<-character()
-		.Object@name.group<-name.group
+    if(missing(name.X)) name.X<-character()
+    .Object@name.group<-name.group
     .Object@name.predictors<-name.predictors
     .Object@name.response<-name.response
     .Object@name.covariates<-name.covariates
@@ -263,8 +296,8 @@ setMethod(
     .Object@units<-units
     .Object@name.X<-name.X
 # Object validation
-    validObject(.Object)
-    return (.Object )
+#    x<-validObject(.Object)
+    return(.Object )
   }
 )
 
@@ -364,6 +397,7 @@ setMethod(
     "name.data"={return(x@name.data)},
     "header"={return(x@header)},
     "messages"={return(x@messages)},
+    "automatic"={return(x@automatic)},
     "sep"={return(x@sep)},
     "na"={return(x@na)},
     "name.group"={return(x@name.group)},
@@ -398,6 +432,7 @@ setReplaceMethod(
     "name.data"={x@name.data<-value},
     "header"={x@header<-value},
     "messages"={x@messages<-value},
+    "automatic"={x@automatic<-value},
     "sep"={x@sep<-value},
     "na"={x@na<-value},
     "name.group"={x@name.group<-value},
@@ -534,7 +569,7 @@ setReplaceMethod(
 
 #' Name validation (## )Helper function not intended to be called by the user)
 #' 
-#' Helper function, checks if the names given by the user match to the names in the dataset. If not, automatic recognition is attempted.
+#' Helper function, checks if the names given by the user match to the names in the dataset. If not, automatic recognition is attempted when automatic=TRUE.
 #'
 #' @name validate.names
 #' 
@@ -542,6 +577,7 @@ setReplaceMethod(
 #' @param datanames vector of strings
 #' @param recognisednames vector of strings, values for automatic recognition
 #' @param verbose logical, whether to print warning messages
+#' @param verbose automatic, whether to attempt automatic recognition
 #' @return a vector with valid names
 #' @examples 
 #' # TODO
@@ -549,7 +585,7 @@ setReplaceMethod(
 #' @export 
 NULL
 
-validate.names<-function(usernames,datanames,recognisednames=c(),verbose=TRUE) {
+validate.names<-function(usernames,datanames,recognisednames=c(),verbose=TRUE, automatic=TRUE) {
   valnames<-usernames
   remcol<-c() # keep track of columns to remove
   # Detect names given as column numbers
@@ -586,12 +622,14 @@ validate.names<-function(usernames,datanames,recognisednames=c(),verbose=TRUE) {
       if(verbose) cat("Please check input\n")
       return(valnames)
     } 
-    if(verbose) cat("No valid name given, attempting automatic recognition\n")
-    valnames<-datanames[match(recognisednames,tolower(datanames),nomatch=0)]
-    if(length(valnames)==0) {
-      if(verbose) cat("Automatic recognition failed, please check input\n")} else {
-        if(verbose) cat("Automatic recognition of columns",valnames,"successful \n")
-      }
+    if(automatic) {
+      if(verbose) cat("No valid name given, attempting automatic recognition\n")
+      valnames<-datanames[match(recognisednames,tolower(datanames),nomatch=0)]
+      if(length(valnames)==0) {
+        if(verbose) cat("Automatic recognition failed, please check input\n")} else {
+          if(verbose) cat("Automatic recognition of columns",valnames,"successful \n")
+        }
+    } else return(NULL)
   }
   # Remove columns
   return(valnames)
@@ -651,21 +689,21 @@ setMethod("read",
 # ECO TODO: improve automatic recognition ?
 # check that we have at least a column id, response and X
 
-    vnames<-validate.names(object@name.group,colnames(dat),recognisednames=c("id","subject","sujet","group","groupe"),verbose = object@messages)
+    vnames<-validate.names(object@name.group,colnames(dat),recognisednames=c("id","subject","sujet","group","groupe"),verbose = object@messages, automatic=object@automatic)
     if(length(vnames)==0) {
       if(object@messages) cat("Please provide a valid name for the ID column.\n")
       return("Creation of SaemixData object failed")
     }
     object@name.group<-vnames
     
-    vnames<-validate.names(object@name.predictors,colnames(dat),recognisednames=c("time","temps","tps","tim","x","dose"),verbose = object@messages)
+    vnames<-validate.names(object@name.predictors,colnames(dat),recognisednames=c("time","temps","tps","tim","x","dose"),verbose = object@messages, automatic=object@automatic)
     if(length(vnames)==0) {
       if(object@messages) cat("Please provide a valid name for the predictor(s).\n")
       return("Creation of SaemixData object failed")
     }
     object@name.predictors<-vnames
     
-    vnames<-validate.names(object@name.response,colnames(dat),recognisednames=c("response","resp","conc","concentration","y","dv"),verbose = object@messages)
+    vnames<-validate.names(object@name.response,colnames(dat),recognisednames=c("response","resp","conc","concentration","y","dv"),verbose = object@messages, automatic=object@automatic)
     if(length(vnames)==0) {
       if(object@messages) cat("Please provide a valid name for the response.\n")
       return("Creation of SaemixData object failed")
@@ -1258,7 +1296,7 @@ setMethod("plot","SaemixSimData",
 #' plot(saemix.data)
 #' @export 
 
-saemixData<-function(name.data,header,sep,na,name.group,name.predictors, name.response,name.X, name.covariates=c(), name.genetic.covariates=c(), name.mdv="", name.cens="",name.occ="",name.ytype="", units=list(x="",y="",covariates=c()), verbose=TRUE) {
+saemixData<-function(name.data,header,sep,na,name.group,name.predictors, name.response,name.X, name.covariates=c(), name.genetic.covariates=c(), name.mdv="", name.cens="",name.occ="",name.ytype="", units=list(x="",y="",covariates=c()), verbose=TRUE, automatic=TRUE) {
 # setting proper types for the SaemixData class
   if(missing(name.data)) {
     if(verbose) cat("Error in saemixData: please provide the name of the datafile or dataframe (between quotes)\n")
@@ -1277,7 +1315,7 @@ saemixData<-function(name.data,header,sep,na,name.group,name.predictors, name.re
   if(missing(name.ytype)) name.ytype<-"" else  name.ytype<-as.character(name.ytype)
   if(missing(name.X)) name.X<-"" else name.X<-as.character(name.X)
   name.covariates<-c(as.character(name.covariates),as.character(name.genetic.covariates))
-  x<-new(Class="SaemixData",name.data=name.data,header=header,sep=sep,na=na, name.group=name.group,name.predictors=name.predictors,name.X=name.X, name.response=name.response,name.covariates=name.covariates,units=units, name.mdv=name.mdv, name.cens=name.cens, name.occ=name.occ, name.ytype=name.ytype, verbose)
+  x<-new(Class="SaemixData",name.data=name.data,header=header,sep=sep,na=na, name.group=name.group,name.predictors=name.predictors,name.X=name.X, name.response=name.response,name.covariates=name.covariates,units=units, name.mdv=name.mdv, name.cens=name.cens, name.occ=name.occ, name.ytype=name.ytype, verbose=verbose, automatic=automatic)
 #  showall(x)
   x1<-read(x)
   if(class(x1)=="SaemixData") {
@@ -1324,7 +1362,7 @@ transform.SaemixData<-function(`_data`, ...) {
 #' Transform and/or center continuous covariates
 #'
 #' @name transformContCov
-#' @aliases transform.SaemixData
+#' @aliases transform.SaemixData transform.numeric
 #' 
 #' @param object saemixData object
 #' @param covariate name of the covariate
@@ -1337,7 +1375,22 @@ transform.SaemixData<-function(`_data`, ...) {
 #' @keywords data
 #' @export 
 
-transformContCov<-function(object, covariate, transformation=function(x) x, centering="median" ,verbose=FALSE) {
+transform.numeric<-function(x,transformation=function(x) x, centering="median",verbose=FALSE) {
+  if(!(centering %in% c('mean','median')) & is.na(as.double(centering))) {
+    if(verbose) cat("Need a proper value to center. Please specify mean, median or a numerical value\n")
+    return(x)
+  }
+  if(tolower(centering)=="none") centering<-0
+  if(centering %in% c('mean','median')) {
+    f1<-match.fun(centering)
+    xcent<-f1(x)
+  } else xcent<-as.double(centering)
+  if(verbose) cat("Data centered with respect to the value:",xcent,"\n")
+  xt<-transformation(x-xcent)
+  return(xt)
+}
+
+transformContCov<-function(object, covariate, transformation=function(x) x, centering="median",verbose=FALSE) {
  	covariate<-deparse(substitute(covariate))
  	name.trans<-deparse(substitute(transformation))
 	if(!(covariate %in% object@name.covariates)) {
@@ -1432,8 +1485,8 @@ transformCatCov<-function(object, covariate, group, reference, verbose=FALSE) {
 #' 
 #' Return an SaemixData object containing the subset of data which meets conditions.
 #'
-#' @name subset.SaemixData
-#' @aliases subset-methods subset
+#' @name subset
+#' @aliases subset-methods subset.SaemixData
 #' 
 #' @param x saemixData object
 #' @param subset logical expression indicating elements or rows to keep: missing values are taken as false

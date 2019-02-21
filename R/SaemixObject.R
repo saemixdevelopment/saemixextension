@@ -382,14 +382,14 @@ setMethod("summary","SaemixObject",
     }
 #    browser()
     if(length(object@results@se.fixed)==0) {
-       if(object@model@type=="structural") {
+       if(object@model@modeltype=="structural") {
           tab<-data.frame(c(object@results@name.fixed, object@results@name.sigma[object@results@indx.res]), c(object@results@fixed.effects,object@results@respar[object@results@indx.res]))
         }else{
           tab<-data.frame(c(object@results@name.fixed), c(object@results@fixed.effects))
         }
       colnames(tab)<-c("Parameter","Estimate")
     } else {
-       if(object@model@type=="structural") {
+       if(object@model@modeltype=="structural") {
             tab<-data.frame(c(object@results@name.fixed, object@results@name.sigma[object@results@indx.res]), c(object@results@fixed.effects,object@results@respar[object@results@indx.res]),c(object@results@se.fixed,object@results@se.respar[object@results@indx.res]), stringsAsFactors=FALSE)
         }else{
             tab<-data.frame(c(object@results@name.fixed), c(object@results@fixed.effects),c(object@results@se.fixed), stringsAsFactors=FALSE)
@@ -482,7 +482,7 @@ setMethod("summary","SaemixObject",
     coef<-list(fixed=tab.fix[1:npar,2],random=list(map.psi=object@results@map.psi, cond.mean.psi=tab))
     sigma<-tab.fix[-c(1:npar),2]
 
-    res<-list(fixed.effects=tab.fix,sigma=sigma,random.effects=tab.random, correlation.matrix=tab.corr,logLik=tab.ll,coefficients=coef)
+    res<-list(modeltype=object@model@modeltype,fixed.effects=tab.fix,sigma=sigma,random.effects=tab.random, correlation.matrix=tab.corr,logLik=tab.ll,coefficients=coef)
     if(length(object@results@fim)>0) res$FIM<-object@results@fim
     res$data<-list(N=object@data@N,nobs=list(ntot=object@data@ntot.obs, nind=object@data@nind.obs),data=object@data@data)
     if(length(object@results@ypred)>0 | length(object@results@ipred)>0  | length(object@results@ppred)>0 | length(object@results@icpred)>0) {
@@ -696,64 +696,49 @@ setMethod("showall","SaemixObject",
 #' 
 #' @exportMethod predict
 
+# Default is to return individual predictions using MAP. If newdata is given and does not have response data, population predictions are returned instead.
+
 setMethod(f="predict",
-  signature="SaemixObject",
-  def=function(object,newdata=NULL,type=c("ipred", "ypred", "ppred", "icpred"), se.fit=FALSE, ...) {
-    type<-match.arg(type)
-    saemix.data<-object["data"]
-    saemix.model<-object["model"]
-#    se.fit<-match.arg(se.fit) # doesn't work with logical type, change
-#    if(se.fit) cat("Currently predict() does not handle argument se.fit=TRUE.\n")
-    if(missing(newdata)) {
-      xpred<-fitted(object,type,...)
-      if(length(xpred)==0) {
-        namObj<-deparse(substitute(object))
-        opred<-saemix.predict(object)
-        assign(namObj,opred,envir=parent.frame()) # update object invisibly with predictions
-        xpred<-fitted(object,type,...)
-      }
-    } else {
-# Ignore type - when newdata is given, predictions correspond to the population predictions using the final estimates
-      id<-newdata["data"][,newdata["name.group"]]
-      if(length(newdata["name.covariates"])==0) tab<-data.frame(id=id) else
-        tab<-data.frame(id=id,newdata["data"][, newdata["name.covariates",drop=FALSE]])
-      # Mcovariates: extract columns needed in the model
-      temp2<-unique(tab)
-      temp<-tab[!duplicated(id),,drop=FALSE]
-      if(dim(temp)[1]!=dim(temp2)[1]) cat("Some covariates have time-varying values; only the first is taken into account in the current version of the algorithm.\n")
-      #temp<-temp[order(temp[,1]),]
-      
-      if(length(newdata["name.covariates"])>0) {
-        Mcovariates<-data.frame(id=rep(1,newdata["N"]),temp[,2:dim(temp)[2]])} else {
-          Mcovariates<-data.frame(id=rep(1,newdata["N"]))
-        }
-      j.cov<-which(rowSums(object["model"]["betaest.model"])>0)
-      names(j.cov)[1]<-names(Mcovariates)[1]
-      Mcovariates<-Mcovariates[,names(j.cov),drop=FALSE] # eliminate all the unused covariates
-      for(icol in dim(Mcovariates)[2])
-        if(is.factor(Mcovariates[,icol])) Mcovariates[,icol]<-as.numeric(Mcovariates[,icol])-1
-      # COV: design matrix
-      COV<-matrix(nrow=dim(Mcovariates)[1],ncol=0)
-      for(j in 1:-object["model"]["nb.parameters"]) {
-        jcov<-which(object["model"]["betaest.model"][,j]==1)
-        aj<-as.matrix(Mcovariates[,jcov])
-        COV<-cbind(COV,aj)
-      }
-      # population parameters given by phi=Ci*mu (COV %*% Lcovariates) and psi=h(phi)
-      pop.phi<-COV %*% object["results"]["MCOV"]
-      pop.psi<-transphi(pop.phi,object["model"]["transform.par"])
-      structural.model<-object["model"]["model"]
-      chdat<-new(Class="SaemixRepData",data=newdata, nb.chains=1)
-      IdM<-chdat["dataM"]$IdM
-      XM<-chdat["dataM"][,c(saemix.data["name.predictors"],saemix.data["name.cens"],saemix.data["name.mdv"],saemix.data["name.ytype"]),drop=FALSE]
-      # Model predictions with pop.psi
-      fpred<-structural.model(pop.psi, IdM, XM)
-      ind.exp<-which(saemix.model["error.model"]=="exponential")
-      for(ityp in ind.exp) fpred[XM$ytype==ityp]<-log(cutoff(fpred[XM$ytype==ityp]))
-      xpred<-fpred
-    }
-    return(xpred)
-  }
+          signature="SaemixObject",
+          def=function(object,newdata=NULL,type=c("ipred", "ypred", "ppred", "icpred"), se.fit=FALSE, ...) {
+            namObj<-deparse(substitute(object))
+            type<-match.arg(type)
+            type<-intersect(type,c("ipred", "ypred", "ppred", "icpred"))
+            if(length(type)>1) type<-type[1]
+            if(length(type)==0) type<-"ipred"
+            #            print(namObj)
+            saemix.data<-object["data"]
+            saemix.model<-object["model"]
+            #    se.fit<-match.arg(se.fit) # doesn't work with logical type, change
+            #    if(se.fit) cat("Currently predict() does not handle argument se.fit=TRUE.\n")
+            if(missing(newdata)) { # Return predictions from fitted object
+              xpred<-fitted(object,type,...)
+              if(length(xpred)==0) {
+                opred<-saemix.predict(object)
+                assign(namObj,opred,envir=parent.frame()) # update object invisibly with predictions - does not work, pb with environment...
+                #                print(parent.frame())
+                #                print(namObj)
+                xpred<-fitted(opred,type,...)
+              }
+              #              print(xpred)
+            } else {
+              # If individual predictions are requested, check the data contains a column with observations
+              if(type %in% c("ipred","icpred")) {
+                if(length(grep(saemix.data["name.response"],colnames(newdata)))==0) {
+                  if(object["options"]$warnings) cat("Observed",saemix.data["name.response"],"in the new subjects are required to estimate individual parameters. The population predictions will be computed instead.\n")
+                  type<-"ypred"
+                }
+              }
+              has.y<-grep(saemix.data["name.response"],colnames(newdata))
+              if(length(has.y)==0 & saemix.model["modeltype"]=="likelihood") {
+                if(object["options"]$warnings) cat("Please provide values of the response to obtain predictions for a model defined by loglikelihood\n")
+                return()
+              }
+              listpred<-predict.newdata(object,newdata,type=type)
+              xpred<-listpred$predictions[,type]
+            }
+            return(xpred)
+          }
 )
 
 #' Compute model predictions after an saemix fit
@@ -1413,6 +1398,118 @@ fitted.SaemixObject<-function (object, type = c("ipred", "ypred", "ppred", "icpr
           {
             type <- match.arg(type)
             fitted(object@results, type=type, ...)
-          }
+}
+
 
 ####################################################################################
+####            SaemixObject class - extract variance-covariance matrix         ####
+####################################################################################
+
+#' @rdname vcov
+#' @export
+
+vcov.SaemixObject<-function(object, ...) {
+  vcov(object@results)
+}
+
+####################################################################################
+####			saemixObject class - Replace the data component in an saemixObject 		####
+####################################################################################
+
+#' Replace the data element in a SaemixObject object
+#' 
+#' Returns an SaemixObject object where the data object has been replaced by the data provided in a dataframe
+#'
+#' @name replaceData
+#' @aliases replaceData-methods replaceData.saemixObject
+#' 
+#' @param object an saemixObject object
+#' @param newdata a dataframe containing data 
+#' @return an object of class \code{"\linkS4class{SaemixObject}"}. The population parameters are retained but all the predictions, individual parameters and statistical criteria are removed. The function attempts to extract the elements entering the statistical model (subject id, predictors, covariates and response).
+#' @examples 
+#' # TODO
+#' @keywords methods
+#' @export 
+
+replaceData.saemixObject<-function(saemixObject, newdata) {
+  # Takes a saemixObject fit, changes the data object and removes all results pertaining to individual parameters and LL
+  getmode <- function(v) {
+    uniqv <- unique(v)
+    uniqv[which.max(tabulate(match(v, uniqv)))]
+  }
+  orig.data<-saemixObject["data"]
+  ipb<-numeric(0)
+  if(is.na(match(orig.data["name.group"],colnames(newdata)))) ipb<-c(ipb,1) else ipb<-c(ipb,0)
+  if(sum(is.na(match(orig.data["name.predictors"],colnames(newdata))))>0) ipb<-c(ipb,1) else ipb<-c(ipb,0)
+  if(is.na(match(orig.data["name.response"],colnames(newdata)))) ipb<-c(ipb,1) else ipb<-c(ipb,0)
+  if(sum(is.na(match(rownames(saemixObject["model"]["covariate.model"]),colnames(newdata))))>0) ipb<-c(ipb,1) else ipb<-c(ipb,0)
+  if(ipb[1]>0) cat("The new dataset needs to include a group column named",orig.data["name.group"],"\n")
+  if(ipb[2]>0) cat("The new dataset needs to include the following predictors:",orig.data["name.predictors"],"\n")
+  if(sum(ipb[1:2])>0) return()  
+  iflag<-0
+  if(ipb[3]>0) {
+    cat("No response column named",orig.data["name.response"],"given. Only population predictions can be obtained for the new data.\n")
+    iflag<-1
+  }
+  if(ipb[4]>0) cat("The following covariates are present in the model but not in the new dataset",orig.data["name.covariates"],"\nTheir value will be set to the median value (for continuous) or the mode (for categorial) of the covariate in the original dataset.")
+  if(ipb[3]>0) {
+    newdata[orig.data["name.response"]]<-0
+  }
+  if(ipb[4]>0) {
+    idx<-setdiff(rownames(saemixObject["model"]["covariate.model"]),colnames(newdata))
+    ocov<-orig.data["data"][!duplicated(orig.data["data"][orig.data["name.group"]]), idx,drop=F]
+    for(icov in idx) {
+      if(typeof(ocov[icov])=="double") newdata[icov]<-median(ocov[,icov]) else {
+        newdata[icov]<-getmode(ocov[,icov])
+      }
+    }
+  }
+  tempname<-tempfile()
+  write.table(newdata,tempname,quote=F,col.names=T)
+  saemix.newdata<-saemixData(name.data=tempname, name.group=orig.data["name.group"], name.response =orig.data["name.response"], name.predictors=orig.data["name.predictors"], name.covariates=rownames(saemixObject["model"]["covariate.model"]), units=orig.data["units"], name.X=orig.data["name.X"],verbose=FALSE)
+  if(iflag==1) saemix.newdata["data"][,orig.data["name.response"]]<-NA
+  
+  saemix.newObj<-saemixObject
+  saemix.newObj["data"]<-saemix.newdata
+  saemix.newObj["results"]["cond.mean.phi"] <-matrix(nrow=0,ncol=0)
+  saemix.newObj["results"]["cond.mean.psi"] <-matrix(nrow=0,ncol=0)
+  saemix.newObj["results"]["cond.var.phi"] <-matrix(nrow=0,ncol=0)
+  saemix.newObj["results"]["cond.mean.eta"] <-matrix(nrow=0,ncol=0)
+  saemix.newObj["results"]["cond.shrinkage"] <-numeric(0)
+  saemix.newObj["results"]["mean.phi"] <-matrix(nrow=0,ncol=0)
+  saemix.newObj["results"]["map.psi"] <-data.frame()
+  saemix.newObj["results"]["map.phi"] <-data.frame()
+  saemix.newObj["results"]["map.eta"] <-matrix(nrow=0,ncol=0)
+  saemix.newObj["results"]["map.shrinkage"] <-numeric(0)
+  saemix.newObj["results"]["phi"] <-matrix(nrow=0,ncol=0)
+  saemix.newObj["results"]["psi.samp"] <-array(dim=c(0,0,0),data=0)
+  saemix.newObj["results"]["phi.samp"] <-array(dim=c(0,0,0),data=0)
+  saemix.newObj["results"]["phi.samp.var"] <-array(dim=c(0,0,0),data=0)
+  saemix.newObj["results"]["ll.lin"] <-numeric(0)
+  saemix.newObj["results"]["aic.lin"] <-numeric(0)
+  saemix.newObj["results"]["bic.lin"] <-numeric(0)
+  saemix.newObj["results"]["ll.gq"] <-numeric(0)
+  saemix.newObj["results"]["aic.gq"] <-numeric(0)
+  saemix.newObj["results"]["bic.gq"] <-numeric(0)
+  saemix.newObj["results"]["ll.is"] <-numeric(0)
+  saemix.newObj["results"]["aic.is"] <-numeric(0)
+  saemix.newObj["results"]["bic.is"] <-numeric(0)
+  saemix.newObj["results"]["predictions"] <-data.frame()
+  saemix.newObj["results"]["ypred"] <-numeric(0)
+  saemix.newObj["results"]["ppred"] <-numeric(0)
+  saemix.newObj["results"]["ipred"] <-numeric(0)
+  saemix.newObj["results"]["icpred"] <-numeric(0)
+  saemix.newObj["results"]["ires"] <-numeric(0)
+  saemix.newObj["results"]["iwres"] <-numeric(0)
+  saemix.newObj["results"]["icwres"] <-numeric(0)
+  saemix.newObj["results"]["wres"] <-numeric(0)
+  saemix.newObj["results"]["npde"] <-numeric(0)
+  saemix.newObj["results"]["pd"] <-numeric(0)
+  return(saemix.newObj)
+}
+
+
+####################################################################################
+
+
+

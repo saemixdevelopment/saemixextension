@@ -87,7 +87,7 @@ mstep<-function(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, varList, 
 	varList$omega<-varList$omega-mydiag(mydiag(varList$omega))+mydiag(varList$diag.omega)
 	
 	# Residual error
-	if(Dargs$type=="structural") {
+	if(Dargs$modeltype=="structural") {
 		if(length(Uargs$ind.res)==1) { # necessarily only one error model
 		  if (Dargs$error.model[1] %in% c("constant","exponential")) {
 		    sig2<-suffStat$statrese/Dargs$nobs

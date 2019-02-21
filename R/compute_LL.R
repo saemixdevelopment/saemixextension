@@ -42,7 +42,7 @@
 #' 	  return(ypred)
 #' }
 #' saemix.model<-saemixModel(model=model1cpt,
-#'   description="One-compartment model with first-order absorption", type="structural",
+#'   description="One-compartment model with first-order absorption", modeltype="structural",
 #'   psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3, byrow=TRUE,
 #'   dimnames=list(NULL, c("ka","V","CL"))),transform.par=c(1,1,1),
 #'   covariate.model=matrix(c(0,1,0,0,0,0),ncol=3,byrow=TRUE),fixed.estim=c(1,1,1),
@@ -137,7 +137,7 @@ llis.saemix<-function(saemixObject) {
 		for(i in idx.exp) f[saemix.data["data"][,"ytype"]==i]<-log(cutoff(f[saemix.data["data"][,"ytype"]==i]))
 #		if(saemix.model["error.model"]=="exponential")
 #			f<-log(cutoff(f))
-		if (saemixObject["model"]["type"]=="structural"){
+		if (saemixObject["model"]["modeltype"]=="structural"){
 			g<-error(f,pres,XM$ytype)
 			DYF[ind.ioM] <- -0.5*((yM-f)/g)**2 - log(g) - 0.5*c1
 		} else {
@@ -274,7 +274,7 @@ llgq.saemix<-function(saemixObject) {
 	for (j in 1:nx) {
 		phi[,i1.omega2] <- a+b*matrix(rep(x[j,],saemix.data["N"]),ncol=nphi1,byrow=TRUE)
 		psi<-transphi(phi,saemixObject["model"]["transform.par"])
-		if(saemixObject["model"]["type"]=="structural"){
+		if(saemixObject["model"]["modeltype"]=="structural"){
 			f<-saemixObject["model"]["model"](psi, saemix.data["data"][,"index"], xind)
 			for(i in idx.exp) f[saemix.data["data"][,"ytype"]==i]<-log(cutoff(f[saemix.data["data"][,"ytype"]==i]))
 			g<-error(f,pres,saemix.data["data"][,"ytype"])

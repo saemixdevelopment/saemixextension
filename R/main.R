@@ -139,7 +139,7 @@ saemix<-function(model,data,control=list()) {
   fixed.psi<-xinit$fixedpsi.ini
   var.eta<-varList$diag.omega
 
-  if (Dargs$type=="structural"){
+  if (Dargs$modeltype=="structural"){
     theta0<-c(fixed.psi,var.eta[Uargs$i1.omega2],varList$pres[Uargs$ind.res])
     parpop<-matrix(data=0,nrow=(saemix.options$nbiter.tot+1),ncol=(Uargs$nb.parameters+length(Uargs$i1.omega2)+length(saemix.model["indx.res"])))
     colnames(parpop)<-c(saemix.model["name.modpar"], saemix.model["name.random"], saemix.model["name.sigma"][saemix.model["indx.res"]])
@@ -223,7 +223,7 @@ for (kiter in 1:saemix.options$nbiter.tot) { # Iterative portion of algorithm
   	l1[Uargs$indx.betaI]<-fixed.psi
   	l1[Uargs$indx.betaC]<-betaC
 
-    if(Dargs$type=="structural") {
+    if(Dargs$modeltype=="structural") {
       allpar[(kiter+1),]<-c(l1,var.eta[Uargs$i1.omega2],varList$pres[Uargs$ind.res])
     } else{
       allpar[(kiter+1),]<-c(l1,var.eta[Uargs$i1.omega2])
@@ -232,7 +232,7 @@ for (kiter in 1:saemix.options$nbiter.tot) { # Iterative portion of algorithm
   } else { #end of loop on if (stepsize[kiter]>0)
     allpar[(kiter+1),]<-allpar[kiter,]
   }
-   if(Dargs$type=="structural") {
+   if(Dargs$modeltype=="structural") {
       theta<-c(fixed.psi,var.eta[Uargs$i1.omega2],varList$pres[Uargs$ind.res])
     } else{
       theta<-c(fixed.psi,var.eta[Uargs$i1.omega2])
@@ -278,10 +278,10 @@ cond.mean.eta<-t(apply(cond.mean.eta,c(1,2),mean))
   saemix.model["indx.omega"]<-Uargs$i1.omega2
 
 # Filling in result object
-  if(Dargs$type=="structural") {
-    saemix.res<-new(Class="SaemixRes",modeltype=Dargs$type,name.fixed=saemix.model["name.fixed"], name.random=saemix.model["name.random"],name.sigma=saemix.model["name.sigma"], fixed.effects=c(fixed.effects),fixed.psi=c(fixed.psi),betas=betas,betaC=betaC, omega=varList$omega,respar=varList$pres,cond.mean.phi=cond.mean.phi,cond.var.phi=cond.var.phi, mean.phi=mean.phi, phi=phi,phi.samp=phi.samp,parpop=parpop,allpar=allpar,MCOV=varList$MCOV)
+  if(Dargs$modeltype=="structural") {
+    saemix.res<-new(Class="SaemixRes",modeltype=Dargs$modeltype,name.fixed=saemix.model["name.fixed"], name.random=saemix.model["name.random"],name.sigma=saemix.model["name.sigma"], fixed.effects=c(fixed.effects),fixed.psi=c(fixed.psi),betas=betas,betaC=betaC, omega=varList$omega,respar=varList$pres,cond.mean.phi=cond.mean.phi,cond.var.phi=cond.var.phi, mean.phi=mean.phi, phi=phi,phi.samp=phi.samp,parpop=parpop,allpar=allpar,MCOV=varList$MCOV)
   } else{
-    saemix.res<-new(Class="SaemixRes",modeltype=Dargs$type,name.fixed=saemix.model["name.fixed"], name.random=saemix.model["name.random"],name.sigma=saemix.model["name.sigma"], fixed.effects=c(fixed.effects),fixed.psi=c(fixed.psi),betas=betas,betaC=betaC, omega=varList$omega,cond.mean.phi=cond.mean.phi,cond.var.phi=cond.var.phi, mean.phi=mean.phi, phi=phi,phi.samp=phi.samp,parpop=parpop,allpar=allpar,MCOV=varList$MCOV)
+    saemix.res<-new(Class="SaemixRes",modeltype=Dargs$modeltype,name.fixed=saemix.model["name.fixed"], name.random=saemix.model["name.random"],name.sigma=saemix.model["name.sigma"], fixed.effects=c(fixed.effects),fixed.psi=c(fixed.psi),betas=betas,betaC=betaC, omega=varList$omega,cond.mean.phi=cond.mean.phi,cond.var.phi=cond.var.phi, mean.phi=mean.phi, phi=phi,phi.samp=phi.samp,parpop=parpop,allpar=allpar,MCOV=varList$MCOV)
   }
   saemix.res["indx.res"]<-Uargs$ind.res
   saemix.res["indx.fix"]<-Uargs$indx.betaI

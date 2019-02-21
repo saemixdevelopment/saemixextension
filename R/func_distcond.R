@@ -180,7 +180,7 @@ conddist.saemix<-function(saemixObject,nsamp=1,max.iter=NULL,...) {
   fpred<-saemixObject["model"]["model"](psiM, IdM, XM)
   ind.exp<-which(saemix.model["error.model"]=="exponential")
   for(ityp in ind.exp) fpred[XM$ytype==ityp]<-log(cutoff(fpred[XM$ytype==ityp]))
-  if (saemixObject["model"]["type"]=="structural"){  
+  if (saemixObject["model"]["modeltype"]=="structural"){  
     gpred<-error(fpred,pres,XM$ytype)
     DYF[ind.ioM]<-0.5*((yM-fpred)/gpred)^2+log(gpred)
   } else {
@@ -201,7 +201,7 @@ conddist.saemix<-function(saemixObject,nsamp=1,max.iter=NULL,...) {
       psiMc<-transphi(phiMc,saemixObject["model"]["transform.par"])
       fpred<-saemixObject["model"]["model"](psiMc, IdM, XM)
       for(ityp in ind.exp) fpred[XM$ytype==ityp]<-log(cutoff(fpred[XM$ytype==ityp]))
-      if (saemixObject["model"]["type"]=="structural"){  
+      if (saemixObject["model"]["modeltype"]=="structural"){  
         gpred<-error(fpred,pres,XM$ytype)
         DYF[ind.ioM]<-0.5*((yM-fpred)/gpred)^2+log(gpred)
       } else {
@@ -229,7 +229,7 @@ conddist.saemix<-function(saemixObject,nsamp=1,max.iter=NULL,...) {
           psiMc<-transphi(phiMc,saemixObject["model"]["transform.par"])
           fpred<-saemixObject["model"]["model"](psiMc, IdM, XM)
           for(ityp in ind.exp) fpred[XM$ytype==ityp]<-log(cutoff(fpred[XM$ytype==ityp]))
-          if (saemixObject["model"]["type"]=="structural"){  
+          if (saemixObject["model"]["modeltype"]=="structural"){  
             gpred<-error(fpred,pres,XM$ytype)
             DYF[ind.ioM]<-0.5*((yM-fpred)/gpred)^2+log(gpred)
           } else {
@@ -269,7 +269,7 @@ conddist.saemix<-function(saemixObject,nsamp=1,max.iter=NULL,...) {
           psiMc<-transphi(phiMc,saemixObject["model"]["transform.par"])
           fpred<-saemixObject["model"]["model"](psiMc, IdM, XM)
           for(ityp in ind.exp) fpred[XM$ytype==ityp]<-log(cutoff(fpred[XM$ytype==ityp]))
-          if (saemixObject["model"]["type"]=="structural"){  
+          if (saemixObject["model"]["modeltype"]=="structural"){  
             gpred<-error(fpred,pres,XM$ytype)
             DYF[ind.ioM]<-0.5*((yM-fpred)/gpred)^2+log(gpred)
           } else {
