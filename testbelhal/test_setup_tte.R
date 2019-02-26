@@ -1,12 +1,12 @@
 ###################################################################################
 cat("Running example RTTE\n")
 
-timetoevent.saemix<-read.table(file.path(datDir,"rttellis.csv"),header=T, sep=",")
-timetoevent.saemix <- timetoevent.saemix[timetoevent.saemix$ytype==2,]
-saemix.data<-saemixData(name.data=timetoevent.saemix, name.group=c("id"),
+tte.saemix<-read.table(file.path(datDir,"rttellis.csv"),header=T, sep=",")
+tte.saemix <- tte.saemix[tte.saemix$ytype==2,]
+saemix.data<-saemixData(name.data=tte.saemix, name.group=c("id"),
   name.predictors=c("time"), name.response="y")
 
-timetoevent.model<-function(psi,id,xidep) {
+tte.model<-function(psi,id,xidep) {
 T<-xidep[,1]
 N <- nrow(psi)
 Nj <- length(T)
@@ -24,7 +24,7 @@ logpdf[ind] <- -H[ind] + H[ind-1] + log(hazard[ind])
 return(logpdf)
 }
 
-saemix.model<-saemixModel(model=timetoevent.model,description="time model",modeltype="likelihood",
+saemix.model<-saemixModel(model=tte.model,description="time model",modeltype="likelihood",
   psi0=matrix(c(2,1),ncol=2,byrow=TRUE,dimnames=list(NULL,
   c("lambda","beta"))),
   transform.par=c(1,1),covariance.model=matrix(c(1,0,0,1),ncol=2,
