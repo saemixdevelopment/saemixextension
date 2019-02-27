@@ -36,7 +36,7 @@ tte.fit<-saemix.fit
 
 ###################################################################################
 # New dataset
-test.newdata<-read.table(file.path(datDir,"rtte_data.csv"),header=T, sep=",")
+test.newdata<-read.table(file.path(datDir,"rtte1.csv"),header=T, sep=",")
 test.newdata <- test.newdata[test.newdata$ytype==2,]
 test.newdata <- test.newdata[1:358,]
 test.newdata <- test.newdata[which(test.newdata$time < 7),]

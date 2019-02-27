@@ -3,12 +3,11 @@ cat("Running example CAT\n")
 
 smx.ord <- read.table(file.path(datDir,"categorical1_data.txt"),header=T)
 saemix.data<-saemixData(name.data=smx.ord,header=TRUE,sep=" ",na=NA, 
-name.group=c("ID"),name.predictors=c("TIME","Y"), 
+name.group=c("ID"),name.predictors=c("Y"), 
 name.X=c("TIME"))
 
 ordinal.model<-function(psi,id,xidep) {
-  T<-xidep[,1]
-  y<-xidep[,2]
+  y<-xidep[,1]
   alp1<-psi[id,1]
   alp2<-psi[id,2]
   alp3<-psi[id,3]
@@ -18,7 +17,7 @@ ordinal.model<-function(psi,id,xidep) {
   pge1<-exp(logit1)/(1+exp(logit1))
   pge2<-exp(logit2)/(1+exp(logit2))
   pge3<-exp(logit3)/(1+exp(logit3))
-  logpdf<-rep(0,length(T))
+  logpdf<-rep(0,length(y))
   P.obs = (y==0)*pge1+(y==1)*(pge2 - pge1)+(y==2)*(pge3 - pge2)+(y==3)*(1 - pge3)
   logpdf <- log(P.obs)
 
@@ -39,7 +38,7 @@ ord.fit<-saemix.fit
 ###################################################################################
 # New dataset
 
-test.newdata <- read.table(file.path(datDir,"categorical2_data.txt"),header=T)
+test.newdata <- read.table(file.path(datDir,"categorical3_data.txt"),header=T)
 test.newdata <- test.newdata[1:240,]
 saemixObject<-saemix.fit
 psiM<-data.frame(alp1=seq(1,1.59,0.01),alp2 = seq(0.6,1.19,0.01),alp3 = seq(0.1,0.69,0.01))

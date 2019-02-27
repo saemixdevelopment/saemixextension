@@ -1,8 +1,9 @@
 context("Environment issue")
 
 test_that("Environment problem with saemixData... looks for a dataframe in the global environment", {
-  tte.saemix<-read.table(file.path(datDir,"rttellis.csv"),header=T, sep=",",na=".")
-  expect_error(x<-saemixData(name.data=tte.saemix,header=TRUE,sep=" ",na=NA, name.group=c("id"),name.predictors=c("time"), name.response="y"))
+  tte.saemix<-read.table(file.path(datDir,"rttellis.csv"),header=T,sep=",",na=".")
+  expect_error(x<-saemixData(name.data=tte.saemix,header=TRUE,sep=" ",na=NA,
+    name.group=c("id"),name.predictors=c("time"), name.response="y"))
 })
 
 context("Testing creating a new element of class")
@@ -30,8 +31,8 @@ test_that("Empty SaemixData object, valid because automatic recognition sets nam
 context("Testing creation of SaemixSimxData and SaemixRepData object\n")
 
 test_that("Creating an object of class SaemixRepData", {
-  tte.saemix<-read.table(file.path(datDir,"rtte1.csv"),header=T, sep=",",na=".")
-  x<-saemixData(name.data=new.saemix,header=TRUE,sep=" ",na=NA,, name.group=c("id"),name.predictors=c("time"), name.response="y",verbose=FALSE)
+  x<-saemixData(name.data=file.path(datDir,"rtte1.csv"),header=T, sep=",",na=".", 
+    name.group=c("id"),name.predictors=c("time"), name.response="y",verbose=FALSE)
   xrep<-new(Class="SaemixRepData",data=x)
   expect_is(xrep, "SaemixRepData") # tests for particular class
   expect_equal(xrep@N,10)
@@ -40,8 +41,8 @@ test_that("Creating an object of class SaemixRepData", {
 })
 
 test_that("Creating an object of class SaemixSimData", {
-  tte.saemix<-read.table(file.path(datDir,"rtte1.csv"),header=T, sep=",",na=".")
-  x<-saemixData(name.data=new.saemix,header=TRUE,sep=" ",na=NA,, name.group=c("id"),name.predictors=c("time"), name.response="y",verbose=FALSE)
+  x<-saemixData(name.data=file.path(datDir,"rtte1.csv"),header=T, sep=",",na=".",
+   name.group=c("id"),name.predictors=c("time"), name.response="y",verbose=FALSE)
   xsim<-new(Class="SaemixSimData",data=x)
   expect_is(xsim, "SaemixSimData") # tests for particular class
   expect_equal(x@N,10)

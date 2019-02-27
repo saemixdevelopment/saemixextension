@@ -5,9 +5,9 @@ library(testthat)
 # Testing where we are :-)
 saemixDir<-"/home/eco/work/monolix/rversion/newLib/saemix"
 if(is.na(file.info(saemixDir)[1])) {
-  saemixDir<-"/Users/karimimohammedbelhal/Desktop/Phd/R_Package/contributions/FinalsaemixExtension/tests/oldsaemixextension/"
-  rootDir<-"/Users/karimimohammedbelhal/Desktop/Phd/R_Package/contributions/FinalsaemixExtension/tests/oldsaemixextension/testbelhal"
-  datDir<-"/Users/karimimohammedbelhal/Desktop/Phd/R_Package/contributions/FinalsaemixExtension/tests/oldsaemixextension/data"
+  saemixDir<-"/Users/karimimohammedbelhal/Desktop/R_package/saemixextension/"
+  rootDir<-"/Users/karimimohammedbelhal/Desktop/R_package/saemixextension/testbelhal"
+  datDir<-"/Users/karimimohammedbelhal/Desktop/R_package/saemixextension/data"
 }
 
 setwd(saemixDir)
@@ -46,13 +46,13 @@ test_file(file.path(saemixDir,"testbelhal","testthat_predict_tte.R"))
 source(file.path(saemixDir,"testbelhal","test_setup_ord.R"))
 test_file(file.path(saemixDir,"testbelhal","testthat_predict_ord.R"))
 
+
 #####################################################
 # Running count data model
 source(file.path(saemixDir,"testbelhal","test_setup_count.R"))
 ### WHEN ONLY ONE PARAM TO ESTIMATE (fixed.estim=c(1,0)) OBTAIN: 
 # Error in cbind(blocA, t(blocC)) : 
 #   le nombre de lignes des matrices doit correspondre (voir argument 2)
-
 test_file(file.path(saemixDir,"testbelhal","testthat_predict_count.R"))
 
 #####################################################

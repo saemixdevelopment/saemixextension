@@ -39,7 +39,7 @@ test_that("Computing MAP and population predictions for a new dataset with a val
   plot(test.newdata$LogProbs,apred$ipred,pch=20,col="Blue")
   points(test.newdata$LogProbs,apred$ypred,pch=20,col="Red")
   abline(0,1)
-  expect_gte(cor(apred$ypred,apred$ipred),0.9)
+  expect_gte(cor(apred$ypred,apred$ipred),0.8)
 })
 
 test_that("Computing individual and population predictions for a new dataset with a valid structure, no individual observations", {
@@ -64,7 +64,7 @@ test_that("Comparing parameters - Pourquoi 7 pour lambda, erreur ?", {
     plot(tte.psiM[,i],param[,i],main=colnames(psiM)[i],xlab="Simulated",ylab="Estimated")
     abline(0,1)
   }
-  expect_gte(cor(tte.psiM[,1],param[,1]),0.8)
+  expect_gte(cor(tte.psiM[,1],param[,1]),0.9)
 })
 
 ###################################################################################
@@ -94,12 +94,11 @@ test_that("Computing population predictions for a new dataset with a valid struc
   par(mfrow=c(1,1))  
   plot(tte.newdata$LogProbs, vec,xlab="Individual log-prob", ylab="Predicted log-prob",pch=20)
   abline(0,1)
-  
-  expect_gte(cor(vec,test.newdata$LogProbs),0.95)
+  expect_gte(cor(vec,test.newdata$LogProbs),0.8)
   vec<-predict(saemix.fit,test.newdata,type="ypred")
-  expect_gte(cor(vec,test.newdata$LogProbs),0.95)
+  expect_gte(cor(vec,test.newdata$LogProbs),0.8)
   vec<-predict(saemix.fit,test.newdata,type="icpred")
-  expect_gte(cor(vec,test.newdata$LogProbs),0.95)
+  expect_gte(cor(vec,test.newdata$LogProbs),0.8)
 })
 
   

@@ -1,0 +1,8 @@
+1) for ORD data model, the response is a predictor. Test with new data without individual observations is non applicable.
+
+2) For ORD data: problem in estimating parameters with new data (map and pop params) NEED TO DEBUG. Could be in map.saemix???
+
+3) COUNT data model: WHEN ONLY ONE PARAM TO ESTIMATE (fixed.estim=c(1,0)) OBTAIN: 
+# Error in cbind(blocA, t(blocC)) : 
+#   le nombre de lignes des matrices doit correspondre (voir argument 2)
+
