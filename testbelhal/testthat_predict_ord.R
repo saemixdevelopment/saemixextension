@@ -67,6 +67,7 @@ test_that("Comparing parameters", {
     abline(0,1)
   }
   expect_gte(cor(ord.psiM[,1],param[,1]),0.9)
+  # expect_gte(cor(ord.psiM[,2],param[,2]),0.9)
 })
 
 

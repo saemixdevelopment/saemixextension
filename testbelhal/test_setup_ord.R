@@ -36,17 +36,40 @@ ord.fit<-saemix.fit
 
 ###################################################################################
 # New dataset
+xtim<-seq(1,3,1)
+nsuj<-10
+ord.newdata<-data.frame(ID=rep(1:nsuj,each=length(xtim)),TIME=rep(xtim,nsuj))
 
-test.newdata <- read.table(file.path(datDir,"categorical2_data.txt"),header=T)
-test.newdata <- test.newdata[1:240,]
-test.newdata <- test.newdata[test.newdata$TIME<4,]
 saemixObject<-saemix.fit
-psiM<-data.frame(alp1=seq(2,2.59,0.01),alp2 = seq(0.6,1.19,0.01),alp3 = seq(0.3,0.89,0.01))
-# fpred <- ordinal.model(psiM, test.newdata$ID, test.newdata[,c("TIME","Y")])
-fpred<-saemixObject["model"]["model"](psiM, test.newdata$ID, test.newdata[,c("TIME","Y")])
-test.newdata$LogProbs<-fpred
+psiM<-data.frame(alp1=seq(2,2.9,0.1),alp2 = seq(0.6,1.5,0.1),alp3 = seq(0.3,1.2,0.1))
 
-ord.newdata<-test.newdata
+simul.ord<-function(psi,id,xidep) {
+  y<-xidep
+  alp1<-psi[id,1]
+  alp2<-psi[id,2]
+  alp3<-psi[id,3]
+  logit1<-alp1
+  logit2<-alp1+alp2
+  logit3<-alp1+alp2+alp3
+  pge1<-exp(logit1)/(1+exp(logit1))
+  pge2<-exp(logit2)/(1+exp(logit2))
+  pge3<-exp(logit3)/(1+exp(logit3))
+  p0 <- pge1
+  p1 <- pge2 - pge1
+  p2 <- pge3 - pge2
+  p3 <- 1 - pge3
+  obs <-rep(0,length(y))
+
+  for (i in (1:length(obs))){
+    obs[i] <- rmultinom(1, size = 3, prob = c(p1[i],p2[i],p3[i]))[1]
+  }  
+
+  return(obs)
+}
+
+preds <- simul.ord(psiM, ord.newdata$ID, ord.newdata[,c("TIME")])
+ord.newdata$Y<-preds
+
 ord.psiM<-psiM
 
 ###################################################################################
