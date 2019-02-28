@@ -56,13 +56,13 @@ test_that("Comparing parameters", {
   expect_is(mylist, "list") # tests for particular class
   param<-mylist$param$population
   par(mfrow=c(2,2))
-  for(i in 1:2) {
+  for(i in 1:3) {
     plot(ord.psiM[,i],param[,i],main=colnames(psiM)[i],xlab="Simulated",ylab="Estimated")
     abline(0,1)
   }
   param<-mylist$param$map.psi
   par(mfrow=c(2,2))
-  for(i in 1:2) {
+  for(i in 1:3) {
     plot(ord.psiM[,i],param[,i],main=colnames(psiM)[i],xlab="Simulated",ylab="Estimated")
     abline(0,1)
   }
@@ -72,7 +72,7 @@ test_that("Comparing parameters", {
 
 
 ##################################################################################
-Using predict to return a vector of predictions
+##Using predict to return a vector of predictions
 
 context("Testing predict.newdata for a likelihood model \n")
 

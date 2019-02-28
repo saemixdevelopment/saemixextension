@@ -10,7 +10,8 @@ tte.model<-function(psi,id,xidep) {
 T<-xidep[,1]
 N <- nrow(psi)
 Nj <- length(T)
-censoringtime = 6
+# censoringtime = 6
+censoringtime = max(T)
 lambda <- psi[id,1]
 beta <- psi[id,2]
 init <- which(T==0)
@@ -42,7 +43,7 @@ test.newdata <- test.newdata[1:358,]
 test.newdata <- test.newdata[which(test.newdata$time < 7),]
 
 saemixObject<-tte.fit
-psiM<-data.frame(lambda=seq(1.6,2,length.out=8),beta = seq(1,3,4))
+psiM<-data.frame(lambda=seq(1.6,2,length.out=length(unique(test.newdata$id))),beta = seq(1,3,4))
 fpred<-saemixObject["model"]["model"](psiM, test.newdata$id, test.newdata[,c("time"),drop=FALSE])
 test.newdata$LogProbs<-fpred
 test.newdata$y<-ifelse(test.newdata$time>0,1,0)

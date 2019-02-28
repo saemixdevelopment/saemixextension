@@ -26,9 +26,8 @@ ordinal.model<-function(psi,id,xidep) {
 
 
 saemix.model<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",
- 
-psi0=matrix(c(3,1,0.5),ncol=3,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3"))),
- 
+psi0=matrix(c(3,1,1),ncol=3,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3"))),
+omega.init=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE),
 transform.par=c(0,1,1),covariance.model=matrix(c(1,0,0,0,1,0,0,0,0),ncol=3))
 saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE)
 saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
@@ -38,14 +37,31 @@ ord.fit<-saemix.fit
 ###################################################################################
 # New dataset
 
-test.newdata <- read.table(file.path(datDir,"categorical3_data.txt"),header=T)
+test.newdata <- read.table(file.path(datDir,"categorical2_data.txt"),header=T)
 test.newdata <- test.newdata[1:240,]
+test.newdata <- test.newdata[test.newdata$TIME<4,]
 saemixObject<-saemix.fit
-psiM<-data.frame(alp1=seq(1,1.59,0.01),alp2 = seq(0.6,1.19,0.01),alp3 = seq(0.1,0.69,0.01))
+psiM<-data.frame(alp1=seq(2,2.59,0.01),alp2 = seq(0.6,1.19,0.01),alp3 = seq(0.3,0.89,0.01))
+# fpred <- ordinal.model(psiM, test.newdata$ID, test.newdata[,c("TIME","Y")])
 fpred<-saemixObject["model"]["model"](psiM, test.newdata$ID, test.newdata[,c("TIME","Y")])
 test.newdata$LogProbs<-fpred
 
 ord.newdata<-test.newdata
 ord.psiM<-psiM
+
+###################################################################################
+# test dataset
+
+# test.newdata <- read.table(file.path(datDir,"categorical2_test_data.txt"),header=T)
+# # test.newdata <- test.newdata[1:240,]
+# test.newdata <- test.newdata[test.newdata$TIME<4,]
+# saemixObject<-saemix.fit
+# psiM<-data.frame(alp1=seq(2,2.19,0.01),alp2 = seq(0.6,0.79,0.01),alp3 = seq(0.1,0.29,0.01))
+# # fpred <- ordinal.model(psiM, test.newdata$ID, test.newdata[,c("TIME","Y")])
+# fpred<-saemixObject["model"]["model"](psiM, test.newdata$ID, test.newdata[,c("TIME","Y")])
+# test.newdata$LogProbs<-fpred
+
+# ord.newdata<-test.newdata
+# ord.psiM<-psiM
 
 ###################################################################################

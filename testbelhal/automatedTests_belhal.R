@@ -5,9 +5,9 @@ library(testthat)
 # Testing where we are :-)
 saemixDir<-"/home/eco/work/monolix/rversion/newLib/saemix"
 if(is.na(file.info(saemixDir)[1])) {
-  saemixDir<-"/Users/karimimohammedbelhal/Desktop/R_package/saemixextension/"
-  rootDir<-"/Users/karimimohammedbelhal/Desktop/R_package/saemixextension/testbelhal"
-  datDir<-"/Users/karimimohammedbelhal/Desktop/R_package/saemixextension/data"
+  saemixDir<-"/Users/karimimohammedbelhal/Desktop/R_package/oldsaemixextension/"
+  rootDir<-"/Users/karimimohammedbelhal/Desktop/R_package/oldsaemixextension/testbelhal"
+  datDir<-"/Users/karimimohammedbelhal/Desktop/R_package/oldsaemixextension/data"
 }
 
 setwd(saemixDir)

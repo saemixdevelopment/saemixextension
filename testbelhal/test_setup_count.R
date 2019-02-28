@@ -19,7 +19,7 @@ saemix.model<-saemixModel(model=countmodel,description="count model",modeltype="
   psi0=matrix(c(0.5,1),ncol=2,byrow=TRUE,dimnames=list(NULL,   
   c("lambda","dummy"))), 
   transform.par=c(1,1),omega.init=matrix(c(0.3,0,0,0.3),ncol=2,byrow=TRUE),
-  covariance.model=matrix(c(1,0,0,0),ncol=2, 
+  covariance.model=matrix(c(1,0,0,1),ncol=2, 
   byrow=TRUE),fixed.estim=c(1,1))
 
 # ##Generalized Poisson model
@@ -51,7 +51,7 @@ count.fit<-saemix.fit
 test.newdata<-read.table(file.path(datDir,"count2_data.txt"),header=T)
 saemixObject<-count.fit
 
-psiM<-data.frame(lambda=seq(0.1,0.5,length.out=8),dummy = seq(1,3,4))
+psiM<-data.frame(lambda=seq(0.1,0.5,length.out=length(unique(test.newdata$ID))),dummy = seq(1,3,4))
 fpred<-saemixObject["model"]["model"](psiM, test.newdata$ID, test.newdata[,c("Y"),drop=FALSE])
 test.newdata$LogProbs<-fpred
 test.newdata$Y<-ifelse(test.newdata$TIME>0,1,0)
