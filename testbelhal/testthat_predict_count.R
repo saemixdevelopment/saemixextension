@@ -50,7 +50,7 @@ test_that("Computing MAP and population predictions for a new dataset with a val
 # })
 
 test_that("Comparing parameters", {
-  test.newdata<-count.newdata
+  # test.newdata<-count.newdata
   mylist<-predict.newdata(count.fit, count.newdata, type=c("ipred", "ypred", "ppred", "icpred"))
   expect_is(mylist, "list") # tests for particular class
   param<-mylist$param$population

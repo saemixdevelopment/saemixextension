@@ -1,7 +1,7 @@
 ###################################################################################
 cat("Running example CAT\n")
 
-smx.ord <- read.table(file.path(datDir,"categorical1_data.txt"),header=T)
+smx.ord <- read.table(file.path(datDir,"categorical2_data.txt"),header=T)
 saemix.data<-saemixData(name.data=smx.ord,header=TRUE,sep=" ",na=NA, 
 name.group=c("ID"),name.predictors=c("Y"), 
 name.X=c("TIME"))
@@ -36,12 +36,13 @@ ord.fit<-saemix.fit
 
 ###################################################################################
 # New dataset
-xtim<-seq(1,3,1)
+xtim<-seq(1,4,1)
 nsuj<-10
-ord.newdata<-data.frame(ID=rep(1:nsuj,each=length(xtim)),TIME=rep(xtim,nsuj))
+test.newdata<-data.frame(ID=rep(1:nsuj,each=length(xtim)),TIME=rep(xtim,nsuj))
 
 saemixObject<-saemix.fit
-psiM<-data.frame(alp1=seq(2,2.9,0.1),alp2 = seq(0.6,1.5,0.1),alp3 = seq(0.3,1.2,0.1))
+# psiM<-data.frame(alp1=seq(2,2.99,0.01),alp2 = seq(0.6,1.59,0.01),alp3 = seq(0.3,1.29,0.01))
+psiM<-data.frame(alp1=seq(2,2.09,0.01),alp2 = seq(0.6,0.69,0.01),alp3 = seq(0.1,0.19,0.01))
 
 simul.ord<-function(psi,id,xidep) {
   y<-xidep
@@ -61,14 +62,16 @@ simul.ord<-function(psi,id,xidep) {
   obs <-rep(0,length(y))
 
   for (i in (1:length(obs))){
-    obs[i] <- rmultinom(1, size = 3, prob = c(p1[i],p2[i],p3[i]))[1]
+    # obs[i] <- rmultinom(1,3,c(p0[i],p1[i],p2[i],p3[i]))
+    obs[i] <- sample(c(0:3), 1, replace = T, prob = c(p0[i],p1[i],p2[i],p3[i]))
   }  
 
   return(obs)
 }
 
-preds <- simul.ord(psiM, ord.newdata$ID, ord.newdata[,c("TIME")])
-ord.newdata$Y<-preds
+preds <- simul.ord(psiM, test.newdata$ID, test.newdata[,c("TIME")])
+test.newdata$Y<-preds
+ord.newdata<-test.newdata
 
 ord.psiM<-psiM
 

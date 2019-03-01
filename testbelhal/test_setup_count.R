@@ -51,12 +51,26 @@ count.fit<-saemix.fit
 test.newdata<-read.table(file.path(datDir,"count2_data.txt"),header=T)
 saemixObject<-count.fit
 
-psiM<-data.frame(lambda=seq(0.1,0.5,length.out=length(unique(test.newdata$ID))),dummy = seq(1,3,4))
-fpred<-saemixObject["model"]["model"](psiM, test.newdata$ID, test.newdata[,c("Y"),drop=FALSE])
-test.newdata$LogProbs<-fpred
+psiM<-data.frame(lambda=seq(0.6,1,length.out=length(unique(test.newdata$ID))),dummy = seq(1,3,4))
+
+simul.count<-function(psi,id,xidep) {
+  y<-xidep
+  lambda<-psi[id,1]
+  dummy<-psi[id,2]
+  obs <-rep(0,length(y))
+
+  for (i in (1:length(obs))){
+    obs[i] <- rpois(n=1, lambda=lambda[i])
+  }  
+
+  return(obs)
+}
+
+preds <- simul.count(psiM, test.newdata$ID, test.newdata[,c("Y")])
+test.newdata$Y<-preds
 test.newdata$Y<-ifelse(test.newdata$TIME>0,1,0)
 
-count.newdata<-test.newdata
+count.newdata <- test.newdata 
 count.psiM<-psiM
 
 ###################################################################################

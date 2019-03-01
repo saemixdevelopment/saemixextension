@@ -1,6 +1,8 @@
 ###################################################################################
 cat("Running example RTTE\n")
 
+library(fitdistrplus)
+
 tte.saemix<-read.table(file.path(datDir,"rttellis.csv"),header=T, sep=",")
 tte.saemix <- tte.saemix[tte.saemix$ytype==2,]
 saemix.data<-saemixData(name.data=tte.saemix, name.group=c("id"),
@@ -37,18 +39,40 @@ tte.fit<-saemix.fit
 
 ###################################################################################
 # New dataset
-test.newdata<-read.table(file.path(datDir,"rtte1.csv"),header=T, sep=",")
-test.newdata <- test.newdata[test.newdata$ytype==2,]
-test.newdata <- test.newdata[1:358,]
-test.newdata <- test.newdata[which(test.newdata$time < 7),]
+xtim<-seq(0,4,1)
+nsuj<-8
+test.newdata<-data.frame(id=rep(1:nsuj,each=length(xtim)),time=rep(xtim,nsuj))
 
 saemixObject<-tte.fit
 psiM<-data.frame(lambda=seq(1.6,2,length.out=length(unique(test.newdata$id))),beta = seq(1,3,4))
-fpred<-saemixObject["model"]["model"](psiM, test.newdata$id, test.newdata[,c("time"),drop=FALSE])
-test.newdata$LogProbs<-fpred
-test.newdata$y<-ifelse(test.newdata$time>0,1,0)
 
-tte.newdata<-test.newdata
+simul.tte<-function(psi,id,xidep) {
+  T<-xidep
+  N <- nrow(psi)
+  Nj <- length(T)
+  censoringtime = 4
+  lambda <- psi[id,1]
+  beta <- psi[id,2]
+  obs <-rep(0,length(T))
+
+  for (i in (1:N)){
+    obs[id==i] <- rweibull(n=length(id[id==i]), shape=lambda[i], scale=beta[i])
+  }  
+
+  return(obs)
+}
+
+preds <- simul.tte(psiM, test.newdata$id, test.newdata[,c("time")])
+test.newdata$y<-preds
+tte.newdata <- test.newdata
 tte.psiM<-psiM
 
 ###################################################################################
+# test.newdata<-read.table(file.path(datDir,"rtte1.csv"),header=T, sep=",")
+# test.newdata <- test.newdata[test.newdata$ytype==2,]
+# test.newdata <- test.newdata[1:358,]
+# test.newdata <- test.newdata[which(test.newdata$time < 7),]
+# fpred<-saemixObject["model"]["model"](psiM, test.newdata$id, test.newdata[,c("time"),drop=FALSE])
+# test.newdata$LogProbs<-fpred
+# test.newdata$y<-ifelse(test.newdata$time>0,1,0)
+# tte.psiM<-psiM
