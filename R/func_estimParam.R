@@ -33,7 +33,7 @@ estimateMeanParameters.newdata<-function(saemixObject) {
   ind.eta<-saemixObject["model"]["indx.omega"]
   nb.etas<-length(ind.eta)
   pop.par<-saemixObject["results"]["fixed.effects"]
-  pop.par[1:nb.parameters]<-transpsi(t(as.matrix(pop.par[1:nb.parameters])),saemixObject["model"]["transform.par"])
+  pop.par[saemixObject["results"]["indx.fix"]]<-transpsi(t(as.matrix(pop.par[saemixObject["results"]["indx.fix"]])),saemixObject["model"]["transform.par"])
   omega<-saemixObject["results"]["omega"]
   chol.omega<-try(chol(omega[ind.eta,ind.eta]),silent=TRUE)
   
@@ -80,7 +80,7 @@ estimateIndividualParameters.newdata<-function(saemixObject,type=c("mode","mean"
   ind.eta<-saemixObject["model"]["indx.omega"]
   nb.etas<-length(ind.eta)
   pop.par<-saemixObject["results"]["fixed.effects"]
-  pop.par[1:nb.parameters]<-transpsi(t(as.matrix(pop.par[1:nb.parameters])),saemixObject["model"]["transform.par"])
+  pop.par[saemixObject["results"]["indx.fix"]]<-transpsi(t(as.matrix(pop.par[saemixObject["results"]["indx.fix"]])),saemixObject["model"]["transform.par"])
   omega<-saemixObject["results"]["omega"]
   chol.omega<-try(chol(omega[ind.eta,ind.eta]),silent=TRUE)
   

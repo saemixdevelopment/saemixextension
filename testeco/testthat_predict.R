@@ -135,5 +135,72 @@ test_that("Computing population predictions for a new dataset with a valid struc
   expect_equal(vec,vec0)
 })
 
-  
 ###################################################################################
+
+test_that("Estimating individual parameters using final estimates", {
+  smx.data<-saemixData(name.data=file.path(datDir,"theo.saemix.tab"),header=T,na=".", name.group=c("Id"),name.predictors=c("Dose","Time"),name.covariates=c("Weight","Sex"), name.response=c("Concentration"),units=list(x="hr",y="mg/L"), name.X="Time",verbose=F)
+  model1cpt<-function(psi,id,xidep) { 
+    dose<-xidep[,1]
+    tim<-xidep[,2]  
+    ka<-psi[id,1]
+    V<-psi[id,2]
+    CL<-psi[id,3]
+    k<-CL/V
+    ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
+    return(ypred)
+  }
+  covmat.final<-matrix(data=0,nrow = 2,ncol=3)
+  covmat.final[theo.fit2@model@covariate.model==1]<-theo.fit2@results@betaC
+  psi0.final<-matrix(theo.fit2@results@fixed.effects[theo.fit2@results@indx.fix],ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL")))
+  psi0.final<-rbind(psi0.final,covmat.final)
+  smx.model<-saemixModel(model=model1cpt,description="One-compartment model with first-order absorption", psi0=psi0.final, transform.par=c(1,1,1), covariate.model=matrix(c(0,0,1,0,1,0),ncol=3,byrow=TRUE), fixed.estim=c(1,1,1), covariance.model=matrix(c(1,0,0,0,1,1,0,1,1),ncol=3,byrow=TRUE), omega.init=theo.fit2@results@omega, error.init=theo.fit2@results@respar)
+  smx.opt<-saemixControl(nb.chains=5,nbiter.saemix = c(500,300), ipar.lmcmc = 100)
+  x<-createSaemixObject.initial(smx.model,smx.data,smx.opt)
+  expect_equal(x@results@status,"initial")
+  expect_equal(x@results@name.fixed,x@model@name.fixed)
+  xpred<-saemix.predict(theo.fit2)
+  x1<-predict(theo.fit2,type="ypred")
+  expect_identical(x1,xpred@results@predictions$ypred)
+  x2<-predict.newdata(x,smx.data@data)
+  expect_identical(saemixObject["results"]["fixed.effects"],theo.fit2@results@fixed.effects)
+  expect_identical(theo.fit2@results@omega,theo.fit2@results@omega)
+  expect_identical(x2$predictions$ypred,xpred@results@predictions$ypred)
+  expect_gt(cor(x2$predictions$ipred,xpred@results@predictions$ipred),0.99)
+  expect_gt(cor(x2$predictions$icpred,xpred@results@predictions$icpred),0.99)
+})
+
+test_that("Estimating individual parameters using initial estimates", {
+  smx.data<-saemixData(name.data=file.path(datDir,"theo.saemix.tab"),header=T,na=".", name.group=c("Id"),name.predictors=c("Dose","Time"),name.covariates=c("Weight","Sex"), name.response=c("Concentration"),units=list(x="hr",y="mg/L"), name.X="Time",verbose=F)
+  model1cpt<-function(psi,id,xidep) { 
+    dose<-xidep[,1]
+    tim<-xidep[,2]  
+    ka<-psi[id,1]
+    V<-psi[id,2]
+    CL<-psi[id,3]
+    k<-CL/V
+    ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
+    return(ypred)
+  }
+  covmat.final<-matrix(data=0,nrow = 2,ncol=3)
+  covmat.final[theo.fit2@model@covariate.model==1]<-c(1,0.005)
+  psi0.final<-matrix(c(1.5,20,2),ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL")))
+  psi0.final<-rbind(psi0.final,covmat.final)
+  smx.model<-saemixModel(model=model1cpt,description="One-compartment model with first-order absorption", psi0=psi0.final, transform.par=c(1,1,1), covariate.model=matrix(c(0,0,1,0,1,0),ncol=3,byrow=TRUE), fixed.estim=c(1,1,1), covariance.model=matrix(c(1,0,0,0,1,1,0,1,1),ncol=3,byrow=TRUE), omega.init=theo.fit2@results@omega, error.init=theo.fit2@results@respar)
+  smx.opt<-saemixControl(nb.chains=5,nbiter.saemix = c(500,300), ipar.lmcmc = 100)
+  x<-createSaemixObject.initial(smx.model,smx.data,smx.opt)
+  expect_equal(x@results@status,"initial")
+  expect_equal(x@results@name.fixed,x@model@name.fixed)
+  xpred<-saemix.predict(theo.fit2)
+  x2<-predict.newdata(x,smx.data@data)
+  expect_gt(cor(x2$predictions$ypred,xpred@results@predictions$ypred),0.7)
+  expect_gt(cor(x2$predictions$ipred,xpred@results@predictions$ipred),0.95)
+  expect_gt(cor(x2$predictions$icpred,xpred@results@predictions$icpred),0.95)
+})
+
+if(FALSE) {
+  saemixObject<-x
+  print(head(x2$predictions))
+  print(head(xpred@results@predictions))
+  print(head(x2$param$population))
+  print(head(xpred@results@mean.phi))
+}

@@ -279,9 +279,9 @@ cond.mean.eta<-t(apply(cond.mean.eta,c(1,2),mean))
 
 # Filling in result object
   if(Dargs$modeltype=="structural") {
-    saemix.res<-new(Class="SaemixRes",modeltype=Dargs$modeltype,name.fixed=saemix.model["name.fixed"], name.random=saemix.model["name.random"],name.sigma=saemix.model["name.sigma"], fixed.effects=c(fixed.effects),fixed.psi=c(fixed.psi),betas=betas,betaC=betaC, omega=varList$omega,respar=varList$pres,cond.mean.phi=cond.mean.phi,cond.var.phi=cond.var.phi, mean.phi=mean.phi, phi=phi,phi.samp=phi.samp,parpop=parpop,allpar=allpar,MCOV=varList$MCOV)
+    saemix.res<-new(Class="SaemixRes",status="fitted",modeltype=Dargs$modeltype,name.fixed=saemix.model["name.fixed"], name.random=saemix.model["name.random"],name.sigma=saemix.model["name.sigma"], fixed.effects=c(fixed.effects),fixed.psi=c(fixed.psi),betas=betas,betaC=betaC, omega=varList$omega,respar=varList$pres,cond.mean.phi=cond.mean.phi,cond.var.phi=cond.var.phi, mean.phi=mean.phi, phi=phi,phi.samp=phi.samp,parpop=parpop,allpar=allpar,MCOV=varList$MCOV)
   } else{
-    saemix.res<-new(Class="SaemixRes",modeltype=Dargs$modeltype,name.fixed=saemix.model["name.fixed"], name.random=saemix.model["name.random"],name.sigma=saemix.model["name.sigma"], fixed.effects=c(fixed.effects),fixed.psi=c(fixed.psi),betas=betas,betaC=betaC, omega=varList$omega,cond.mean.phi=cond.mean.phi,cond.var.phi=cond.var.phi, mean.phi=mean.phi, phi=phi,phi.samp=phi.samp,parpop=parpop,allpar=allpar,MCOV=varList$MCOV)
+    saemix.res<-new(Class="SaemixRes",status="fitted",modeltype=Dargs$modeltype,name.fixed=saemix.model["name.fixed"], name.random=saemix.model["name.random"],name.sigma=saemix.model["name.sigma"], fixed.effects=c(fixed.effects),fixed.psi=c(fixed.psi),betas=betas,betaC=betaC, omega=varList$omega,cond.mean.phi=cond.mean.phi,cond.var.phi=cond.var.phi, mean.phi=mean.phi, phi=phi,phi.samp=phi.samp,parpop=parpop,allpar=allpar,MCOV=varList$MCOV)
   }
   saemix.res["indx.res"]<-Uargs$ind.res
   saemix.res["indx.fix"]<-Uargs$indx.betaI
@@ -303,15 +303,27 @@ cond.mean.eta<-t(apply(cond.mean.eta,c(1,2),mean))
 # saemix.res["parpop"]<-allpar[,-c(indx.betaC)]
 #### Final computations
 # Compute the MAP estimates of the PSI_i's 
-  if(saemix.options$map) saemixObject<-map.saemix(saemixObject)
+  if(saemix.options$map) {
+    x<-try(saemixObject<-map.saemix(saemixObject))
+    if(class(x)=="try-error" & saemixObject@options$warnings) cat("Problem estimating the MAP parameters\n")
+  }
 
 # Compute the Fisher Information Matrix & update saemix.res
-  if(saemix.options$fim) saemixObject<-fim.saemix(saemixObject)
-
+  if(saemix.options$fim) {
+    x<-try(saemixObject<-fim.saemix(saemixObject))
+    if(class(x)=="try-error" & saemixObject@options$warnings) cat("Problem estimating the FIM\n")
+  }
+  
 # Estimate the log-likelihood via importance Sampling/Gaussian quadrature
-  if(saemix.options$ll.is) saemixObject<-llis.saemix(saemixObject)
-  if(saemix.options$ll.gq) saemixObject<-llgq.saemix(saemixObject)
-
+  if(saemix.options$ll.is) {
+    x<-try(saemixObject<-llis.saemix(saemixObject))
+    if(class(x)=="try-error" & saemixObject@options$warnings) cat("Problem estimating the likelihood by IS\n")
+  }
+  if(saemix.options$ll.gq) {
+    x<-try(saemixObject<-llgq.saemix(saemixObject))
+    if(class(x)=="try-error" & saemixObject@options$warnings) cat("Problem estimating the likelihood by GQ\n")
+  }
+  
 #### Pretty printing the results (TODO finish in particular cov2cor)
   if(saemix.options$print) print(saemixObject,digits=2)
 

@@ -17,6 +17,7 @@
 #' @section Objects from the Class: 
 #' An object of the SaemixData class can be created by using the function \code{\link{saemixData}} and contain the following slots:
 #' @slot modeltype string giving the type of model used for analysis
+#' @slot status string indicating whether a model has been run successfully; set to "empty" at initialisation, used to pass on error messages or fit status
 #' @slot name.fixed a vector containing the names of the fixed parameters in the model
 #' @slot name.random a vector containing the names of the random parameters in the model
 #' @slot name.sigma a vector containing the names of the parameters of the residual error model
@@ -107,6 +108,7 @@ setClass(
   Class="SaemixRes",
   representation=representation(
     modeltype="character", # string giving the type of the model used for analysis
+    status="character", # string indicating the status of the fit; set to "empty" at initialisation, used to pass on error messages or fit status
     name.fixed="character", # names of fixed parameters in the model
     name.random="character",    # names of random effects
     name.sigma="character", # names of parameters of residual error model
@@ -201,8 +203,9 @@ setClass(
 setMethod(
   f="initialize",
   signature="SaemixRes",
-  definition= function(.Object,modeltype,name.fixed,name.random,name.sigma,fixed.effects, fixed.psi,betaC,betas,omega,respar,cond.mean.phi,cond.var.phi,mean.phi,phi, phi.samp,parpop, allpar,MCOV){
+  definition= function(.Object,status="empty",modeltype,name.fixed,name.random,name.sigma,fixed.effects, fixed.psi,betaC,betas,omega,respar,cond.mean.phi,cond.var.phi,mean.phi,phi, phi.samp,parpop, allpar,MCOV){
 #    cat ("--- initialising SaemixRes Object --- \n")
+    .Object@status<-status
     if(missing(modeltype)) modeltype<-character(0)
     .Object@modeltype<-modeltype
     if(missing(name.fixed)) name.fixed<-character(0)
@@ -273,6 +276,7 @@ setMethod(
   definition = function (x,i,j,drop ){
   switch (EXPR=i,
     "modeltype"={return(x@modeltype)},
+    "status"={return(x@status)},
     "name.fixed"={return(x@name.fixed)},
     "name.sigma"={return(x@name.sigma)},
     "name.random"={return(x@name.random)},
@@ -350,6 +354,7 @@ setReplaceMethod(
   definition = function (x,i,j,value){
   switch (EXPR=i,
     "modeltype"={x@modeltype<-value},
+    "status"={x@status<-value},
     "name.fixed"={x@name.fixed<-value},
     "name.random"={x@name.random<-value},
     "name.sigma"={x@name.sigma<-value},
@@ -429,8 +434,21 @@ setMethod("print","SaemixRes",
   function(x,digits=2,map=FALSE,...) {
 #    cat("Nonlinear mixed-effects model fit by the SAEM algorithm\n")
 #    cat("Dataset",x@name.data,"\n")
-    if(length(x@betas)==0) {
+    if(x@status %in% c("empty")) {
       cat("No fit performed yet.\n")
+      return()
+    }
+    if(x@status %in% c("initial")) {
+      cat("No fit performed yet, parameters set by user.\n")
+      if(x@modeltype=="structural") {
+        tab<-cbind(c(x@name.fixed,x@name.sigma[x@indx.res]), c(x@fixed.effects,x@respar[x@indx.res]))
+      }else{
+        tab<-cbind(c(x@name.fixed), c(x@fixed.effects))
+      }
+      tab<-rbind(tab,
+                 cbind(x@name.random,diag(x@omega)[x@indx.omega]))
+      colnames(tab)<-c("Parameter","Value")
+      print(tab)
       return()
     }
     cat("----------------------------------------------------\n")
@@ -540,6 +558,23 @@ setMethod("print","SaemixRes",
 setMethod("show","SaemixRes",
   function(object) {
 #    cat("Nonlinear mixed-effects model fit by the SAEM algorithm\n")
+    if(object@status %in% c("empty")) {
+      cat("No fit performed yet.\n")
+      return()
+    }
+    if(object@status %in% c("initial")) {
+      cat("No fit performed yet, parameters set by user.\n")
+      if(object@modeltype=="structural") {
+        tab<-cbind(c(object@name.fixed,object@name.sigma[object@indx.res]), c(object@fixed.effects,object@respar[object@indx.res]))
+      }else{
+        tab<-cbind(c(object@name.fixed), c(object@fixed.effects))
+      }
+      tab<-rbind(tab,
+                 cbind(object@name.random,diag(object@omega)[object@indx.omega]))
+      colnames(tab)<-c("Parameter","Value")
+      print(tab)
+      return()
+    }
     cat("Fixed effects\n")
     if(length(object@se.fixed)==0) {
       if(object@modeltype=="structural") {
@@ -576,7 +611,7 @@ setMethod("show","SaemixRes",
     print(tab,quote=FALSE)
 
     cat("\nVariance of random effects\n")
-#  cat("   ECO TODO: check if Omega or Omega2 (SD or variances) and can we choose ?\n")
+#  cat("   ECO TODO: check if Omega or Omega2 (SD orxres1@ezrzr variances) and can we choose ?\n")
     if(length(object@se.omega)==0) {
       tab<-cbind(object@name.random,diag(object@omega)[object@indx.omega])
       colnames(tab)<-c("Parameter","Estimate")
@@ -631,6 +666,23 @@ setMethod("show","SaemixRes",
 # Could be print, with only head of data
 setMethod("showall","SaemixRes",
   function(object) {
+    if(object@status %in% c("empty")) {
+      cat("No fit performed yet.\n")
+      return()
+    }
+    if(object@status %in% c("initial")) {
+      cat("No fit performed yet, parameters set by user.\n")
+      if(object@modeltype=="structural") {
+        tab<-cbind(c(object@name.fixed,object@name.sigma[object@indx.res]), c(object@fixed.effects,object@respar[object@indx.res]))
+      }else{
+        tab<-cbind(c(object@name.fixed), c(object@fixed.effects))
+      }
+      tab<-rbind(tab,
+                 cbind(object@name.random,diag(object@omega)[object@indx.omega]))
+      colnames(tab)<-c("Parameter","Value")
+      print(tab)
+      return()
+    }
     cat("\n----------------------------------------------------\n")
     cat("-----------------  Fixed effects  ------------------\n")
     cat("----------------------------------------------------\n")

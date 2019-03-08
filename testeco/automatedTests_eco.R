@@ -38,10 +38,8 @@ rm(tab3)
 rm(pkpddat)
 rm(cow.saemix)
 
-# Model and object
+# Model
 test_file(file.path(saemixDir,"testeco","testthat_saemixModel.R"))
-
-test_file(file.path(saemixDir,"testeco","testthat_saemixObject.R"))
 
 #####################################################
 ###### Testing auxiliary functions
@@ -52,6 +50,9 @@ test_file(file.path(saemixDir,"testeco","testthat_functions.R"))
 ################### Running models with continuous data
 ###########################################################
 source(file.path(saemixDir,"testeco","test_setup_cont.R"))
+
+# Testing saemix object with data and model
+test_file(file.path(saemixDir,"testeco","testthat_saemixObject.R"))
 
 ################
 # Testing methods
