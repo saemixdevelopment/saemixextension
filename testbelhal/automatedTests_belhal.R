@@ -34,6 +34,16 @@ test_file(file.path(saemixDir,"testbelhal","testthat_saemixObject.R"))
 test_file(file.path(saemixDir,"testbelhal","testthat_functions.R"))
 
 
+
+###########################################################
+################### Running models with continuous data
+###########################################################
+# Running TTE model
+source(file.path(saemixDir,"testbelhal","test_setup_cont.R"))
+test_file(file.path(saemixDir,"testbelhal","testthat_predict_cont.R"))
+
+
+
 ###########################################################
 ################### Running models with non-continuous data
 ###########################################################
@@ -46,6 +56,10 @@ test_file(file.path(saemixDir,"testbelhal","testthat_predict_tte.R"))
 source(file.path(saemixDir,"testbelhal","test_setup_ord.R"))
 test_file(file.path(saemixDir,"testbelhal","testthat_predict_ord.R"))
 
+#####################################################
+# Running ordinal data model
+source(file.path(saemixDir,"testbelhal","test_setup_binomial.R"))
+# test_file(file.path(saemixDir,"testbelhal","testthat_predict_binomial.R"))
 
 #####################################################
 # Running count data model

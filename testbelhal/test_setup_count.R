@@ -51,7 +51,7 @@ count.fit<-saemix.fit
 test.newdata<-read.table(file.path(datDir,"count2_data.txt"),header=T)
 saemixObject<-count.fit
 
-psiM<-data.frame(lambda=seq(0.6,1,length.out=length(unique(test.newdata$ID))),dummy = seq(1,3,4))
+psiM<-data.frame(lambda=seq(0.4,0.5,length.out=length(unique(test.newdata$ID))),dummy = seq(1,1,1))
 
 simul.count<-function(psi,id,xidep) {
   y<-xidep
