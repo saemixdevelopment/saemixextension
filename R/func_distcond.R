@@ -191,7 +191,7 @@ conddist.saemix<-function(saemixObject,nsamp=1,max.iter=NULL,...) {
   
   econd<-sdcond<-array(0,dim=c(nb.parameters,N*kmax,nsamp)) # parametres individuels
   ebar<-sdbar<-array(0,dim=c(nb.parameters,kmax, nsamp)) # moyenne des parametres individuels
-  cat("Estimating the conditional mean and variance of the distribution of individual parameters\n")
+  if(saemixObject["options"]$warnings) cat("Estimating the conditional mean and variance of the distribution of individual parameters\n")
   k<-1
   while(k<=kmax) { # Set a maximum nb of iterations
     
@@ -332,7 +332,7 @@ conddist.saemix<-function(saemixObject,nsamp=1,max.iter=NULL,...) {
       }
     }
     if((k%%50)==50) {
-      cat(".")
+      if(saemixObject["options"]$warnings) cat(".")
       if(saemixObject["options"]$displayProgress) {
         #        par(mfrow=plot.opt$mfrow,ask=plot.opt$ask)
         par(mfrow=plot.opt$mfrow)
@@ -350,9 +350,11 @@ conddist.saemix<-function(saemixObject,nsamp=1,max.iter=NULL,...) {
     }
     k<-k+1
   }
-  cat("\n")
-  if(k>=kmax)
-    cat("Computing the empirical conditional mean and variance: maximum number of iterations reached without meeting convergence criterion (max.iter=",kmax,")\n") else cat("Convergence achieved in",k,"iterations\n")
+  if(saemixObject["options"]$warnings) cat("\n")
+  if(saemixObject["options"]$warnings) {
+    if(k>=kmax){cat("Computing the empirical conditional mean and variance: maximum number of iterations reached without meeting convergence criterion (max.iter=",kmax,")\n") }
+    else cat("Convergence achieved in",k,"iterations\n")
+  }
   eta.cond<-matrix(0,nrow=dim(etaM)[1],ncol=nb.parameters)
   eta.cond[,ind.eta]<-etaM
   eta.cond<-array(t(eta.cond),dim=c(nb.parameters,N,nsamp))

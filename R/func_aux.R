@@ -71,10 +71,9 @@ map.saemix<-function(saemixObject) {
   yobs<-saemixObject["data"]["data"][,saemixObject["data"]["name.response"]]
   id.list<-unique(id)
   phi.map<-saemixObject["results"]["phi"]
-  
-  cat("Estimating the individual parameters, please wait a few moments...\n")
+  if(saemixObject["options"]$warnings) cat("Estimating the individual parameters, please wait a few moments...\n")
   for(i in 1:saemixObject["data"]["N"]) {
-    cat(".")
+    if(saemixObject['options']$warnings) cat(".")
     isuj<-id.list[i]
     xi<-xind[id==isuj,,drop=FALSE]
 #    if(is.null(dim(xi))) xi<-matrix(xi,ncol=1)
@@ -90,7 +89,7 @@ map.saemix<-function(saemixObject) {
     }
     phi.map[i,i1.omega2]<-phi1.opti$par
   }
-  cat("\n")
+  if(saemixObject['options']$warnings)cat("\n")
   map.psi<-transphi(phi.map,saemixObject["model"]["transform.par"])
   # map.psi<-data.frame(id=id.list,map.psi)
   # map.phi<-data.frame(id=id.list,phi.map)
