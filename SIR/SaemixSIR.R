@@ -38,7 +38,6 @@ setClass(Class="SaemixSIR",
     IR='numeric', # vector of importance ratios for each vector of parameter sample
     #resampling
     resampled.theta='matrix', 
-    order='numeric', 
     sdSIR='numeric',
     
     warnings='logical'
@@ -77,7 +76,7 @@ setMethod(
   definition= function(.Object, SaemixObject, M, m, inflation, est.mu, cov.mat, optionll, warnings){
     #    cat ("--- initialising SaemixSIR Object --- \n")
     if(missing(SaemixObject)) {
-      message('[SaemixObject: Error] Missing SaemixObject')
+      message('[SaemixObject: Error] Missing SaemixObject.')
       return(.Object)
     }
     .Object@SaemixObject <- SaemixObject
@@ -86,11 +85,8 @@ setMethod(
     if(missing(m)) m<-1000
     .Object@m <- m 
     if (M<m) {
-      message("[ M and m: Error ] M (number of samples from proposal distribution) must be greater than m (number of resamples) = therefore set as default M=5000 and m=1000")
-      M<-5000
-      m<-1000
-      .Object@M <- M
-      .Object@m <- m 
+      message("[ M and m: Error] M (number of samples from proposal distribution) must be greater than m (number of resamples).")
+      return(.Object)
     }
     if(missing(inflation)) inflation <- 1
     .Object@inflation<-inflation
@@ -100,20 +96,20 @@ setMethod(
     l <- length(est)
     if(missing(est.mu)) est.mu <- estpar.vector(SaemixObject)
     if (length(est.mu)!=l) {
-      message("[est.mu: Error] Length of est.mu is not equal to number of estimated parameters in SaemixObject = therefore set as default: estimated parameters in SaemixObject")
-      est.mu <- estpar.vector(SaemixObject)
+      message("[est.mu: Error] Length of est.mu is not equal to number of estimated parameters in SaemixObject.")
+      return(.Object)
     }
     .Object@est.mu <- est.mu
     
     
     if(missing(cov.mat)) cov.mat <- solve(SaemixObject@results@fim)
     if(dim(cov.mat)[1]!=dim(cov.mat)[2]){
-      message("[cov.mat: Error] Covariance matrix is not a square matrix = therefore set as default: inverse of FIM in SaemixObject")
-      cov.mat <- solve(SaemixObject@results@fim)
+      message("[cov.mat: Error] Covariance matrix is not a square matrix.")
+      return(.Object)
     }
     if(dim(cov.mat)[1]!=l){
-      message("[cov.mat: Error] Covariance matrix does not have the right dimensions (number of columns and rows should be equal to the number of estimated parameters) = therefore set as default: inverse of FIM in SaemixObject")
-      cov.mat <- solve(SaemixObject@results@fim)
+      message("[cov.mat: Error] Covariance matrix does not have the right dimensions (number of columns and rows should be equal to the number of estimated parameters)")
+      return(.Object)
     }
     .Object@cov.mat <- cov.mat
     
@@ -125,7 +121,6 @@ setMethod(
     .Object@OFVi <- numeric(0)
     .Object@IR <- numeric(0)
     .Object@resampled.theta <- matrix()
-    .Object@order<- numeric(0)
     .Object@sdSIR <- numeric(0)
     
     if(missing(warnings)) warnings<-TRUE
@@ -147,8 +142,8 @@ setMethod(
     
     if(missing(optionll)) optionll <- 'linearisation'
     if(!(optionll %in% c('linearisation', 'importance_sampling'))){
-      message("[optionll: Error] Option of log-likelihood computation not available = therefore set as default 'linearisation'")
-      optionll <- 'linearisation'
+      message("[optionll: Error] Option of log-likelihood computation not available")
+      return(.Object)
     }
     .Object@optionll <- optionll
     
@@ -196,7 +191,6 @@ setMethod(
             "IR"={return(x@IR)},
             "resampled.theta"={return(x@resampled.theta)},
             "sdSIR"={return(x@sdSIR)},
-            "order"={return(x@order)},
             "warnings"={return(x@warnings)},
 
             stop("No such attribute\n")

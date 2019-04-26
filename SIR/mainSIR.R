@@ -50,17 +50,17 @@ saemixSIR<-function(SaemixObject, M, m, inflation, est.mu, cov.mat, optionll, wa
   SaemixSIR@IR <- IR
   
   ####### RESAMPLING #######
-  theta <- resample(sampled.theta, IR, m, warnings)
-  SaemixSIR@resampled.theta <- theta[['resampled_theta']]
-  SaemixSIR@order <- as.vector(theta[['order_resampled']])
+  resampled.theta <- resample(sampled.theta, IR, m, warnings)
+  SaemixSIR@resampled.theta <- resampled.theta
+
   
   ####### HISTOGRAMS OF RESAMPLES #######
-  for (i in 1:ncol(theta[['resampled_theta']])){
-    name <- colnames(theta[['resampled_theta']])[i]
+  for (i in 1:ncol(resampled.theta)){
+    name <- colnames(resampled.theta)[i]
     title <- paste('Histogram of',name,'from SIR resamples')
-    hist(theta[['resampled_theta']][,i], main=title, xlab=name)
+    hist(resampled.theta[,i], main=title, xlab=name)
   }
-  sd.new <- apply(theta[['resampled_theta']], 2, sd) #standard deviation for each parameter 
+  sd.new <- apply(resampled.theta, 2, sd) #standard deviation for each parameter 
   SaemixSIR@sdSIR<- sd.new
   return(SaemixSIR)
 }
