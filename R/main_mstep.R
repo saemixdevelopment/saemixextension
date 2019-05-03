@@ -89,25 +89,37 @@ mstep<-function(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, varList, 
 	# Residual error
 	if(Dargs$modeltype=="structural") {
 		if(length(Uargs$ind.res)==1) { # necessarily only one error model
-		  if (Dargs$error.model[1] %in% c("constant","exponential")) {
-		    sig2<-suffStat$statrese/Dargs$nobs
-		    varList$pres[1]<-sqrt(sig2)
+		    if (Dargs$error.model[1] %in% c("constant","exponential")) {
+		      sig2<-suffStat$statrese/Dargs$nobs
+		      if (kiter<=opt$nbiter.sa) {
+		        varList$pres[1]<-max(varList$pres[1]*opt$alpha1.sa,sqrt(sig2))
+		      } else {
+		        varList$pres[1]<-sqrt(sig2)
+		      }
+		    }
+		    if (Dargs$error.model[1]=="proportional") {
+		      sig2<-suffStat$statrese/Dargs$nobs
+		      if (kiter<=opt$nbiter.sa) {
+		        varList$pres[2]<-max(varList$pres[2]*opt$alpha1.sa,sqrt(sig2))
+		      } else {
+		        varList$pres[2]<-sqrt(sig2)
+		      }
+		    }
+		    
+		  } else {
+		    #	if (Dargs$error.model=="combined") {
+		    # ECO TODO: check and secure (when fpred<0 => NaN, & what happens if bres<0 ???)
+		    ABres<-optim(par=varList$pres,fn=ssq,y=Dargs$yM,f=fpred,etype=Dargs$XM$ytype)$par
+		    if (kiter<=opt$nbiter.sa) {
+		      for(i in 1:length(varList$pres)) varList$pres[i]<-max(varList$pres[i]*opt$alpha1.sa,ABres[i])
+		    }  else {
+		      if (kiter<=opt$nbiter.saemix[1]) {
+		        for(i in 1:length(varList$pres)) varList$pres[i]<-ABres[i]
+		      } else {
+		        for(i in 1:length(varList$pres)) varList$pres[i]<-varList$pres[i]+opt$stepsize[kiter]*(ABres[i]-varList$pres[i])
+		      }
+		    }
 		  }
-		  if (Dargs$error.model[1]=="proportional") {
-		    sig2<-suffStat$statrese/Dargs$nobs
-		    varList$pres[2]<-sqrt(sig2)
-		  }
-		  
-		} else {
-		  #	if (Dargs$error.model=="combined") {
-			# ECO TODO: check and secure (when fpred<0 => NaN, & what happens if bres<0 ???)
-			ABres<-optim(par=varList$pres,fn=ssq,y=Dargs$yM,f=fpred,etype=Dargs$XM$ytype)$par
-			if (kiter<=opt$nbiter.saemix[1]) {
-				for(i in 1:length(varList$pres)) varList$pres[i]<-max(varList$pres[i]*opt$alpha1.sa,ABres[i])
-			} else {
-			  for(i in 1:length(varList$pres)) varList$pres[i]<-varList$pres[i]+opt$stepsize[kiter]*(ABres[i]-varList$pres[i])
-			}
-		}
 	}
 	return(list(varList=varList,mean.phi=mean.phi,phi=phi,betas=betas,suffStat=suffStat))
 }
