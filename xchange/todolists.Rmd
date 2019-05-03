@@ -1,0 +1,436 @@
+---
+title: "TODO"
+author: "Emmanuelle"
+date: "30 avril 2019"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Bug fixes and improvements
+
+## Bug fixes
+
+history of TODO files... (some may be fixed already, check)
+
+### janvier 2014
+
+* Sécuriser la lecture des données/le format
+	  - covariables manquantes 
+	  - donnees avec des facteurs/variables caracteres
+
+* Data
+	  - include an MDV column to be able to predict a value for that time and/or to use the line to switch models
+	  - do we really need a rep.data item ??? (apparently not really !)
+* Setting the seed - mail 04/04 by Ketil
+  - I would suggest either removing that bit of functionality (simply let people stick with ``set.seed``) or "localising" the functionality ([see, e.g.,](http://stackoverflow.com/questions/14324096/setting-seed-locally-not-globally-in-r) ).
+
+
+
+### janvier 2015
+* change function plotmodel to a function plot applied to the model object
+    - currently makes no sense.
+
+* Différence dans le calcul de la vraisemblance
+    - entre monolix et saemix, 200 points d'écart avec des estimations assez voisines => pourquoi ? à creuser ?
+	        - voir exemple des données E Oger
+				  - => still problem
+
+* Différence dans les fits avec un paramètre n'ayant pas d'IIV selon la distribution que l'on met sur ce paramètre
+	  - résultat différent selon que la distribution est normale ou log-normale
+	      - voir les questions dans le [document Sweave](/home/eco/work/monolix/rversion/simultests/test_saemix.Rnw)
+
+* Julie
+	  - exemple avec 3 paramètres ka, V, Cl
+	      - ka fixé sans IIV
+	      - IIV on CL only
+	      - pb avec les indices i0.omega2, domega2 mais bcp effet de bord
+		=> essai de correction, semble fonctionner mais à retester
+
+* Jason
+    - function cannot be evaluated at initial parameters after a number of iterations => identify which cases
+
+```
+	pb with sometimes saemix running into 
+Error in optim(par = c(ares, bres), fn = error, y = yM, f = fpred) : 
+```
+
+* Bug ggplot, voir TP saemix
+	- + comment faire pour rendre ggplot2 optionnel ?
+		=> which example ?
+	  - même si .saemix.ggplot2 est FALSE, les graphes se font qq même avec ggplot2
+
+```
+.saemix.ggplot2<-FALSE
+par(mfrow=c(1,2))
+plot(saemix.data,type="b",new=F)
+plot(rep1,type="b",new=F)
+```
+
+* Bug lecture jdd
+	  - transformation d'une variable continue en facteur (Age, 2 valeurs [subset du jdd sur les 2 premiers sujets] => transformé en 0/1 => faire en sorte que les niveaux gardent leur nom !)
+		=> which example ?
+		
+* Remarque pour bugs saemix : quand on précise le directory dans saemix.option, il le créé et écrit dedans si elle n’existe pas. Mais ne remplace pas les fichiers si elle existe et dit pourtant qu’il a écrit à cet endroit là…									=> changé, à tester **done, create test function**
+* Le plot(yfit,plot.type="population.fit",ilist=1:12) donne la même chose que le plot(yfit,plot.type="individual.fit",ilist=1:12,smooth=T)...				**done**
+
+* Ex de Nathalie Costet
+    -  => à revoir !!! (tester avec nvelle librairie cov + mettre vérification du nb de lignes)
+    
+```
+Error in dimnames(x) <- dn : 
+  la longueur de 'dimnames' [1] n'est pas égale à l'étendue du tableau
+	+ bug quand j'ai rajouté une ligne de 1 à covariate.model, bug dans les paramètres beta et leur nom 
+	
+model5.log<-saemixModel(model=log.mod, 
+description="Linear+log-linear function of age", psi0=matrix(c(3000,30,1000,0,0,0),ncol=3,byrow=TRUE, dimnames=list(NULL,c("int","sl.lin","sl.log"))), covariate.model=matrix(c(1,1,1,1,1,0,0,0,0),ncol=3,byrow=TRUE), transform.par=c(0,0,0))
+```
+ 
+### Janvier 2019
+
+* Data
+    - y not recognised as a column name for response
+* Model
+    - misspecified covariance matrix (check correction by Marilou)
+* differences between LL by linearisation and by AGQ/IS in simple examples : fixed or not ?
+    - FIM ou -FIM ? **vérifier**, *devrait etre corrigé depuis août*
+
+## Improvements
+
+* Calcul de la SE pour les éléments non diagonaux **done**
+
+* Suggestions Bates
+	  - voir répertoire bates + mail 16/01
+
+* Function to re-run several times from different CI
+	  - convergence assessment
+
+* Tests
+	  - créer une petite fonction pour faire le LRT sur 2 fits
+
+* optimisation  
+	  - optimisation renvoie parfois b<0 pour un modèle d'erreur combiné => optimisation sous contrainte
+	  - remplacer optim par optimize quand un seul paramètre à optimiser (voir warning R)
+
+# saemix extensions
+
+## Next version
+
+* Models for discrete type data (Belhal)
+    - examples 
+    - evaluation: estimation of population and individual parameters in different settings
+    - documentation
+
+* Estimation des paramètres individuels 
+    - en calculant les paramètres de population (en fonction des covariables) **fait**
+    - en estimant les distributions conditionnelles pour les nouveaux sujets **fait**
+    - en initialisant les paramètres de population à des valeurs arbitraires
+    - par le critère bayésien du cours
+
+* Fonction summary (et autres)
+	  - ne pas afficher summary si le résultat est affecté dans un objet, ou si on demande seulement une partie 
+	  - eg summary(yfit)$coef devrait juste montrer l'élément coef de summary et pas d'abord afficher summary
+
+* Data
+	- include an MDV column to be able to predict a value for that time and/or to use the line to switch models
+	- do we really need a rep.data item ??? (apparently not really !)
+	
+* BIC for covariate selection (Maud, **done** needs to push on new repository)
+  - applicable for models with the same covariance structure
+  - [ ] Maud **TODO**: function taking 2 models as input and comparing their BIC (need better name than anova)
+  - [ ] ECO **TODO**: test
+
+## Future extensions
+
+### Models and algorithms
+
+* HMM models (Maud)
+
+* ODEs
+    - code from Vickers
+        - bug in code (507 responses returned instead of 510, estimates residual error parameter to NA (2 problems linked ?))
+    - other attempts
+        - using deSolve, ad hoc code (extremely slow)
+    - comparison of runtimes and results
+
+* Réponses multiples
+	  - avec possibilité de combiner une réponse discrète (dont la vraisemblance est donnée) et une réponse continue (calcul de la vraisemblance à partir des prédictions)
+
+* Optimisation ?
+    - vectorisation accrue si possible
+	      - optim ou autres packages ?
+	  - cf Jason 03/01: calcul des paramètres individuels à profiler
+	  [voir:](/home/eco/xtex/congres/stats/userR/presentations/Nash_optimalgos.pdf)
+
+* fonction update (à discuter)
+
+* Critère d'arrêt
+	  - règle d'arrêt Booth & Herbert 99, Wang 07 (voir thèse Mylène duval 2008)
+e_jk=|theta_jk - theta_{j,k-1}| / |theta_jk|
+où theta_jk est l'estimation du j-ième paramètre à la k-ième itération (donc c'est un critère de tolérance sur les incréments relatifs sur l'ensemble des critères)
+et la règle est
+max(e_jk) < delta où delta est petit (eg 0.0001)
+	  - [Voir aussi](http://lists.gforge.inria.fr/pipermail/monolix-help/2009-January/000426.html)
+
+### Estimation error
+
+* Estimation de la matrice d'information de Fisher
+	  - Godambe information criterion = sandwich estimator of variance
+	  - peut-on l'utiliser ? eg dans des cas où la matrice de Fisher est mal conditionnée ?
+	  - méthode de Louis ?
+
+* Computation of the SE ivnestigated using stochastic and numerical integration
+    - MCMC + MC (Marie-Karell)
+    - MCMC + AGQ (Sebastian)
+    - seems impractical (difficult to generalise) and computationally intensive
+
+* Algorithm SIR dans saemix (Marilou)
+
+### Covariates
+
+* Covariables
+	  - centrage, transformations, imputation
+	  - fixer la valeur de certains effets fixes (eg pour modèle allométrique), eg fixer un beta sans fixer le paramètre associé
+	  - covariables categorielles, classe reference
+
+* Covariables catégorielles non ordonnées
+	  - avec dummy variables
+	  - Jason (13/12/11): easy way to create the indicator columns
+```
+model.matrix(CellID~PenID-1,df)
+```
+
+### Variability
+
+* Effets fixes sur les variabilités résiduelles
+	  - Jason 2/11/11: Is it possible to specify a covariate, or grouped fixed effect on the error variance?  This is a strange request maybe but the issue is that there is a large disparity between the scale of the responses between treatments.  So with an additive model, the high profiles fit well, but with a proportional model low values fit well.
+
+* Residual error model
+	  - quid de modèle combiné complet où on estime c
+	  - autres modèles d'erreur ?
+	  - custom error model (Jason 3/1/12)
+
+* Distributions des paramètres aléatoires
+	  - plus de distributions 
+	  - mélanges
+
+* IOV
+	  - pouvoir traiter des essais à plusieurs périodes
+	  - un ou plusieurs niveaux d'IOV...
+
+### Desired improvements
+
+* Donnees
+	  - prise en compte de donnees nlme
+	  - lecture de fichier plus souple (reconnaissance de separateur de colonnes)
+
+* Fonctions modèle
+	  - modèle SS, exemples de modèles simples
+    - utilisation de fonctions definies pour nlme (modeles)
+    - librairie de modeles simples (reprendre genre pfim? mais une fois pfim cran-isé)
+
+* Simulations
+	  - utiliser le module de simulation des paramètres et de prédictions
+	  - option pour changer le design (les "données")
+	  - simulations de paramètres individuels pour plus tard faire des diagnostics avec simulation (alternative aux EBE)
+
+### Warnings
+
+* Too many warnings for the moment at all steps of the run (data and model creation, running the algorithm...
+
+* Also too many different options (warnings, verbose,...) 
+    - => harmonise and simplify, with an option to suppress all warnings.
+
+# Tests
+
+* A tester, stats & modele
+    - modeles d'erreur
+    - transformations des parametres: seulement teste en modele log-normal pour l'instant (transform.par=1 pr ts)
+  => 	tester avec les autres distributions
+	  - tester aussi avec certains parametres ayant une distribution et d'autres une differente => **fait ?**
+
+* A tester, algorithmes ** fait?**
+    - changer les conditions initiales, la graine
+    - modifier les nbs d'iterations des differents modules	
+
+* A tester, design ** fait?**
+    - sujets avec une seule donnee => OK
+    - pas de covariables => OK
+    - un seul predicteur (eg conc pour un modele emax)
+
+* Ne devrait pas marcher => securiser ?
+    - sujets avec donnees manquantes
+    - sujets sans donnees [eg donnees manquantes] (a virer?)
+    - covariables manquantes 
+    - donnees avec des facteurs/variables caracteres
+
+* Tests
+	  - avec GUI
+
+# Plots
+
+## Plot changes
+
+* Verifier VPC pour modèle exponentiel, semble y avoir un bug
+    - (voir TP, exemple 1 avec modèle exponentiel)
+		- => ? no example with exponential error model, & VPC ok for the exponential structural model
+
+* Diagnostic plots
+	  - limit the nb of plots in the individual and population fits (as in data) & add a random option
+
+## New plots
+
+* Individual plots for an saemixData object (add an option to plot Individual plots separately)
+
+* pd/npde
+	  - ajouter prediction intervals pour npde et pd
+	  - programmer algorithme pour optimal binning ou utiliser Mclust (cf rfunc_encours.pr)
+
+* module pour tracer les données initiales pour aider au choix des CI
+		  -  pour les 12 premiers sujets (avec choix no du sujet de départ)
+		  -  avec des jeux de paramètres différents
+		  -  => utiliser les plots de l'objet SaemixModel
+
+* fonctions pour sauver les graphes (ou ajouter option genre save=T) et les résultats dans des fichiers
+		  -  choix du format pdf pour les graphes
+		  -  rapport format latex ?
+
+* ggplot2
+	  - passer les graphes en ggplot2
+	  - rendre ggplot2 optionnel ?
+
+* Graphes
+	  - distribution conditionnelle des paramètres
+	  - diagnostics avancés: npde, VPC
+	  - diagnotics for discrete data
+
+# Simulation studies
+
+## Continuous data
+
+* JSS paper
+    - comparison to nlme 
+    - Emax model from Plan et al. 2012, with rich and sparse data
+    - good performance of saemix compared to other software
+        - some tuning of the algorithm may be necessary
+      
+* Work with Christelle on conditional bootstrap
+    - evaluation of the SE
+    - results: **TODO**
+   
+* Simulation study 
+    - objective: evaluate the estimation of
+        - population parameters
+        - individual parameters
+        - estimation errors
+    - different simulation settings
+        - rich and sparse design
+        - variable number of subjects
+        - variable levels of IIV and residual error
+   - **ongoing**
+
+## Discrete response data 
+
+# Documentation
+
+## New features
+
+* obtenir les predictions du modele
+
+* New examples for discrete data
+
+* Roxygen comments for all new code
+
+## Corrections
+
+**Default parameter distribution**
+
+* un autre petit truc... on trouve dans la doc :
+
+```
+transform.par : the distribution for each parameter (0=normal, 1=log-normal, 2=probit, 3=logit). Defaults to a vector of 1s (all parameters have a log-normal distribution) 
+```
+Le defaut semble en fait être 0 (normal)
+
+## Jason 2011 - to intégrate in documentation
+
+> So a summary of the questions I still have (if you have time to help):
+> ·ppred is prediction with covariate values but ranefs=0.  ipred includes post
+> hoc values for ranef.  What is icpred?
+
+In the SAEM algorithm there are two ways of obtaining individual estimates: since what we get at the end is a conditional distribution for each individual parameter. So we either choose to use the mode of the distribution (MAP=maximum a posteriori, yielding the estimates map.psi (or map.phi for the phi and map.eta for the random effects, see the documentation for nicely written equations)) or the conditional mean (cond.mean.psi/phi/eta).
+
+These are then used to compute respectively individual predictions using the MAP estimates (ipred) or the conditional mean estimates (icpred).
+
+I now see that for a Nonmem user this may be confusing because of the CWRES... These are not computed in saemix. There is no linearisation of the model used in saemix. Also the section of IWRES in the documentation is unclear because we don't really specify which is which.
+
+> ·ypred?
+ypred_ij= f(x_ij, h(E(phi_i)))
+is defined as the prediction for the mean population parameters.
+
+while
+ppred_ij=E( f(x_ij, psi_i))
+is defined as the expectancy of the predictions
+(you know, it's that issue with the fact that for non-linear mixed effect models, the prediction for the mean parameters is different from the mean of the predictions).
+
+> ·are pcwres in here? these are npde, perhaps?
+what do you call pcwres ?
+
+To obtain population residuals, we use the same expression as in NONMEM:
+V_i^{-1/2} (y_i - E(y_i))
+(see documentation p.22)
+and E(y_i) is ppred above; however unlike NONMEM, both E(y_i) and V_i are obtained using simulations under the model so they are again E(f) instead of f(E) (if you pardon this shortened notation).
+
+I totally agree this is confusing, since we have 2 sorts of population predictions and we only use one to compute the residuals (and additionally it's none too clear which in the documentation). The reason is that although we have ypred (the equivalent of linearised E() in nonmem) we don't really want to go to the trouble of computing the linearised Vi so we use the one we obtain by simulations.
+
+The alternative is to define "residuals" using the whole predictive distribution, which are the npde and of course I'd recommend using those over wres (I'm going to shamelessly refer you to our papers there for details...).
+
+> The documentation for the saemixModel function is unclear with respect to the
+> psi0 member.  What exactly is the second row of the matrix that should be
+> present when covariates enter the model?
+
+the first row in psi0 is the CI for the fixed effects (mu)
+the second (and subsequent, if available) are the CI for the covariate effects (beta); if there is just one row (=psi0 is of size 2xp) and more than 1 covariate in the model, we use the same initial conditions for all the parameters (that is, each covariate_k-parameter_l relationship has a common beta_kl=beta_l regardless of k); if psi0 is of size 1xp and there are covariates in the model, then (=this defaults to) all CI are 0 (beta_kl=0 regardless of k,l) [which may not be so clever since we don't yet have covariate centering]; psi0 can have as many rows as covariates in the model plus one for the fixed effect, then you can have beta_kl different for each covariate-parameter relationship in the model.
+
+# Compilation
+
+## Roxygen for new code
+
+* Correction des NOTE de compilation windows
+	  - corriger lower en lower.tail dans les arguments de pnorm et qnorm
+	  - utiliser compactPDF() pour compacter le user-guide de saemix
+
+* Produire la doc html :
+    - à l'installation (option --html)
+
+## S3 and S4 method
+
+* Choix fonctions accessibles utilisateur
+
+* Mail from Bates 26/01/12
+
+```
+the development version of lme4 the methods defined for the S4 class
+merMod (a mixed-effects representation model) are
+
+> methods(class="merMod")
+ [1] anova.merMod*        coef.merMod*         deviance.merMod*
+
+   Non-visible functions are asterisked
+
+Of those, only isREML, refitML and sigma are locally defined generics.
+ All the others are methods for generics in the base package or in the
+stats package or in the nlme package (fixef, raned, VarCorr).
+
+So you get quite a bit of functionality without needing to do anything more than
+
+##' @importFrom stats deviance
+##' @S3method deviance merMod
+deviance.merMod <- function(object, ...) {...}
+
+for each method that it makes sense to define.
+```
