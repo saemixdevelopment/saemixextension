@@ -3,28 +3,30 @@
 # xidep - design
 # datDir, namsimdat - names of directory and scenario
 
-if(iscenar %in% c(1:9)) {
-  library(mvtnorm)
+if(iscenar %in% c(1:3)) {
   for(isim in 1:nsim) {
-    etas<-rmvnorm(nsuj, mean=c(0,0), sigma=omega[2:3,2:3])
-    etas<-cbind(rnorm(nsuj,mean=0,sd=sqrt(omega[1,1])),etas)
-    parsuj<-cbind(etas,rep(parpop[4],nsuj))
-    for(i in 1:3) parsuj[,i]<-parpop[i]*exp(parsuj[,i])
-    if(iscenar==1) {
-      psiM<-parsuj[,1:3]
-      nampar<-nampar[1:3]
-      } else psiM<-parsuj[,1:4]
-    idM<-xidep[,1]
-    xiM<-xidep[,2,drop=FALSE]
-    fpred<-modfun(psiM,idM,xiM)
-    gpred<-fpred*rnorm(length(idM),mean=0,sd=respar)
-    xsim<-data.frame(id=idM,dose=xiM,y=fpred+gpred)
+    partab<-as.data.frame(matrix(data=0,nrow=nsuj,ncol=2,dimnames=list(NULL,parnam)))
+    for(i in 1:2) partab[,i]<-rnorm(nsuj,mean=param[i],sd=omega[i])
+
+    psiM<-data.frame()
+    for(itim in xtim) {
+      logit.sim<-partab[,1]+partab[,2]*itim
+      xtab<-exp(logit.sim)/(1+exp(logit.sim))
+      psiM<-rbind(psiM,xtab)
+    }
+    datsim<-data.frame(id=rep(1:nsuj,each=length(xtim)),time=rep(xtim,nsuj),psiM=unlist(psiM))
     xpar<-data.frame(id=1:nsuj,psiM)
-    colnames(xpar)[-c(1)]<-nampar
+    rownames(datsim)<-NULL
+    ysim<-rbinom(nsuj*length(xtim),size=1,prob=datsim$psiM)
+    summary(datsim)
+    datsim$y<-ysim
+    datsim$risk<-ifelse(datsim$id>500,1,0)
     
     namfich<-paste('data_',namsimdat,isim,".tab",sep="")
-    write.table(xsim,file.path(datDir,namfich),quote=FALSE,row.names=FALSE)
+    write.table(datsim,file.path(datDir,namfich),quote=FALSE,row.names=FALSE)
     namfich<-paste('param_',namsimdat,isim,".tab",sep="")
     write.table(xpar,file.path(datDir,namfich),quote=FALSE,row.names=FALSE)
   }
 }
+
+    

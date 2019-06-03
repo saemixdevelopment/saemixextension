@@ -1,10 +1,10 @@
 ##########################################################################
 ### Librairies and functions - saemix
-rootDir<-"/home/eco/work/monolix/rversion/newLib"
+rootDir<-"/Users/karimimohammedbelhal/Desktop/R_package/oldsaemixextension/testbelhal"
 simDir<-file.path(rootDir,"zesims")
 setwd(rootDir)
-saemixDir<-"/home/eco/work/monolix/rversion/newLib/saemix"
-source(file.path(rootDir,"saemix","testeco","helper-source.R"))
+saemixDir<-"/Users/karimimohammedbelhal/Desktop/R_package/oldsaemixextension"
+source(file.path(rootDir,"saemix","testbelhal","helper-source.R"))
 
 # Directories
 
@@ -25,9 +25,9 @@ if(FALSE) {
 ##########################################################################
 estim.parOrig<-FALSE # estimate parameters for original simulated datafiles
 
-# PD model, rich design
+# Binary model
 iscenar<-1
-nsim<-200
+nsim<-20
 source(file.path(simDir,"rcode","select_model.R"))
 
 cat("Estimating parameters for example",iscenar,"\n")

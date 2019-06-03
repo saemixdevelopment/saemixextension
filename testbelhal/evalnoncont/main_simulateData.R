@@ -5,7 +5,7 @@ setwd(rootDir)
 simDir<-file.path(rootDir,"zesims")
 
 ### Librairies and functions - saemix
-saemixDir<-"/Users/karimimohammedbelhal/Desktop/R_package/oldsaemixextension/"
+saemixDir<-"/Users/karimimohammedbelhal/Desktop/R_package/oldsaemixextension"
 setwd(saemixDir)
 source(file.path(saemixDir,"testbelhal","helper-source.R"))
 
@@ -18,7 +18,7 @@ dir.create(file.path(simDir,"simEstim"))
 simulate.data<-TRUE # Simulate original data
 
 # Logistic model
-nsim<-200
+nsim<-20
 for(iscenar in 1:3) {
   cat("Simulating data for example",iscenar,"\n")
   source(file.path(simDir,"rcode","select_model.R"))
@@ -28,6 +28,5 @@ for(iscenar in 1:3) {
   #dir.create(saveDir)
   source(file.path(simDir,"rcode","simulate_data.R"))
 }
-
 
 ##########################################################################
