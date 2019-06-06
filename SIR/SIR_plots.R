@@ -34,6 +34,9 @@ dOFVsamp <- function(SaemixSIR){
   if (optionll=='importance_sampling'){
     ll <- SaemixObject["results"]["ll.is"]
   }
+  if (optionll=='gaussian_quadrature'){
+    ll <- SaemixObject["results"]["ll.gq"]
+  }
   OFVi <- SaemixSIR['OFVi']
   #compute the difference between OFVi and OFV of the vector with maximum likelihood 
   dOFVvec <- OFVi-(-2*ll)
@@ -52,6 +55,9 @@ dOFVresamp <- function(SaemixSIR, resample, warn){
   }
   if (optionll=='importance_sampling'){
     ll <- SaemixObject["results"]["ll.is"]
+  }
+  if (optionll=='gaussian_quadrature'){
+    ll <- SaemixObject["results"]["ll.gq"]
   }
   OFVi <- OFVi(SaemixObject, resample, optionll, warn)
   #compute the difference between OFVi and OFV of the vector with maximum likelihood 

@@ -96,6 +96,22 @@ OFVi <- function(SaemixObject, sampled.theta, optionll, warn=FALSE){
       }
     }
   }
+  if (optionll=='gaussian_quadrature'){
+    for (i in 1:nrow(sampled.theta)){
+      sobj <- SaemixObject
+      sobj <- replacePopPar.saemixObject(sobj, sampled.theta[i,])
+      ll[i] <- try(llgq.saemix(sobj)['results']['ll.gq'], silent=T)
+      if(!is.numeric(ll[i])){ll[i]<- 0}
+      ll <- as.numeric(ll)
+      if(warn){
+        if(i==length%/%5) cat(paste(i, '/', length, 'OFVs done...\n'))
+        if(i==2*length%/%5) cat(paste(i, '/', length, 'OFVs done...\n'))
+        if(i==3*length%/%5) cat(paste(i, '/', length, 'OFVs done...\n'))
+        if(i==4*length%/%5) cat(paste(i, '/', length, 'OFVs done...\n'))
+        if(i==length) cat(paste(i, 'OFVs done.\n'))
+      }
+    }
+  }
   ll <- as.numeric(ll)
   ofvi <- -2*ll #vector of OFVi of the sampled.theta
   return(ofvi)
@@ -117,6 +133,9 @@ importance.ratio <- function(SaemixSIR){
   }
   if (optionll=='linearisation'){
     ll <- SaemixObject["results"]["ll.lin"]
+  } 
+  if (optionll=='gaussian_quadrature'){
+    ll <- SaemixObject["results"]["ll.gq"]
   } 
 
   OFVml <- -2*ll

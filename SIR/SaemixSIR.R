@@ -142,7 +142,7 @@ setMethod(
     #    .Object@<-
     
     if(missing(optionll)) optionll <- 'linearisation'
-    if(!(optionll %in% c('linearisation', 'importance_sampling'))){
+    if(!(optionll %in% c('linearisation', 'importance_sampling', 'gaussian_quadrature'))){
       message("[optionll: Error] Option of log-likelihood computation not available")
       return(.Object)
     }
