@@ -153,7 +153,7 @@ spatial_trend_plot <- function(SaemixSIR){
   M <- SaemixSIR['M']
   m <- SaemixSIR['m']
   name.param <- SaemixSIR['name.param']
-  npar.est <- SaemixSIR['SaemixObject']['results']['npar.est']
+  npar.est <- length(SaemixSIR['est.mu'])
   par(mfrow=c(3,3)) 
   for (i in 1:npar.est){
     samp.param <- samp[,i]
@@ -169,9 +169,9 @@ spatial_trend_plot <- function(SaemixSIR){
          xlab='Spatial bin of inital samples', ylab='Proportion resampled', 
          ylim=c(0,0.5), panel.first = grid(), las=1)
     title(title, line = 0.5)
-    polygon(x=c(1,10,10,1), y=c(0.2+1.96*se, 0.2+1.96*se,0.2-1.96*se,0.2-1.96*se), col='lightgray', border=NA)
+    polygon(x=c(1,10,10,1), y=c(expprop+1.96*se, expprop+1.96*se,expprop-1.96*se,expprop-1.96*se), col='lightgray', border=NA)
     lines(proportion[,2]~proportion[,1], pch=20, type='o')
-    abline(h=0.2, lty=2)
+    abline(h=expprop, lty=2)
   }
   mtext("Spatial trends plot: adequacy of proposal", side = 3, line = -1.5, outer = TRUE)
 }
@@ -232,7 +232,7 @@ temporal_trend_plot <- function(SaemixSIR){
     max.resamp <- resamp.param[resamp.param %in% samp.param[(((ind.max-1)*M/10)+1):(ind.max*M/10)]]
     trend <- temporal_trend_tab(SaemixSIR, max.resamp, i)
     
-    h <- max*m/10
+    h <- (max*M/10)*(1/5) # number of resamples from the max spatial bin divided by the number of temporal bins
     se <- sqrt((max*(1-max))/h)
     se <- se*h
     title <- name.param[i]

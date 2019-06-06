@@ -13,7 +13,7 @@ sampling <- function(SaemixObject, M=5000, inflcov.mat, optionll, warnings){
   library('mvtnorm', character.only = T)
   indx.fix <- SaemixObject['results']['indx.fix']
   indx.cov <- SaemixObject['results']['indx.cov']
-  npar.est <- SaemixObject['results']['npar.est']
+  npar.est <- length(estpar.vector(SaemixObject))
   indx.fixed <- c(indx.fix, indx.cov)
   nfix <- length(indx.fixed)
 
@@ -84,7 +84,7 @@ OFVi <- function(SaemixObject, sampled.theta, optionll, warn=FALSE){
     for (i in 1:nrow(sampled.theta)){
       sobj <- SaemixObject
       sobj <- replacePopPar.saemixObject(sobj, sampled.theta[i,])
-      ll[i] <- try(lllin.saemix(sobj), silent=T)
+      ll[i] <- try(fim.saemix(sobj)['results']['ll.lin'], silent=T)
       if(!is.numeric(ll[i])){ll[i]<- 0}
       ll <- as.numeric(ll)
       if(warn){

@@ -86,6 +86,7 @@ estpar.vector <- function(SaemixObject){
   omegamu <- ltriomega[ind] 
   resparmu <- SaemixObject['results']['respar'][indx.res]
   mu  <- c(thetamu,omegamu,resparmu)
+  mu <- mu[!is.na(mu)]
   return(mu)
   
 }
@@ -117,7 +118,7 @@ estpar.fromvect.tomatrix <- function(newparam, SaemixObject){
   newomega <- newomega + t(newomega) - diag(diag(newomega))
   
   newres <- c(0,0)
-  newres[indx.res] <- param
+  if(length(param)!=0) newres[indx.res] <- param
   
   return(list(newfixed.effects=newfixed.effects, newomega=newomega, newres=newres))
 }

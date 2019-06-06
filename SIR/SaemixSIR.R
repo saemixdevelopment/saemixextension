@@ -133,6 +133,7 @@ setMethod(
     name.sigma <- SaemixObject@model@name.sigma[indx.res]
     
     name.param <- c(name.fixed, name.covomega, name.sigma)
+    name.param <- name.param[1:length(est.mu)]
     .Object@name.param <- name.param
     names(.Object@est.mu) <- name.param
     
