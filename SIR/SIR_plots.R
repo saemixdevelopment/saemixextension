@@ -59,7 +59,18 @@ dOFVresamp <- function(SaemixSIR, resample, warn){
   if (optionll=='gaussian_quadrature'){
     ll <- SaemixObject["results"]["ll.gq"]
   }
-  OFVi <- OFVi(SaemixObject, resample, optionll, warn)
+  
+  nresamples <- c()
+  for (i in 1:nrow(resample)){
+    for (j in 1:nrow(SaemixSIR['sampled.theta'])){
+      samp <- SaemixSIR['sampled.theta'][j,]
+      resamp <- resample[i,]
+      if (sum(samp==resamp)==length(SaemixSIR['name.param'])){
+        nresamples <- c(nresamples, j)
+      }
+    }  
+  }
+  OFVi <- SaemixSIR['OFVi'][nresamples]
   #compute the difference between OFVi and OFV of the vector with maximum likelihood 
   dOFVvec <- OFVi-(-2*ll)
   dOFVvec[dOFVvec<0] <- dOFVvec[dOFVvec<0]*-1
