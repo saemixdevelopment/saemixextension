@@ -85,7 +85,7 @@ dOFVresamp <- function(SaemixSIR, resample, warn){
 dOFV_distribution_plot <- function(SaemixSIR, warn=TRUE){
   #degrees of freedom = number of parameters estimated
   SaemixObject <- SaemixSIR['SaemixObject']
-  df <- sum(SaemixObject["results"]["npar.est"])
+  df <- length(SaemixSIR["name.param"])
   sample <- SaemixSIR["sampled.theta"]
   
   dOFV.proposal <- dOFVsamp(SaemixSIR) #dOFV of sampled.theta
@@ -183,8 +183,8 @@ spatial_trend_plot <- function(SaemixSIR){
     se <- sqrt((expprop*(1-expprop))/(M/10))
     
     plot(x=NA, y=NA, xlim=c(1,10),
-         xlab='Spatial bin of inital samples', ylab='Proportion resampled', 
-         ylim=c(0,0.5), panel.first = grid(), las=1)
+         xlab='Spatial bins of initial samples', ylab='Proportion resampled', 
+         ylim=c(0,0.25), panel.first = grid(), las=1)
     title(title, line = 0.5)
     polygon(x=c(1,10,10,1), y=c(expprop+1.96*se, expprop+1.96*se,expprop-1.96*se,expprop-1.96*se), col='lightgray', border=NA)
     lines(proportion[,2]~proportion[,1], pch=20, type='o')
@@ -255,7 +255,7 @@ temporal_trend_plot <- function(SaemixSIR){
     title <- name.param[i]
     subtitle <- paste('Spatial bin', ind.max)
     plot(x=NA, y=NA, sub=subtitle,
-         xlab='Temporal bin of resamples', ylab='Number of parameters resampled', 
+         xlab='Temporal bin of resamples', ylab='Parameters resampled count', 
          xlim=c(1,5), ylim=c(0,m/10), panel.first = grid(), las=1)
     
     polygon(x=c(1,5,5,1), y=c(h+1.96*se, h+1.96*se,h-1.96*se,h-1.96*se), col='lightgray', border=NA)
