@@ -288,6 +288,8 @@ cond.mean.eta<-t(apply(cond.mean.eta,c(1,2),mean))
   saemix.res["indx.cov"]<-Uargs$indx.betaC
   saemix.res["indx.omega"]<-Uargs$i1.omega2
   saemix.res["npar.est"]<-Uargs$nb.parest
+  saemix.res["nbeta.random"]<- sum(saemix.model["betaest.model"]%*%diag(saemix.model["fixed.estim"])%*%as.matrix(diag(saemix.model["covariance.model"])))
+  saemix.res["nbeta.fixed"]<-  sum(saemix.model["betaest.model"]%*%diag(saemix.model["fixed.estim"])%*%as.matrix(-1*diag(saemix.model["covariance.model"])+1))
   saemix.res["cond.mean.psi"]<-cond.mean.psi
   saemix.res["cond.mean.eta"]<-cond.mean.eta
 
