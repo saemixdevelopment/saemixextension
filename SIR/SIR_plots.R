@@ -116,7 +116,7 @@ dOFV_distribution_plot <- function(SaemixSIR, warn=TRUE){
   lines(dOFV.proposal~xprop, col='blue', lty=2)
   lines(dOFV.SIR~xsir, col='red')
   
-  legend(0, 25, legend=c('Estimated df', ref,prop, sir),
+  legend(0, 22, legend=c('Estimated df', ref,prop, sir),
          col=c("black", "black", "blue", "red"), lty=c(0,1,2,1), cex=0.8,
          box.lty=0)
 
@@ -181,10 +181,11 @@ spatial_trend_plot <- function(SaemixSIR){
     #stochastic noise around expected proportion Binomial(m/M (expected proportion))
     expprop <- m/M
     se <- sqrt((expprop*(1-expprop))/(M/10))
+    ylim <- 2.5*m/M
     
     plot(x=NA, y=NA, xlim=c(1,10),
          xlab='Spatial bins of initial samples', ylab='Proportion resampled', 
-         ylim=c(0,0.25), panel.first = grid(), las=1)
+         ylim=c(0,ylim), panel.first = grid(), las=1)
     title(title, line = 0.5)
     polygon(x=c(1,10,10,1), y=c(expprop+1.96*se, expprop+1.96*se,expprop-1.96*se,expprop-1.96*se), col='lightgray', border=NA)
     lines(proportion[,2]~proportion[,1], pch=20, type='o')
