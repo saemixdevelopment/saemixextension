@@ -71,3 +71,9 @@ test_file(file.path(saemixDir,"testeco","testthat_predict.R"))
 # Testing FIM
 
 #####################################################
+# Estimating individual parameters after initialising to pop parameters from a fit
+
+
+
+
+#####################################################

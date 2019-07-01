@@ -190,6 +190,7 @@ fim.saemix<-function(saemixObject) {
     # Derivatives of Vi=var(yi) for subject i, w/r to lambda (FO approximation, neglecting dVi/dmu)
     DV<-list()
     myidx.omega<-c()
+    myidx.cor<-c()
     for(ipar in 1:npar) {
       DV[[ipar]]<-matrix(0,ncol=ni,nrow=ni)
     }
@@ -197,7 +198,7 @@ fim.saemix<-function(saemixObject) {
       for(jom in iom:dim(covariance.model)[1]) {
         if(covariance.model[iom,jom]==1) {
           ipar<-ipar+1
-          if(iom==jom) myidx.omega<-c(myidx.omega,ipar)
+          if(iom==jom) myidx.omega<-c(myidx.omega,ipar) else myidx.cor<-c(myidx.cor,ipar)
           domega<-omega.null
           domega[iom,jom]<-domega[jom,iom]<-1 
           #          if(iom==jom) domega[iom,jom]<-1*sqrt(omega[iom,jom]) else domega[iom,jom]<-1 # if parameterised in omega and not omega2,
@@ -301,7 +302,7 @@ fim.saemix<-function(saemixObject) {
   se.omega<-matrix(0,nphi,1)
   se.cov<-matrix(0,nphi,nphi)
   se.omega[saemix.model["indx.omega"]]<-sO[myidx.omega-npar]
-  if(length(saemix.model["indx.cov"])>0) {
+  if(length(myidx.cor)>0) {
     ipar<-0
     for(iom in 1:nphi) {
       for(jom in iom:nphi) {

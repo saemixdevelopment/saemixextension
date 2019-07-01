@@ -517,6 +517,16 @@ setMethod("print","SaemixRes",
     } else {
       tab<-cbind(x@name.random,diag(x@omega)[x@indx.omega],x@se.omega[x@indx.omega])
       tab<-cbind(tab,100*as.double(tab[,3])/as.double(tab[,2]))
+      nampar<-unlist(strsplit(x@name.random,"omega2."))
+      nampar<-nampar[nampar!=""]
+      for(i in 1:(length(nampar)-1)) {
+        for(j in (i+1):length(nampar)) {
+          if(x@omega[i,j]!=0) {
+            covar<-c(paste("cov",nampar[i],nampar[j],sep="."),x@omega[i,j],x@se.cov[i,j],x@se.cov[i,j]/x@omega[i,j]*100)
+            tab<-rbind(tab,covar)
+          }
+        }
+      }
       colnames(tab)<-c("Parameter","Estimate","SE","CV(%)")
     }
     if(digits>0) {
@@ -638,15 +648,22 @@ setMethod("show","SaemixRes",
     } else {
       tab<-cbind(object@name.random,diag(object@omega)[object@indx.omega],object@se.omega[object@indx.omega])
       tab<-cbind(tab,100*as.double(tab[,3])/as.double(tab[,2]))
+      nampar<-unlist(strsplit(object@name.random,"omega2."))
+      nampar<-nampar[nampar!=""]
+      for(i in 1:(length(nampar)-1)) {
+        for(j in (i+1):length(nampar)) {
+          if(object@omega[i,j]!=0) {
+            covar<-c(paste("cov",nampar[i],nampar[j],sep="."),object@omega[i,j],object@se.cov[i,j],object@se.cov[i,j]/object@omega[i,j]*100)
+            tab<-rbind(tab,covar)
+          }
+        }
+      }
       colnames(tab)<-c("Parameter","Estimate","  SE"," CV(%)")
     }
       for(i in 2:dim(tab)[2]) 
          tab[,i]<-format(as.double(as.character(tab[,i])),digits=3)
     rownames(tab)<-rep("",dim(tab)[1])
     print(tab,quote=FALSE)
-    if(length(object@ll.lin)>0 | length(object@ll.is)>0 | length(object@ll.gq)>0) {
-    cat("\nStatistical criteria\n")
-    }
     mat1<-object@omega
     if(sum(abs(mat1-diag(diag(mat1))))>0) {
     cat("\nCorrelation matrix of random effects\n")
@@ -655,6 +672,9 @@ setMethod("show","SaemixRes",
       tab[,i]<-format(as.double(as.character(tab[,i])),digits=3)
     try(colnames(tab)<-rownames(tab)<-object@name.random)
     print(tab,quote=FALSE)
+    }
+    if(length(object@ll.lin)>0 | length(object@ll.is)>0 | length(object@ll.gq)>0) {
+      cat("\nStatistical criteria\n")
     }
     if(length(object@ll.lin)>0) {
     cat("Likelihood computed by linearisation\n")
@@ -717,6 +737,17 @@ setMethod("showall","SaemixRes",
        if(object@modeltype=="structural") {
             tab<-cbind(c(object@name.fixed,object@name.sigma[object@indx.res]), c(object@fixed.effects,object@respar[object@indx.res]),c(object@se.fixed,object@se.respar[object@indx.res]))
             tab<-cbind(tab,100*abs(as.double(tab[,3])/as.double(tab[,2])))
+            nampar<-unlist(strsplit(object@name.random,"omega2."))
+            nampar<-nampar[nampar!=""]
+            for(i in 1:(length(nampar)-1)) {
+              for(j in (i+1):length(nampar)) {
+                if(object@omega[i,j]!=0) {
+                  covar<-c(paste("cov",nampar[i],nampar[j],sep="."),object@omega[i,j],object@se.cov[i,j],object@se.cov[i,j]/object@omega[i,j]*100)
+                  tab<-rbind(tab,covar)
+                }
+              }
+            }
+            
         }else{
             tab<-cbind(c(object@name.fixed), c(object@fixed.effects),c(object@se.fixed))
             tab<-cbind(tab,100*abs(as.double(tab[,2])/as.double(tab[,1])))
@@ -948,6 +979,19 @@ setMethod("summary","SaemixRes",
             } else {
               tab<-data.frame(object@name.random, diag(object@omega)[object@indx.omega], object@se.omega[object@indx.omega])
               tab<-cbind(tab,100*as.double(tab[,3])/as.double(tab[,2]))
+              nampar<-unlist(strsplit(object@name.random,"omega2."))
+              nampar<-nampar[nampar!=""]
+              for(i in 1:(length(nampar)-1)) {
+                for(j in (i+1):length(nampar)) {
+                  if(object@omega[i,j]!=0) {
+                    nam1<-paste("cov",nampar[i],nampar[j],sep=".")
+                    covar<-data.frame(nam1, object@omega[i,j],object@se.cov[i,j],object@se.cov[i,j]/object@omega[i,j]*100)
+                    names(covar)<-names(tab)
+                    tab<-rbind(tab,covar)
+                    tab[dim(tab),1]<-paste("cov",nampar[i],nampar[j],sep=".")
+                  }
+                }
+              }
               colnames(tab)<-c("Parameter","Estimate","SE","CV(%)")
             }
             tab.random<-tab

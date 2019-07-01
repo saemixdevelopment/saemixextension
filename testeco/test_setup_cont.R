@@ -34,11 +34,21 @@ saemix.model2<-saemixModel(model=model1cpt,modeltype="structural",
                            psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))),
                            transform.par=c(1,1,1),covariate.model=matrix(c(0,0,1,0,1,0),ncol=3,byrow=TRUE))
 
+# Model with 2 covariates and a covariance model
+saemix.model3<-saemixModel(model=model1cpt,modeltype="structural",
+          description="One-compartment model with first-order absorption",
+          psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))),
+          covariance.model=matrix(c(1,0,0,0,1,1,0,1,1),ncol=3,byrow=TRUE),
+          covariate.model=matrix(c(0,0,1,0,1,0),ncol=3,byrow=TRUE),
+          transform.par=c(1,1,1),error.model="proportional")
+
 saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE)
 saemix.fit2<-saemix(saemix.model2,saemix.data,saemix.options)
+saemix.fit3<-saemix(saemix.model3,saemix.data,saemix.options)
 
 theo.fit1<-saemix.fit
 theo.fit2<-saemix.fit2
+theo.fit3<-saemix.fit3
 
 ###################################################################################
 # New dataset

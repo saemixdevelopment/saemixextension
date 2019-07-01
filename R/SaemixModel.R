@@ -240,6 +240,7 @@ setMethod(
       if(verbose) message("Error initialising SaemixModel object:\n   The covariance model needs to have the same size as the number of parameters.\n")
       return(.Object)
     }
+    if(!valid_covariance.model(covariance.model, verbose)) return(.Object)
     if(is.null(colnames(covariance.model))) colnames(covariance.model)<-rownames(covariance.model)<-colnames(psi0)
     .Object@covariance.model<-covariance.model
     indx.omega<-which(diag(covariance.model)>0)
@@ -845,3 +846,45 @@ mydiag <- function (x = 1, nrow, ncol) {
     y[1L + 0L:(m - 1L) * (n + 1L)] <- x
   y
 }
+
+############ VALIDITY OF COVARIANCE MODEL 
+valid_covariance.model <- function(covariance.model, verbose=TRUE){
+  cm <- covariance.model
+  
+  #non-square matrix
+  if(dim(cm)[1]!=dim(cm)[2]) {
+    if(verbose) message("Error initialising SaemixModel object:\n   The covariance model needs to be a square matrix, please check dimensions.\n")
+    return(FALSE)
+  }
+  
+  
+  #values other than 1 or 0
+  s <- sum(cm[cm!=1 & cm!=0])
+  if (s>0){
+    if(verbose) message("Error initialising SaemixModel object:\n  Invalid covariance model, only 0 or 1 values accepted, please change covariance model.\n")
+    return(FALSE)
+  }
+  
+  #asymmetrical
+  if (!all(t(cm)==cm)){
+    if(verbose) message("Error initialising SaemixModel object:\n  The matrix of covariance model is not symmetrical, please change covariance model.\n")
+    return(FALSE)
+  }
+  
+  #values other than 0 when diagonal number is 0
+  for (i in 1:nrow(cm)){
+    for(j in 1:ncol(cm)){
+      if (cm[i,j]!=0){
+        if(cm[i,i]==0 |cm[j,j]==0){
+          if(verbose) message("Error initialising SaemixModel object:\n  The covariance model is invalid, please change covariance model.\n")
+          return(FALSE)
+        }
+      }
+    }
+  }
+  return(TRUE)
+}
+
+
+
+
