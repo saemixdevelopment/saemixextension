@@ -99,6 +99,66 @@ description="Linear+log-linear function of age", psi0=matrix(c(3000,30,1000,0,0,
 * differences between LL by linearisation and by AGQ/IS in simple examples : fixed or not ?
     - FIM ou -FIM ? **vérifier**, *devrait etre corrigé depuis août*
 
+### Mai 2019 - mail Daniel Tholen (Wien)
+
+* Transformation of response variable
+    - caveat: transformation of error model so maybe better to apply a transformation before the fit ?
+* SE on function of parameters
+    - typically SE on parameters for all categories with a categorical covariate
+    - two possible improvements
+        - implement a function for the delta method ?
+        - interval function giving the value of the parameters for each combination of covariates when categorical covariates present in the model (might be tricky to make it generic with several covariates...)
+
+> When covariates are added to the model, the outputted population estimates are for the reference covariate. The mean for the "other" covariate can be calculated from the beta: par_ref*exp(-beta_par) for lognormal parameters. But how to get the SE?
+> It seems that the only option is to rerun the model with switched references, but I feel this will do a lot of "unnecessary" calculations. Getting means and SE for both genotypes or treatments is typically something that my collegues would want, even although I think that in statistics, people are probably happy with a beta and some degree of significance (as currently outputted).
+
+* Non differentiable equations
+    - change point algorithm ? see Marc's work
+    - try some simulations ?
+> How safe is it to use non-differentiable equations in the model? i.e. can I safely use min(a,b) (that might produce an angle in a curve) in the model for saemix? 
+
+* Constraints: **not possible**
+    - not possible to add constraints on parameters
+    - suggest to use transformations (ie logit or logarithm) to ensure parameters are within a certain range or remain positive
+
+* Bugfixes
+     - documentation **correction to the documentation needed**
+        - default parameters in the transform argument
+        - p.30: omega and se.omega are random and not fixed effects
+        - clarify omega versus omega2 in documentation
+     - problem computing FIM when some parameters are fixed (*fixed.estim* argument) **TODO: test and correct**
+     - transformCatCov
+        - several issues (see below)
+            - inconsistent arguments: *covariate=Genotype* versus *name.covariates="Genotype"* in saemixData
+        - scrape the function altogether ? (as genetic covariates no longer a major interest of Julie's)
+        - or focus back on covariate transformation so we can centre our covariates, and test different groups for categorical covariates.
+    - environment issue
+        - not sure how to correct this as even R seems inconsistent
+
+> I ) Incorrect default transform parameters: Userguide and manual mention lognormal (1) is the default ("the distribution for each parameter (0=normal, 1=log-normal, 2=probit, 3=logit). Defaults to a vector of 1s (all parameters have a log-normal distribution)"), yet in SaemixModel.R:
+> if(missing(transform.par) || length(transform.par)==0) transform.par<-rep(0,npar)
+
+> II) fixed.estim is not working because in calculating the individual estimates, solving throws an error that cbind tries to combine two matrices with unequal rows and columns. I fixed this by changing:
+> npar<-length(ind.fixed.est)
+> into:
+> npar <- length(which(ind.fixed.est))
+> in func_FIM.R
+> I think this must be what you meant as ind.fixed.est looks like C(T,T,T,F,F) and I think you want to have the length of the ones that are True.
+
+> III) transformCatCov : multiple issues:
+> 1) It does not change the "reference class for covariate Genotype" output of the resulting object. Nor does it seem to change the names of the covariate as expected if I change them in the group= variable
+> 2) If the covariates where "0" and "1" and I keep them like that in group and only switch the reference, solving the model results in:
+>    Error in solve.default(comega[Uargs$ind.fix1, Uargs$ind.fix1], rowSums(temp)) :
+>    Lapack routine dgesv: system is exactly singular: U[2,2] = 0
+> Changing the group names completely and the reference does seem to give the correct results when solving the model (despite the seamixObject not mentioning the correct reference or group names)
+>      3) using transformCatCov on data with a categorical covariate with more than 2 levels deletes the original covariate column (and adds cov_G1, G2, etc), yet it does not change ocov (and other things?) and so solving the model stops with mentioning that that the covariate is missing.
+>    4) why does transformCatCov needs covariate=Genotype, but saemixData 
+
+> IV) page 30 of the userguide:
+> omega Estimates of the fixed effects
+> se.omaga Standard errors of the estimation of the fixed effects
+> I think these are actually random effects. Also, my saemix model always outputs omega2 (square i assume), not all documentation does, its a bit confusing.
+
 ## Improvements
 
 * Calcul de la SE pour les éléments non diagonaux **done**

@@ -22,6 +22,8 @@
 #' @slot name.random a vector containing the names of the random parameters in the model
 #' @slot name.sigma a vector containing the names of the parameters of the residual error model
 #' @slot npar.est the number of parameters estimated (fixed, random and residual)
+#' @slot nbeta.random the number of estimated fixed effects for the random parameters in the model
+#' @slot nbeta.fixed the number of estimated fixed effects for the non random parameters in the model
 #' @slot fixed.effects a vector giving the estimated h(mu) and betas
 #' @slot fixed.psi  a vector giving the estimated h(mu)
 #' @slot betas a vector giving the estimated mu
@@ -57,13 +59,16 @@
 #' @slot ll.lin log-likelihood computed by lineariation
 #' @slot aic.lin Akaike Information Criterion computed by linearisation
 #' @slot bic.lin Bayesian Information Criterion computed by linearisation
+#' @slot bic.covariate.lin Specific Bayesian Information Criterion for covariate selection computed by linearisation
 #' @slot ll.is log-likelihood computed by Importance Sampling
 #' @slot aic.is Akaike Information Criterion computed by Importance Sampling
 #' @slot bic.is Bayesian Information Criterion computed by Importance Sampling
+#' @slot bic.covariate.is Specific Bayesian Information Criterion for covariate selection computed by Importance Sampling
 #' @slot LL a vector giving the conditional log-likelihood at each iteration of the algorithm
 #' @slot ll.gq log-likelihood computed by Gaussian Quadrature
 #' @slot aic.gq Akaike Information Criterion computed by Gaussian Quadrature
 #' @slot bic.gq Bayesian Information Criterion computed by Gaussian Quadrature
+#' @slot bic.covariate.gq Specific Bayesian Information Criterion for covariate selection computed by Gaussian Quadrature
 #' @slot predictions a data frame containing all the predictions and residuals in a table format
 #' @slot ypred a vector giving the population predictions obtained with the MAP estimates
 #' @slot ppred a vector giving the mean population predictions
@@ -113,6 +118,8 @@ setClass(
     name.random="character",    # names of random effects
     name.sigma="character", # names of parameters of residual error model
     npar.est="numeric",     # nb of parameters estimated (fixed, random & resid)
+    nbeta.random="numeric", #nb of estimated fixed effects for the random parameters in the model
+    nbeta.fixed="numeric", #nb of estimated fixed effects for the non random parameters in the model
     fixed.effects="numeric",    # vector with h(mu) and betas in estimation order
     fixed.psi="numeric",    # h(mu)
     betas="matrix",     # estimated mu
@@ -147,16 +154,19 @@ setClass(
     phi.samp="array",       # nb.chains samples in the individual conditional distributions (phi)
     phi.samp.var="array",   # variance of samples
 # Statistical criteria
-    ll.lin="numeric",       # for each method (linearisation, IS, GQ)
-    aic.lin="numeric",      # ll=log-likelihood
-    bic.lin="numeric",      # aic= Akaike Information Criterion
-    ll.is="numeric",        # bic= Bayesian Information Criterion
+    ll.lin="numeric",           # for each method (linearisation, IS, GQ)
+    aic.lin="numeric",          # ll=log-likelihood
+    bic.lin="numeric",          # aic= Akaike Information Criterion
+    bic.covariate.lin="numeric",# bic= Bayesian Information Criterion
+    ll.is="numeric",        
     aic.is="numeric",
     bic.is="numeric",
+    bic.covariate.is="numeric",
     LL="numeric",       # LL for each iteration in the IS algorithm
     ll.gq="numeric",
     aic.gq="numeric",
     bic.gq="numeric",
+    bic.covariate.gq="numeric",
 # Model predictions and residuals
         predictions="data.frame", # data frame containing all the predictions and residuals below
     ppred="numeric",        # vector of mean population predictions
@@ -281,6 +291,8 @@ setMethod(
     "name.sigma"={return(x@name.sigma)},
     "name.random"={return(x@name.random)},
     "npar.est"={return(x@npar.est)},
+    "nbeta.random"={return(x@nbeta.random)},
+    "nbeta.fixed"={return(x@nbeta.fixed)},
     "fixed.effects"={return(x@fixed.effects)},
     "fixed.psi"={return(x@fixed.psi)},
     "betas"={return(x@betas)},
@@ -316,13 +328,16 @@ setMethod(
     "ll.lin"={return(x@ll.lin)},
     "aic.lin"={return(x@aic.lin)},
     "bic.lin"={return(x@bic.lin)},
+    "bic.covariate.lin"={return(x@bic.covariate.lin)},
     "ll.is"={return(x@ll.is)},
     "aic.is"={return(x@aic.is)},
     "bic.is"={return(x@bic.is)},
+    "bic.covariate.is"={return(x@bic.covariate.is)},
     "LL"={return(x@LL)},
     "ll.gq"={return(x@ll.gq)},
     "aic.gq"={return(x@aic.gq)},
     "bic.gq"={return(x@bic.gq)},
+    "bic.covariate.gq"={return(x@bic.covariate.gq)},
     "predictions"={return(x@predictions)},
     "ypred"={return(x@ypred)},
     "ppred"={return(x@ppred)},
@@ -359,6 +374,8 @@ setReplaceMethod(
     "name.random"={x@name.random<-value},
     "name.sigma"={x@name.sigma<-value},
     "npar.est"={x@npar.est<-value},
+    "nbeta.random"={x@nbeta.random<-value},
+    "nbeta.fixed"={x@nbeta.fixed<-value},
     "fixed.effects"={x@fixed.effects<-value},
     "fixed.psi"={x@fixed.psi<-value},
     "betas"={x@betas<-value},
@@ -394,13 +411,16 @@ setReplaceMethod(
     "ll.lin"={x@ll.lin<-value},
     "aic.lin"={x@aic.lin<-value},
     "bic.lin"={x@bic.lin<-value},
+    "bic.covariate.lin"={x@bic.covariate.lin<-value},
     "ll.is"={x@ll.is<-value},
     "aic.is"={x@aic.is<-value},
     "bic.is"={x@bic.is<-value},
+    "bic.covariate.is"={x@bic.covariate.is<-value},
     "LL"={x@LL<-value},
     "ll.gq"={x@ll.gq<-value},
     "aic.gq"={x@aic.gq<-value},
     "bic.gq"={x@bic.gq<-value},
+    "bic.covariate.gq"={x@bic.covariate.gq<-value},
     "predictions"={x@predictions<-value},
     "ypred"={x@ypred<-value},
     "ppred"={x@ppred<-value},
