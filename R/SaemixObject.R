@@ -1265,6 +1265,35 @@ BIC.SaemixObject<-function(object, ...) {
   val
 }
 
+
+BIC.covariate<-function(object, ...) {
+  #  -2 * as.numeric(object) + attr(object, "df") * log(nobs(object))
+  args1<-match.call(expand.dots=TRUE)
+  i1<-match("method",names(args1))
+  if(!is.na(i1)) {
+    str1<-as.character(args1[[i1]])
+    if(str1 %in% c("is","lin","gq")) method<-str1
+  } else {
+    if(length(object@results@ll.is)!=0 | length(object@results@ll.lin)==0) method<-"is" else method<-"lin"
+  }
+  # Compute the requested LL if not present
+  namObj<-deparse(substitute(object))
+  if(method=="is" & length(object@results@ll.is)==0) {
+    object<-llis.saemix(object)
+    assign(namObj,object,envir=parent.frame())
+  }
+  if(method=="gq" & length(object@results@ll.gq)==0) {
+    object<-llgq.saemix(object)
+    assign(namObj,object,envir=parent.frame())
+  }
+  if(method=="lin" & length(object@results@ll.lin)==0) {
+    object<-fim.saemix(object)
+    assign(namObj,object,envir=parent.frame())
+  }
+  val<-switch(method,is=object@results@bic.covariate.is,lin=object@results@bic.covariate.lin, gq=object@results@bic.covariate.gq)
+  val
+}
+
 # Log-likelihood ratio test, given 2 models
 # ECO TODO
 
@@ -1488,12 +1517,15 @@ replaceData.saemixObject<-function(saemixObject, newdata) {
   saemix.newObj["results"]["ll.lin"] <-numeric(0)
   saemix.newObj["results"]["aic.lin"] <-numeric(0)
   saemix.newObj["results"]["bic.lin"] <-numeric(0)
+  saemix.newObj["results"]["bic.covariate.lin"] <-numeric(0)
   saemix.newObj["results"]["ll.gq"] <-numeric(0)
   saemix.newObj["results"]["aic.gq"] <-numeric(0)
   saemix.newObj["results"]["bic.gq"] <-numeric(0)
+  saemix.newObj["results"]["bic.covariate.gq"] <-numeric(0)
   saemix.newObj["results"]["ll.is"] <-numeric(0)
   saemix.newObj["results"]["aic.is"] <-numeric(0)
   saemix.newObj["results"]["bic.is"] <-numeric(0)
+  saemix.newObj["results"]["bic.covariate.is"] <-numeric(0)
   saemix.newObj["results"]["predictions"] <-data.frame()
   saemix.newObj["results"]["ypred"] <-numeric(0)
   saemix.newObj["results"]["ppred"] <-numeric(0)

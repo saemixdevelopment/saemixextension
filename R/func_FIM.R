@@ -323,6 +323,7 @@ fim.saemix<-function(saemixObject) {
   saemix.res["fim"]<-fim
   saemix.res["aic.lin"]<-(-2)*saemix.res["ll.lin"]+ 2*saemix.res["npar.est"]
   saemix.res["bic.lin"]<-(-2)*saemix.res["ll.lin"]+ log(saemix.data["N"])*saemix.res["npar.est"]
+  saemix.res["bic.covariate.lin"]<-(-2)*saemix.res["ll.lin"]+ log(saemix.data["N"])*saemix.res["nbeta.random"]+log(sum(saemix.data["nind.obs"]))*saemix.res["nbeta.fixed"]
   
   ##################################
   #delete(hw)
