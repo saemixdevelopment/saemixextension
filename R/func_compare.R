@@ -82,30 +82,80 @@ compare.saemix<-function(mod.list,...) {
     str.model <- list()
     cov.model <- list()
     
-    for (k in 1:nb.mod){
-      info[k,] <- c(mod.list[[k]]@results@aic.lin,mod.list[[k]]@results@bic.lin)
-      str.model[[k]] <- deparse(mod.list[[k]]@model@model)
-      cov.model[[k]] <- deparse(mod.list[[k]]@model@covariance.model)
-    }
+    # Comparison of datasets : if models are estimated on different datasets, comparison does 
+    # not make sense. 
     
-    same.str.model <- rep(NA,(nb.mod-1))
-    same.cov.model <- rep(NA,(nb.mod-1))
+    same.data <- rep(NA,(nb.mod-1))
     
     for (k in 2:nb.mod){
-      same.str.model[k] <- all(str.model[[1]]==str.model[[k]])
-      same.cov.model[k] <- all(cov.model[[1]]==cov.model[[k]])
+      same.data[k-1] <- identical(mod.list[[1]]@data,mod.list[[k]]@data)
     }
     
-    # Si même modèle structurel et même structure d'effets aléatoires
-    if ((!("FALSE" %in% same.str.model)) && (!("FALSE" %in% same.cov.model))){
-      bic.cov <- rep(NA,nb.mod)
-      for (k in 1:nb.mod){
-        bic.cov[k] <- mod.list[[k]]@results@bic.covariate.is
+    
+    if ("FALSE" %in% same.data){
+      stop('Compared models should be fitted on the same data.')
+    } else{
+      # Comparison of the statistical models : BIC.covariate does only make sense if model type,
+      # structural model (and residual model if appropriate), and covariance structure for the random 
+      # effects are the same
+      
+      for (k  in 1:nb.mod){
+        info[k,] <- c(mod.list[[k]]@results@aic.is,mod.list[[k]]@results@bic.is)
       }
-      info <- cbind(info, bic.cov)
-      colnames(info) <- c("AIC","BIC","BIC.cov")
+      
+      same.model.type <- rep(NA,(nb.mod-1))
+      same.str.model <- rep(NA,(nb.mod-1))
+      
+      for (k in 2:nb.mod){
+        same.model.type[k-1] <- identical(mod.list[[1]]@model@modeltype,mod.list[[k]]@model@modeltype)
+        same.str.model[k-1] <- identical(mod.list[[1]]@model@model,mod.list[[k]]@model@model)
+      }
+      
+      if (!("FALSE" %in% same.model.type)){
+        
+        if (!("FALSE" %in% same.str.model)){
+          
+          same.cov.model <- rep(NA,(nb.mod-1))
+          
+          for (k in 2:nb.mod){
+            same.cov.model[k-1] <- identical(mod.list[[1]]@model@covariance.model,mod.list[[k]]@model@covariance.model)
+          }
+          
+          if (mod.list[[1]]@model@modeltype == "structural"){
+            
+            same.res.model <- rep(NA,(nb.mod-1))
+            
+            
+            
+            for (k in 2:nb.mod){
+              same.res.model[k-1] <- identical(mod.list[[1]]@model@error.model,mod.list[[k]]@model@error.model)
+            }
+            
+            if ((!("FALSE" %in% same.cov.model)) && (!("FALSE" %in% same.res.model))){
+              bic.cov <- rep(NA,nb.mod)
+              for (k in 1:nb.mod){
+                bic.cov[k] <- mod.list[[k]]@results@bic.covariate.is
+              }
+              info <- cbind(info, bic.cov)
+              colnames(info) <- c("AIC","BIC","BIC.cov")
+              
+            }
+            
+          } else {
+            if (!("FALSE" %in% same.cov.model)){
+              bic.cov <- rep(NA,nb.mod)
+              for (k in 1:nb.mod){
+                bic.cov[k] <- mod.list[[k]]@results@bic.covariate.is
+              }
+              info <- cbind(info, bic.cov)
+              colnames(info) <- c("AIC","BIC","BIC.cov")
+            }
+          }
+        }
+        
+      }
+      cat("Likelihoods computed by importance sampling \n")
     }
-    cat("Likelihoods computed by importance sampling \n")
   }
   
   if (method=="lin"){
@@ -117,32 +167,84 @@ compare.saemix<-function(mod.list,...) {
     str.model <- list()
     cov.model <- list()
     
-    for (k in 1:nb.mod){
-      info[k,] <- c(mod.list[[k]]@results@aic.lin,mod.list[[k]]@results@bic.lin)
-      str.model[[k]] <- deparse(mod.list[[k]]@model@model)
-      cov.model[[k]] <- deparse(mod.list[[k]]@model@covariance.model)
-    }
+    # Comparison of datasets : if models are estimated on different datasets, comparison does 
+    # not make sense. 
     
-    same.str.model <- rep(NA,(nb.mod-1))
-    same.cov.model <- rep(NA,(nb.mod-1))
+    same.data <- rep(NA,(nb.mod-1))
     
     for (k in 2:nb.mod){
-      same.str.model[k] <- all(str.model[[1]]==str.model[[k]])
-      same.cov.model[k] <- all(cov.model[[1]]==cov.model[[k]])
+      same.data[k-1] <- identical(mod.list[[1]]@data,mod.list[[k]]@data)
     }
     
-    # Si même modèle structurel et même structure d'effets aléatoires
-    if ((!("FALSE" %in% same.str.model)) && (!("FALSE" %in% same.cov.model))){
-      bic.cov <- rep(NA,nb.mod)
-      for (k in 1:nb.mod){
-        bic.cov[k] <- mod.list[[k]]@results@bic.covariate.lin
+    
+    if ("FALSE" %in% same.data){
+      stop('Compared models should be fitted on the same data.')
+    } else{
+      # Comparison of the statistical models : BIC.covariate does only make sense if model type,
+      # structural model (and) residual model if appropriate), and covariance structure for the random 
+      # effects are the same
+      
+      for (k  in 1:nb.mod){
+        info[k,] <- c(mod.list[[k]]@results@aic.lin,mod.list[[k]]@results@bic.lin)
       }
-      info <- cbind(info, bic.cov)
-      colnames(info) <- c("AIC","BIC","BIC.cov")
+      
+      same.model.type <- rep(NA,(nb.mod-1))
+      same.str.model <- rep(NA,(nb.mod-1))
+      
+      for (k in 2:nb.mod){
+        same.model.type[k-1] <- identical(mod.list[[1]]@model@modeltype,mod.list[[k]]@model@modeltype)
+        same.str.model[k-1] <- identical(mod.list[[1]]@model@model,mod.list[[k]]@model@model)
+      }
+      
+      if (!("FALSE" %in% same.model.type)){
+        
+        if (!("FALSE" %in% same.str.model)){
+          
+          same.cov.model <- rep(NA,(nb.mod-1))
+          
+          for (k in 2:nb.mod){
+            same.cov.model[k-1] <- identical(mod.list[[1]]@model@covariance.model,mod.list[[k]]@model@covariance.model)
+          }
+          
+          if (mod.list[[1]]@model@modeltype == "structural"){
+            
+            same.res.model <- rep(NA,(nb.mod-1))
+            
+            
+            
+            for (k in 2:nb.mod){
+              same.res.model[k-1] <- identical(mod.list[[1]]@model@error.model,mod.list[[k]]@model@error.model)
+            }
+            
+            if ((!("FALSE" %in% same.cov.model)) && (!("FALSE" %in% same.res.model))){
+              bic.cov <- rep(NA,nb.mod)
+              for (k in 1:nb.mod){
+                bic.cov[k] <- mod.list[[k]]@results@bic.covariate.lin
+              }
+              info <- cbind(info, bic.cov)
+              colnames(info) <- c("AIC","BIC","BIC.cov")
+              
+            }
+            
+          } else {
+            if (!("FALSE" %in% same.cov.model)){
+              bic.cov <- rep(NA,nb.mod)
+              for (k in 1:nb.mod){
+                bic.cov[k] <- mod.list[[k]]@results@bic.covariate.lin
+              }
+              info <- cbind(info, bic.cov)
+              colnames(info) <- c("AIC","BIC","BIC.cov")
+            }
+          }
+        }
+        
+      }
+      
+    
+      
+      cat("Likelihoods computed by linearisation \n")
     }
-    cat("Likelihoods computed by linearisation \n")
   }
-  
   
   if (method=="gq"){
     
@@ -153,32 +255,81 @@ compare.saemix<-function(mod.list,...) {
     str.model <- list()
     cov.model <- list()
     
-    for (k in 1:nb.mod){
-      info[k,] <- c(mod.list[[k]]@results@aic.lin,mod.list[[k]]@results@bic.lin)
-      str.model[[k]] <- deparse(mod.list[[k]]@model@model)
-      cov.model[[k]] <- deparse(mod.list[[k]]@model@covariance.model)
-    }
+    # Comparison of datasets : if models are estimated on different datasets, comparison does 
+    # not make sense. 
     
-    same.str.model <- rep(NA,(nb.mod-1))
-    same.cov.model <- rep(NA,(nb.mod-1))
+    same.data <- rep(NA,(nb.mod-1))
     
     for (k in 2:nb.mod){
-      same.str.model[k] <- all(str.model[[1]]==str.model[[k]])
-      same.cov.model[k] <- all(cov.model[[1]]==cov.model[[k]])
+      same.data[k-1] <- identical(mod.list[[1]]@data,mod.list[[k]]@data)
     }
     
-    # Si même modèle structurel et même structure d'effets aléatoires
-    if ((!("FALSE" %in% same.str.model)) && (!("FALSE" %in% same.cov.model))){
-      bic.cov <- rep(NA,nb.mod)
-      for (k in 1:nb.mod){
-        bic.cov[k] <- mod.list[[k]]@results@bic.covariate.gq
+    
+    if ("FALSE" %in% same.data){
+      stop('Compared models should be fitted on the same data.')
+    } else{
+      # Comparison of the statistical models : BIC.covariate does only make sense if model type,
+      # structural model (and residual model if appropriate), and covariance structure for the random 
+      # effects are the same
+      
+      for (k  in 1:nb.mod){
+        info[k,] <- c(mod.list[[k]]@results@aic.gq,mod.list[[k]]@results@bic.gq)
       }
-      info <- cbind(info, bic.cov)
-      colnames(info) <- c("AIC","BIC","BIC.cov")
+      
+      same.model.type <- rep(NA,(nb.mod-1))
+      same.str.model <- rep(NA,(nb.mod-1))
+      
+      for (k in 2:nb.mod){
+        same.model.type[k-1] <- identical(mod.list[[1]]@model@modeltype,mod.list[[k]]@model@modeltype)
+        same.str.model[k-1] <- identical(mod.list[[1]]@model@model,mod.list[[k]]@model@model)
+      }
+      
+      if (!("FALSE" %in% same.model.type)){
+        
+        if (!("FALSE" %in% same.str.model)){
+          
+          same.cov.model <- rep(NA,(nb.mod-1))
+          
+          for (k in 2:nb.mod){
+            same.cov.model[k-1] <- identical(mod.list[[1]]@model@covariance.model,mod.list[[k]]@model@covariance.model)
+          }
+          
+          if (mod.list[[1]]@model@modeltype == "structural"){
+            
+            same.res.model <- rep(NA,(nb.mod-1))
+            
+            
+            
+            for (k in 2:nb.mod){
+              same.res.model[k-1] <- identical(mod.list[[1]]@model@error.model,mod.list[[k]]@model@error.model)
+            }
+            
+            if ((!("FALSE" %in% same.cov.model)) && (!("FALSE" %in% same.res.model))){
+              bic.cov <- rep(NA,nb.mod)
+              for (k in 1:nb.mod){
+                bic.cov[k] <- mod.list[[k]]@results@bic.covariate.gq
+              }
+              info <- cbind(info, bic.cov)
+              colnames(info) <- c("AIC","BIC","BIC.cov")
+              
+            }
+            
+          } else {
+            if (!("FALSE" %in% same.cov.model)){
+              bic.cov <- rep(NA,nb.mod)
+              for (k in 1:nb.mod){
+                bic.cov[k] <- mod.list[[k]]@results@bic.covariate.gq
+              }
+              info <- cbind(info, bic.cov)
+              colnames(info) <- c("AIC","BIC","BIC.cov")
+            }
+          }
+        }
+        
+      }
+      
+      cat("Likelihoods computed by Gaussian quadrature \n")
     }
-    
-    cat("Likelihoods computed by Gaussian quadrature \n")
   }
-  
   return(info)
 }
