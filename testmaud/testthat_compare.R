@@ -12,6 +12,7 @@ test_that("Errors", {
              data = Theoph.4)  
   expect_error(compare.saemix(list(saemix.fit,fm1)),"All inputs should have class 'SaemixObject'.")
   expect_error(compare.saemix(list(saemix.fit,binary.fit)),"Compared models should be fitted on the same data.")
+  expect_warning(compare.saemix(list(binary.fit,binary.fit2),method="lin"),"Linearisation is not appropriate for computing likelihoods in discrete models.")
 })
 
 test_that("Appropriate use of BIC.covariate",{

@@ -11,9 +11,9 @@ for(iboot in 1:nboot) {
   data.bootCase <- dataGen.case(saemix.fit)
   fit.bootCase<-saemix(saemix.model,data.bootCase,saemix.bootOpt)
   res<-fit.bootCase@results
-  l1<-c(iboot,res@fixed.effects, diag(res@omega)[idx.iiv],res@respar[idx.eps], res@se.fixed, res@se.omega[idx.iiv], res@se.respar[idx.eps],res@ll.lin)
+  l1<-c(iboot,res@fixed.effects, diag(res@omega)[idx.iiv],res@ll.lin)
   res.boot<-rbind(res.boot,l1) 
 }
-lnam<-c(saemix.model@name.fixed,saemix.model@name.random,saemix.model@name.sigma[idx.eps])
-colnames(res.boot)<-c("Replicate",lnam, paste("SE",lnam,sep="."),"LL")
+lnam<-c(saemix.model@name.fixed,saemix.model@name.random)
+colnames(res.boot)<-c("Replicate",lnam,"LL")
 
