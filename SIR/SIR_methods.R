@@ -158,16 +158,18 @@ importance.ratio <- function(SaemixSIR){
 resample <- function(sampled.theta, IR, m, warnings){
   if(warnings)cat('Resampling...')
   resamptheta <- matrix(nrow = m, ncol=ncol(sampled.theta))
+  resamples.order <- c()
   for (i in 1:m){
     p.resample <- IR/sum(IR) #without replacement
     p.resample[is.na(p.resample)] <- 0
     indice <- sample.int(nrow(sampled.theta), size=1, replace=TRUE, prob=p.resample)
     resamptheta[i,1:ncol(sampled.theta)] <- sampled.theta[indice,]
     IR[indice] <- 0
+    resamples.order <- c(resamples.order, indice)
   }
   colnames(resamptheta) <- colnames(sampled.theta)
   if(warnings)cat('done.\n')
-  return(resamptheta)
+  return(list(resamptheta, resamples.order))
 }
 
 

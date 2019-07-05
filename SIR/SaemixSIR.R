@@ -37,7 +37,8 @@ setClass(Class="SaemixSIR",
     OFVi='numeric', #vector of OFVs of the sampled.theta
     IR='numeric', # vector of importance ratios for each vector of parameter sample
     #resampling
-    resampled.theta='matrix', 
+    resampled.theta='matrix',
+    resamples.order='numeric',
     sdSIR='numeric',
     
     warnings='logical'
@@ -121,6 +122,7 @@ setMethod(
     .Object@OFVi <- numeric(0)
     .Object@IR <- numeric(0)
     .Object@resampled.theta <- matrix()
+    .Object@resamples.order <- numeric(0)
     .Object@sdSIR <- numeric(0)
     
     if(missing(warnings)) warnings<-TRUE
@@ -191,6 +193,7 @@ setMethod(
             "OFVi"={return(x@OFVi)},
             "IR"={return(x@IR)},
             "resampled.theta"={return(x@resampled.theta)},
+            "resamples.order"={return(x@resamples.order)},
             "sdSIR"={return(x@sdSIR)},
             "warnings"={return(x@warnings)},
 

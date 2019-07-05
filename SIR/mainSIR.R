@@ -50,8 +50,10 @@ saemixSIR<-function(SaemixObject, M, m, inflation, est.mu, cov.mat, optionll, wa
   SaemixSIR@IR <- IR
   
   ####### RESAMPLING #######
-  resampled.theta <- resample(sampled.theta, IR, m, warnings)
+  resamp <- resample(sampled.theta, IR, m, warnings)
+  resampled.theta <- resamp[[1]]
   SaemixSIR@resampled.theta <- resampled.theta
+  SaemixSIR@resamples.order <- resamp[[2]] 
 
   
   ####### HISTOGRAMS OF RESAMPLES #######
