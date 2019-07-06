@@ -188,8 +188,84 @@ est.se
 
 ## Calcul SE par bootstrap pour l'ensemble des jeux de données binomial 
 
-Test du bootstrap pour un modèle binomial (Eco TODO)
+Test du bootstrap pour un modèle binomial
 
 - Code bootstrap - en mode batch
 - R CMD BATCH run_bootstrapBinomial.R 
+
+```{r bootDistribN200, echo=FALSE}
+simpar<-c(-2,0.09,0.09*5,0.7**2,0.17**2)
+namres<-file.path(saemixDir,"bootstrap","resEstimBinomialMarilou.tab")
+estimpar<-read.table(namres,header=T)
+apply(estimpar,2,summary)
+seemp<-apply(estimpar,2,sd)
+
+resDir<-"/home/eco/work/monolix/rversion/newLib/bootstrapSim"
+bootsum<-NULL
+for(ires in 1:200) {
+  namfile<-file.path(resDir,"binomial",paste("bootstrap",ires,".txt",sep=""))
+  res.boot<-read.table(namfile,header=TRUE)
+  bootsum<-rbind(bootsum,
+              cbind(sim=rep(ires,5),rbind(mean=apply(res.boot[,2:6],2,mean),sd=apply(res.boot[,2:6],2,sd),apply(res.boot[,2:6],2,quantile,c(0.025,0.5,0.975))),type=c("mean","sd","q025","q50","q975")))
+}
+bootsum<-as.data.frame(bootsum,stringsAsFactors = FALSE)
+for(i in 1:6) bootsum[,i]<-as.double(bootsum[,i])
+par(mfrow=c(2,3))
+for(ipar in 1:5) {
+  ptab<-bootsum[bootsum$type=="sd",(ipar+1)]
+  hist(ptab,breaks=30,main="",xlab=colnames(bootsum)[(ipar+1)])
+  abline(v=seemp[(ipar+1)],col="Red",lwd=3)
+}
+
+# Coverage - nb de jdd où le paramètre simulé est compris dans l'intervalle bootstrap à 95%
+ncov<-c()
+for(ipar in 1:5) {
+  b1<-bootsum[bootsum$type=="q025",(ipar+1)]
+  b2<-bootsum[bootsum$type=="q975",(ipar+1)]
+  xpar<-simpar[ipar]
+  ncov<-c(ncov,sum((b1-xpar)*(b2-xpar)<=0)/length(b1))
+}
+bootsum200<-bootsum
+ncov200<-ncov
+
+ncov
+```
+
+```{r bootDistribN20, echo=FALSE}
+simpar<-c(-2,0.09,0.09*5,0.7**2,0.17**2)
+namres<-file.path(saemixDir,"bootstrap","resEstimBinomialMarilou_N20.tab")
+estimpar<-read.table(namres,header=T)
+apply(estimpar,2,summary)
+seemp<-apply(estimpar,2,sd)
+
+resDir<-"/home/eco/work/monolix/rversion/newLib/bootstrapSim"
+bootsum<-NULL
+for(ires in 1:200) {
+  namfile<-file.path(resDir,"binom20",paste("bootstrap",ires,".txt",sep=""))
+  res.boot<-read.table(namfile,header=TRUE)
+  bootsum<-rbind(bootsum,
+              cbind(sim=rep(ires,5),rbind(mean=apply(res.boot[,2:6],2,mean),sd=apply(res.boot[,2:6],2,sd),apply(res.boot[,2:6],2,quantile,c(0.025,0.5,0.975))),type=c("mean","sd","q025","q50","q975")))
+}
+bootsum<-as.data.frame(bootsum,stringsAsFactors = FALSE)
+for(i in 1:6) bootsum[,i]<-as.double(bootsum[,i])
+par(mfrow=c(2,3))
+for(ipar in 1:5) {
+  ptab<-bootsum[bootsum$type=="sd",(ipar+1)]
+  hist(ptab,breaks=30,main="",xlab=colnames(bootsum)[(ipar+1)])
+  abline(v=seemp[(ipar+1)],col="Red",lwd=3)
+}
+
+# Coverage - nb de jdd où SEempirique comprise dans l'IC à 95%
+ncov<-c()
+for(ipar in 1:5) {
+  b1<-bootsum[bootsum$type=="q025",(ipar+1)]
+  b2<-bootsum[bootsum$type=="q975",(ipar+1)]
+  xpar<-simpar[ipar]
+  ncov<-c(ncov,sum((b1-xpar)*(b2-xpar)<=0)/length(b1))
+}
+bootsum20<-bootsum
+ncov20<-ncov
+
+ncov
+```
 
