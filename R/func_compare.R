@@ -227,6 +227,7 @@ compare.saemix<-function(mod.list,...) {
             }
             
           } else {
+            warning('Linearisation is not appropriate for computing likelihoods in discrete models.')
             if (!("FALSE" %in% same.cov.model)){
               bic.cov <- rep(NA,nb.mod)
               for (k in 1:nb.mod){
