@@ -5,7 +5,7 @@
 
 ###### SAMPLING ######
 
-sampling <- function(SaemixObject, M=5000, inflcov.mat, optionll, warnings){
+sampling <- function(SaemixObject, M=5000, inflprop.distr, optionll, warnings){
   if(warnings) cat('Sampling and computation of OFVs...\n')
   if ("mvtnorm" %in% rownames(installed.packages())==F) {
     install.packages("mvtnorm")
@@ -17,8 +17,8 @@ sampling <- function(SaemixObject, M=5000, inflcov.mat, optionll, warnings){
   indx.fixed <- c(indx.fix, indx.cov)
   nfix <- length(indx.fixed)
 
-  se.parfix<-inflcov.mat[1:nfix,1:nfix]
-  se.parvar<-inflcov.mat[(nfix+1):npar.est,(nfix+1):npar.est]
+  se.parfix<-inflprop.distr[1:nfix,1:nfix]
+  se.parvar<-inflprop.distr[(nfix+1):npar.est,(nfix+1):npar.est]
   parfix <- t(SaemixObject['results']['fixed.effects'])
   par <- estpar.vector(SaemixObject)
   parvar <- par[-indx.fixed]
@@ -125,7 +125,7 @@ importance.ratio <- function(SaemixSIR){
   sampled.theta <- SaemixSIR['sampled.theta']
   optionll <- SaemixSIR['optionll']
   est.mu <- SaemixSIR['est.mu']
-  inflcov.mat <- SaemixSIR['inflcov.mat']
+  inflprop.distr <- SaemixSIR['inflprop.distr']
   warnings <- SaemixSIR['warnings']
   
   if (optionll=='importance_sampling'){
@@ -144,9 +144,9 @@ importance.ratio <- function(SaemixSIR){
   num <- exp(-(1/2)*(OFVi-OFVml))
   num[OFVi==0] <- 0
   den <- c()
-  invinflcov.mat <- solve(inflcov.mat)
+  invinflprop.distr <- solve(inflprop.distr)
   for (i in 1:nrow(sampled.theta)){
-    den <- c(den, exp(-(1/2)*(sampled.theta[i,]-est.mu)%*%invinflcov.mat%*%as.matrix(sampled.theta[i,]-est.mu)))
+    den <- c(den, exp(-(1/2)*(sampled.theta[i,]-est.mu)%*%invinflprop.distr%*%as.matrix(sampled.theta[i,]-est.mu)))
   }
   IR <- num/den
   if(warnings)cat('done.\n')

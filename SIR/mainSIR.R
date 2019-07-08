@@ -9,7 +9,7 @@
 #' 
 #' @export saemix
 
-saemixSIR<-function(SaemixObject, M, m, inflation, est.mu, cov.mat, optionll, warnings) {
+saemixSIR<-function(SaemixObject, M, m, inflation, est.mu, prop.distr, optionll, warnings) {
   if (missing(SaemixObject)) {
     cat('Missing SaemixObject argument')
     return("Creation of SaemixSIR object has failed")
@@ -17,7 +17,7 @@ saemixSIR<-function(SaemixObject, M, m, inflation, est.mu, cov.mat, optionll, wa
   if(class(SaemixObject)!="SaemixObject") {
     return("Please provide a valid SaemixObject object (see the help page for SaemixObject)\n")
   }
-  SaemixSIR<-new(Class="SaemixSIR",SaemixObject=SaemixObject, M=M, m=m, inflation=inflation, optionll=optionll, est.mu=est.mu, cov.mat=cov.mat, warnings=warnings)
+  SaemixSIR<-new(Class="SaemixSIR",SaemixObject=SaemixObject, M=M, m=m, inflation=inflation, optionll=optionll, est.mu=est.mu, prop.distr=prop.distr, warnings=warnings)
   
   
   ############################################
@@ -29,14 +29,14 @@ saemixSIR<-function(SaemixObject, M, m, inflation, est.mu, cov.mat, optionll, wa
   m <- SaemixSIR['m']
   est.mu <- SaemixSIR['est.mu']
   
-  inflcov.mat <- SaemixSIR['inflcov.mat']
+  inflprop.distr <- SaemixSIR['inflprop.distr']
   optionll <- SaemixSIR['optionll']
   name.param <- SaemixSIR['name.param']
   
   warnings <- SaemixSIR['warnings']
   
   ####### SAMPLING #######
-  list <- sampling(SaemixObject, M, inflcov.mat, optionll, warnings)
+  list <- sampling(SaemixObject, M, inflprop.distr, optionll, warnings)
   sampled.theta <- list[[1]]
   OFVi <- list[[2]]
   samptries <- list[[3]]

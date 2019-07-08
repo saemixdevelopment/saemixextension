@@ -24,9 +24,9 @@ setClass(Class="SaemixSIR",
     M='numeric', #number of samples from the proposal distribution
     m='numeric', #number of resamples 
     est.mu='numeric', #vector of estimations of parameters
-    cov.mat='matrix', #covariance matrix aka proposal distribution (taken with est.mu)
+    prop.distr='matrix', #proposal distribution (can be covariance matrix, or another proposal distribution)
     inflation='numeric', #inflation coefficient
-    inflcov.mat="matrix", #inflated covariance matrix = inflated proposal distribution
+    inflprop.distr="matrix", #inflated covariance matrix = inflated proposal distribution
     name.param='character', #names of the estimated parameters
     optionll='character', #option for log-likelihood calculation
            
@@ -65,7 +65,7 @@ setClass(Class="SaemixSIR",
 #' @param m number of resamples
 #' @param inflation inflation coefficient
 #' @param est.mu a vector of the estimated parameters
-#' @param cov.mat proposal distribution of parameters (covariance matrix)
+#' @param prop.distr proposal distribution of parameters (covariance matrix or other)
 #' @param optionll option for log-likelihood computation
 #' @param warnings option for warnings printing
 #' 
@@ -74,7 +74,7 @@ setClass(Class="SaemixSIR",
 setMethod(
   f="initialize",
   signature="SaemixSIR",
-  definition= function(.Object, SaemixObject, M, m, inflation, est.mu, cov.mat, optionll, warnings){
+  definition= function(.Object, SaemixObject, M, m, inflation, est.mu, prop.distr, optionll, warnings){
     #    cat ("--- initialising SaemixSIR Object --- \n")
     if(missing(SaemixObject)) {
       message('[SaemixObject: Error] Missing SaemixObject.')
@@ -103,19 +103,19 @@ setMethod(
     .Object@est.mu <- est.mu
     
     
-    if(missing(cov.mat)) cov.mat <- solve(SaemixObject@results@fim)
-    if(dim(cov.mat)[1]!=dim(cov.mat)[2]){
-      message("[cov.mat: Error] Covariance matrix is not a square matrix.")
+    if(missing(prop.distr)) prop.distr <- solve(SaemixObject@results@fim)
+    if(dim(prop.distr)[1]!=dim(prop.distr)[2]){
+      message("[prop.distr: Error] Proposal distribution is not a square matrix.")
       return(.Object)
     }
-    if(dim(cov.mat)[1]!=l){
-      message("[cov.mat: Error] Covariance matrix does not have the right dimensions (number of columns and rows should be equal to the number of estimated parameters)")
+    if(dim(prop.distr)[1]!=l){
+      message("[prop.distr: Error] Proposal distribution does not have the right dimensions (number of columns and rows should be equal to the number of estimated parameters)")
       return(.Object)
     }
-    .Object@cov.mat <- cov.mat
+    .Object@prop.distr <- prop.distr
     
     
-    .Object@inflcov.mat <- inflation*cov.mat
+    .Object@inflprop.distr <- inflation*prop.distr
     
     .Object@sampled.theta <- matrix()
     .Object@samptries <- 0
@@ -184,11 +184,11 @@ setMethod(
             "M"={return(x@M)},
             "m"={return(x@m)},
             "est.mu"={return(x@est.mu)},
-            "cov.mat"={return(x@cov.mat)},
+            "prop.distr"={return(x@prop.distr)},
             "name.param"={return(x@name.param)},
             "optionll"={return(x@optionll)},
             "inflation"={return(x@inflation)},
-            "inflcov.mat"={return(x@inflcov.mat)},
+            "inflprop.distr"={return(x@inflprop.distr)},
             "sampled.theta"={return(x@sampled.theta)},
             "OFVi"={return(x@OFVi)},
             "IR"={return(x@IR)},
@@ -224,7 +224,7 @@ setMethod("summary","SaemixSIR",
             infl <- object@inflation
             optionll <- object@optionll
             name.param <- object@name.param
-            cov.mat <- object@cov.mat
+            prop.distr <- object@prop.distr
             est.mu <- object@est.mu
             sdSIR <- object@sdSIR
             
@@ -242,7 +242,7 @@ setMethod("summary","SaemixSIR",
               cat("----------------------------------------------------\n")
               cat("-----------------  Results of SIR  -----------------\n")
               cat("----------------------------------------------------\n")
-              sd <- sqrt(diag(cov.mat))
+              sd <- sqrt(diag(prop.distr))
               tab <- rbind(est.mu, sd,sdSIR)
               colnames(tab)<- name.param
               row.names(tab)<- c('Estimated parameters', 'Standard deviation before SIR','Standard deviation after SIR')
