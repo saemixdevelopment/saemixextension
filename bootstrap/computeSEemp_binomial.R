@@ -1,11 +1,21 @@
 saemixDir<-"/home/eco/work/monolix/rversion/newLib/saemix"
 setwd(saemixDir)
+scenario<-"n200"
+scenario<-"n20"
 
-sirDir<-"/home/eco/work/theses/sirM2marilou/simulations"
+if(scenario=="n200") {
+  sirDir<-"/home/eco/work/theses/sirM2marilou/simulations"
+  namres<-file.path(saemixDir,"bootstrap","resEstimBinomialMarilou.tab")
+}
+
+if(scenario=="n20") {
+  sirDir<-"/home/eco/work/theses/sirM2marilou/simulations/binom20"
+  namres<-file.path(saemixDir,"bootstrap","resEstimBinomialMarilou_N20.tab")
+}
+
 sirDataDir<-file.path(sirDir,"data")
 
 source(file.path(saemixDir,"testeco","helper-source.R"))
-datDir<-file.path(saemixDir,"data")
 
 binary.model<-function(psi,id,xidep) {
   tim<-xidep[,1]
@@ -28,7 +38,6 @@ saemix.model<-saemixModel(model=binary.model,description="Binary model",
 saemix.options<-list(seed=1234567,save=FALSE,save.graphs=FALSE)
 
 tabres<-NULL
-namres<-file.path(saemixDir,"bootstrap","resEstimBinomialMarilou.tab")
 l1<-c("Simulation","theta1","theta2","beta","omega2.theta1","omega2.theta2")
 write(l1,namres,ncolumns = length(l1))
 
