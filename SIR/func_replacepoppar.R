@@ -53,12 +53,20 @@ replacePopPar.saemixObject<-function(saemixObject, newparam) {
   saemix.newObj["results"]["ll.lin"] <-numeric(0)
   saemix.newObj["results"]["aic.lin"] <-numeric(0)
   saemix.newObj["results"]["bic.lin"] <-numeric(0)
+  saemix.newObj["results"]["bic.covariate.lin"] <-numeric(0)
   saemix.newObj["results"]["ll.gq"] <-numeric(0)
   saemix.newObj["results"]["aic.gq"] <-numeric(0)
   saemix.newObj["results"]["bic.gq"] <-numeric(0)
+  saemix.newObj["results"]["bic.covariate.gq"] <-numeric(0)
+  
+  saemix.model <- saemixObject["model"]
+  saemix.newObj["results"]["nbeta.random"]<- sum(saemix.model["betaest.model"]%*%diag(saemix.model["fixed.estim"])%*%as.matrix(diag(saemix.model["covariance.model"])))
+  saemix.newObj["results"]["nbeta.fixed"]<-  sum(saemix.model["betaest.model"]%*%diag(saemix.model["fixed.estim"])%*%as.matrix(-1*diag(saemix.model["covariance.model"])+1))
+  
   saemix.newObj["results"]["ll.is"] <-numeric(0)
   saemix.newObj["results"]["aic.is"] <-numeric(0)
   saemix.newObj["results"]["bic.is"] <-numeric(0)
+  saemix.newObj["results"]["bic.covariate.is"] <-numeric(0)
   saemix.newObj["results"]["predictions"] <-data.frame()
   saemix.newObj["results"]["ypred"] <-numeric(0)
   saemix.newObj["results"]["ppred"] <-numeric(0)
