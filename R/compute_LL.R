@@ -296,7 +296,7 @@ llgq.saemix<-function(saemixObject) {
 	saemixObject["results"]["ll.gq"]<-ll
 	saemixObject["results"]["aic.gq"]<-(-2)*saemixObject["results"]["ll.gq"]+ 2*saemixObject["results"]["npar.est"]
 	saemixObject["results"]["bic.gq"]<-(-2)*saemixObject["results"]["ll.gq"]+ log(saemixObject["data"]["N"])*saemixObject["results"]["npar.est"]
-	saemixObject["results"]["bic.covariate.gq"]<-(-2)*saemixObject["results"]["ll.is"]+ log(saemixObject["data"]["N"])*saemixObject["results"]["nbeta.random"]+log(sum(saemixObject["data"]["nind.obs"]))*saemixObject["results"]["nbeta.fixed"]
+	saemixObject["results"]["bic.covariate.gq"]<-(-2)*saemixObject["results"]["ll.gq"]+ log(saemixObject["data"]["N"])*saemixObject["results"]["nbeta.random"]+log(sum(saemixObject["data"]["nind.obs"]))*saemixObject["results"]["nbeta.fixed"]
 	return(saemixObject)
 }
 
