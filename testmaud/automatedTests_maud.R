@@ -32,3 +32,6 @@ test_file(file.path(saemixDir,"testmaud","testthat_bic-covariate.R"))
 
 test_file(file.path(saemixDir,"testmaud","testthat_compare.R"))
 
+# Check step.saemix method
+
+test_file(file.path(saemixDir,"testmaud","testthat_stepwise.R"))
