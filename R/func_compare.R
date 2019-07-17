@@ -1,20 +1,69 @@
 ###########################  Model Comparison with BIC or AIC 	#############################
 
-#' Compares two or more models with information criteria.
+#' Model comparison with information criteria (AIC, BIC).
 #' 
-#' A specific penalty can be used in BIC when the compared models have in common the 
-#' structural model and the covariance structure for the random effects (BIC.cov). 
+#' A specific penalty is used for BIC (BIC.cov) when the compared models have in common the 
+#' structural model and the covariance structure for the random effects (see Delattre et al., 2014). 
 #' 
-#' @param mod.list A list of two objects returned by the \code{\link{saemix}} function
+#' Note that the comparison between two or more models will only be valid if they are 
+#' fitted to the same dataset.
+#' 
+#' @param mod.list A list of two or more objects returned by the \code{\link{saemix}} function
 #' @param method The method used for computing the likelihood : "is" (Importance Sampling), 
 #' "ll" (Linearisation) or "gq" (Gaussian quadrature). Default "is"
-#' @return A matrix of information criteria is returned
-#' @author Emmanuelle Comets <emmanuelle.comets@@inserm.fr>, Audrey Lavenu,
-#' Marc Lavielle.
-#' @seealso \code{\link{SaemixObject}},\code{\link{saemix}}
-#' @references COMPLETER
-#' @keywords models
-#' @examples
+#' @return A matrix of information criteria is returned, with at least two columns containing respectively
+#' AIC and BIC values for each of the compared models. When the models have in common the structural model 
+#' and the covariance structure for the random effects, the matrix includes an additional column with BIC.cov 
+#' values that are more appropriate when the comparison only concerns the covariates.
+#' @author Emmanuelle Comets <emmanuelle.comets@@inserm.fr>, Maud Delattre
+#' @references Delattre, M., Lavielle, M. and Poursat, M.A. (2014) A note on BIC in mixed effects models. 
+#' Electronic Journal of Statistics 8(1) p. 456-475
+#' @keywords model comparison, AIC, BIC
+#' @examples 
+#' data(theo.saemix)
+#' 
+#' saemix.data<-saemixData(name.data=theo.saemix,header=TRUE,sep=" ",na=NA,
+#'   name.group=c("Id"),name.predictors=c("Dose","Time"),
+#'   name.response=c("Concentration"),name.covariates=c("Weight","Sex"),
+#'   units=list(x="hr",y="mg/L",covariates=c("kg","-")), name.X="Time")
+#' 
+#' # Definition of models to be compared
+#' model1cpt<-function(psi,id,xidep) { 
+#'    dose<-xidep[,1]
+#'    tim<-xidep[,2]  
+#'    ka<-psi[id,1]
+#'    V<-psi[id,2]
+#'    CL<-psi[id,3]
+#'    k<-CL/V
+#'    ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
+#'    return(ypred)
+#' }
+#' # Model with one covariate
+#' saemix.model1<-saemixModel(model=model1cpt,modeltype="structural", 
+#'                           description="One-compartment model with first-order absorption",
+#'                           psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))), 
+#'                           transform.par=c(1,1,1),covariate.model=matrix(c(0,0,1,0,0,0),ncol=3,byrow=TRUE))
+#' # Model with two covariates       
+#' saemix.model2<-saemixModel(model=model1cpt,modeltype="structural", 
+#'                            description="One-compartment model with first-order absorption", 
+#'                            psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))), 
+#'                            transform.par=c(1,1,1),covariate.model=matrix(c(0,0,1,0,1,0),ncol=3,byrow=TRUE))
+#' # Model with three covariates
+#' saemix.model3<-saemixModel(model=model1cpt,modeltype="structural", 
+#'                            description="One-compartment model with first-order absorption", 
+#'                            psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))), 
+#'                            transform.par=c(1,1,1),covariate.model=matrix(c(1,0,1,0,1,0),ncol=3,byrow=TRUE))
+#' 
+#' # Running the main algorithm to estimate the population parameters                                                     
+#' saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE)
+#' saemix.fit1<-saemix(saemix.model1,saemix.data,saemix.options)
+#' saemix.fit2<-saemix(saemix.model2,saemix.data,saemix.options)
+#' saemix.fit3<-saemix(saemix.model3,saemix.data,saemix.options)
+#' 
+#' # Model comparison
+#' 
+#' comparison.res <- compare.saemix(list(saemix.fit1, saemix.fit2,saemix.fit3))
+#' 
 #' @export compare.saemix
 
 
