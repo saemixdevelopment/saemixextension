@@ -28,9 +28,6 @@ dOFVsamp <- function(SaemixSIR){
   SaemixObject <- SaemixSIR['SaemixObject']
   optionll <- SaemixSIR['optionll']
   dOFVvec <- c(0*length(nrow(sample)))
-  if (optionll=='linearisation'){
-    ll <- SaemixObject["results"]["ll.lin"]
-  }
   if (optionll=='importance_sampling'){
     ll <- SaemixObject["results"]["ll.is"]
   }
@@ -50,9 +47,6 @@ dOFVresamp <- function(SaemixSIR, resample, warn){
   SaemixObject <- SaemixSIR['SaemixObject']
   optionll <- SaemixSIR['optionll']
   dOFVvec <- c(0*length(nrow(sample)))
-  if (optionll=='linearisation'){
-    ll <- SaemixObject["results"]["ll.lin"]
-  }
   if (optionll=='importance_sampling'){
     ll <- SaemixObject["results"]["ll.is"]
   }

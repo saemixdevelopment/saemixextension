@@ -38,10 +38,10 @@ setClass(Class="SaemixSIR",
     IR='numeric', # vector of importance ratios for each vector of parameter sample
     #resampling
     resampled.theta='matrix',
-    resamples.order='numeric',
+    resamples.order='numeric',#a vector with id number of sampled vectors that are resampled (in order of resampling)
     sdSIR='numeric',
     
-    warnings='logical'
+    warnings='logical' 
     
   ),
   validity=function(object){
@@ -143,8 +143,8 @@ setMethod(
     #    if(missing()) <-
     #    .Object@<-
     
-    if(missing(optionll)) optionll <- 'linearisation'
-    if(!(optionll %in% c('linearisation', 'importance_sampling', 'gaussian_quadrature'))){
+    if(missing(optionll)) optionll <- 'importance_sampling'
+    if(!(optionll %in% c('importance_sampling', 'gaussian_quadrature'))){
       message("[optionll: Error] Option of log-likelihood computation not available")
       return(.Object)
     }

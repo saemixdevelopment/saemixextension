@@ -79,23 +79,6 @@ OFVi <- function(SaemixObject, sampled.theta, optionll, warn=FALSE){
       }
     }
   }
-  
-  if (optionll=='linearisation'){
-    for (i in 1:nrow(sampled.theta)){
-      sobj <- SaemixObject
-      sobj <- replacePopPar.saemixObject(sobj, sampled.theta[i,])
-      ll[i] <- try(fim.saemix(sobj)['results']['ll.lin'], silent=T)
-      if(!is.numeric(ll[i])){ll[i]<- 0}
-      ll <- as.numeric(ll)
-      if(warn){
-        if(i==length%/%5) cat(paste(i, '/', length, 'OFVs done...\n'))
-        if(i==2*length%/%5) cat(paste(i, '/', length, 'OFVs done...\n'))
-        if(i==3*length%/%5) cat(paste(i, '/', length, 'OFVs done...\n'))
-        if(i==4*length%/%5) cat(paste(i, '/', length, 'OFVs done...\n'))
-        if(i==length) cat(paste(i, 'OFVs done.\n'))
-      }
-    }
-  }
   if (optionll=='gaussian_quadrature'){
     for (i in 1:nrow(sampled.theta)){
       sobj <- SaemixObject
@@ -131,9 +114,6 @@ importance.ratio <- function(SaemixSIR){
   if (optionll=='importance_sampling'){
     ll <- SaemixObject["results"]["ll.is"]
   }
-  if (optionll=='linearisation'){
-    ll <- SaemixObject["results"]["ll.lin"]
-  } 
   if (optionll=='gaussian_quadrature'){
     ll <- SaemixObject["results"]["ll.gq"]
   } 
