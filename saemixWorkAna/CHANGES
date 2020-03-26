@@ -1,0 +1,98 @@
+Version 3.1 -  September 2019
+o Extension to noncontinuous data models
+   * New argument in saemixModel to differentiate between continuous (type = structural) and noncontinuous (type = likelihood)
+
+Version 2.2 -  October 2018
+
+ o Bugfixes
+   * computation of the Fisher Information Matrix recoded to fix an underestimation in the standard errors of the residual error terms 
+   * FIM is now given in the results (slot fim of the results element) instead of -FIM
+ o Changes to SaemixData object
+   * changes to read method to correct warnings and improve automatic recognition
+   * elements name cens, mdv, occ and ytype are now set during object creation, to prepare for models with multiple responses (not supported in version 2.2)
+   * a slot of type logical called messages has been added to the SaemixData. Setting it to FALSE suppresses the messages output during the creation of an SaemixData object
+o Changes to SaemixModel object
+   * covariate.model can now be given as a vector (eg c(0,1,0)) or a matrix (eg matrix(c(0,1,0),ncol=3)
+o Changes to SaemixObject object
+   * the number of chains can be set to 1 by the user even with a small number of subjects (the minimum recommended number of subjects*times is 50 but the user can now choose to ignore this recommendation)
+   * the number of iterations for simulated annealing can now be set to 0 by the user
+ o Minor changes to comply with more stringent checks on CRAN
+
+Version 2.1 -  August 2017
+
+ o Version of the saemix package to CRAN that refers back to the JSS manuscript
+Comets E, Lavenu A, Lavielle M. Parameter Estimation in Nonlinear Mixed Effect Models Using saemix, an R Implementation of the SAEM Algorithm. Journal of Statistical Software (2017), 80(3):1-41. doi:10.18637/jss.v080.i03
+
+
+Version 2.0 -  September 2015
+
+ o New features
+    * the predict() function has been changed to return model predictions (see help file for details)
+    * new extractor functions have been programmed: logLik, residuals, AIC, BIC
+
+ o Bugfixes
+    * minor bugfixes (correlation plot)
+
+    
+Version 1.2 -  February 2014
+
+ o Bugfixes
+    * corrected a bug which caused the run to fail when the model had only one random effect
+    * explicit error message when attempting to create a model without random effects
+    * minor bugfixes
+
+    
+Version 1.1 -  July 2013
+
+ o Bugfixes
+    * Corrected a mistake in the inverse transformation for the logit function
+    * Corrected a bug where plot.type="population.fit" gave the same result as plot.type="individual.fit"
+ o Changes
+   * Covariates can now be entered as categorical (eg using Male/Female levels for gender instead of 0/1)
+   * An error capture was implemented to avoid the fit failing because the convergence plots cannot be plotted, which may happen when the number of parameters to estimate is very large or the size of the plotting region too small (this can easily occur when using Rstudio with a small plot window). The run would fail with the following error message (in English):
+Error in plot.new(): figure margins too large
+Now an error message will be printed out, and the graphs will not be created during the fit. However, they can still be obtained after the fit using the plot.type="convergence" argument and a suitable mfrow argument (eg mfrow=c(1,1) will plot the convergence graph for each parameter on a new page).
+   * Tests have been added when matching the covariate model specified with saemixModel and the data provided through saemixData
+- when there are less covariates than those specified in the model, only the first lines of the covariate model matrix are used (as many lines as there are covariates in the model
+- when there are more covariates than those specified in the model, an absence of relationship is assumed for the additional covariates
+  o Documentation
+    * Details on results objects have been added
+    * The section explaining the different predictions, individual parameters and weighted residuals has been clarified
+
+
+Version 1.0 -  January, 2012
+
+ o Bugfixes
+   * Missing covariates previously caused the fit to fail with a unenlightening error message. This has been corrected: now when covariates enter the model, lines with missing covariates are removed; this may cause some individuals to be removed from the dataset altogether if the corresponding covariates are missing entirely. 
+    * A bug has been corrected which caused the call to saemix to fail when the dataset included covariates with values changing within an individual; a warning message has been added to inform the user that only the first value of the covariate is used in the computations
+    * The computation of individual weighted and conditional weighted residuals with an exponential error model has been corrected.
+    * Asking for population fits mistakingly yielded individual fits instead; this has been corrected.
+    * Using an already existing directory now causes the program to overwrite previous results as the warning message implies.
+    * An error in the computation of WRES for subjects with only one observation has been corrected (this bug would cause the plot for scatterplot of residuals to fail).
+
+ o New features
+   * Binary covariates can now be entered directly as factors; if entered as strings or numbers, they will be converted to factors. Using print() on the result of saemix will show which is the reference class.
+   * Plots of the data now include the option individual=TRUE to plot individual data instead of a spaghetti plot of the whole dataset ; by default a maximum of 12 subjects are plotted, but this may be overuled with the option limit=FALSE
+   * A function subset has been defined for a SaemixData object.
+   * A function logLik has been defined to extract the log-likelihood from a SaemixObject object.
+
+ o Changes
+   * the structure of the SaemixData object has been slightly changed: the data is now included as a data.frame. All user-level functions are unchanged.
+
+
+Version 0.97 - September 13, 2011
+
+ o Bugfixes
+   * corrected a bug causing the computation of the Fisher Information Matrix (and SEs) to fail when the dataset include subjects with only one observation
+
+
+Version 0.96 - July 1, 2011
+
+ Corrected version compiling under Windows and MacOS X
+
+ o Bugfixes
+   * modified the section saving the results, using file_test() and dir.create()
+
+Version 0.95 - June 30, 2011
+
+ First version released on CRAN
