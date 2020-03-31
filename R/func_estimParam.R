@@ -63,7 +63,7 @@ estimateMeanParameters.newdata<-function(saemixObject) {
   return(saemixObject)
   
 }
-estimateIndividualParameters.newdata<-function(saemixObject,type=c("mode","mean")) {
+estimateIndividualParameters.newdata<-function(saemixObject,type=c("mode","mean"),nsamp=1) {
   if(length(saemixObject["results"]["mean.phi"])==0) {
     if(saemixObject["options"]$warnings) cat("Population parameters (Ci*mu) will first be estimated to provide a starting point for the estimation of the individual parameters.\n")
     estimateMeanParameters.newdata(saemixObject)
@@ -113,7 +113,7 @@ estimateIndividualParameters.newdata<-function(saemixObject,type=c("mode","mean"
   if(length(grep(c("mean"),type))==1) {
     # Estimating the conditional distribution of individual parameters for the new subjects
     saemixObject["results"]["cond.mean.phi"]<-phiM
-    saemixObject<-conddist.saemix(saemixObject,nsamp=1)
+    saemixObject<-conddist.saemix(saemixObject,nsamp=nsamp)
     saemixObject["results"]["cond.mean.psi"]<-transphi(saemixObject["results"]["cond.mean.phi"],saemixObject["model"]["transform.par"])
   }
   if(length(grep(c("mode"),type))==1) {
@@ -122,7 +122,8 @@ estimateIndividualParameters.newdata<-function(saemixObject,type=c("mode","mean"
   return(saemixObject)
 }
 
-predict.newdata<-function(saemixObject, saemix.newdata, type=c("ipred", "ypred", "ppred", "icpred")) {
+predict.newdata<-function(saemixObject, saemix.newdata, type=c("ipred", "ypred", "ppred", "icpred"),nsamp=1) {
+  # nsamp ignored for other types than icpred; if icpred, returns both the mean of the conditional distribution and samples, with the corresponding predictions
   # Replace the data object in saemixObject with the newdata, and wipe out the parameter and likelihood estimates associated with the initial run
   saemixObject<-replaceData.saemixObject(saemixObject,saemix.newdata)
   if(sum(is.na(saemixObject["data"]["data"][,saemixObject["data"]["name.response"]]))>0) {
@@ -184,12 +185,24 @@ predict.newdata<-function(saemixObject, saemix.newdata, type=c("ipred", "ypred",
   ctype<-c()
   if(length(grep("ipred",type))==1) ctype<-c(ctype,"mode")
   if(length(grep("icpred",type))==1) ctype<-c(ctype,"mean")
-  saemixObject<-estimateIndividualParameters.newdata(saemixObject,type=ctype)
+  saemixObject<-estimateIndividualParameters.newdata(saemixObject,type=ctype,nsamp=nsamp)
   
   if(length(grep("icpred",type))==1) {
     psiM<-parameters$cond.mean.psi<-saemixObject["results"]["cond.mean.psi"]
+    parameters$cond.var.phi<-saemixObject["results"]["cond.var.phi"]
+    parameters$cond.mean.phi<-saemixObject["results"]["cond.mean.phi"]
     fpred<-saemixObject["model"]["model"](psiM, IdM, XM)
     predictions<-cbind(predictions,icpred=fpred)
+    if(nsamp>1) {
+      samp.pred<-array(dim=c(length(fpred),nsamp))
+      samp.par<-array(dim=c(dim(psiM),nsamp))
+      for(isamp in 1:nsamp) {
+        phiM<-saemixObject["results"]["phi.samp"][,,isamp]
+        psiM<-samp.par[,,isamp]<-transphi(phiM,saemixObject["model"]["transform.par"])
+        fpred<-saemixObject["model"]["model"](psiM, IdM, XM)
+        samp.pred[,isamp]<-fpred
+      }
+    }
   }
   if(length(grep("ipred",type))==1) {
     psiM<-parameters$map.psi<-saemixObject["results"]["map.psi"]
@@ -197,7 +210,9 @@ predict.newdata<-function(saemixObject, saemix.newdata, type=c("ipred", "ypred",
     predictions<-cbind(predictions,ipred=fpred)
   }
   saemixObject["results"]["predictions"]<-predictions
-  
-  return(list(param=parameters,predictions=predictions, object=saemixObject))
+  rlist<-list(param=parameters,predictions=predictions, object=saemixObject)
+  if(length(grep("icpred",type))==1 & nsamp>1) rlist<-list(param=parameters,predictions=predictions, object=saemixObject, parSample=samp.par, predSample=samp.pred)
+
+  return(rlist)
 }
 

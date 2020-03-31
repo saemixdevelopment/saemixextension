@@ -163,27 +163,27 @@ conddist.saemix<-function(saemixObject,nsamp=1,max.iter=NULL,...) {
   Dargs<-list(transform.par=saemixObject["model"]["transform.par"], structural.model=saemixObject["model"]["model"],IdM=IdM,XM=XM,yM=yM,etype.exp=which(saemixObject["model"]["error.model"] == "exponential"), modeltype=saemixObject["model"]["modeltype"])
   args<-list(ind.ioM=ind.ioM)
   
-  # Preparing plots
-  if(saemixObject["options"]$displayProgress) {
-    plot.opt<-saemixObject["prefs"]
-    plot.opt$xlab<-"Iteration"
-    plot.opt<-replace.plot.options(plot.opt,...)
-    change.ylab<-FALSE
-    if(plot.opt$ylab!=saemixObject["prefs"]$ylab & length(plot.opt$which.par)==1) change.ylab<-TRUE
-    change.main<-FALSE
-    if(plot.opt$main!=saemixObject["prefs"]$main & length(plot.opt$which.par)==1) change.main<-TRUE
-    np<-nb.etas
-    if(length(plot.opt$mfrow)==0) {
-      n1<-round(sqrt(np))
-      n2<-ceiling(np/n1)
-      if(n1>5 | n2>5) {
-        n1<-3
-        n2<-4
-        #      cat("Changing the plot layout\n")
-      }
-      plot.opt$mfrow<-c(n1,n2)
-    }
-  }
+  # # Preparing plots
+  # if(saemixObject["options"]$displayProgress) {
+  #   plot.opt<-saemixObject["prefs"]
+  #   plot.opt$xlab<-"Iteration"
+  #   plot.opt<-replace.plot.options(plot.opt,...)
+  #   change.ylab<-FALSE
+  #   if(plot.opt$ylab!=saemixObject["prefs"]$ylab & length(plot.opt$which.par)==1) change.ylab<-TRUE
+  #   change.main<-FALSE
+  #   if(plot.opt$main!=saemixObject["prefs"]$main & length(plot.opt$which.par)==1) change.main<-TRUE
+  #   np<-nb.etas
+  #   if(length(plot.opt$mfrow)==0) {
+  #     n1<-round(sqrt(np))
+  #     n2<-ceiling(np/n1)
+  #     if(n1>5 | n2>5) {
+  #       n1<-3
+  #       n2<-4
+  #       #      cat("Changing the plot layout\n")
+  #     }
+  #     plot.opt$mfrow<-c(n1,n2)
+  #   }
+  # }
   # Simulation MCMC
   # initialisation a phiM=estimation des parametres individuels
   mean.phiM<-do.call(rbind,rep(list(saemixObject["results"]["mean.phi"]),nsamp))
@@ -343,43 +343,43 @@ conddist.saemix<-function(saemixObject,nsamp=1,max.iter=NULL,...) {
     else cat("Convergence achieved in",k,"iterations\n")
     
   }
-  if(saemixObject["options"]$displayProgress) {
-    ibeg<-1
-    nitr<-(k-ibeg)
-    if(FALSE) { # phi-scale
-      ebarbar<-apply(ebar[,ibeg:(k-1),],c(1,2),mean) # mean across the samples => npar x nitr
-      sdbarbar<-apply(sdbar[,ibeg:(k-1),],c(1,2),mean) # mean across the samples => npar x nitr
-      #      sdbarbar<-apply(sdbar,3,mean)
-      ypl1<-data.frame(Iteration=rep((ibeg:(k-1)),nb.parameters),condMean=c(t(ebarbar)),par=rep(saemixObject["model"]["name.modpar"],each=nitr),ymin=rep(ekmin,each=nitr),ymax=rep(ekmax,each=nitr),type="mean")
-      ypl2<-data.frame(Iteration=rep((ibeg:(k-1)),nb.parameters),condMean=c(t(sdbarbar)),par=rep(saemixObject["model"]["name.modpar"],each=nitr),ymin=rep(sdkmin,each=nitr),ymax=rep(sdkmax,each=nitr),type="SD")
-      ypl<-rbind(ypl1,ypl2)
-      gpl<-ggplot(data=ypl,aes(x=Iteration,y=condMean)) +geom_line() + facet_wrap(as.factor(type)~as.factor(par), scales="free") + geom_ribbon(aes(ymin=ymin,ymax=ymax),alpha=0.2,fill="darkcyan")
-      print(gpl)
-    } else { # psi-scale
-      nitr<-(k-ibeg+1)
-      for(i in 1:nsamp) {
-        for(itr in ibeg:k) {
-#          sdbar[,itr,i]<-dtransphi(t(ebar[,itr,i]),saemixObject["model"]["transform.par"])*sdbar[,itr,i]
-          ebar[,itr,i]<-transphi(t(ebar[,itr,i]),saemixObject["model"]["transform.par"])
-        }
-      }
-      #      tsdkmin<-rowMeans(sdkmin)*dtransphi(t(rowMeans(ekmin)),saemixObject["model"]["transform.par"])
-      #      tsdkmax<-rowMeans(sdkmax)*dtransphi(t(rowMeans(ekmax)),saemixObject["model"]["transform.par"])
-      tsdkmin<-rowMeans(sdkmin)
-      tsdkmax<-rowMeans(sdkmax)
-      tekmin<-transphi(t(rowMeans(ekmin)),saemixObject["model"]["transform.par"])
-      tekmax<-transphi(t(rowMeans(ekmax)),saemixObject["model"]["transform.par"])
-      
-      ebarbar<-apply(ebar[,ibeg:k,],c(1,2),mean) # mean across the samples => npar x nitr
-      sdbarbar<-apply(sdbar[,ibeg:k,],c(1,2),mean) # mean across the samples => npar x nitr
-      #      sdbarbar<-apply(sdbar,3,mean)
-      ypl1<-data.frame(Iteration=rep(c(ibeg:k),nb.parameters),condMean=c(t(ebarbar)),par=rep(saemixObject["model"]["name.modpar"],each=nitr),ymin=rep(tekmin,each=nitr),ymax=rep(tekmax,each=nitr),type="mean")
-      ypl2<-data.frame(Iteration=rep(c(ibeg:k),nb.parameters),condMean=c(t(sdbarbar)),par=rep(saemixObject["model"]["name.modpar"],each=nitr),ymin=rep(tsdkmin,each=nitr),ymax=rep(tsdkmax,each=nitr),type="SD")
-      ypl<-rbind(ypl1,ypl2)
-      gpl<-ggplot(data=ypl,aes(x=Iteration,y=condMean)) +geom_line() + facet_wrap(as.factor(type)~as.factor(par), scales="free") + geom_ribbon(aes(ymin=ymin,ymax=ymax),alpha=0.2,fill="darkcyan")
-      print(gpl)
-    }
-  }
+#   if(saemixObject["options"]$displayProgress) {
+#     ibeg<-1
+#     nitr<-(k-ibeg)
+#     if(FALSE) { # phi-scale
+#       ebarbar<-apply(ebar[,ibeg:(k-1),],c(1,2),mean) # mean across the samples => npar x nitr
+#       sdbarbar<-apply(sdbar[,ibeg:(k-1),],c(1,2),mean) # mean across the samples => npar x nitr
+#       #      sdbarbar<-apply(sdbar,3,mean)
+#       ypl1<-data.frame(Iteration=rep((ibeg:(k-1)),nb.parameters),condMean=c(t(ebarbar)),par=rep(saemixObject["model"]["name.modpar"],each=nitr),ymin=rep(ekmin,each=nitr),ymax=rep(ekmax,each=nitr),type="mean")
+#       ypl2<-data.frame(Iteration=rep((ibeg:(k-1)),nb.parameters),condMean=c(t(sdbarbar)),par=rep(saemixObject["model"]["name.modpar"],each=nitr),ymin=rep(sdkmin,each=nitr),ymax=rep(sdkmax,each=nitr),type="SD")
+#       ypl<-rbind(ypl1,ypl2)
+#       gpl<-ggplot(data=ypl,aes(x=Iteration,y=condMean)) +geom_line() + facet_wrap(as.factor(type)~as.factor(par), scales="free") + geom_ribbon(aes(ymin=ymin,ymax=ymax),alpha=0.2,fill="darkcyan")
+#       print(gpl)
+#     } else { # psi-scale
+#       nitr<-(k-ibeg+1)
+#       for(i in 1:nsamp) {
+#         for(itr in ibeg:k) {
+# #          sdbar[,itr,i]<-dtransphi(t(ebar[,itr,i]),saemixObject["model"]["transform.par"])*sdbar[,itr,i]
+#           ebar[,itr,i]<-transphi(t(ebar[,itr,i]),saemixObject["model"]["transform.par"])
+#         }
+#       }
+#       #      tsdkmin<-rowMeans(sdkmin)*dtransphi(t(rowMeans(ekmin)),saemixObject["model"]["transform.par"])
+#       #      tsdkmax<-rowMeans(sdkmax)*dtransphi(t(rowMeans(ekmax)),saemixObject["model"]["transform.par"])
+#       tsdkmin<-rowMeans(sdkmin)
+#       tsdkmax<-rowMeans(sdkmax)
+#       tekmin<-transphi(t(rowMeans(ekmin)),saemixObject["model"]["transform.par"])
+#       tekmax<-transphi(t(rowMeans(ekmax)),saemixObject["model"]["transform.par"])
+#       
+#       ebarbar<-apply(ebar[,ibeg:k,],c(1,2),mean) # mean across the samples => npar x nitr
+#       sdbarbar<-apply(sdbar[,ibeg:k,],c(1,2),mean) # mean across the samples => npar x nitr
+#       #      sdbarbar<-apply(sdbar,3,mean)
+#       ypl1<-data.frame(Iteration=rep(c(ibeg:k),nb.parameters),condMean=c(t(ebarbar)),par=rep(saemixObject["model"]["name.modpar"],each=nitr),ymin=rep(tekmin,each=nitr),ymax=rep(tekmax,each=nitr),type="mean")
+#       ypl2<-data.frame(Iteration=rep(c(ibeg:k),nb.parameters),condMean=c(t(sdbarbar)),par=rep(saemixObject["model"]["name.modpar"],each=nitr),ymin=rep(tsdkmin,each=nitr),ymax=rep(tsdkmax,each=nitr),type="SD")
+#       ypl<-rbind(ypl1,ypl2)
+#       gpl<-ggplot(data=ypl,aes(x=Iteration,y=condMean)) +geom_line() + facet_wrap(as.factor(type)~as.factor(par), scales="free") + geom_ribbon(aes(ymin=ymin,ymax=ymax),alpha=0.2,fill="darkcyan")
+#       print(gpl)
+#     }
+#   }
   
   eta.cond<-matrix(0,nrow=dim(etaM)[1],ncol=nb.parameters)
   eta.cond[,ind.eta]<-etaM

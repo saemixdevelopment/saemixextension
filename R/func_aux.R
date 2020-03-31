@@ -291,7 +291,7 @@ transphi<-function(phi,tr) {
 }
 
 derivphi<-function(phi,tr) {
-# Fonction calculant la derivee de h pour tracer la distribution des parametres
+# Fonction calculant ??? (only used to plot parameter distributions/histograms of individual parameters)
   psi<-phi # identite
   i1<-which(tr==1) # log-normal
   psi[,i1]<-1/exp(phi[,i1])
@@ -304,6 +304,7 @@ derivphi<-function(phi,tr) {
 }
 
 dtransphi<-function(phi,tr) {
+# Fonction calculant la derivee de h, used to compute the Fisher information matrix
   psi<-phi
   if(is.null(dim(phi))) {
      dpsi<-as.matrix(t(rep(1,length(phi))))

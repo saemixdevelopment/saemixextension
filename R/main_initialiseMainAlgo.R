@@ -254,13 +254,14 @@ initialiseMainAlgo<-function(saemix.data,saemix.model,saemix.options) {
 				Mcovariates=Mcovariates, ind.ioM=ind.ioM)
 	# Variability-related elements
 	omega.eta<-omega[ind.eta,ind.eta] # IIV matrix for estimated parameters
-	if(saemix.model["modeltype"]=="structural"){
-		varList<-list(pres=pres,ind0.eta=ind0.eta,ind.eta=ind.eta,omega=omega, MCOV=MCOV,
-								domega2=do.call(cbind,rep(list((sqrt(mydiag(omega.eta)))*saemix.options$rw.ini),nb.etas)),diag.omega=mydiag(omega))
-	} else {
-		varList<-list(ind0.eta=ind0.eta,ind.eta=ind.eta,omega=omega, MCOV=MCOV,
-								domega2=do.call(cbind,rep(list((sqrt(mydiag(omega.eta)))*saemix.options$rw.ini),nb.etas)),diag.omega=mydiag(omega))
-	}
+	varList<-list()
+	if(saemix.model["modeltype"]=="structural") varList$pres<-pres
+	varList$indind0.eta<-ind0.eta
+	varList$ind.eta<-ind.eta
+	varList$omega<-omega
+	varList$MCOV=MCOV
+	varList$domega2<-do.call(cbind,rep(list((sqrt(mydiag(omega.eta)))*saemix.options$rw.ini),nb.etas))
+	varList$diag.omega<-mydiag(omega)
 
 	# List of options and settings (fixed) - passed on to functions, unchanged
 	stepsize<-rep(1,saemix.options$nbiter.tot)
