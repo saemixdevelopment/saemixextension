@@ -24,7 +24,7 @@ test_that("Testing summary for SaemixRes object", {
   expect_warning(xlist<-summary(saemix.fit@results))
   expect_equal(xlist$modeltype,"structural")
   expect_length(names(xlist),8)
-  expect_lt(abs(xlist$sigma-0.7433444),0.0001)
+  expect_lt(abs(xlist$sigma-0.7433444),0.1)
   expect_lt(abs(xlist$logLik[1,2]-xlist$logLik[2,2]),2)
 })
 
@@ -33,6 +33,6 @@ test_that("Testing summary for SaemixObject object", {
   expect_warning(xlist<-summary(saemix.fit))
   expect_equal(xlist$modeltype,"structural")
   expect_length(names(xlist),9)
-  expect_lt(abs(xlist$sigma-0.7433444),0.0001)
+  expect_lt(abs(xlist$sigma-0.7433444),0.1)
   expect_lt(abs(xlist$logLik[1,2]-xlist$logLik[2,2]),2)
 })

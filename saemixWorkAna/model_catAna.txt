@@ -1,0 +1,20 @@
+DESCRIPTION: Binary logistic regression model
+
+[LONGITUDINAL]
+input =  {beta0,gamma0,delta0, dose}
+dose = {use=regressor}
+
+EQUATION:
+  lm0 = beta0+gamma0*t + delta0*dose
+
+D = exp(lm0)+1
+p0 = exp(lm0)/D
+p1 = 1/D
+
+DEFINITION:
+  y = {type=categorical, categories={0, 1}, 
+  P(y=0)=p0,
+  P(y=1)=p1}
+
+OUTPUT:
+  output = y
