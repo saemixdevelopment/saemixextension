@@ -1,0 +1,588 @@
+---
+title: "Non-continuous data examples"
+author: "Emmanuelle, Belhal"
+date: "31/03/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# Directories
+saemixDir<-"/home/eco/work/saemix/saemixextension"
+progDir<-file.path(saemixDir,"R")
+datDir<-file.path(saemixDir,"data")
+testDir<-file.path(saemixDir,"testbelhal")
+anaDir<-file.path(saemixDir,"saemixWorkAna")
+mlxDemoDir<-"/home/eco/monolix/MonolixSuite2019R2/resources/demos/monolix/"
+
+# Save results from MLX runs in subdirectory
+dir.create(file.path(testDir,"mlxRuns"))
+
+# Libraries
+library(ggplot2)
+library(MASS)
+
+# Sourcing saemix functions
+{
+  source(file.path(progDir,"aaa_generics.R"))
+  #source(file.path(progDir,"global.R"))
+  source(file.path(progDir,"SaemixData.R"))
+  source(file.path(progDir,"SaemixRes.R"))
+  source(file.path(progDir,"SaemixModel.R"))
+  source(file.path(progDir,"SaemixObject.R"))
+  source(file.path(progDir,"main.R"))
+  source(file.path(progDir,"func_aux.R"))
+  source(file.path(progDir,"main_initialiseMainAlgo.R"))
+  source(file.path(progDir,"main_estep.R"))
+  source(file.path(progDir,"main_mstep.R"))
+  source(file.path(progDir,"func_FIM.R"))
+  source(file.path(progDir,"func_plots.R"))
+  source(file.path(progDir,"func_distcond.R"))
+  source(file.path(progDir,"func_simulations.R"))
+  source(file.path(progDir,"compute_LL.R"))
+  source(file.path(progDir,"func_estimParam.R"))
+}
+
+
+# Loading and initialising mlxR
+library(lixoftConnectors)
+initializeLixoftConnectors(software="monolix", path="/home/eco/monolix/MonolixSuite2019R2/")
+```
+
+## Context
+
+Evaluate the performance of saemix in non-continuous data models, and debug if necessary.
+
+### Objective 
+
+- check the algorithm on examples from the monolix documentation
+  - for each type of model
+  - comparing the results to Monolix run through the lixoftconnector library
+- set up simulations to assess estimation of population parameters for non-continuous data models
+  - binary data: SIR example Marilou
+  - categorical data: example in testbelhal
+  - count data: example in testbelhal
+  - TTE: example in testbelhal
+  - RTTE: documentation example from demo.R
+- debug why example from Ana isn't working
+
+**Notes**
+
+1) for ORD data model, the response is a predictor. Test with new data without individual observations is non applicable.
+2) For ORD data: problem in estimating parameters with new data (map and pop params) NEED TO DEBUG. Could be in map.saemix???
+3) COUNT data model: WHEN ONLY ONE PARAM TO ESTIMATE (fixed.estim=c(1,0)) OBTAIN: 
+
+```
+# Error in cbind(blocA, t(blocC)) : 
+#   le nombre de lignes des matrices doit correspondre (voir argument 2)
+```
+
+### Simulation settings
+
+Set up initial conditions fairly standard as in the original examples. 
+
+In a second step, investigate impact of eg number of subjects, number of samples/design, IIV to assess performance more fully. Maybe couple these simulations with investigation of approaches to estimate SE.
+
+### Methods to estimate SE
+
+- bootstrap methods
+  - including conditional bootstrap
+- new SE approach to be developed by Melanie
+- SIR
+
+## 1. Test examples from the Monolix documentation
+
+### Ordinal data
+
+Modified from initial example to introduce a period effect. Corresponds to exemple *categorical2_data.mlxtran* without a dose effect (adding a dose effect doesn't work in saemix).
+
+**Notes** 
+
+- lots of error messages about the optimisation step in this example because only one random effect, look into it ! 
+- also error reading the data (complains about a missing column but still manages to produce the data object)
+- check why the model with a dose effect doesn't work
+
+```{r ordinalExample, echo=FALSE, results='hide',message=FALSE, warning=FALSE}
+smx.ord <- read.table(file.path(datDir,"categorical2_data.txt"),header=T)
+saemix.data<-saemixData(name.data=smx.ord,header=TRUE,sep=" ",na=NA, 
+name.group=c("ID"),name.predictors=c("PERIOD","Y","TIME"), name.X=c("TIME"))
+
+ordinal.model<-function(psi,id,xidep) {
+  period<-xidep[,1]
+  y<-xidep[,2]
+  alp1<-psi[id,1]
+  alp2<-psi[id,2]
+  alp3<-psi[id,3]
+  beta<-psi[id,4]
+  logit1<-alp1+beta*period
+  logit2<-logit1+alp2
+  logit3<-logit2+alp3
+  pge1<-exp(logit1)/(1+exp(logit1))
+  pge2<-exp(logit2)/(1+exp(logit2))
+  pge3<-exp(logit3)/(1+exp(logit3))
+  P.obs = (y==0)*pge1+(y==1)*(pge2 - pge1)+(y==2)*(pge3 - pge2)+(y==3)*(1 - pge3)
+  logpdf <- log(P.obs)
+  return(logpdf)
+}
+
+saemix.model<-saemixModel(model=ordinal.model,description="Ordinal categorical model", modeltype="likelihood",psi0=matrix(c(10,1,1,-5),ncol=4,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","beta"))),transform.par=c(0,1,1,0), covariance.model=diag(c(1,0,0,0)))
+
+#saemix.model<-saemixModel(model=ordinal.model,description="Ordinal categorical model", modeltype="likelihood",psi0=matrix(c(10,1,1,-5),ncol=4,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","beta"))),transform.par=c(0,1,1,0), covariance.model=matrix(c(1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1),ncol=4))
+
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, fim=FALSE, print=FALSE, displayProgress=FALSE)
+saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
+ord.fit<-saemix.fit
+
+```
+
+```{r ordinalExampleMLX, echo=FALSE, results='hide',message=FALSE, warning=FALSE}
+mlxDir<-file.path(mlxDemoDir,"3.models_for_noncontinuous_outcomes","3.1.categorical_data_model")
+mlxModel.name<-"categorical3_project.mlxtran"
+ loadProject(file.path(mlxDir , mlxModel.name))
+ setProjectSettings(directory = file.path(testDir,"mlxRuns","categorical3_project"), seed = 12345)
+  runScenario()
+  runLogLikelihoodEstimation()
+  runStandardErrorEstimation()
+  getEstimatedLogLikelihood()
+  par.est<-getEstimatedPopulationParameters()
+  se.est<-getEstimatedStandardErrors()
+  tab<-data.frame(saemix=c(ord.fit@results@fixed.effects,sqrt(ord.fit@results@omega)[1,1]),mlx=par.est,seMLX=se.est$stochasticApproximation)
+```
+
+```{r ordinalExample.display, echo=FALSE}
+ggplot(smx.ord, aes(x = TIME,fill=as.factor(Y))) + geom_bar(position='dodge')
+
+print(ord.fit@results)
+
+cat("Comparing estimates from saemix and Monolix\n")
+print(tab)
+```
+
+
+### Count data
+
+*Note:* dummy parameter only there to ensure we have at least 2 parameters to work on, but I thought we had fixed this...
+
+```{r countExample, echo=FALSE, results='hide',message=FALSE, warning=FALSE}
+count.saemix<-read.table(file.path(datDir,"count1_data.txt"),header=T)
+# count.saemix <- count.data$Y
+saemix.data<-saemixData(name.data=count.saemix,header=TRUE,sep=" ",na=NA, name.group=c("ID"),  name.predictors=c("Y"),name.response=c("Y"))
+
+#Basic Poisson model
+countmodel<-function(psi,id,xidep) { 
+  y<-xidep[,1]
+  lambda<-psi[id,1]
+  dummy<-psi[id,2]
+  logp <- -lambda + y*log(lambda) - factorial(y)
+  return(logp)
+}
+
+saemix.model<-saemixModel(model=countmodel,description="count model",modeltype="likelihood",   
+  psi0=matrix(c(0.5,1),ncol=2,byrow=TRUE,dimnames=list(NULL,   
+  c("lambda","dummy"))), 
+  transform.par=c(1,1),omega.init=matrix(c(0.3,0,0,0.3),ncol=2,byrow=TRUE),
+  covariance.model=matrix(c(1,0,0,0),ncol=2, byrow=TRUE),fixed.estim=c(1,0))
+
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, fim=FALSE, print=FALSE, displayProgress=FALSE, nbiter.sa=50)
+saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
+count.fit<-saemix.fit
+```
+
+
+```{r countExampleMLX, echo=FALSE, results='hide',message=FALSE, warning=FALSE}
+mlxDir<-file.path(mlxDemoDir,"3.models_for_noncontinuous_outcomes","3.2.count_data_model")
+mlxModel.name<-"count1a_project.mlxtran"
+loadProject(file.path(mlxDir , mlxModel.name))
+setProjectSettings(directory = file.path(testDir,"mlxRuns","count1a_project"), seed = 12345)
+runScenario()
+runLogLikelihoodEstimation()
+runStandardErrorEstimation()
+getEstimatedLogLikelihood()
+par.est<-getEstimatedPopulationParameters()
+se.est<-getEstimatedStandardErrors()
+
+tab<-data.frame(saemix=c(count.fit@results@fixed.effects[1],sqrt(count.fit@results@omega)[1,1]),mlx=par.est,seMLX=se.est$stochasticApproximation)
+```
+
+
+```{r countExample.display, echo=FALSE}
+print(count.fit@results)
+
+cat("Comparing estimates from saemix and Monolix\n")
+print(tab)
+```
+
+
+### TTE data
+
+```{r tteExample, echo=FALSE, results='hide',message=FALSE, warning=FALSE}
+tte.saemix<-read.table(file.path(datDir,"tte1_data.txt"),header=T)
+saemix.data<-saemixData(name.data=tte.saemix, name.group=c("id"),
+  name.predictors=c("TIME"), name.response="Y")
+
+# Exponential hazard (MLX example tte1) - initialise to lambda=time when Survival=0.4
+expon.haz<-function(psi,id,xidep) {
+T<-xidep[,1]
+N <- nrow(psi)
+Nj <- length(T)
+# censoringtime = 6
+censoringtime = max(T)
+lambda <- psi[id,1]
+init <- which(T==0)
+cens <- which(T==censoringtime)
+ind <- setdiff(1:Nj, append(init,cens))
+hazard <- 1/lambda
+H <- (T/lambda)
+logpdf <- rep(0,Nj)
+logpdf[cens] <- -H[cens] + H[cens-1]
+logpdf[ind] <- -H[ind] + H[ind-1] + log(hazard[ind])
+return(logpdf)
+}
+
+# Weibull hazard
+weibull.haz<-function(psi,id,xidep) {
+T<-xidep[,1]
+N <- nrow(psi)
+Nj <- length(T)
+# censoringtime = 6
+censoringtime = max(T)
+lambda <- psi[id,1]
+beta <- psi[id,2]
+init <- which(T==0)
+cens <- which(T==censoringtime)
+ind <- setdiff(1:Nj, append(init,cens))
+hazard <- (beta/lambda)*(T/lambda)^(beta-1)
+H <- (T/lambda)^beta
+logpdf <- rep(0,Nj)
+logpdf[cens] <- -H[cens] + H[cens-1]
+logpdf[ind] <- -H[ind] + H[ind-1] + log(hazard[ind])
+return(logpdf)
+}
+
+saemix.model1<-saemixModel(model=expon.haz,description="time-to-event model", modeltype="likelihood",
+  psi0=matrix(c(35,1),ncol=2,byrow=TRUE,dimnames=list(NULL,c("lambda","dummy"))),
+  transform.par=c(1,1),covariance.model=matrix(c(1,0,0,0),ncol=2,byrow=TRUE), fixed.estim=c(1,0))
+
+saemix.model2<-saemixModel(model=weibull.haz,description="time-to-event model", modeltype="likelihood",
+  psi0=matrix(c(2,1),ncol=2,byrow=TRUE,dimnames=list(NULL,c("lambda","beta"))),
+  transform.par=c(1,1),covariance.model=matrix(c(1,0,0,0),ncol=2,byrow=TRUE))
+
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, fim=FALSE, print=FALSE, displayProgress=FALSE)
+saemix.fit<-saemix(saemix.model1,saemix.data,saemix.options)
+tte.fit<-saemix.fit
+
+saemix.fit<-saemix(saemix.model2,saemix.data,saemix.options)
+tte2.fit<-saemix.fit
+print(tte2.fit@results)
+
+```
+
+```{r tteExampleMLX, echo=FALSE, results='hide',message=FALSE, warning=FALSE}
+mlxDir<-file.path(mlxDemoDir,"3.models_for_noncontinuous_outcomes","3.3.time_to_event_data_model")
+mlxModel.name<-"tte1_project.mlxtran"
+loadProject(file.path(mlxDir , mlxModel.name))
+setProjectSettings(directory = file.path(testDir,"mlxRuns","tte1_project"), seed = 12345)
+runScenario()
+runLogLikelihoodEstimation()
+runStandardErrorEstimation()
+getEstimatedLogLikelihood()
+par.est<-getEstimatedPopulationParameters()
+se.est<-getEstimatedStandardErrors()
+
+tab<-data.frame(saemix=c(tte.fit@results@fixed.effects[1],sqrt(tte.fit@results@omega)[1,1]),mlx=par.est,seMLX=se.est$stochasticApproximation)
+```
+
+```{r tteExample.display, echo=FALSE}
+print(tte.fit@results)
+print(tte2.fit@results)
+
+cat("Comparing estimates from saemix and Monolix\n")
+print(tab)
+```
+
+**TODO:** also compare the results for the Weibull example; here omega(Te) considerably higher with saemix compared to MLX, why ? (large SE on omegaTe according to monolix so maybe not very well estimated, but in another example I also saw something similar, saemix had a larger omega when that parameter had low information measured by large SE) 
+
+### RTTE data
+
+**TODO**
+
+
+## 5. Example Ana
+
+- saemix
+  - works when using normal distributions for all parameters by mistake; parameter estimates *very* different from the simulated parameters
+  - when using log-normal distributions for delta and gamma, problem to initialise
+     - computing delta using the observed number of events in the dataset always gives (small) negative values (around -0.02 to -0.07)
+     - computing gamma using the observed number of events in the dataset
+- MLX
+  - exactly same results when running through lixoftConnectors or using the Monolix interface
+  - with the same mistake as above, gives different parameters than saemix but in the same area, and also quite different from the population parameters simulated
+  - with the same structure as in the simulation (c(beta0_pop=1, o_beta0=0.3, gamma0_pop= 0.5, o_gamma0=0.3, delta0_pop=1, o_delta0=0.2), estimates are c(-0.305, 0.000879, 0.038) with omega=c(0.13,0.22,0.46), completely different from simulated parameters
+
+```{r bugAna, echo=FALSE, results='hide',message=FALSE, warning=FALSE}
+data.ana<-read.table(file.path(anaDir,"data","data_cat.csv"), header=T, sep=",")
+saemix.data<-saemixData(name.data=data.ana,header=TRUE,sep=" ",na=NA, name.group=c("id"), name.response=c("y"), name.predictors=c("y","dose","time"))
+
+catData.model<-function(psi,id,xidep) {
+level<-xidep[,1]
+dose<-xidep[,2]
+time<-xidep[,3]
+
+beta0 <- psi[id,1]
+gamma0 <- psi[id,2]
+delta0 <- psi[id,3]
+
+logit0 <- beta0+gamma0*time + delta0*dose
+D <- exp(logit0)
+P0 <- D/(D+1)
+P1 <- 1-P0
+
+P.obs <- (level==0)*P0+(level==1)*P1
+logpdf <- log(P.obs)
+return(logpdf)
+}
+
+# Initial estimates
+# logit(P(Y=1)) = ln(P(Y=1)/(1-P(Y=1)))
+# p(Y=1)=1 - exp(logit()
+
+# P(Y=1) at time -10
+p1.0<-sum(data.ana$y[data.ana$time<0])/length(data.ana$y[data.ana$time<0])
+
+# P(Y=1) at time 50, for dose 10
+p1.10<-sum(data.ana$y[data.ana$time==50 & data.ana$dose==10])/length(data.ana$y[data.ana$time==50 & data.ana$dose==10])
+# P(Y=1) at time 50, for dose 30
+p1.30<-sum(data.ana$y[data.ana$time==50 & data.ana$dose==30])/length(data.ana$y[data.ana$time==50 & data.ana$dose==30])
+p1.20<-sum(data.ana$y[data.ana$time==50 & data.ana$dose==20])/length(data.ana$y[data.ana$time==50 & data.ana$dose==20])
+cat("Estimating delta from events at time 50 comparing doses 30 or 20:\n")
+cat("Dose=30, delta=",(p1.30-p1.10)/20," Dose=20, delta=",(p1.20-p1.10)/10,"\n")
+
+# P(Y=1) at for dose 10, at times 50 and 5
+p1.50<-sum(data.ana$y[data.ana$time==50 & data.ana$dose==10])/length(data.ana$y[data.ana$time==50 & data.ana$dose==10])
+p1.5<-sum(data.ana$y[data.ana$time==5 & data.ana$dose==10])/length(data.ana$y[data.ana$time==5 & data.ana$dose==10])
+cat("Estimating delta from events at time 5 and 50 for dose 10:\n")
+cat("Time 5, delta=",(p1.50-p1.5)/45,"\n")
+
+l0<-log(p1.0/(1-p1.0))
+g0<-0.002
+d0<-(p1.50-p1.5)/45
+saemix.model<-saemixModel(model=catData.model,description="Binary logistic regression", modeltype="likelihood", psi0=matrix(c(l0,g0,d0),ncol=3,byrow=TRUE,dimnames=list(NULL, c("beta","gamma","delta"))), transform.par=c(0,1,1),
+        covariance.model=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE),
+        omega.init=matrix(c(1,0,0,0,0.1,0,0,0,0.1),ncol=3,byrow=TRUE))
+    options<-list(seed=123456, save=FALSE,save.graphs=FALSE, fim=FALSE, print=FALSE, displayProgress=FALSE)
+      
+cat.fit<-saemix(saemix.model,saemix.data,options)
+print(cat.fit@results)
+
+saemix.model2<-saemixModel(model=catData.model,description="Binary logistic regression", modeltype="likelihood", psi0=matrix(c(1,0.5,1),ncol=3,byrow=TRUE,dimnames=list(NULL, c("beta","gamma","delta"))), transform.par=c(0,1,1),covariance.model=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE),
+  omega.init=matrix(c(0.3,0,0,0,0.3,0,0,0,0.3),ncol=3,byrow=TRUE))
+cat.fit2<-try(saemix(saemix.model2,saemix.data,options))
+
+# Predicting logpdf for dataset with the initial parameters (to see if the initial parameters were correct => yes, turns out omega mustn't be too high...) and with the simulated parameters (no, Inf values returned...)
+if(FALSE) {
+xidep<-data.ana[,saemix.data@name.predictors]
+head(xidep)
+psi1<-do.call(rbind,rep(list(c(l0,g0,d0)),length(unique(data.ana$id))))
+psi2<-do.call(rbind,rep(list(c(1,0.5,1)),length(unique(data.ana$id))))
+lpred<-catData.model(psi1,data.ana$id,xidep)
+lpred2<-catData.model(psi2,data.ana$id,xidep)
+summary(lpred)
+summary(lpred2)
+summary(exp(lpred))
+c(l0,g0,d0)
+}
+
+# Changing algorithm settings
+if(FALSE) {
+  K1 = 300
+  K2 = 100
+  iterations = 1:(K1+K2+1)
+  end = K1+K2
+  options<-list(seed=39546, nbiter.mcmc = c(2,2,2), nbiter.saemix = c(K1,K2), nbiter.sa=0,nbiter.burn =0, save=FALSE,save.graphs=FALSE, fim=FALSE, print=FALSE, displayProgress=FALSE)
+}
+
+# 
+if(FALSE) {
+  write.table(data.ana,file.path(anaDir,"datanaMLX.txt"),row.names=F,quote=F)
+}
+```
+
+
+```{r bugAnaMLX, echo=FALSE, results='hide',message=FALSE, warning=FALSE}
+mlxModel.name<-"catAna.mlxtran"
+loadProject(file.path(anaDir, "mlx", mlxModel.name))
+runScenario()
+getEstimatedLogLikelihood()
+par.est<-getEstimatedPopulationParameters()
+se.est<-getEstimatedStandardErrors()
+tab<-data.frame(saemix=c(cat.fit@results@fixed.effects,sqrt(diag(cat.fit@results@omega))),mlx=par.est,seMLX=se.est$stochasticApproximation)
+
+```
+
+Comparing estimates for Monolix and for saemix shows again very similar estimates:
+
+```{r anaExample.display, echo=FALSE}
+print(cat.fit@results)
+
+cat("Comparing estimates from saemix and Monolix\n")
+print(tab)
+```
+
+The problem is therefore likely to lie in the design (informativeness?) or the simulation itself. When we use an R function to compute the probabilities with the parameters given in the simulation, the predicted probabilities turn out to be :
+
+- nearly 1 (0.98) for the first simulated time (time=-10, when all doses are 0) => nearly all simulated events are Y=1
+- nearly 0 (10$^{-6}$ to 10$^{-11}$ for any other time) => (nearly) all simulated events are Y=0
+
+With such a design it would be impossible to estimate the parameters of the model anyway (impossible to separate time and dose effects). 
+
+```{r anaExample.simul, echo=FALSE}
+compute.prob<-function(psi,id,xidep) {
+  dose<-xidep[,1]
+  time<-xidep[,2]
+  beta0 <- psi[id,1]
+  gamma0 <- psi[id,2]
+  delta0 <- psi[id,3]
+  
+  lm0 <- beta0+gamma0*time + delta0*dose
+  #  p0<-exp(lm0)/(exp(lm0)+1)
+  p1<-1/(exp(lm0)+1)
+  return(p1)
+}
+
+simcat<-function(prob) {
+  if(min(prob)<0 | max(prob)>1) {
+    cat("Input a vector of probabilities\n")
+    return(NULL)
+  }
+  x<-runif(length(prob))
+  return(as.integer(x>=prob))
+}
+
+nsuj<-length(unique(data.ana$id))
+id1<-data.ana$id
+xidep1<-data.ana[,c(5,3)]
+
+# population predictions
+psi0<-c(1,0.5,1)
+sd.psi0<-c(0.3,0.3,0.2)
+
+# Checking data characteristics
+times<-unique(data.ana$time)
+doses<-unique(data.ana$dose)
+nobs<-tapply(data.ana$id,data.ana$id,length)
+table(nobs)
+
+# Predicted probabilities for the different groups with the population parameters
+levs<-expand.grid(dose=doses[doses>0],times=times[times>0])
+levs<-rbind(levs,c(0,-10))
+levs<-levs[order(levs[,2]),]
+psi1.pop<-do.call(rbind,rep(list(psi0),dim(levs)[1]))
+id1.pop<-1:dim(levs)[1]
+p1.pop<-compute.prob(psi1.pop,id1.pop,levs)
+print(cbind(levs,"P(Y=1)"=p1.pop))
+
+# individual predictions
+psi1<-do.call(rbind,rep(list(psi0),nsuj))
+i<-1
+psi1[,i]<-psi1[,i]+rnorm(nsuj,0,sd=sd.psi0[i])
+for(i in 2:3) psi1[,i]<-psi1[,i]*exp(rnorm(nsuj,0,sd=sd.psi0[i]))
+head(psi)
+
+cat("Using individual parameters\n")
+pind1<-compute.prob(psi1,id1,xidep1)
+ysim<-as.integer(runif(length(pind1))<pind1)
+sum(ysim)
+cat("Frequency of simulated events at t=(-10):",sum(ysim[data.ana$time==(-10)])/length(ysim[data.ana$time==(-10)]),"\n")
+cat("Frequency of simulated events at t>0:",sum(ysim[data.ana$time>0])/length(ysim[data.ana$time>0]),"\n")
+
+```
+
+Oddly enough though, this is not the data we have been given, as the data plot below shows. In fact, we clearly see the proportion of events at time=-10 is in the order of 0.3, we also see an increasing proportion of events as time increases, and a negative dose effect (less events for larger doses). This does not seem to be in line either with the simulated values, with both $\gamma$ and $\delta$ given positive values (and log-normal distributions), whereas here we clearly see the time effect $\beta$ should be negative (since it increases logit(P(Y=0)) and therefore decreases logit(P(Y=1))).
+
+```{r anaExample.plotSimulated, echo=FALSE}
+ggplot(data.ana, aes(x = time, fill=as.factor(y))) + geom_bar(position='dodge') + facet_wrap(.~dose)
+```
+
+Conclusion: something is wrong either in the dataset I was given (does not correspond to the simulated file) or in simulx for this model => next step: run the simulx simulation and compare the output to the original dataset.
+
+```{r anaExample.runSimulx, echo=FALSE}
+library("mlxR")
+library(abind)
+require(ggplot2)
+require(gridExtra)
+require(reshape2)
+
+catModel <- inlineModel("
+[LONGITUDINAL]
+input =  {beta0,gamma0,delta0, dose}
+dose = {use=regressor}
+EQUATION:
+lm0 = beta0+gamma0*t + delta0*dose
+
+D = exp(lm0)+1
+p0 = exp(lm0)/D
+p1 = 1/D
+
+DEFINITION:
+y = {type=categorical, categories={0, 1}, 
+     P(y=0)=p0,
+     P(y=1)=p1}
+
+[INDIVIDUAL]
+input={beta0_pop, o_beta0,
+      gamma0_pop, o_gamma0,
+      delta0_pop, o_delta0}
+
+DEFINITION:
+beta0  ={distribution=normal, prediction=beta0_pop,  sd=o_beta0}
+gamma0  ={distribution=lognormal, prediction=gamma0_pop,  sd=o_gamma0}
+delta0  ={distribution=lognormal, prediction=delta0_pop,  sd=o_delta0}
+")
+
+# Design
+nobs <- 15
+tobs <- seq(-10, 60, by=nobs) # nobs understood as the time between 2 measurements, not as number of observations, which would be seq(-10, 60, length.out=nobs)
+N  <- 500
+popAna <- c(beta0_pop=1, o_beta0=0.3, gamma0_pop= 0.5, o_gamma0=0.3, delta0_pop=1, o_delta0=0.2)
+out  <- list(name='y', time=tobs)
+
+reg1 <- list(name='dose',time=tobs,value=10*(tobs>0))
+reg2 <- list(name='dose',time=tobs,value=20*(tobs>0))
+reg3 <- list(name='dose',time=tobs,value=30*(tobs>0))
+reg<-list(reg1,reg2,reg3)
+g <- list(size=N, level='individual')
+
+res1 <- simulx(model = catModel, parameter = popAna, regressor = reg1, group=g, output    = out)
+res2 <- simulx(model = catModel, parameter = popAna, regressor = reg2, group=g, output    = out)
+res3 <- simulx(model = catModel, parameter = popAna, regressor = reg3, group=g, output    = out)
+res2$y$id <- res2$y$id+N
+res3$y$id <- res3$y$id+2*N
+
+simRes<-rbind(cbind(res1$y,dose=rep(reg1$value,N)), cbind(res2$y,dose=rep(reg2$value,N)), cbind(res3$y,dose=rep(reg3$value,N)))
+
+ggplot(simRes, aes(x = time, fill=y)) + geom_bar(position='dodge') + facet_wrap(.~dose)
+
+if(FALSE) {
+  writeDatamlx(simRes, result.file = "data/test2.csv")
+}
+
+```
+
+## 2. Tests from testbelhal
+
+### TTE data
+
+
+
+## 3. Documentation examples
+
+## 4. Marilou SIR
+
+For Marilou 3 settings investigated (50, 100 and 224 subjects, with 2 treatment groups), using the N=100 setting as the results were starting to be correct at this stage.
+
+## 5. Debug Ana
+
+
+

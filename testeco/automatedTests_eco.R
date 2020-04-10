@@ -3,7 +3,7 @@ rm(list = ls())
 library(testthat)
 
 # Testing where we are :-)
-saemixDir<-"/home/eco/work/monolix/rversion/newLib/saemix"
+saemixDir<-"/home/eco/work/saemix/saemixextension"
 if(is.na(file.info(saemixDir)[1])) {
   saemixDir<-"/Users/karimimohammedbelhal/Desktop/Phd/R_Package/contributions/FinalsaemixExtension/ecomets/saemix"
 }

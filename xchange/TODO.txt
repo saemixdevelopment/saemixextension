@@ -1,0 +1,6 @@
+* Check functions derviphi and dtransphi
+    - completely unclear what these functions are supposed to do and whether they actually do it
+    - especially for probit and logit models !
+    - for h=exp() (phi=exp(phi), log-normal model for parameters)
+        derivphi returns 1/exp(phi) (? 1/h' ?)
+        dtransphi returns exp(phi) (could be h'())

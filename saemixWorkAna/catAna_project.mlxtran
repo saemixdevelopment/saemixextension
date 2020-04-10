@@ -1,0 +1,52 @@
+<DATAFILE>
+  
+  [FILEINFO]
+file = 'data/data_cat.csv'
+delimiter = ','
+header = {id,group,time,y,dose}
+
+[CONTENT]
+id = {use=identifier}
+time = {use=time}
+y = {use=observation, name=Y, type=discrete}
+dose = {use=regressor}
+
+<MODEL>
+  
+  [INDIVIDUAL]
+input={beta0_pop, o_beta0,
+  gamma0_pop, o_gamma0,
+  delta0_pop, o_delta0}
+
+DEFINITION:
+  beta0  ={distribution=normal, prediction=beta0_pop,  sd=o_beta0}
+gamma0  ={distribution=lognormal, prediction=gamma0_pop,  sd=o_gamma0}
+delta0  ={distribution=lognormal, prediction=delta0_pop,  sd=o_delta0}
+
+[LONGITUDINAL]
+file = 'model_catAna.txt'
+<FIT>
+  data = Y
+model = level
+
+<PARAMETER>
+beta0_pop = {value=-2.1, method=MLE}
+gamma0_pop = {value=-0.16, method=MLE}
+delta0_pop = {value=-0.21, method=MLE}
+o_beta0 = {value=0.3, method=MLE}
+o_gamma0 = {value=0.3, method=MLE}
+o_delta0 = {value=0.3, method=MLE}
+
+<MONOLIX>
+  
+  [TASKS]
+populationParameters()
+individualParameters(method = {conditionalMean, conditionalMode })
+fim(run = true,method = StochasticApproximation)
+logLikelihood(run = true,method = ImportanceSampling)
+plotResult(method = {outputplot, indfits, obspred, parameterdistribution, covariatemodeldiagnosis, randomeffects, covariancemodeldiagnosis, saemresults })
+
+[SETTINGS]
+GLOBAL:
+  exportpath = 'catAna_project'
+
