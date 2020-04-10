@@ -1,0 +1,212 @@
+---
+title: "Individual parameter estimation and prediction interval through conditional distributions in saemix"
+author: "Emmanuelle"
+date: "11/04/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# Directories
+saemixDir<-"/home/eco/work/saemix/saemixextension"
+progDir<-file.path(saemixDir,"R")
+datDir<-file.path(saemixDir,"data")
+testDir<-file.path(saemixDir,"testbelhal")
+
+# Libraries
+library(ggplot2)
+library(MASS)
+
+# Sourcing saemix functions
+{
+  source(file.path(progDir,"aaa_generics.R"))
+  #source(file.path(progDir,"global.R"))
+  source(file.path(progDir,"SaemixData.R"))
+  source(file.path(progDir,"SaemixRes.R"))
+  source(file.path(progDir,"SaemixModel.R"))
+  source(file.path(progDir,"SaemixObject.R"))
+  source(file.path(progDir,"main.R"))
+  source(file.path(progDir,"func_aux.R"))
+  source(file.path(progDir,"main_initialiseMainAlgo.R"))
+  source(file.path(progDir,"main_estep.R"))
+  source(file.path(progDir,"main_mstep.R"))
+  source(file.path(progDir,"func_FIM.R"))
+  source(file.path(progDir,"func_plots.R"))
+  source(file.path(progDir,"func_distcond.R"))
+  source(file.path(progDir,"func_simulations.R"))
+  source(file.path(progDir,"compute_LL.R"))
+  source(file.path(progDir,"func_estimParam.R"))
+}
+```
+
+## Context
+
+Recurrent question: how to estimate individual parameters with limited data or to do therapeutic drug monitoring.
+
+### Objective 
+
+- Show how to estimate individual parameters in saemix
+  - for subjects in the estimation dataset
+  - for new subjects
+- Provide a prediction interval based on the conditional distribution for each individual
+
+## Estimating individual parameters
+
+We use the Emax model from the saemix help, for the dataset without a covariate effect.
+
+```{r fitSaemixEmax, echo=FALSE, results='hide',message=F, warning=F, include=F}
+PD2.saemix<-read.table(file.path(datDir,"PD2.saemix.tab"),header=T)
+saemix.data<-saemixData(name.data=PD2.saemix,header=TRUE,name.group=c("subject"),
+  name.predictors=c("dose"),name.response=c("response"),
+  name.covariates=c("gender"), units=list(x="mg",y="-",covariates=c("-")))
+
+modelemax<-function(psi,id,xidep) {
+# input:
+#   psi : matrix of parameters (3 columns, E0, Emax, EC50)
+#   id : vector of indices 
+#   xidep : dependent variables (same nb of rows as length of id)
+# returns:
+#   a vector of predictions of length equal to length of id
+  dose<-xidep[,1]
+  e0<-psi[id,1]
+  emax<-psi[id,2]
+  e50<-psi[id,3]
+  f<-e0+emax*dose/(e50+dose)
+  return(f)
+}
+
+# Plotting the data
+plot(saemix.data,main="Simulated data PD1")
+
+# SE not computed
+model1<-saemixModel(model=modelemax,description="Emax growth model", 
+  psi0=matrix(c(20,300,20,0,0,0),ncol=3,byrow=TRUE,dimnames=list(NULL,
+  c("E0","Emax","EC50"))), transform.par=c(1,1,1),
+  covariate.model=matrix(c(0,0,0), ncol=3,byrow=TRUE),fixed.estim=c(1,1,1))
+
+saemix.options<-list(nb.chains=3,seed=765754,nbiter.saemix=c(500,300),save=FALSE, save.graphs=FALSE)
+
+fit1<-saemix(model1,saemix.data,saemix.options)
+
+
+```
+
+### For subjects in the estimation dataset
+
+If the subject is in the dataset, we just need to run the **conddist.saemix()** function to obtain samples from the conditional distribution, and use these to plot the median of the predictions (solid line) and the prediction band. We overlay the observed data.
+
+```{r predInterval, echo=FALSE}
+fit1<-conddist.saemix(fit1,nsamp=100)
+
+# Prediction bands for the first 6 subjects
+zesuj<-c(1:6)
+odose<-sort(unique(saemix.data@data$dose))
+xdose<-seq(min(odose),max(odose),5)
+xidep1<-data.frame(dose=xdose)
+id1<-rep(1,dim(xidep1)[1])
+gdat<-NULL
+for(isuj in zesuj) {
+  tab<-NULL
+  for(isamp in 1:dim(fit1@results@psi.samp)[3]) {
+    psi1<-fit1@results@psi.samp[isuj,,isamp]
+    ipred<-fit1@model@model(t(psi1),id1,xidep1)
+    tab<-rbind(tab,ipred)
+  }
+  qtab<-apply(tab,2,quantile,c(0.025,0.5,0.975))
+  gdat<-rbind(gdat,data.frame(x=xdose,y=qtab[2,],y25=qtab[1,],y975=qtab[3,],id=isuj))
+}
+gobs<-saemix.data@data[(saemix.data@data$subject %in% zesuj),c(3,4,2)]
+colnames(gobs)<-c("x","y","id")
+
+ggplot(data=gdat,aes(x=x, y=y)) + scale_x_continuous("Dose (mg)") + scale_y_continuous("Predicted effect (-)") + geom_line(aes(x=x, y=y,colour=as.factor(id))) + geom_ribbon(aes(ymin=y25, ymax=y975),fill="gray20",alpha=0.2) + geom_point(data=gobs,aes(x=x, y=y,colour=as.factor(id))) + facet_wrap(.~id, ncol =3,  scales="free_y") + ggtitle("Prediction intervals for 6 subjects") + theme(plot.title = element_text(hjust = 0.5))
+```
+
+### For new subjects
+
+For additional subjects, we create a dataset with the same predictors and response as in the original dataset, and use the function **predict.newdata()** to estimate the conditional distributions for the new data.
+
+The data was originally simulated with fixed effects set to $\left(\ln(E_{O}), \ln(E_{{\rm max}}), \ln(ED_{50}) \right)=(24 , 100 , 12)$, a diagonal covariance matrix for the random effects was a diagonal matrix with variances (0.12 , 0.26 , 0.05), and a constant variance $a^2 = 20$.
+
+In the dataset, three different sampling schedules were used. In the following we simulate one subject with each design and one subject with the complete set of doses. With these four subjects, we create predictions under three settings:
+
+- original parameters
+- Emax reduced by 50%
+- EC50 multiplied by 4
+
+In this simulation we don't add variability so all subjects in one setting have the same value of the parameters, but it would be very easy to add variability. 
+
+```{r predInterval.TDM, echo=FALSE}
+param<-c(24, 100, 12)
+omega<-sqrt(c(0.12,0.26,0.05))
+sig<-sqrt(20)
+# Generating data from the "right" distribution (no variability)
+xidep1<-data.frame(dose=c(odose,0,10,90,0,20,30,5,25,65))
+id1<-c(rep(1,length(odose)),rep(c(2:4),each=3))
+psi0<-do.call(rbind,rep(list(param),4))
+ypred<-fit1@model@model(psi0,id1,xidep1)
+ypred<-ypred+rnorm(length(ypred),sd=sig)
+
+newdata<-data.frame(subject=id1,dose=xidep1$dose,response=ypred)
+
+# Note: we could add variability using
+# for(i in 1:3) psi1[,i]<-psi1[,i]*exp(rnorm(dim(psi1)[1],sd=omega[i]))
+
+# Generating subjects with 0.5*Emax
+param1<-param
+param1[2]<-param[2]/2
+psi1<-do.call(rbind,rep(list(param1),4))
+ypred<-fit1@model@model(psi1,id1,xidep1)
+ypred<-ypred+rnorm(length(ypred),sd=sig)
+newdata<-rbind(newdata,
+               data.frame(subject=(id1+4),dose=xidep1$dose,response=ypred))
+
+# Generating subjects with 4*EC50
+param2<-param
+param2[3]<-param[3]*4
+psi2<-do.call(rbind,rep(list(param2),4))
+ypred<-fit1@model@model(psi2,id1,xidep1)
+ypred<-ypred+rnorm(length(ypred),sd=sig)
+newdata<-rbind(newdata,
+               data.frame(subject=(id1+8),dose=xidep1$dose,response=ypred))
+
+pred.fit<-predict.newdata(fit1, newdata, type=c("ipred", "ypred", "ppred",  "icpred"),nsamp=100) 
+
+if(FALSE) {
+  head(pred.fit$param$cond.mean.psi)
+  head(pred.fit$param$map.psi)
+  head(pred.fit$predictions)
+  head(pred.fit$predSample[,1:10])
+  pred.fit$parSample[,,1]
+}
+
+# Prediction bands for the new subjects
+zesuj<-c(1:12)
+xidep1<-data.frame(dose=xdose)
+id1<-rep(1,dim(xidep1)[1])
+gdat<-NULL
+for(isuj in zesuj) {
+  tab<-NULL
+  for(isamp in 1:dim(pred.fit$parSample)[3]) {
+    psi1<-pred.fit$parSample[isuj,,isamp]
+    ipred<-fit1@model@model(t(psi1),id1,xidep1)
+    tab<-rbind(tab,ipred)
+  }
+  qtab<-apply(tab,2,quantile,c(0.025,0.5,0.975))
+  gdat<-rbind(gdat,data.frame(x=xdose,y=qtab[2,],y25=qtab[1,],y975=qtab[3,],id=isuj))
+}
+gobs<-newdata[(newdata$subject %in% zesuj),c(2,3,1)]
+colnames(gobs)<-c("x","y","id")
+
+ggplot(data=gdat,aes(x=x, y=y)) + scale_x_continuous("Dose (mg)") + scale_y_continuous("Predicted effect (-)") + geom_line(aes(x=x, y=y,colour=as.factor(id))) + geom_ribbon(aes(ymin=y25, ymax=y975),fill="gray20",alpha=0.2) + geom_point(data=gobs,aes(x=x, y=y,colour=as.factor(id))) + facet_wrap(.~id, ncol =4,  scales="free_y") + ggtitle("Prediction intervals for 12 subjects") + theme(plot.title = element_text(hjust = 0.5))
+
+cat("Estimated individual parameters\n")
+print(pred.fit$param$cond.mean.psi)
+cat("Simulated parameters (4 of each)\n")
+print(rbind(param,param1,param2))
+
+
+```
+
+We note that in the last setting we cannot recover the simulated value of the EC50, even for the subject with a rich design (although there is a stronger signal for this subject). This is due to the low value of the estimated variabiliy on EC50 (only about 18%), since the conditional distribution depends both on the observed data and on the prior distribution represented by the population estimates.
