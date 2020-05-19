@@ -89,8 +89,6 @@ model1<-saemixModel(model=modelemax,description="Emax growth model",
 saemix.options<-list(nb.chains=3,seed=765754,nbiter.saemix=c(500,300),save=FALSE, save.graphs=FALSE)
 
 fit1<-saemix(model1,saemix.data,saemix.options)
-
-
 ```
 
 ### For subjects in the estimation dataset
@@ -209,4 +207,4 @@ print(rbind(param,param1,param2))
 
 ```
 
-We note that in the last setting we cannot recover the simulated value of the EC50, even for the subject with a rich design (although there is a stronger signal for this subject). This is due to the low value of the estimated variabiliy on EC50 (only about 18%), since the conditional distribution depends both on the observed data and on the prior distribution represented by the population estimates.
+We note that in the last setting we cannot recover the simulated value of the EC50, even for the subject with a rich design (although there is a stronger signal for this subject). This is due to the low value of the estimated variability on EC50 (only about 18%), since the conditional distribution depends both on the observed data and on the prior distribution represented by the population estimates.

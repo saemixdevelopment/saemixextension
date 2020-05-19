@@ -365,10 +365,17 @@ conddist.saemix<-function(saemixObject,nsamp=1,max.iter=NULL,...) {
       }
       #      tsdkmin<-rowMeans(sdkmin)*dtransphi(t(rowMeans(ekmin)),saemixObject["model"]["transform.par"])
       #      tsdkmax<-rowMeans(sdkmax)*dtransphi(t(rowMeans(ekmax)),saemixObject["model"]["transform.par"])
-      tsdkmin<-rowMeans(sdkmin)
-      tsdkmax<-rowMeans(sdkmax)
-      tekmin<-transphi(t(rowMeans(ekmin)),saemixObject["model"]["transform.par"])
-      tekmax<-transphi(t(rowMeans(ekmax)),saemixObject["model"]["transform.par"])
+      if(nsamp==1) {
+        tsdkmin<-sdkmin
+        tsdkmax<-sdkmax
+        tekmin<-transphi(t(ekmin),saemixObject["model"]["transform.par"])
+        tekmax<-transphi(t(ekmax),saemixObject["model"]["transform.par"])
+      } else {
+        tsdkmin<-rowMeans(sdkmin)
+        tsdkmax<-rowMeans(sdkmax)
+        tekmin<-transphi(t(rowMeans(ekmin)),saemixObject["model"]["transform.par"])
+        tekmax<-transphi(t(rowMeans(ekmax)),saemixObject["model"]["transform.par"])
+      }
       
       ebarbar<-apply(ebar[,ibeg:k,],c(1,2),mean) # mean across the samples => npar x nitr
       sdbarbar<-apply(sdbar[,ibeg:k,],c(1,2),mean) # mean across the samples => npar x nitr

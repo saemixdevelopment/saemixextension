@@ -1,0 +1,128 @@
+---
+title: "Saemix fits with different error models"
+author: "Emmanuelle"
+date: "30/04/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# Directories
+saemixDir<-"/home/eco/work/saemix/saemixextension"
+progDir<-file.path(saemixDir,"R")
+datDir<-file.path(saemixDir,"data")
+testDir<-file.path(saemixDir,"testbelhal")
+
+# Libraries
+library(ggplot2)
+library(MASS)
+
+# Sourcing saemix functions
+{
+  source(file.path(progDir,"aaa_generics.R"))
+  #source(file.path(progDir,"global.R"))
+  source(file.path(progDir,"SaemixData.R"))
+  source(file.path(progDir,"SaemixRes.R"))
+  source(file.path(progDir,"SaemixModel.R"))
+  source(file.path(progDir,"SaemixObject.R"))
+  source(file.path(progDir,"main.R"))
+  source(file.path(progDir,"func_aux.R"))
+  source(file.path(progDir,"main_initialiseMainAlgo.R"))
+  source(file.path(progDir,"main_estep.R"))
+  source(file.path(progDir,"main_mstep.R"))
+  source(file.path(progDir,"func_FIM.R"))
+  source(file.path(progDir,"func_plots.R"))
+  source(file.path(progDir,"func_distcond.R"))
+  source(file.path(progDir,"func_simulations.R"))
+  source(file.path(progDir,"compute_LL.R"))
+  source(file.path(progDir,"func_estimParam.R"))
+}
+```
+
+## Saemix fits with different error models
+
+### Objective
+
+Investigate why sometimes saemix doesn't converge and leads to outlandish estimates including variabilities of several thousands.
+
+### Simulation using the same setting as Dubois et al. 2011
+
+```{r simulData}
+# Parameters
+psi1<-c(1.5, 5, 0.04)
+omega1<-diag(c(0.05, 0.0125, 0.05))
+res1<-c(0.1,0.1)
+
+# Model
+model1cpt<-function(psi,id,xidep) {
+  tim<-xidep[,1]
+  dose<-xidep[,2]
+  ka<-psi[id,1]
+  V<-psi[id,2]
+  CL<-psi[id,3]
+  k<-CL/V
+  ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
+  return(ypred)
+}
+
+# Settings
+N <- 50
+tim <- c(0,0.25,0.5,1,2,3.5,5,7,9,12,24)
+dose<-4
+
+simdat<-data.frame(id=rep(1:N,each=length(tim)),time=rep(tim,N),dose=dose)
+
+psipar<-do.call(rbind,rep(list(psi1),N))
+for(i in 1:3) psipar[,i]<-psipar[,i]*exp(rnorm(N,mean=0,sd=sqrt(omega1[i,i])))
+summary(psipar)
+apply(psipar,2,sd)
+
+ypred<-model1cpt(psipar,id=1:N,xidep=simdat[,2:3])
+gpred<-error(ypred,res1,etype=rep(1,length(ypred)))
+simdat$conc<-ypred+rnorm(length(ypred),mean=0,sd=gpred)
+
+plot(simdat$time,simdat$conc,pch=20)
+
+# Saemix data
+
+saemix.data<-saemixData(name.data=simdat,header=TRUE,sep="",na=NA, name.group=c("id"), name.predictors=c("time","dose"),name.response=c("conc"))
+
+simdat2<-simdat
+simdat2$conc[simdat2$conc<0]<-0
+saemix.data2<-saemixData(name.data=simdat2,header=TRUE,sep="",na=NA, name.group=c("id"), name.predictors=c("time","dose"),name.response=c("conc"))
+
+```
+
+
+```{r fitSaemix.errorModels, echo=FALSE, results='hide',message=F, warning=F, include=F}
+saemix.options<-list(nb.chains=3,seed=123456,save=FALSE, save.graphs=FALSE)
+
+# Additive error
+saemix.model1<-saemixModel(model=model1cpt,description="One compartment model", modeltype="structural", psi0=matrix(c(psi1,0,0,0),ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))), transform.par=c(1,1,1),  covariance.model=diag(3), error.model="additive")
+
+# Proportional error
+saemix.model2<-saemixModel(model=model1cpt,description="One compartment model", modeltype="structural", psi0=matrix(c(psi1,0,0,0),ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))), transform.par=c(1,1,1),  covariance.model=diag(3), error.model="proportional")
+saemix.model2c<-saemixModel(model=model1cpt,description="One compartment model", modeltype="structural", psi0=matrix(c(psi1*.95,0,0,0),ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))), transform.par=c(1,1,1),  covariance.model=diag(3), error.model="proportional")
+
+# Combined error
+saemix.model3<-saemixModel(model=model1cpt,description="One compartment model", modeltype="structural", psi0=matrix(c(psi1,0,0,0),ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))), transform.par=c(1,1,1),  covariance.model=diag(3), error.model="combined")
+
+fit1<-saemix(saemix.model1, saemix.data, saemix.options)
+fit2<-saemix(saemix.model2, saemix.data, saemix.options)
+fit2b<-saemix(saemix.model2, saemix.data2, saemix.options)
+fit3<-saemix(saemix.model3, saemix.data, saemix.options)
+```
+
+
+```{r fitResults}
+print(fit1@results)
+print(fit2@results)
+print(fit2b@results)
+print(fit3@results)
+
+plot(fit1,plot.type="convergence")
+plot(fit2,plot.type="convergence")
+
+```
+
+

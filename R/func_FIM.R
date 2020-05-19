@@ -162,7 +162,7 @@ fim.saemix<-function(saemixObject) {
   covariate.estim<-matrix(rep(saemix.model["fixed.estim"], dim(saemix.model["betaest.model"])[1]),byrow=TRUE, ncol=length(saemix.model["fixed.estim"]))*saemix.model["betaest.model"]
   j<-which(saemix.model["betaest.model"]>0)
   ind.fixed.est<-(covariate.estim[j]>0)
-  npar<-length(ind.fixed.est)
+  npar<-sum(ind.fixed.est)
   
   # hw=waitbar(1,'Estimating the population parameters (SAEM). Wait...')
   

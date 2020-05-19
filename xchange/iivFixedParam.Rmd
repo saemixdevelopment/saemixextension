@@ -1,0 +1,241 @@
+---
+title: "Estimating IIV with a fixed parameter"
+author: "Emmanuelle"
+date: "14/04/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# Directories
+saemixDir<-"/home/eco/work/saemix/saemixextension"
+progDir<-file.path(saemixDir,"R")
+datDir<-file.path(saemixDir,"data")
+testDir<-file.path(saemixDir,"testbelhal")
+
+# Libraries
+library(ggplot2)
+library(MASS)
+
+# Sourcing saemix functions
+{
+  source(file.path(progDir,"aaa_generics.R"))
+  #source(file.path(progDir,"global.R"))
+  source(file.path(progDir,"SaemixData.R"))
+  source(file.path(progDir,"SaemixRes.R"))
+  source(file.path(progDir,"SaemixModel.R"))
+  source(file.path(progDir,"SaemixObject.R"))
+  source(file.path(progDir,"main.R"))
+  source(file.path(progDir,"func_aux.R"))
+  source(file.path(progDir,"main_initialiseMainAlgo.R"))
+  source(file.path(progDir,"main_estep.R"))
+  source(file.path(progDir,"main_mstep.R"))
+  source(file.path(progDir,"func_FIM.R"))
+  source(file.path(progDir,"func_plots.R"))
+  source(file.path(progDir,"func_distcond.R"))
+  source(file.path(progDir,"func_simulations.R"))
+  source(file.path(progDir,"compute_LL.R"))
+  source(file.path(progDir,"func_estimParam.R"))
+}
+```
+
+Fitting base Emax model
+
+```{r VPCgraph, echo=FALSE, results='hide',message=F, warning=F, include=F}
+PD1.saemix<-read.table(file.path(datDir,"PD1.saemix.tab"),header=T)
+saemix.data<-saemixData(name.data=PD1.saemix,header=TRUE,name.group=c("subject"),
+  name.predictors=c("dose"),name.response=c("response"),
+  name.covariates=c("gender"), units=list(x="mg",y="-",covariates=c("-")))
+
+modelemax<-function(psi,id,xidep) {
+# input:
+#   psi : matrix of parameters (3 columns, E0, Emax, EC50)
+#   id : vector of indices 
+#   xidep : dependent variables (same nb of rows as length of id)
+# returns:
+#   a vector of predictions of length equal to length of id
+  dose<-xidep[,1]
+  e0<-psi[id,1]
+  emax<-psi[id,2]
+  e50<-psi[id,3]
+  f<-e0+emax*dose/(e50+dose)
+  return(f)
+}
+
+# Plotting the data
+plot(saemix.data,main="Simulated data PD1")
+
+model1<-saemixModel(model=modelemax,description="Emax growth model", 
+  psi0=matrix(c(20,300,20,0,0,0),ncol=3,byrow=TRUE,dimnames=list(NULL,
+  c("E0","Emax","EC50"))), transform.par=c(1,1,1),
+  covariate.model=matrix(c(0,0,0), ncol=3,byrow=TRUE),fixed.estim=c(1,1,1))
+
+saemix.options<-list(nb.chains=3,seed=765754,nbiter.saemix=c(500,300),save=FALSE, save.graphs=FALSE)
+
+fit1<-saemix(model1,saemix.data,saemix.options)
+
+# VPC
+# fit1.sim<-simul.saemix(fit1)
+# plot(fit1,plot.type="vpc",vpc.breaks=c(-5,0,10,20,70,90,120),vpc.method="user")
+
+```
+
+### Computing the FIM
+
+```{r fitSaemixEmax, echo=FALSE, results='hide',message=F, warning=F, include=F}
+model2<-saemixModel(model=modelemax,description="Emax growth model", 
+  psi0=matrix(c(20,100,20,0,0,0),ncol=3,byrow=TRUE,dimnames=list(NULL,
+  c("E0","Emax","EC50"))), transform.par=c(1,1,1), fixed.estim=c(1,0,1),omega.init = diag(3))
+
+fit2<-saemix(model2,saemix.data,saemix.options)
+yfit<-fim.saemix(fit2)
+
+model3<-saemixModel(model=modelemax,description="Emax growth model", 
+  psi0=matrix(c(20,100,20,0,0,0),ncol=3,byrow=TRUE,dimnames=list(NULL,
+  c("E0","Emax","EC50"))), transform.par=c(1,1,1), fixed.estim=c(1,0,1),
+  covariate.model=matrix(c(0,0,1), ncol=3,byrow=TRUE),omega.init = diag(3))
+
+fit3<-saemix(model3,saemix.data,saemix.options)
+```
+
+
+### Exploring the FIM function stepwise
+
+
+```{r stepwiseFIM}
+# Emax fixed, no covariate
+saemixObject<-fit2
+fit2<-fim.saemix(fit2)
+
+# Emax fixed, covariate effect on EC50
+saemixObject<-fit3
+fit3<-fim.saemix(fit3)
+  
+
+```
+
+## Problem Mélanie
+
+```{r melanieBug.fit, echo=FALSE, results='hide',message=F, warning=F, include=F}
+bugDir<-"/home/eco/work/saemix/bugs/melanie2004"
+# Load Saemix Data
+load(file.path(bugDir,"saemix_dataRoche_ref"))
+
+# Load initial parameters
+load(file.path(bugDir,"init_param.RData"))
+
+## PK model Melanie
+model2cpt_firstorder_Tlag<-function(psi,id,xidep) { 
+  dose<-xidep[,1]
+  tim<-xidep[,2]  
+  ka<-psi[id,1]
+  CL<-psi[id,2]
+  V1 <- psi[id,3]
+  Q <- psi[id,4]
+  V2 <- psi[id,5]
+  Tlag <- psi[id,6]
+  k<-CL/V1
+  k12<-Q/V1
+  k21<-Q/V2
+  beta<-(k12+k21+k-sqrt((k12+k21+k)**2-4*k21*k))/2
+  alpha<-k21*k/beta
+  A<-ka/V1*(k21-alpha)/(ka-alpha)/(beta-alpha)
+  B<-ka/V1*(k21-beta)/(ka-beta)/(alpha-beta)
+  pred <- dose*(A*exp(-alpha*(tim-Tlag))+B*exp(-beta*(tim-Tlag))-(A+B)*exp(-ka*(tim-Tlag)))
+  ypred <- ifelse(tim<=Tlag,0.001,pred)
+  return(ypred)
+}
+
+saemix_model_test<-saemixModel(model=model2cpt_firstorder_Tlag,
+       description="Two-compartment model with first-order absorption, no F parameter, time lag",
+       psi0=matrix(c(init$ka_init,init$Cl_2cpt_init,init$V1_init,init$Q_init,init$V2_init,init$Tlag_init),ncol=6,dimnames=list(NULL, c("ka","CL","V1","Q","V2","Tlag"))),
+       transform.par=c(1,1,1,1,1,1),
+       covariance.model=matrix(c(1,0,0,0,0,0, 0,1,0,0,0,0, 0,0,1,0,0,0, 0,0,0,1,0,0, 0,0,0,0,1,0, 0,0,0,0,0,1),ncol=6,byrow=TRUE),error.model="combined")
+
+saemix_options<-list(seed=632545,save=FALSE,save.graphs=FALSE,nb.chains = 3, nbiter.saemix=c(500,300))
+saemix_fit_test<-saemix(saemix_model_test,saemix_dataRoche_ref,saemix_options)
+print(saemix_fit_test)
+```
+
+Results:
+
+- shrinkage estimates very influenced by the number of samples from the conditional distribution
+  - with only one sample, the shrinkage is low
+  - when nsamp increases, the shrinkage draws much closer to the shrinkage from the MAP estimates
+  - this could mean that conditional mean estimates draw closer to the MAP estimates, but which shrinkage is to be believed ? (this also seems to indicate the shrinkage from 1 sample is unreliable, and reflects instead the conditional distribution; but since it's computed as var(eta.cond) does this mean conditional mean estimates are unreliable with one sample ?)
+- conditional mean estimates
+  - indeed the variance of the conditional etas is much smaller for nsamp=100 compared to nsamp=1
+    - the variance of the conditional samples as expected is similar to the estimated $\omega$ (no shrinkage)
+    - this suggests the conditional means estimated with nsamp=1 are actually closer to conditional samples...
+  - comparing parameter estimates between nsamp=1 and 100
+    - no gold standard so compute bias as (x-y)/((x+y)/2)
+    - hardly any difference between the cond.mean estimates depending on the nb of samples (less than 1% difference, 4% for Tlag)
+    - both have similar differences with the MAP estimates (less than 5% except 35% for Tlag, but Tlag has a very large variability 190%)
+    - plotting the estimates one versus the other shows some differences (V2 having the most and CL being almost identical, seems to be correlated with shrinkage at nsamp=100) but doesn't really explain the difference in shrinkage or the interpretation
+
+```{r melanieBug}
+y<-compute.eta.map(saemix_fit_test)
+
+# conddist.saemix run, one sample
+testfit <- conddist.saemix(saemix_fit_test,nsamp=1)
+
+# conddist.saemix, increasing the nb of samples
+testfit2 <- conddist.saemix(saemix_fit_test,nsamp=2)
+testfit3 <- conddist.saemix(saemix_fit_test,nsamp=10)
+testfit4 <- conddist.saemix(saemix_fit_test,nsamp=100)
+#testfit5 <- conddist.saemix(saemix_fit_test,nsamp=200)
+
+testfit@results@cond.shrinkage
+testfit2@results@cond.shrinkage
+testfit3@results@cond.shrinkage
+testfit4@results@cond.shrinkage
+#testfit5@results@cond.shrinkage
+
+# 
+mean(unlist(testfit@results@cond.mean.psi-saemix_fit_test@results@map.psi))
+mean(unlist(testfit2@results@cond.mean.psi-saemix_fit_test@results@map.psi))
+mean(unlist(testfit4@results@cond.mean.psi-saemix_fit_test@results@map.psi))
+
+# Differences between parameter estimates 
+100*apply(2*(testfit4@results@cond.mean.psi-testfit@results@cond.mean.psi)/(testfit4@results@cond.mean.psi+testfit@results@cond.mean.psi),2,mean) # less than 5% difference in parameter estimates depending on the nb of samples
+100*apply(2*(testfit4@results@cond.mean.psi-saemix_fit_test@results@map.psi)/(testfit4@results@cond.mean.psi+saemix_fit_test@results@map.psi),2,mean) # slightly larger difference, much larger for Tlag 
+100*apply(2*(testfit@results@cond.mean.psi-saemix_fit_test@results@map.psi)/(testfit@results@cond.mean.psi+saemix_fit_test@results@map.psi),2,mean) 
+
+# Variances 
+head(saemix_fit_test@results@map.psi)
+head(testfit@results@cond.mean.psi)
+head(testfit4@results@cond.mean.psi)
+
+var1<-apply(testfit4@results@phi.samp,c(1,2),var)
+apply(var1,2, mean) # moyenne des SE sur les paramètres individuels
+
+xtab<-NULL
+yphi<-testfit4@results@phi.samp
+for(i in 1:dim(yphi)[3]) xtab<-rbind(xtab,yphi[,,i])
+
+# Comparaison entre var(eta) selon différentes sources
+diag(saemix_fit_test@results@omega) # population estimate omega (estimation de vraie var(eta))
+apply(testfit@results@cond.mean.eta,2, var) # variance close to omega (estimation de var(hat(eta)))
+apply(testfit4@results@cond.mean.eta,2, var) # much lower variance
+apply(xtab,2,var) # variance from all the samples in the conditional distribution (very close to true var(eta))
+
+summary(abs(testfit@results@cond.var.phi-var1))
+summary(abs(testfit4@results@cond.var.phi-var1))
+
+# Comparing conditional mean estimates for nsamp=1 and nsamp=100
+ypl<-data.frame(sim1=c(unlist(testfit@results@cond.mean.psi)),sim100=c(unlist(testfit4@results@cond.mean.psi)),map=c(unlist(testfit@results@map.psi)),param=rep(testfit@model@name.modpar,each=testfit@data@N))
+ggplot(ypl,aes(x=sim1,y=sim100)) + geom_point() + geom_abline(slope=1,intercept=0) + facet_wrap(.~param, scales = "free")
+
+# Comparing the different cond.mean estimates with the MAP estimates
+ggplot(ypl,aes(x=sim1,y=map)) + geom_point() + geom_abline(slope=1,intercept=0) + facet_wrap(.~param, scales = "free")
+ggplot(ypl,aes(x=sim100,y=map)) + geom_point() + geom_abline(slope=1,intercept=0) + facet_wrap(.~param, scales = "free")
+
+# Debugging
+saemixObject<-saemix_fit_test
+nsamp<-1
+max.iter<-400 
+```
+
+
+
+## 
