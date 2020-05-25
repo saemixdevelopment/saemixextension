@@ -8,9 +8,9 @@
 \alias{read,SaemixData}
 \title{Methods for Function read}
 \usage{
-read(object, verbose = TRUE)
+read(object, dat = NULL, verbose = TRUE)
 
-\S4method{read}{SaemixData}(object)
+\S4method{read}{SaemixData}(object, dat = NULL)
 }
 \arguments{
 \item{object}{an SaemixData object}
