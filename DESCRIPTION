@@ -1,16 +1,44 @@
-Package: saemixextension
-Title: What the Package Does (One Line, Title Case)
-Version: 0.0.0.9000
-Authors@R: 
-    person(given = "First",
-           family = "Last",
-           role = c("aut", "cre"),
-           email = "first.last@example.com",
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
-License: `use_mit_license()`, `use_gpl3_license()` or friends to
-    pick a license
+Package: saemix
+Title: Stochastic Approximation Expectation Maximization (SAEM) Algorithm
+Version: 3.1.9000
+Authors@R: c(
+    person("Emmanuelle", "Comets", role = c("aut", "cre"),
+           email = "emmanuelle.comets@inserm.fr"),
+    person("Audrey", "Lavenu", role = "aut"),
+    person("Belhal", "Karimi", role = "aut"),
+    person("Maud", "Delattre", role = "ctb"),
+    person("Marc", "Lavielle", role = "aut"))
+Description: The SAEMIX package implements the Stochastic Approximation EM algorithm for parameter estimation in (non)linear mixed effects models. The SAEM algorithm: - computes the maximum likelihood estimator of the population parameters, without any approximation of the model (linearisation, quadrature approximation,...), using the Stochastic Approximation Expectation Maximization (SAEM) algorithm, - provides standard errors for the maximum likelihood estimator - estimates the conditional modes, the conditional means and the conditional standard deviations of the individual parameters, using the Hastings-Metropolis algorithm as described by Comets et al. (2017) <doi:10.18637/jss.v080.i03>. Several applications of SAEM in agronomy, animal breeding and PKPD analysis have been published by members of the Monolix group (<http://group.monolix.org/>).
+License: GPL (>= 2)
+LazyLoad: yes
+LazyData: yes
+Imports: graphics, stats, methods
+Suggests: testthat (>= 0.3)
 Encoding: UTF-8
-LazyData: true
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.0
+NeedsCompilation: no
+Collate: 
+    'aaa_generics.R'
+    'SaemixData.R'
+    'SaemixModel.R'
+    'SaemixRes.R'
+    'SaemixObject.R'
+    'backward.R'
+    'compute_LL.R'
+    'forward.R'
+    'func_FIM.R'
+    'func_aux.R'
+    'func_compare.R'
+    'func_distcond.R'
+    'func_distcond_noplot.R'
+    'func_estimParam.R'
+    'func_plots.R'
+    'func_simulations.R'
+    'func_stepwise.R'
+    'main.R'
+    'main_estep.R'
+    'main_initialiseMainAlgo.R'
+    'main_mstep.R'
+    'stepwise.R'
+    'zzz.R'
