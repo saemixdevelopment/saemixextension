@@ -15,7 +15,6 @@ mydiag(x = 1, nrow, ncol)
 }
 \value{
 If x is a matrix then diag(x) returns the diagonal of x. The resulting vector will have names if the matrix x has matching column and rownames.
-\seealso{\code{diag}}
 }
 \description{
 Extract or replace the diagonal of a matrix, or construct a diagonal matrix (replace diag function from R-base)
@@ -25,6 +24,9 @@ Extract or replace the diagonal of a matrix, or construct a diagonal matrix (rep
 mydiag(1)
 mydiag(c(1,2))
 
+}
+\seealso{
+\code{diag}
 }
 \author{
 Emmanuelle Comets \href{mailto:emmanuelle.comets@inserm.fr}{emmanuelle.comets@inserm.fr}, Audrey Lavenu,

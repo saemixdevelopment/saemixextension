@@ -63,10 +63,12 @@ saemix.model1<-saemixModel(model=model1cpt,modeltype="structural",
 saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE)
 saemix.fit1<-saemix(saemix.model1,saemix.data,saemix.options)     
 
+\dontrun{
 res.forward <- step.saemix(saemix.fit1, direction = "forward")
 res.backward <- step.saemix(saemix.fit1, direction = "backward")
 covariate.init <- matrix(c(1,0,0,0,1,0),ncol=3,nrow=2)
 res.stepwise <- step.saemix(saemix.fit1, direction="both")
+}
 }
 \references{
 Delattre, M., Lavielle, M. and Poursat, M.A. (2014) A note on BIC in mixed effects models.
