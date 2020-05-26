@@ -17,7 +17,7 @@
 #' @import utils
 
 setGeneric(name="read",
-           def=function(object, verbose=TRUE){standardGeneric("read")}
+           def=function(object, dat=NULL, verbose=TRUE){standardGeneric("read")}
 )
 
 #' Methods for Function showall

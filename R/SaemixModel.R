@@ -806,7 +806,7 @@ saemixModel<-function(model,psi0,description="",modeltype ="structural", name.re
 #' @param nrow, ncol Optional dimensions for the result when x is not a matrix. 
 #' @param value either a single value or a vector of length equal to that of the current diagonal. Should be of a mode which can be coerced to that of x.
 #' @return If x is a matrix then diag(x) returns the diagonal of x. The resulting vector will have names if the matrix x has matching column and rownames.
-#' \seealso{\code{diag}}
+#' @seealso \code{diag}
 #' @author Emmanuelle Comets <emmanuelle.comets@@inserm.fr>, Audrey Lavenu,
 #' Marc Lavielle.
 #' @keywords models

@@ -47,10 +47,12 @@
 #' saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE)
 #' saemix.fit1<-saemix(saemix.model1,saemix.data,saemix.options)     
 #' 
-#' res.forward <- step.saemix(saemix.fit, direction = "forward")
-#' res.backward <- step.saemix(saemix.fit, direction = "backward")
+#' \dontrun{
+#' res.forward <- step.saemix(saemix.fit1, direction = "forward")
+#' res.backward <- step.saemix(saemix.fit1, direction = "backward")
 #' covariate.init <- matrix(c(1,0,0,0,1,0),ncol=3,nrow=2)
-#' res.stepwise <- step.saemix(saemix.fit, direction="both")
+#' res.stepwise <- step.saemix(saemix.fit1, direction="both")
+#' }
 #' @export step.saemix
 
 

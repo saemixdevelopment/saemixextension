@@ -652,7 +652,7 @@ validate.names<-function(usernames,datanames,recognisednames=c(),verbose=TRUE, a
 
 setMethod("read",
           signature="SaemixData",
-  function(object) {
+  function(object, dat = NULL) {
     ow <- options("warn")
     options("warn"=-1)
 # ce test devrait aller dans la definition de la classe
@@ -660,10 +660,7 @@ setMethod("read",
       if(object@messages) cat("Please provide the name of the data (data.frame or path to file on disk) as a character string.\n")
     return("Creation of SaemixData object failed")
   }
-    if(exists(object@name.data)) {
-      if(object@messages) cat("Using the object called",object@name.data,"in this R session as the data.\n")
-      dat<-get(object@name.data)
-    } else {
+    if(is.null(dat)) {
       if(object@messages) cat("Reading data from file",object@name.data,"\n")
       header<-object@header
       if(is.null(header)) header<-TRUE
@@ -1302,7 +1299,13 @@ saemixData<-function(name.data,header,sep,na,name.group,name.predictors, name.re
     if(verbose) cat("Error in saemixData: please provide the name of the datafile or dataframe (between quotes)\n")
     return("Creation of SaemixData object failed")
   }
-  if(is.data.frame(name.data)) name.data<-deparse(substitute(name.data))
+  if(is.data.frame(name.data)) {
+    data_from_name.data <- TRUE
+    dat <- name.data
+    name.data<-deparse(substitute(name.data))
+  } else {
+    data_from_name.data <- FALSE
+  }
   if(missing(header)) header<-TRUE
   if(missing(sep)) sep<-""
   if(missing(na)) na<-"NA" else {na<-as.character(na);na[is.na(na)]<-"NA"}
@@ -1317,7 +1320,11 @@ saemixData<-function(name.data,header,sep,na,name.group,name.predictors, name.re
   name.covariates<-c(as.character(name.covariates),as.character(name.genetic.covariates))
   x<-new(Class="SaemixData",name.data=name.data,header=header,sep=sep,na=na, name.group=name.group,name.predictors=name.predictors,name.X=name.X, name.response=name.response,name.covariates=name.covariates,units=units, name.mdv=name.mdv, name.cens=name.cens, name.occ=name.occ, name.ytype=name.ytype, verbose=verbose, automatic=automatic)
 #  showall(x)
-  x1<-read(x)
+  if(data_from_name.data) {
+    x1<-read(x, dat)
+  } else {
+    x1<-read(x)
+  }
   if(class(x1)=="SaemixData") {
   	igen<-rep(FALSE,length(name.covariates))
   	igen[match(name.genetic.covariates,name.covariates)]<-TRUE
