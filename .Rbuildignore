@@ -1,7 +1,9 @@
+^saemix.Rproj$
 ^bootstrap
 ^dataSimulationScripts
 ^fimAGQ
 ^newCode
+^README.txt$
 ^saemixWorkAna
 ^SIR
 ^testbelhal

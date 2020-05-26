@@ -1300,8 +1300,11 @@ saemixData<-function(name.data,header,sep,na,name.group,name.predictors, name.re
     return("Creation of SaemixData object failed")
   }
   if(is.data.frame(name.data)) {
+    data_from_name.data <- TRUE
     dat <- name.data
     name.data<-deparse(substitute(name.data))
+  } else {
+    data_from_name.data <- FALSE
   }
   if(missing(header)) header<-TRUE
   if(missing(sep)) sep<-""
@@ -1317,7 +1320,7 @@ saemixData<-function(name.data,header,sep,na,name.group,name.predictors, name.re
   name.covariates<-c(as.character(name.covariates),as.character(name.genetic.covariates))
   x<-new(Class="SaemixData",name.data=name.data,header=header,sep=sep,na=na, name.group=name.group,name.predictors=name.predictors,name.X=name.X, name.response=name.response,name.covariates=name.covariates,units=units, name.mdv=name.mdv, name.cens=name.cens, name.occ=name.occ, name.ytype=name.ytype, verbose=verbose, automatic=automatic)
 #  showall(x)
-  if(is.data.frame(dat)) {
+  if(data_from_name.data) {
     x1<-read(x, dat)
   } else {
     x1<-read(x)
