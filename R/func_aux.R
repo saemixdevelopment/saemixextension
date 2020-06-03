@@ -304,7 +304,7 @@ derivphi<-function(phi,tr) {
 }
 
 dtransphi<-function(phi,tr) {
-# Fonction calculant la derivee de h, used to compute the Fisher information matrix
+# Fonction computing the derivative of h, used to compute the Fisher information matrix
   psi<-phi
   if(is.null(dim(phi))) {
      dpsi<-as.matrix(t(rep(1,length(phi))))

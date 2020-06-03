@@ -35,6 +35,7 @@
 #' @slot se.omega a vector giving the estimated standard errors of estimation for Omega 
 #' @slot se.cov a matrix giving the estimated SE for each term of the covariance matrix (diagonal elements represent the SE on the variances of the random effects and off-diagonal elements represent the SE on the covariance terms)
 #' @slot se.respar a vector giving the estimated standard errors of estimation for the parameters of the residual variability
+#' @slot conf.int a dataframe containing the estimated parameters, their estimation error (SE), coefficient of variation (CV), and the associated confidence intervals; the variabilities for the random effects are presented first as estimated (variances) then converted to standard deviations (SD), and the correlations are computed. For SD and correlations, the SE are estimated via the delta-method
 #' @slot parpop a matrix tracking the estimates of the population parameters at each iteration
 #' @slot allpar a matrix tracking the estimates of all the parameters (including covariate effects) at each iteration
 #' @slot indx.fix the index of the fixed parameters (used in the estimation algorithm)
@@ -131,6 +132,7 @@ setClass(
     se.omega="numeric", # estimated SE for Omega (diagonal terms of Omega, presented as  vector)
     se.cov="matrix",    # matrix giving the estimated SE for each term of the covariance matrix (diagonal elements represent the SE on the variances of the random effects and off-diagonal elements represent the SE on the covariance terms)
     se.respar="numeric",    # estimated SE for residual variability
+    conf.int="data.frame",   # Estimates, SE, CV and confidence intervals (assuming normality of the estimators)
     parpop="matrix",    # population parameters at each iteration
     allpar="matrix",    # all parameters (including covariate effects) at each iteration
     indx.fix="numeric", # index of mean param estimated (was indx.betaI)
@@ -304,6 +306,7 @@ setMethod(
     "se.omega"={return(x@se.omega)},
     "se.cov"={return(x@se.cov)},
     "se.respar"={return(x@se.respar)},
+    "conf.int"={return(x@conf.int)},
     "parpop"={return(x@parpop)},
     "allpar"={return(x@allpar)},
     "indx.fix"={return(x@indx.fix)},
@@ -387,6 +390,7 @@ setReplaceMethod(
     "se.omega"={x@se.omega<-value},
     "se.cov"={x@se.cov<-value},
     "se.respar"={x@se.respar<-value},
+    "conf.int"={x@conf.int<-value},
     "parpop"={x@parpop<-value},
     "allpar"={x@allpar<-value},
     "indx.fix"={x@indx.fix<-value},

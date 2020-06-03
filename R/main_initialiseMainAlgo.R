@@ -102,11 +102,14 @@ initialiseMainAlgo<-function(saemix.data,saemix.model,saemix.options) {
 		nr.psi0<-dim(saemix.model["psi0"])[1]
 	}
 	if(nr.psi0>1) fixed.ini[2:nr.psi0,]<-saemix.model["psi0"][2:nr.psi0,]
-	
+
 	#covariate.estim<-matrix(c(rep(saemix.model$fixed.estim,nr.psi0),t1),byrow=TRUE, nrow=nr.cov)
-	covariate.estim<-matrix(rep(saemix.model["fixed.estim"],nr.psi0),byrow=TRUE, ncol=length(saemix.model["fixed.estim"]))
+#	covariate.estim<-matrix(rep(saemix.model["fixed.estim"],nr.psi0),byrow=TRUE, ncol=length(saemix.model["fixed.estim"]))
 	#if(!is.null(dim(t1))) covariate.estim<-rbind(covariate.estim,t1) 
-	covariate.estim<-covariate.estim*saemix.model["betaest.model"]
+#	covariate.estim<-covariate.estim*saemix.model["betaest.model"] 
+# 29/05/2020 - changing definition of covariate.estim to 
+	covariate.estim<-saemix.model["betaest.model"]
+	covariate.estim[1,]<-saemix.model["fixed.estim"]
 	
 	betas.ini<-fixed.ini[which(saemix.model["betaest.model"]>0)]
 	betas.ini<-matrix(betas.ini,ncol=1)

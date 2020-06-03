@@ -159,10 +159,47 @@ fim.saemix<-function(saemixObject) {
   
   # ECO ici modifie car role de covariate.estim pas clair
   # covariate.estim=si un parametre (et ses covariables associees) sont estimees ou non
-  covariate.estim<-matrix(rep(saemix.model["fixed.estim"], dim(saemix.model["betaest.model"])[1]),byrow=TRUE, ncol=length(saemix.model["fixed.estim"]))*saemix.model["betaest.model"]
+#  covariate.estim<-matrix(rep(saemix.model["fixed.estim"], dim(saemix.model["betaest.model"])[1]),byrow=TRUE, ncol=length(saemix.model["fixed.estim"]))*saemix.model["betaest.model"] # 29/05/20
+
+  covariate.estim<-saemix.model["betaest.model"]
+  covariate.estim[1,]<-saemix.model["fixed.estim"]
+  
   j<-which(saemix.model["betaest.model"]>0)
   ind.fixed.est<-(covariate.estim[j]>0)
   npar<-sum(ind.fixed.est)
+# Tracking indices for covariances
+  myidx.omega<-c()
+  myidx.cor<-c()
+  name.rand1<-name.rand2<-c()
+  myidx.track<-NULL
+  ipar<-npar
+  for(iom in 1:dim(covariance.model)[1]) {
+    for(jom in iom:dim(covariance.model)[1]) {
+      if(covariance.model[iom,jom]==1) {
+        ipar<-ipar+1
+        myidx.track<-rbind(myidx.track,c(ipar,iom,jom))
+        if(iom==jom) {
+          myidx.omega<-c(myidx.omega,ipar)
+          name.rand1<-c(name.rand1,paste("Var",saemixObject@model@name.modpar[iom],sep="."))
+          name.rand2<-c(name.rand2,paste("SD",saemixObject@model@name.modpar[iom],sep="."))
+        }
+        else {
+          myidx.cor<-c(myidx.cor,ipar)
+          name.rand1<-c(name.rand1,paste("Cov",saemixObject@model@name.modpar[iom],saemixObject@model@name.modpar[jom],sep="."))
+          name.rand2<-c(name.rand2,paste("Corr",saemixObject@model@name.modpar[iom],saemixObject@model@name.modpar[jom],sep="."))
+        }
+      }
+    }
+  }
+  if(length(myidx.cor)>0) {
+    track.var<-myidx.track[myidx.track[,1] %in% myidx.omega,]
+    for(i in myidx.cor) {
+      ij<-which(myidx.track[,1]==i)
+      myidx.track[ij,2]<-track.var[track.var[,2]==myidx.track[ij,2],1]
+      myidx.track[ij,3]<-track.var[track.var[,2]==myidx.track[ij,3],1]
+    }
+  }
+  namallpar<-c(saemixObject@results@name.fixed,name.rand1, saemixObject@results@name.sigma[saemixObject@results@indx.res], name.rand2)
   
   # hw=waitbar(1,'Estimating the population parameters (SAEM). Wait...')
   
@@ -189,8 +226,6 @@ fim.saemix<-function(saemixObject) {
     
     # Derivatives of Vi=var(yi) for subject i, w/r to lambda (FO approximation, neglecting dVi/dmu)
     DV<-list()
-    myidx.omega<-c()
-    myidx.cor<-c()
     for(ipar in 1:npar) {
       DV[[ipar]]<-matrix(0,ncol=ni,nrow=ni)
     }
@@ -198,13 +233,12 @@ fim.saemix<-function(saemixObject) {
       for(jom in iom:dim(covariance.model)[1]) {
         if(covariance.model[iom,jom]==1) {
           ipar<-ipar+1
-          if(iom==jom) myidx.omega<-c(myidx.omega,ipar) else myidx.cor<-c(myidx.cor,ipar)
           domega<-omega.null
           domega[iom,jom]<-domega[jom,iom]<-1 
           #          if(iom==jom) domega[iom,jom]<-1*sqrt(omega[iom,jom]) else domega[iom,jom]<-1 # if parameterised in omega and not omega2,
           if (saemixObject["model"]["modeltype"]=="structural"){
             DV[[ipar]]<-DFi %*% domega %*% t(DFi)
-          }else{
+          } else {
             DV[[ipar]]<-DFi %*% t(DFi)
           }
         }
@@ -254,8 +288,8 @@ fim.saemix<-function(saemixObject) {
     }
     blocC<-matrix(0,ncol=(npar),nrow=(nomega+nres))
     MFi <-rbind( cbind(blocA,t(blocC)), cbind(blocC, blocB))
-#    indMF[[i]]<-MFi
     MF <- MF+MFi
+#    FIMi[[i]]<-MFi
     ll.lin <- ll.lin - 0.5*log(det(Gi[[i]])) - 0.5*t(Dzi)%*% invVi[[i]] %*%Dzi 
   }
 
@@ -300,25 +334,55 @@ fim.saemix<-function(saemixObject) {
   }
   sO<-sqrt(mydiag(CO))
   se.omega<-matrix(0,nphi,1)
-  se.cov<-matrix(0,nphi,nphi)
+  se.sdcor<-se.cov<-matrix(0,nphi,nphi)
   se.omega[saemix.model["indx.omega"]]<-sO[myidx.omega-npar]
+  se.res<-matrix(0,2*nytype,1)
+  se.res[saemix.res["indx.res"]]<-sO[(nomega+1):length(sO)]    
+  # Table with SE, CV and confidence intervals
+  estpar<-c(saemixObject@results@fixed.effects)
+  estSE<-c(se.fixed)
+  est1<-est2<-se1<-se2<-c()
   if(length(myidx.cor)>0) {
-    ipar<-0
+    ipar<-npar
     for(iom in 1:nphi) {
       for(jom in iom:nphi) {
         if(covariance.model[iom,jom]==1) {
           ipar<-ipar+1
-          se.cov[iom,jom]<-se.cov[jom,iom]<-sO[ipar]
+          se.cov[iom,jom]<-se.cov[jom,iom]<-sO[(ipar-npar)]
+          est1<-c(est1,omega[iom,jom])
+          se1<-c(se1,sO[ipar-npar])
+          if(iom==jom) {
+            se.sdcor[iom,iom]<-sqrt(CO[iom,iom])/2/sqrt(omega[iom,iom])
+            est2<-c(est2,sqrt(omega[iom,iom]))
+            se2<-c(se2,se.sdcor[iom,iom])
+          } else { # compute correlation and SE on correlation using the delta-method
+            ebet<-c(omega[iom,jom],omega[iom,iom],omega[jom,jom])
+            varbet<-CO[(myidx.track[myidx.track[,1]==ipar,]-npar),(myidx.track[myidx.track[,1]==ipar,]-npar)]
+            rho<-ebet[1]/sqrt(ebet[2]*ebet[3])
+            debet<-c(1/sqrt(ebet[2]*ebet[3]), -ebet[1]/(ebet[2]**(3/2))/sqrt(ebet[3])/2, -ebet[1]/(ebet[3]**(3/2))/sqrt(ebet[2])/2)
+            se.sdcor[iom,jom]<-se.sdcor[jom,iom]<-t(debet) %*% varbet %*% debet
+            est2<-c(est2,rho)
+            se2<-c(se2,se.sdcor[iom,jom])
+          }
         }
       }
     }
-  } else diag(se.cov)<-se.omega
-  se.res<-matrix(0,2*nytype,1)
-  se.res[saemix.res["indx.res"]]<-sO[(nomega+1):length(sO)]    
+    estpar<-c(estpar,est1,saemixObject@results@respar[saemixObject@results@indx.res],est2)
+    estSE<-c(estSE,se1,se.res[saemixObject@results@indx.res],se2)
+  } else {
+    diag(se.cov)<-se.omega
+    estpar<-c(estpar,diag(omega)[saemixObject@results@indx.omega],saemixObject@results@respar[saemixObject@results@indx.res], sqrt(diag(omega)[saemixObject@results@indx.omega]))
+    estSE<-c(estSE,se.omega[saemixObject@results@indx.omega],se.res[saemixObject@results@indx.res],se.omega[saemixObject@results@indx.omega]/2/sqrt(diag(omega)[saemixObject@results@indx.omega]))
+  }
+  conf.int<-data.frame(name=namallpar, estimate=estpar, se=estSE)
+  conf.int$cv<-100*conf.int$se/conf.int$estimate
+  conf.int$lower<-conf.int$estimate - 1.96*conf.int$se
+  conf.int$upper<-conf.int$estimate + 1.96*conf.int$se
   saemix.res["se.fixed"]<-se.fixed
   saemix.res["se.omega"]<-c(se.omega)
   saemix.res["se.cov"]<-se.cov
   saemix.res["se.respar"]<-c(se.res)
+  saemix.res["conf.int"]<-conf.int
   saemix.res["ll.lin"]<-c(ll.lin )
   saemix.res["fim"]<-fim
   saemix.res["aic.lin"]<-(-2)*saemix.res["ll.lin"]+ 2*saemix.res["npar.est"]

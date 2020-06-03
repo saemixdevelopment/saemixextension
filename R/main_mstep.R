@@ -36,8 +36,12 @@ mstep<-function(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, varList, 
 		if(length(Dargs$error.model)==1) {
 		  if(!is.na(match(Dargs$error.model,c("constant","exponential"))))
 		    resk<-sum((Dargs$yobs-fk)**2) else {
-		      if(Dargs$error.model=="proportional")
-		        resk<-sum((Dargs$yobs-fk)**2/cutoff(fk**2,.Machine$double.eps)) else resk<-0
+		      if(Dargs$error.model=="proportional") {
+#		        idx.okpred<-which(fk>.Machine$double.eps)
+#		        vec<-(Dargs$yobs-fk)**2/cutoff(fk**2,.Machine$double.eps)
+#		        resk<-sum(vec[idx.okpred])
+		        resk<-sum((Dargs$yobs-fk)**2/cutoff(fk**2,.Machine$double.eps))
+		        } else resk<-0
 		    }
 		} else resk<-0
 		statr<-statr+resk
