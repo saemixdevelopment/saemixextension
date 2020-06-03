@@ -53,7 +53,7 @@
 #' 	  return(ypred)
 #' }
 #' 
-#' saemix.model<-saemixModel(model=model1cpt,type="structural",
+#' saemix.model<-saemixModel(model=model1cpt,modeltype="structural",
 #'   description="One-compartment model with first-order absorption", 
 #'   psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3, byrow=TRUE,
 #'   dimnames=list(NULL, c("ka","V","CL"))),transform.par=c(1,1,1),
@@ -62,20 +62,17 @@
 #'   omega.init=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE),error.model="constant")
 #' 
 #' 
-#' # Not run (strict time constraints for CRAN)
-#' # saemix.fit<-saemix(saemix.model,saemix.data,list(seed=632545,directory="newtheo",
-#' # save=FALSE,save.graphs=FALSE), type="structural")
+#' saemix.fit<-saemix(saemix.model,saemix.data,list(seed=632545,directory="newtheo",
+#'   save=FALSE,save.graphs=FALSE))
 #' 
 #' # Prints a summary of the results
-#' # print(saemix.fit)
+#' print(saemix.fit)
 #' 
 #' # Outputs the estimates of individual parameters
-#' # psi(saemix.fit)
+#' psi(saemix.fit)
 #' 
 #' # Shows some diagnostic plots to evaluate the fit
-#' # plot(saemix.fit)
-#' 
-#' 
+#' plot(saemix.fit)
 #' @export saemix
 
 saemix<-function(model,data,control=list()) {

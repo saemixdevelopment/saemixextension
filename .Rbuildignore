@@ -1,0 +1,16 @@
+^saemix.Rproj$
+^bootstrap
+^dataSimulationScripts
+^fimAGQ
+^newCode
+^README.txt$
+^saemixWorkAna
+^SIR
+^testbelhal
+^testeco
+^testmarilou
+^testmaud
+^userguide
+^xchange
+^saemix.Rcheck
+^saemix_.*\.tar\.gz
