@@ -1,0 +1,4 @@
+eta,statistics,p-value
+eta_Emax,0.987982,0.895185
+eta_EC50,0.986482,0.431785
+eta_S0,0.989455,0.988982

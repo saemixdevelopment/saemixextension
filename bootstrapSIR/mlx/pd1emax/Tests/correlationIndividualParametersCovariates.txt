@@ -1,0 +1,2 @@
+parameter,covariate,statistics,p-value,test
+EC50,gender,138.75,<2.2e-16,Fisher

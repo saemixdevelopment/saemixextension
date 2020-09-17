@@ -1,0 +1,122 @@
+---
+title: "Saemix fits with different error models"
+author: "Emmanuelle"
+date: "30/04/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# Directories
+saemixDir<-"/home/eco/work/saemix/saemixextension"
+progDir<-file.path(saemixDir,"R")
+datDir<-file.path(saemixDir,"data")
+testDir<-file.path(saemixDir,"testbelhal")
+
+# Libraries
+library(ggplot2)
+library(MASS)
+
+# Sourcing saemix functions
+{
+  source(file.path(progDir,"aaa_generics.R"))
+  #source(file.path(progDir,"global.R"))
+  source(file.path(progDir,"SaemixData.R"))
+  source(file.path(progDir,"SaemixRes.R"))
+  source(file.path(progDir,"SaemixModel.R"))
+  source(file.path(progDir,"SaemixObject.R"))
+  source(file.path(progDir,"main.R"))
+  source(file.path(progDir,"func_aux.R"))
+  source(file.path(progDir,"main_initialiseMainAlgo.R"))
+  source(file.path(progDir,"main_estep.R"))
+  source(file.path(progDir,"main_mstep.R"))
+  source(file.path(progDir,"func_FIM.R"))
+  source(file.path(progDir,"func_plots.R"))
+  source(file.path(progDir,"func_distcond.R"))
+  source(file.path(progDir,"func_simulations.R"))
+  source(file.path(progDir,"compute_LL.R"))
+  source(file.path(progDir,"func_estimParam.R"))
+}
+```
+
+## Emax model with covariance
+
+
+
+```{r fitSaemixEmax, echo=FALSE, results='hide',message=F, warning=F, include=F}
+PD2.saemix<-read.table(file.path(datDir,"PD2.saemix.tab"),header=T)
+saemix.data<-saemixData(name.data=PD2.saemix,header=TRUE,name.group=c("subject"),
+  name.predictors=c("dose"),name.response=c("response"),
+  name.covariates=c("gender"), units=list(x="mg",y="-",covariates=c("-")))
+
+modelemax<-function(psi,id,xidep) {
+# input:
+#   psi : matrix of parameters (3 columns, E0, Emax, EC50)
+#   id : vector of indices 
+#   xidep : dependent variables (same nb of rows as length of id)
+# returns:
+#   a vector of predictions of length equal to length of id
+  dose<-xidep[,1]
+  e0<-psi[id,1]
+  emax<-psi[id,2]
+  e50<-psi[id,3]
+  f<-e0+emax*dose/(e50+dose)
+  return(f)
+}
+
+# Plotting the data
+plot(saemix.data,main="Simulated data PD2")
+
+mat1<-diag(3)
+mat1[2,3]<-mat1[3,2]<-1
+mat2<-mat1
+mat2[1,1]<-0
+# Covariance, no covariate
+model1<-saemixModel(model=modelemax,description="Emax growth model", 
+  psi0=matrix(c(20,300,20,0,0,0),ncol=3,byrow=TRUE,dimnames=list(NULL,
+  c("E0","Emax","EC50"))), transform.par=c(1,1,1),covariance.model = mat1,
+  covariate.model=matrix(c(0,0,0), ncol=3,byrow=TRUE),fixed.estim=c(1,1,1))
+# Covariance and gender effect
+model2<-saemixModel(model=modelemax,description="Emax growth model", 
+  psi0=matrix(c(20,300,20,0,0,0),ncol=3,byrow=TRUE,dimnames=list(NULL,
+  c("E0","Emax","EC50"))), transform.par=c(1,1,1),covariance.model = mat1,
+  covariate.model=matrix(c(0,1,0), ncol=3,byrow=TRUE),fixed.estim=c(1,1,1))
+# Covariance, gender effect, and E0 fixed
+model3<-saemixModel(model=modelemax,description="Emax growth model", 
+  psi0=matrix(c(20,300,20,0,0,0),ncol=3,byrow=TRUE,dimnames=list(NULL,
+  c("E0","Emax","EC50"))), transform.par=c(1,1,1),covariance.model = mat1,
+  covariate.model=matrix(c(0,1,0), ncol=3,byrow=TRUE),fixed.estim=c(0,1,1))
+# Covariance, gender effect, and E0 without IIV
+model4<-saemixModel(model=modelemax,description="Emax growth model", 
+  psi0=matrix(c(20,300,20,0,0,0),ncol=3,byrow=TRUE,dimnames=list(NULL,
+  c("E0","Emax","EC50"))), transform.par=c(1,1,1),covariance.model = mat2,
+  covariate.model=matrix(c(0,1,0), ncol=3,byrow=TRUE),fixed.estim=c(1,1,1))
+# No covariance, gender effect, and E0 without IIV
+model5<-saemixModel(model=modelemax,description="Emax growth model", 
+  psi0=matrix(c(20,300,20,0,0,0),ncol=3,byrow=TRUE,dimnames=list(NULL,
+  c("E0","Emax","EC50"))), transform.par=c(1,1,1),covariance.model = diag(c(0,1,1)),
+  covariate.model=matrix(c(0,1,0), ncol=3,byrow=TRUE),fixed.estim=c(1,1,1))
+
+saemix.options<-list(nb.chains=3,seed=765754,nbiter.saemix=c(500,300),save=FALSE, save.graphs=FALSE)
+
+fit1<-saemix(model1,saemix.data,saemix.options)
+
+fit2<-saemix(model2,saemix.data,saemix.options)
+
+fit3<-saemix(model3,saemix.data,saemix.options)
+
+fit4<-saemix(model4,saemix.data,saemix.options)
+
+fit5<-saemix(model5,saemix.data,saemix.options)
+
+```
+
+Compute the SE for $\omega$ and for correlations using the delta-method.
+
+```{r derivingSE, echo=FALSE}
+saemixObject<-fit1
+saemixObject<-fit2
+saemixObject<-fit5
+
+```
+

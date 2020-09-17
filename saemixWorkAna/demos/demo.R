@@ -15,7 +15,7 @@ model1cpt<-function(psi,id,xidep) {
   return(ypred)
 }
 
-saemix.model_warfa<-saemixModel(model=model1cpt,description="warfarin",type="structural"
+saemix.model_warfa<-saemixModel(model=model1cpt,description="warfarin",modeltype="structural"
   ,psi0=matrix(c(1,7,1,0,0,0),ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","k"))),
   transform.par=c(1,1,1),omega.init=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE),
   covariance.model=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,
@@ -46,7 +46,7 @@ logpdf[ind] <- -H[ind] + H[ind-1] + log(hazard[ind])
 return(logpdf)
 }
 
-saemix.model_rtte<-saemixModel(model=timetoevent.model,description="time model",type="likelihood",
+saemix.model_rtte<-saemixModel(model=timetoevent.model,description="time model",modeltype="likelihood",
   psi0=matrix(c(2,1),ncol=2,byrow=TRUE,dimnames=list(NULL,
   c("lambda","beta"))),
   transform.par=c(1,1),covariance.model=matrix(c(1,0,0,1),ncol=2,

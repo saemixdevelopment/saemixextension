@@ -22,13 +22,7 @@
 #' nsamp>1, several chains of the MCMC algorithm are run in parallel to obtain
 #' samples from the conditional distributions, and the convergence criterion
 #' must be achieved for all chains. When nsamp>1, the estimate of the
-#' conditional mean is obtained by averaging over the different samples, and the 
-#' samples from the conditional distribution are output as an array of dimension
-#' N x nb of parameters x nsamp in arrays phi.samp for the sampled phi_i and psi.samp
-#' for the corresponding psi_i. The variance of the conditional phi_i for each
-#' sample is given in a corresponding array phi.samp.var (the variance of the 
-#' conditional psi_i is not given but may be computed via the delta-method or by 
-#' transforming the confidence interval for phi_i).
+#' conditional mean is obtained by averaging over the different samples.
 #' 
 #' The shrinkage for any given parameter for the conditional estimate is
 #' obtained as
@@ -37,12 +31,6 @@
 #' 
 #' where var(eta_i) is the empirical variance of the estimates of the
 #' individual random effects, and omega(eta) is the estimated variance.
-#' 
-#' When the option displayProgress is set to TRUE, convergence graphs are produced
-#' They can be used assess whether the mean of the individual estimates (on the scale of the parameters) 
-#' and the mean of the SD of the random effects have stabilised over the ipar.lmcmc (defaults to 50) iterations. 
-#' The evolution of these variables for each parameter is shown as a continuous line
-#' while the shaded area represents the acceptable variation.
 #' 
 #' The function adds or modifies the following elements in the results:
 #' \describe{ \item{cond.mean.phi}{Conditional mean of the individual
@@ -123,10 +111,10 @@
 #' 
 #' 
 #' @export conddist.saemix
-conddist.saemix<-function(saemixObject,nsamp=1,max.iter=NULL,...) {
+conddist2.saemix<-function(saemixObject,nsamp=1,max.iter=NULL,...) {
   # Estimate conditional means and estimates for the individual parameters PSI_i using the MCMC algorithm
   # nsamp= number of MCMC samples
-  # max.iter= max nb of iterations
+  # kmax= max nb of iterations
   # returns an array 
   saemix.data<-saemixObject["data"]
   saemix.model<-saemixObject["model"]
@@ -189,14 +177,24 @@ conddist.saemix<-function(saemixObject,nsamp=1,max.iter=NULL,...) {
   mean.phiM<-do.call(rbind,rep(list(saemixObject["results"]["mean.phi"]),nsamp))
   phiM<-do.call(rbind,rep(list(saemixObject["results"]["cond.mean.phi"]),nsamp))
   etaM<-phiM[,ind.eta]-mean.phiM[,ind.eta]  
+  psiM<-transphi(phiM,saemixObject["model"]["transform.par"])
+  fpred<-saemixObject["model"]["model"](psiM, IdM, XM)
+  ind.exp<-which(saemix.model["error.model"]=="exponential")
+  for(ityp in ind.exp) fpred[XM$ytype==ityp]<-log(cutoff(fpred[XM$ytype==ityp]))
   Dargs<-list(transform.par=saemixObject["model"]["transform.par"], structural.model=saemixObject["model"]["model"],IdM=IdM,XM=XM,yM=yM,etype.exp=which(saemixObject["model"]["error.model"] == "exponential"), modeltype=saemixObject["model"]["modeltype"])
   Uargs<-list(ind.ioM=ind.ioM)
   somega<-solve(omega.eta)
   
-  #  chol.omega<-chol.omega*3
-  #  domega2<-domega2*3
-  #  somega<-somega*3
+#  chol.omega<-chol.omega*3
+#  domega2<-domega2*3
+#  somega<-somega*3
   
+  if (saemixObject["model"]["modeltype"]=="structural"){  
+    gpred<-error(fpred,pres,XM$ytype)
+    DYF[ind.ioM]<-0.5*((yM-fpred)/gpred)^2+log(gpred)
+  } else {
+    DYF[ind.ioM]<- -fpred
+  }
   U.y<-compute.LLy(phiM,Uargs,Dargs,DYF,pres)
   phiMc<-phiM
   
@@ -209,6 +207,15 @@ conddist.saemix<-function(saemixObject,nsamp=1,max.iter=NULL,...) {
     for(u in 1:saemixObject["options"]$nbiter.mcmc[1]) { # 1er noyau
       etaMc<-matrix(rnorm(NM*nb.etas),ncol=nb.etas)%*%chol.omega
       phiMc[,ind.eta]<-mean.phiM[,ind.eta]+etaMc
+      psiMc<-transphi(phiMc,saemixObject["model"]["transform.par"])
+      fpred<-saemixObject["model"]["model"](psiMc, IdM, XM)
+      for(ityp in ind.exp) fpred[XM$ytype==ityp]<-log(cutoff(fpred[XM$ytype==ityp]))
+      if (saemixObject["model"]["modeltype"]=="structural"){  
+        gpred<-error(fpred,pres,XM$ytype)
+        DYF[ind.ioM]<-0.5*((yM-fpred)/gpred)^2+log(gpred)
+      } else {
+        DYF[ind.ioM]<- -fpred
+      }
       Uc.y<-compute.LLy(phiMc,Uargs,Dargs,DYF,pres)
       deltau<-Uc.y-U.y
       ind<-which(deltau<(-1)*log(runif(NM)))
@@ -219,6 +226,7 @@ conddist.saemix<-function(saemixObject,nsamp=1,max.iter=NULL,...) {
     U.eta<-0.5*rowSums(etaM*(etaM%*%somega))
     
     # Second stage
+    
     if(saemixObject["options"]$nbiter.mcmc[2]>0) {
       nt2<-nbc2<-matrix(data=0,nrow=nb.etas,ncol=1)
       nrs2<-1
@@ -227,6 +235,15 @@ conddist.saemix<-function(saemixObject,nsamp=1,max.iter=NULL,...) {
           etaMc<-etaM
           etaMc[,vk2]<-etaM[,vk2]+matrix(rnorm(NM*nrs2), ncol=nrs2)%*%mydiag(domega2[vk2,nrs2],nrow=1) # 2e noyau ? ou 1er noyau+permutation?
           phiMc[,ind.eta]<-mean.phiM[,ind.eta]+etaMc
+          psiMc<-transphi(phiMc,saemixObject["model"]["transform.par"])
+          fpred<-saemixObject["model"]["model"](psiMc, IdM, XM)
+          for(ityp in ind.exp) fpred[XM$ytype==ityp]<-log(cutoff(fpred[XM$ytype==ityp]))
+          if (saemixObject["model"]["modeltype"]=="structural"){  
+            gpred<-error(fpred,pres,XM$ytype)
+            DYF[ind.ioM]<-0.5*((yM-fpred)/gpred)^2+log(gpred)
+          } else {
+            DYF[ind.ioM]<- -fpred
+          }
           Uc.y<-compute.LLy(phiMc,Uargs,Dargs,DYF,pres)
           Uc.eta<-0.5*rowSums(etaMc*(etaMc%*%somega))
           deltu<-Uc.y-U.y+Uc.eta-U.eta
@@ -258,6 +275,15 @@ conddist.saemix<-function(saemixObject,nsamp=1,max.iter=NULL,...) {
           etaMc<-etaM
           etaMc[,vk2]<-etaM[,vk2]+matrix(rnorm(NM*nrs2), ncol=nrs2)%*%mydiag(domega2[vk2,nrs2])
           phiMc[,ind.eta]<-mean.phiM[,ind.eta]+etaMc
+          psiMc<-transphi(phiMc,saemixObject["model"]["transform.par"])
+          fpred<-saemixObject["model"]["model"](psiMc, IdM, XM)
+          for(ityp in ind.exp) fpred[XM$ytype==ityp]<-log(cutoff(fpred[XM$ytype==ityp]))
+          if (saemixObject["model"]["modeltype"]=="structural"){  
+            gpred<-error(fpred,pres,XM$ytype)
+            DYF[ind.ioM]<-0.5*((yM-fpred)/gpred)^2+log(gpred)
+          } else {
+            DYF[ind.ioM]<- -fpred
+          }
           Uc.y<-compute.LLy(phiMc,Uargs,Dargs,DYF,pres)
           Uc.eta<-0.5*rowSums(etaMc*(etaMc%*%somega))
           deltu<-Uc.y-U.y+Uc.eta-U.eta
@@ -273,9 +299,8 @@ conddist.saemix<-function(saemixObject,nsamp=1,max.iter=NULL,...) {
     }
     
     phiM[,ind.eta]<-mean.phiM[,ind.eta]+etaM
-    phik<-array(t(phiM),dim=c(nb.parameters,N,nsamp))
     if(k==1) {
-      eik<-phik
+      eik<-array(t(phiM),dim=c(nb.parameters,N,nsamp))
       varik<-0*eik
       ebar[,k,]<-apply(eik,c(1,3),mean)
       ij<-0
@@ -283,10 +308,9 @@ conddist.saemix<-function(saemixObject,nsamp=1,max.iter=NULL,...) {
       sdcond[,(ij+1):(ij+N),]<-varik
     } else {
       eik1<-eik
-      eik<-eik*(k-1)/k+phik/k
-      varik<-varik*(k-1)/k+(phik**2)/k + (eik1**2)*(k-1)/k-(eik**2)
+      eik<-eik*(k-1)/k+array(t(phiM),dim=c(nb.parameters,N,nsamp))/k
+      varik<-varik*(k-1)/k+(array(t(phiM),dim=c(nb.parameters,N,nsamp))**2)/k + (eik1**2)*(k-1)/k-(eik**2)
       sdik<-sqrt(varik)
-      sdik[sdik<0]<-0
       ij<-(k-1)*N
       econd[,(ij+1):(ij+N),]<-eik
       sdcond[,(ij+1):(ij+N),]<-sdik
@@ -320,23 +344,23 @@ conddist.saemix<-function(saemixObject,nsamp=1,max.iter=NULL,...) {
     }
     if(k>50 & k%%50==1) {
       if(saemixObject["options"]$warnings) cat(".")
-      #       if(saemixObject["options"]$displayProgress) {
-      #         #        par(mfrow=plot.opt$mfrow,ask=plot.opt$ask)
-      #         par(mfrow=plot.opt$mfrow)
-      #         limy<-cbind(apply(cbind(apply(ebar[,1:k,],1,min),ekmin),1,min), apply(cbind(apply(ebar[,1:k,],1,max),ekmax),1,max))
-      #         for(ipar in ind.eta) {
-      #           laby<-saemixObject["model"]["name.modpar"][ipar]
-      #           plot(1:k,ebar[ipar,1:k,1],type="n",xlab=plot.opt$xlab, ylab=laby,ylim=limy[ipar,],main=plot.opt$main)
-      #           for(isamp in 1:nsamp) 
-      #             lines(1:k,ebar[ipar,1:k,isamp],col=plot.opt$col,lty=plot.opt$lty, lwd=plot.opt$lwd)
-      #           abline(h=apply(ebar[,k,],1,mean), col=plot.opt$ablinecol, lty=plot.opt$ablinelty,lwd=plot.opt$ablinelwd)
-      #           abline(h=apply(ekmax,1,mean)[ipar], col=plot.opt$ablinecol, lty=plot.opt$ablinelty,lwd=plot.opt$ablinelwd)
-      #           abline(h=apply(ekmin,1,mean)[ipar], col=plot.opt$ablinecol, lty=plot.opt$ablinelty,lwd=plot.opt$ablinelwd)
-      #         }
-      #       }
+#       if(saemixObject["options"]$displayProgress) {
+#         #        par(mfrow=plot.opt$mfrow,ask=plot.opt$ask)
+#         par(mfrow=plot.opt$mfrow)
+#         limy<-cbind(apply(cbind(apply(ebar[,1:k,],1,min),ekmin),1,min), apply(cbind(apply(ebar[,1:k,],1,max),ekmax),1,max))
+#         for(ipar in ind.eta) {
+#           laby<-saemixObject["model"]["name.modpar"][ipar]
+#           plot(1:k,ebar[ipar,1:k,1],type="n",xlab=plot.opt$xlab, ylab=laby,ylim=limy[ipar,],main=plot.opt$main)
+#           for(isamp in 1:nsamp) 
+#             lines(1:k,ebar[ipar,1:k,isamp],col=plot.opt$col,lty=plot.opt$lty, lwd=plot.opt$lwd)
+#           abline(h=apply(ebar[,k,],1,mean), col=plot.opt$ablinecol, lty=plot.opt$ablinelty,lwd=plot.opt$ablinelwd)
+#           abline(h=apply(ekmax,1,mean)[ipar], col=plot.opt$ablinecol, lty=plot.opt$ablinelty,lwd=plot.opt$ablinelwd)
+#           abline(h=apply(ekmin,1,mean)[ipar], col=plot.opt$ablinecol, lty=plot.opt$ablinelty,lwd=plot.opt$ablinelwd)
+#         }
+#       }
     }
   }
-  #  cat("k=",k,"\n")
+#  cat("k=",k,"\n")
   if(saemixObject["options"]$warnings) cat("\n")
   if(saemixObject["options"]$warnings) {
     if(k>=kmax){cat("Computing the empirical conditional mean and variance: maximum number of iterations reached without meeting convergence criterion (max.iter=",kmax,")\n") }
@@ -359,33 +383,24 @@ conddist.saemix<-function(saemixObject,nsamp=1,max.iter=NULL,...) {
       nitr<-(k-ibeg+1)
       for(i in 1:nsamp) {
         for(itr in ibeg:k) {
-#          sdbar[,itr,i]<-dtransphi(t(ebar[,itr,i]),saemixObject["model"]["transform.par"])*sdbar[,itr,i]
           ebar[,itr,i]<-transphi(t(ebar[,itr,i]),saemixObject["model"]["transform.par"])
+          sdbar[,itr,i]<-transphi(t(sdbar[,itr,i]),saemixObject["model"]["transform.par"])
         }
       }
-      #      tsdkmin<-rowMeans(sdkmin)*dtransphi(t(rowMeans(ekmin)),saemixObject["model"]["transform.par"])
-      #      tsdkmax<-rowMeans(sdkmax)*dtransphi(t(rowMeans(ekmax)),saemixObject["model"]["transform.par"])
-      if(nsamp==1) {
-        tsdkmin<-sdkmin
-        tsdkmax<-sdkmax
-        tekmin<-transphi(t(ekmin),saemixObject["model"]["transform.par"])
-        tekmax<-transphi(t(ekmax),saemixObject["model"]["transform.par"])
-      } else {
-        tsdkmin<-rowMeans(sdkmin)
-        tsdkmax<-rowMeans(sdkmax)
-        tekmin<-transphi(t(rowMeans(ekmin)),saemixObject["model"]["transform.par"])
-        tekmax<-transphi(t(rowMeans(ekmax)),saemixObject["model"]["transform.par"])
-      }
+      tekmin<-transphi(t(rowMeans(ekmin)),saemixObject["model"]["transform.par"])
+      tekmax<-transphi(t(rowMeans(ekmax)),saemixObject["model"]["transform.par"])
+      tsdkmin<-transphi(t(rowMeans(sdkmin)),saemixObject["model"]["transform.par"])
+      tsdkmax<-transphi(t(rowMeans(sdkmax)),saemixObject["model"]["transform.par"])
       
-      ebarbar<-apply(ebar[,ibeg:k,],c(1,2),mean) # mean across the samples => npar x nitr
-      sdbarbar<-apply(sdbar[,ibeg:k,],c(1,2),mean) # mean across the samples => npar x nitr
-      #      sdbarbar<-apply(sdbar,3,mean)
-      ypl1<-data.frame(Iteration=rep(c(ibeg:k),nb.parameters),condMean=c(t(ebarbar)),par=rep(saemixObject["model"]["name.modpar"],each=nitr),ymin=rep(tekmin,each=nitr),ymax=rep(tekmax,each=nitr),type="mean")
-      ypl2<-data.frame(Iteration=rep(c(ibeg:k),nb.parameters),condMean=c(t(sdbarbar)),par=rep(saemixObject["model"]["name.modpar"],each=nitr),ymin=rep(tsdkmin,each=nitr),ymax=rep(tsdkmax,each=nitr),type="SD")
-      ypl<-rbind(ypl1,ypl2)
-      gpl<-ggplot(data=ypl,aes(x=Iteration,y=condMean)) +geom_line() + facet_wrap(as.factor(type)~as.factor(par), scales="free") + geom_ribbon(aes(ymin=ymin,ymax=ymax),alpha=0.2,fill="darkcyan")
-      print(gpl)
-    }
+        ebarbar<-apply(ebar[,ibeg:k,],c(1,2),mean) # mean across the samples => npar x nitr
+        sdbarbar<-apply(sdbar[,ibeg:k,],c(1,2),mean) # mean across the samples => npar x nitr
+        #      sdbarbar<-apply(sdbar,3,mean)
+        ypl1<-data.frame(Iteration=rep(c(ibeg:k),nb.parameters),condMean=c(t(ebarbar)),par=rep(saemixObject["model"]["name.modpar"],each=nitr),ymin=rep(tekmin,each=nitr),ymax=rep(tekmax,each=nitr),type="mean")
+        ypl2<-data.frame(Iteration=rep(c(ibeg:k),nb.parameters),condMean=c(t(sdbarbar)),par=rep(saemixObject["model"]["name.modpar"],each=nitr),ymin=rep(tsdkmin,each=nitr),ymax=rep(tsdkmax,each=nitr),type="SD")
+        ypl<-rbind(ypl1,ypl2)
+        gpl<-ggplot(data=ypl,aes(x=Iteration,y=condMean)) +geom_line() + facet_wrap(as.factor(type)~as.factor(par), scales="free") + geom_ribbon(aes(ymin=ymin,ymax=ymax),alpha=0.2,fill="darkcyan")
+        print(gpl)
+      }
   }
   
   eta.cond<-matrix(0,nrow=dim(etaM)[1],ncol=nb.parameters)

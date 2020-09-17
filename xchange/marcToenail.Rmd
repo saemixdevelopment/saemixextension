@@ -1,0 +1,189 @@
+---
+title: "Toenail data"
+author: "Emmanuelle"
+date: "07/04/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# Directories
+saemixDir<-"/home/eco/work/saemix/saemixextension"
+progDir<-file.path(saemixDir,"R")
+marcDir<-"/home/eco/work/theses/marc/discrete/toenail"
+
+# Libraries
+library(ggplot2)
+library(MASS)
+
+# Sourcing saemix functions
+{
+  source(file.path(progDir,"aaa_generics.R"))
+  #source(file.path(progDir,"global.R"))
+  source(file.path(progDir,"SaemixData.R"))
+  source(file.path(progDir,"SaemixRes.R"))
+  source(file.path(progDir,"SaemixModel.R"))
+  source(file.path(progDir,"SaemixObject.R"))
+  source(file.path(progDir,"main.R"))
+  source(file.path(progDir,"func_aux.R"))
+  source(file.path(progDir,"main_initialiseMainAlgo.R"))
+  source(file.path(progDir,"main_estep.R"))
+  source(file.path(progDir,"main_mstep.R"))
+  source(file.path(progDir,"func_FIM.R"))
+  source(file.path(progDir,"func_plots.R"))
+  source(file.path(progDir,"func_distcond.R"))
+  source(file.path(progDir,"func_simulations.R"))
+  source(file.path(progDir,"compute_LL.R"))
+  source(file.path(progDir,"func_estimParam.R"))
+}
+```
+
+## Toenail data
+
+```{r toenail}
+data("Toenail", package = "prLogistic")
+
+ndat<-tapply(Toenail$ID,Toenail$ID,length)
+print(table(ndat))
+ggplot(data.frame(id=unique(Toenail$ID),y=ndat),aes(x=y)) + geom_bar()
+
+ggplot(Toenail, aes(x = factor(Visit), fill=factor(Response))) + geom_bar(position='dodge') + facet_wrap(.~Treatment)
+
+```
+
+## Logistic binary regression with saemix
+
+Fitting a logistic regression model of the form
+
+$$
+logit(P(Y_{ij}=1/\psi_i)) = \mu_1 + \mu_2 \; Month_{ij} + \mu_3 \; Treatment
+$$
+
+```{r saemixfit, echo=FALSE}
+saemix.data<-saemixData(name.data=Toenail,header=TRUE,sep=" ",na=NA, 
+name.group=c("ID"),name.predictors=c("Month","Treatment","Response"))
+
+binary.model<-function(psi,id,xidep) {
+  month<-xidep[,1]
+  trt<-xidep[,2]
+  y<-xidep[,3]
+  alp<-psi[id,1]
+  th1<-psi[id,2]
+  th2<-psi[id,3]
+  logit1<-alp+th1*month+th2*trt # model for Logit(P(Y=1))
+  pge1<-exp(logit1)/(1+exp(logit1))
+  P.obs = (y==0)*(1-pge1)+(y==1)*pge1
+  logpdf <- log(P.obs)
+  return(logpdf)
+}
+
+binary.model<-function(psi,id,xidep) {
+  month<-xidep[,1]
+  trt<-xidep[,2]
+  y<-xidep[,3]
+  alp<-psi[id,1]
+  th1<-psi[id,2]
+  th2<-psi[id,3]
+  logit1<-alp+th1*month+th2*trt # model for Logit(P(Y=0))
+  pge0<-exp(logit1)/(1+exp(logit1))
+  P.obs = (y==0)*pge0+(y==1)*(1-pge0)
+  logpdf <- log(P.obs)
+  return(logpdf)
+}
+
+saemix.model<-saemixModel(model=binary.model,description="Binary repeated model", modeltype="likelihood",psi0=matrix(c(2.5,1.5,-0.5),ncol=3,byrow=TRUE,dimnames=list(NULL,c("alp","th1","th2"))),transform.par=c(0,0,0), covariance.model=diag(c(1,1,0)))
+
+#saemix.model<-saemixModel(model=ordinal.model,description="Ordinal categorical model", modeltype="likelihood",psi0=matrix(c(10,1,1,-5),ncol=4,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","th1"))),transform.par=c(0,1,1,0), covariance.model=matrix(c(1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1),ncol=4))
+
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, fim=FALSE, print=FALSE, displayProgress=FALSE)
+saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
+toefit<-saemix.fit
+print(toefit)
+
+```
+
+## Dropout
+
+Assumptions:
+
+- missing visits are considered to be missing at random (MAR), in which case maximum likelihood theory states that we don't need to account for missing data
+- on the other hand, some patients leave the study before the last visit and this dropout has been posited in some publications to be linked to study outcome (in particular, patients feeling improvement in their condition were thought to drop out of the study more easily)
+  - what we have is the last visit
+  
+Models for dropout:
+
+- event
+  - 1 at last visit if patient drops out
+  - 0 (censored) if the patient remains until the last visit
+  - Monolix needs to start with an event=0, so for the subjects with only one visit, we assume the dropout took place after 2 weeks
+- dropout
+  - non informative dropout: baseline hazard modelled as a Weibull function
+  - informative dropout: baseline hazard multiplied by an exponential function of the logit
+  - could also consider perhaps the difference in observed events between the last two visits
+
+
+$$
+h(t) = \beta \; \lambda \; t^{\beta-1} \; e^{\gamma \; logit}
+$$
+
+```{r createDropoutData, echo=FALSE}
+for(i in unique(Toenail$Visit))
+  print(summary(Toenail$Month[Toenail$Visit==i]))
+thmon<-c(0, 4, 8, 12, 24, 36, 48) # theoretical study visits
+thmed<-tapply(Toenail$Month, Toenail$Visit,median)
+
+tab<-NULL
+for(isuj in unique(Toenail$ID)) {
+  datsuj<-cbind(Toenail[Toenail$ID==isuj,], ytype=1)
+  datsuj$deltaR<-c(0,diff(datsuj$Response))
+  n1<-dim(datsuj)[1]
+  l1<-datsuj[1,]
+  l1[2]<-0
+  l1[4]<-0
+  l1[6]<-2
+  if(n1>1) {
+    l2<-datsuj[n1,]
+    if(l2[5]==7) l2[2]<-0 else l2[2]<-1 # 0 if patient still in study at last visit
+    l2[6]<-2
+    tab<-rbind(tab,l1,datsuj,l2)
+  } else {
+    l2<-l1
+    l2[4]<-0.5
+    l2[5]<-1.5
+    l2[2]<-1
+    tab<-rbind(tab,l1,datsuj,l2)
+  }
+}
+i1<-which(ndat==1)
+tab[tab$ID==names(i1)[1],]
+tab[tab$ID==names(i1)[2],]
+
+if(FALSE) write.table(tab,file.path(marcDir,"toenailMLX.csv"),quote=F,row.names=F)
+
+```
+
+### Monolix estimates
+
+Convergence profiles are not fantastic (evidence of fluctuations after the initial iteration phase, during convergence)
+
+- model with non-informative dropout
+  - very similar estimates for the logistic model as saemix
+    - good pd plot for the binary data (slight overestimation of 90% percentile but lower bound and median very good)
+  - dropout model
+    - Weibull model: estimates of beta=0.5 and lambda=0.03, -2*LL=1457.32, BIC=1497.1
+    - constant hazard model (h=1/lambda): estimate of lambda=113 (1/lambda=0.009), -2LL=1466.45, BIC=1500.55
+      - but very poor convergence plots and th2 (treatment effect) now very close to 0 indicating some convergence problem (we didn't change the model for the binary data...)
+- model with informative dropout (Weibull+exponential term)
+  - again th2 (treatment effect) estimated to a very small value (-0.05, with an SE of 0.7)
+  - the value of the link is estimated to be 6.10$^{-5}$ with large SE suggesting an absence of link, with values of beta and lambda close to the previous estimates, and the likelihood is the same as without a link: -2*LL=1457.8
+- model with informative dropout linked to deltaR
+  - estimate of th2 positive this time (0.765) but again with high SE, estimates of th1 and alpha same as previously, and -2LL=1458.07 for this model
+  - estimates of beta and lambda similar to previous values
+  - again estimate of the link is not significantly different from 0 
+
+### Conclusion
+
+Maybe a MAR assumption for this data, without considering dropouts, could be an acceptable way to analyse the binary longitudinal response, as there doesn't seem to be much link between dropout and either the observed change in response or the predicted logit.
+

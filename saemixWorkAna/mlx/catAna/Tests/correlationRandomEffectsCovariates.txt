@@ -1,0 +1,4 @@
+eta,covariate,statistics,p-value,test
+eta_beta0,group,4.76335,0.00866674,Fisher
+eta_gamma0,group,0.669386,0.512176,Fisher
+eta_delta0,group,23.1425,1.26352e-10,Fisher

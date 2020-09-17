@@ -1,0 +1,2 @@
+parameter,statistics(sa),p-value(sa)
+beta_EC50_gender_1,4.27084,1.95e-5

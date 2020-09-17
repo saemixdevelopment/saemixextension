@@ -1,0 +1,64 @@
+<DATAFILE>
+
+[FILEINFO]
+file = '../../../theomlx.csv'
+delimiter = space
+header = {Id, AMT, Time, DV, Weight, Sex, SS, II}
+
+[CONTENT]
+Id = {use=identifier}
+AMT = {use=amount}
+Time = {use=time}
+DV = {use=observation, name=DV, type=continuous}
+Weight = {use=covariate, type=continuous}
+Sex = {use=covariate, type=categorical}
+SS = {use=steadystate, nbdoses=5}
+II = {use=interdoseinterval}
+
+<MODEL>
+
+[INDIVIDUAL]
+input = {Cl_pop, omega_Cl, V_pop, omega_V, ka_pop, omega_ka}
+
+DEFINITION:
+Cl = {distribution=logNormal, typical=Cl_pop, sd=omega_Cl}
+V = {distribution=logNormal, typical=V_pop, sd=omega_V}
+ka = {distribution=logNormal, typical=ka_pop, sd=omega_ka}
+
+[LONGITUDINAL]
+input = {b}
+
+file = 'lib:oral1_1cpt_kaVCl.txt'
+
+DEFINITION:
+DV = {distribution=normal, prediction=Cc, errorModel=proportional(b)}
+
+<FIT>
+data = DV
+model = DV
+
+<PARAMETER>
+Cl_pop = {value=3, method=MLE}
+V_pop = {value=35, method=MLE}
+b = {value=0.3, method=MLE}
+ka_pop = {value=1.2, method=MLE}
+omega_Cl = {value=1, method=MLE}
+omega_V = {value=1, method=MLE}
+omega_ka = {value=1, method=MLE}
+
+<MONOLIX>
+
+[TASKS]
+populationParameters()
+individualParameters(method = {conditionalMean, conditionalMode })
+fim(method = StochasticApproximation)
+logLikelihood(method = ImportanceSampling)
+plotResult(method = {outputplot, indfits, obspred, residualsscatter, residualsdistribution, parameterdistribution, covariatemodeldiagnosis, randomeffects, covariancemodeldiagnosis, saemresults })
+
+[SETTINGS]
+GLOBAL:
+exportpath = '../'
+
+INDIVIDUAL:
+nbsimulatedparameters = 200
+

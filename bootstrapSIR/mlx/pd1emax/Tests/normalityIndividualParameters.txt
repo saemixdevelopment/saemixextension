@@ -1,0 +1,4 @@
+parameter,statistics,p-value,test
+Emax,0.987982,0.895185,Shapiro-Wilk
+EC50,0.0729901,0.999872,Kolmogorov-Smirnov
+S0,0.989455,0.988982,Shapiro-Wilk

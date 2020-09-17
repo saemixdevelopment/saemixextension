@@ -2,7 +2,9 @@
 title: "Saemix fits with different error models"
 author: "Emmanuelle"
 date: "30/04/2020"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -12,6 +14,7 @@ saemixDir<-"/home/eco/work/saemix/saemixextension"
 progDir<-file.path(saemixDir,"R")
 datDir<-file.path(saemixDir,"data")
 testDir<-file.path(saemixDir,"testbelhal")
+melDir<-file.path("/home/eco/work/saemix/bugs/melanie2004")
 
 # Libraries
 library(ggplot2)
@@ -81,16 +84,25 @@ ypred<-model1cpt(psipar,id=1:N,xidep=simdat[,2:3])
 gpred<-error(ypred,res1,etype=rep(1,length(ypred)))
 simdat$conc<-ypred+rnorm(length(ypred),mean=0,sd=gpred)
 
-plot(simdat$time,simdat$conc,pch=20)
-
 # Saemix data
-
 saemix.data<-saemixData(name.data=simdat,header=TRUE,sep="",na=NA, name.group=c("id"), name.predictors=c("time","dose"),name.response=c("conc"))
 
 simdat2<-simdat
-simdat2$conc[simdat2$conc<0]<-0
+simdat2$conc[simdat2$time==0]<-0
 saemix.data2<-saemixData(name.data=simdat2,header=TRUE,sep="",na=NA, name.group=c("id"), name.predictors=c("time","dose"),name.response=c("conc"))
+simdat3<-simdat2[simdat2$time>0,]
+saemix.data3<-saemixData(name.data=simdat3,header=TRUE,sep="",na=NA, name.group=c("id"), name.predictors=c("time","dose"),name.response=c("conc"))
 
+par(mfrow=c(1,2))
+plot(simdat$time,simdat$conc,pch=20)
+plot(simdat2$time,simdat2$conc,pch=20)
+
+if(FALSE) {
+  namfile<-file.path(melDir,"simulationsTlag.csv")
+  simdat.mlx<-simdat
+  simdat.mlx$dose[simdat.mlx$time>0]<-NA
+  write.table(simdat.mlx,namfile, row.names=FALSE, quote=FALSE,na=".")
+}
 ```
 
 
@@ -98,7 +110,7 @@ saemix.data2<-saemixData(name.data=simdat2,header=TRUE,sep="",na=NA, name.group=
 saemix.options<-list(nb.chains=3,seed=123456,save=FALSE, save.graphs=FALSE)
 
 # Additive error
-saemix.model1<-saemixModel(model=model1cpt,description="One compartment model", modeltype="structural", psi0=matrix(c(psi1,0,0,0),ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))), transform.par=c(1,1,1),  covariance.model=diag(3), error.model="additive")
+saemix.model1<-saemixModel(model=model1cpt,description="One compartment model", modeltype="structural", psi0=matrix(c(psi1,0,0,0),ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))), transform.par=c(1,1,1),  covariance.model=diag(3), error.model="constant")
 
 # Proportional error
 saemix.model2<-saemixModel(model=model1cpt,description="One compartment model", modeltype="structural", psi0=matrix(c(psi1,0,0,0),ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))), transform.par=c(1,1,1),  covariance.model=diag(3), error.model="proportional")
@@ -110,15 +122,25 @@ saemix.model3<-saemixModel(model=model1cpt,description="One compartment model", 
 fit1<-saemix(saemix.model1, saemix.data, saemix.options)
 fit2<-saemix(saemix.model2, saemix.data, saemix.options)
 fit2b<-saemix(saemix.model2, saemix.data2, saemix.options)
+fit2c<-saemix(saemix.model2, saemix.data3, saemix.options)
 fit3<-saemix(saemix.model3, saemix.data, saemix.options)
 ```
 
-
+Showing results:
 ```{r fitResults}
 print(fit1@results)
 print(fit2@results)
 print(fit2b@results)
 print(fit3@results)
+
+
+cat("Variances seem underestimated for V for constant and combined error models, and with modified data, and overestimated for all parameters for proportional error model:\n")
+print(fit1@results@omega)
+print(fit3@results@omega)
+print(fit2b@results@omega)
+print(fit2c@results@omega)
+
+print(fit2@results@omega)
 
 plot(fit1,plot.type="convergence")
 plot(fit2,plot.type="convergence")
@@ -126,3 +148,570 @@ plot(fit2,plot.type="convergence")
 ```
 
 
+## Estimation with a proportional error model in Monolix
+
+The runs fail to converge with a proportional error model.
+
+- Model ka, V, Cl
+
+Population parameter estimates
+VALUE	STOCH. APPROX.
+S.E.	R.S.E.(%)
+Fixed Effects
+ka_pop	2.87e+64	1.79e+67	6.23e+4
+V_pop	2.58e-171	nan	nan
+Cl_pop	1	nan	nan
+Standard Deviation of the Random Effects
+omega_ka	338	179	53
+omega_V	204	27	13.3
+omega_Cl	3.6e+56	nan	nan
+Error Model Parameters
+b	0.3	nan	nan
+
+- Model ka, V, Cl, Tlag
+
+Population parameter estimates
+VALUE	STOCH. APPROX.
+S.E.	R.S.E.(%)
+Fixed Effects
+Tlag_pop	1	nan	nan
+ka_pop	1.08e+62	2.1e+65	1.94e+5
+V_pop	1.34e-171	nan	nan
+Cl_pop	1	nan	nan
+Standard Deviation of the Random Effects
+omega_Tlag	5.31e+57	nan	nan
+omega_ka	346	538	155
+omega_V	207	37.7	18.3
+omega_Cl	1.63e+58	nan	nan
+Error Model Parameters
+b	0.3	nan	nan
+
+# Problem with the error model, debugging step by step
+
+Initialisation of the algorithm:
+
+```{r saemix.initialisation}
+saemix.model2<-saemixModel(model=model1cpt,description="One compartment model", modeltype="structural", psi0=matrix(c(psi1,0,0,0),ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))), transform.par=c(1,1,1),  covariance.model=diag(3), error.model="proportional")
+saemix.options<-list(nb.chains=3,seed=123456,save=FALSE, save.graphs=FALSE)
+saemix.data<-saemixData(name.data=simdat,header=TRUE,sep="",na=NA, name.group=c("id"), name.predictors=c("time","dose"),name.response=c("conc"))
+
+  saemixObject<-new(Class="SaemixObject",data=saemix.data,model=saemix.model2,options=saemix.options)
+  opt.warn<-getOption("warn")
+  if(!saemixObject["options"]$warnings) options(warn=-1)
+
+  saemix.options<-saemixObject["options"]
+  saemix.model<-saemixObject["model"]
+  saemix.data<-saemixObject["data"]
+  saemix.data@ocov<-saemix.data@ocov[saemix.data@data[,"mdv"]==0,,drop=FALSE]
+  saemix.data@data<-saemix.data@data[saemix.data@data[,"mdv"]==0,]
+  saemix.data@ntot.obs<-dim(saemix.data@data)[1]
+
+# Initialisation
+  OLDRAND<-TRUE
+  set.seed(saemix.options$seed)
+  xinit<-initialiseMainAlgo(saemix.data,saemix.model,saemix.options)
+  saemix.model<-xinit$saemix.model
+  Dargs<-xinit$Dargs
+  Uargs<-xinit$Uargs
+  varList<-xinit$varList
+  phiM<-xinit$phiM
+  mean.phi<-xinit$mean.phi
+  DYF<-xinit$DYF
+  opt<-xinit$opt
+  betas<-betas.ini<-xinit$betas
+  fixed.psi<-xinit$fixedpsi.ini
+  var.eta<-varList$diag.omega
+
+  if (Dargs$modeltype=="structural"){
+    theta0<-c(fixed.psi,var.eta[Uargs$i1.omega2],varList$pres[Uargs$ind.res])
+    parpop<-matrix(data=0,nrow=(saemix.options$nbiter.tot+1),ncol=(Uargs$nb.parameters+length(Uargs$i1.omega2)+length(saemix.model["indx.res"])))
+    colnames(parpop)<-c(saemix.model["name.modpar"], saemix.model["name.random"], saemix.model["name.sigma"][saemix.model["indx.res"]])
+    allpar<-matrix(data=0,nrow=(saemix.options$nbiter.tot+1), ncol=(Uargs$nb.betas+length(Uargs$i1.omega2)+length(saemix.model["indx.res"])))
+    colnames(allpar)<-c(saemix.model["name.fixed"],saemix.model["name.random"], saemix.model["name.sigma"][saemix.model["indx.res"]])
+  } else{
+    theta0<-c(fixed.psi,var.eta[Uargs$i1.omega2])
+    parpop<-matrix(data=0,nrow=(saemix.options$nbiter.tot+1),ncol=(Uargs$nb.parameters+length(Uargs$i1.omega2)))
+    colnames(parpop)<-c(saemix.model["name.modpar"], saemix.model["name.random"])
+    allpar<-matrix(data=0,nrow=(saemix.options$nbiter.tot+1), ncol=(Uargs$nb.betas+length(Uargs$i1.omega2)))
+    colnames(allpar)<-c(saemix.model["name.fixed"],saemix.model["name.random"])
+  }
+  
+  parpop[1,]<-theta0
+  allpar[1,]<-xinit$allpar0
+  
+  # using several Markov chains - only useful if passed back to main routine...
+  # 	chdat<-new(Class="SaemixRepData",data=saemix.data, nb.chains=saemix.options$nb.chains)
+  # 	NM<-chdat["NM"]
+  # 	IdM<-chdat["dataM"]$IdM
+  # 	yM<-chdat["dataM"]$yM
+  # 	XM<-chdat["dataM"][,saemix.data["name.predictors"],drop=FALSE]
+  
+# List of sufficient statistics - change during call to stochasticApprox
+  suffStat<-list(statphi1=0,statphi2=0,statphi3=0,statrese=0)
+  phi<-array(data=0,dim=c(Dargs$N, Uargs$nb.parameters, saemix.options$nb.chains))
+
+# structural model, check nb of parameters
+  structural.model<-saemix.model["model"]
+  #  nb.parameters<-saemix.model["nb.parameters"]
+  
+```
+
+Burn-in iterations:
+
+```{r saemix.burnin}
+for (kiter in 1:saemix.options$nbiter.burn) { # Iterative portion of algorithm
+# Burn-in - first loop useless
+# E-step
+  xmcmc<-estep(kiter, Uargs, Dargs, opt, structural.model, mean.phi, varList, DYF, phiM)
+  varList<-xmcmc$varList
+  DYF<-xmcmc$DYF
+  phiM<-xmcmc$phiM
+
+  # no M-step during burn-in phase
+  allpar[(kiter+1),]<-allpar[kiter,]
+  if(Dargs$modeltype=="structural") {
+    theta<-c(fixed.psi,var.eta[Uargs$i1.omega2],varList$pres[Uargs$ind.res])
+  } else{
+    theta<-c(fixed.psi,var.eta[Uargs$i1.omega2])
+  }
+  parpop[(kiter+1),]<-theta
+}
+print(theta)
+print(head(phiM))
+print(varList$pres)
+```
+
+Something goes wrong in xstoch:
+
+- sum(Dargs$yobs-fk)**2/cutoff(fk**2,.Machine$double.eps) explodes when predictions are very small (fk=0 or smaller than machine precision)
+- changed code below to ignore the terms for which fk is too small in the summation
+
+```{r saemix.explorationPhase1}
+kiter<-saemix.options$nbiter.burn+1
+	# E-step
+  xmcmc<-estep(kiter, Uargs, Dargs, opt, structural.model, mean.phi, varList, DYF, phiM)
+  varList<-xmcmc$varList
+  DYF<-xmcmc$DYF
+  phiM<-xmcmc$phiM
+
+  # M-step and stochastic Approximation
+  
+#  xstoch<-mstep(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, varList, phi, betas, suffStat)
+
+	# Update variances - TODO - check if here or elsewhere
+	nb.etas<-length(varList$ind.eta)
+	domega<-cutoff(mydiag(varList$omega[varList$ind.eta,varList$ind.eta]),.Machine$double.eps)
+	omega.eta<-varList$omega[varList$ind.eta,varList$ind.eta,drop=FALSE]
+	omega.eta<-omega.eta-mydiag(mydiag(varList$omega[varList$ind.eta,varList$ind.eta]))+mydiag(domega)
+	#  print(varList$omega.eta)
+	chol.omega<-try(chol(omega.eta))
+	d1.omega<-Uargs$LCOV[,varList$ind.eta]%*%solve(omega.eta)
+	d2.omega<-d1.omega%*%t(Uargs$LCOV[,varList$ind.eta])
+	comega<-Uargs$COV2*d2.omega
+	
+	psiM<-transphi(phiM,Dargs$transform.par)
+	fpred<-structural.model(psiM, Dargs$IdM, Dargs$XM)
+  	for(ityp in Dargs$etype.exp) fpred[Dargs$XM$ytype==ityp]<-log(cutoff(fpred[Dargs$XM$ytype==ityp]))
+#	if(Dargs$error.model=="exponential")
+#		fpred<-log(cutoff(fpred))
+	ff<-matrix(fpred,nrow=Dargs$nobs,ncol=Uargs$nchains)
+	for(k in 1:Uargs$nchains) phi[,,k]<-phiM[((k-1)*Dargs$N+1):(k*Dargs$N),]
+	# overall speed similar
+	#    phi<-aperm(array(phiM,c(N,nchains,3)),c(1,3,2))
+	stat1<-apply(phi[,varList$ind.eta,,drop=FALSE],c(1,2),sum) # sum on columns ind.eta of phi, across 3rd dimension
+	stat2<-matrix(data=0,nrow=nb.etas,ncol=nb.etas)
+	stat3<-apply(phi**2,c(1,2),sum) #  sum on phi**2, across 3rd dimension
+	statr<-0
+	for(k in 1:Uargs$nchains) {
+		phik<-phi[,varList$ind.eta,k]
+		stat2<-stat2+t(phik)%*%phik
+		fk<-ff[,k]
+		if(length(Dargs$error.model)==1) {
+		  if(!is.na(match(Dargs$error.model,c("constant","exponential"))))
+		    resk<-sum((Dargs$yobs-fk)**2) else {
+		      if(Dargs$error.model=="proportional") {
+		        idx.okpred<-which(fk>.Machine$double.eps)
+		        vec<-(Dargs$yobs-fk)**2/cutoff(fk**2,.Machine$double.eps)
+		        resk<-sum(vec[idx.okpred])
+		        resk1<-sum(vec)
+		        } else resk<-0
+		    }
+		} else resk<-0
+		statr<-statr+resk
+	}
+
+print(resk)
+print(resk1)
+```
+
+
+```{r saemix.explorationPhase1run, eval=FALSE}
+kiter<-saemix.options$nbiter.burn+1
+	# E-step
+  xmcmc<-estep(kiter, Uargs, Dargs, opt, structural.model, mean.phi, varList, DYF, phiM)
+  varList<-xmcmc$varList
+  DYF<-xmcmc$DYF
+  phiM<-xmcmc$phiM
+  #  psiM<-transphi(phiM,saemix.model["transform.par"])
+  
+  #
+  
+  # M-step
+#  if(opt$stepsize[kiter]>0) {
+############# Stochastic Approximation
+  	xstoch<-mstep(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, varList, phi, betas, suffStat)
+  	varList<-xstoch$varList
+  	mean.phi<-xstoch$mean.phi
+  	phi<-xstoch$phi
+  	betas<-xstoch$betas
+  	suffStat<-xstoch$suffStat
+  	
+  	beta.I<-betas[Uargs$indx.betaI]
+  	fixed.psi<-transphi(matrix(beta.I,nrow=1),saemix.model["transform.par"])
+  	betaC<-betas[Uargs$indx.betaC]
+  	var.eta<-mydiag(varList$omega)
+  	l1<-betas.ini
+  	l1[Uargs$indx.betaI]<-fixed.psi
+  	l1[Uargs$indx.betaC]<-betaC
+
+    if(Dargs$modeltype=="structural") {
+      allpar[(kiter+1),]<-c(l1,var.eta[Uargs$i1.omega2],varList$pres[Uargs$ind.res])
+    } else{
+      allpar[(kiter+1),]<-c(l1,var.eta[Uargs$i1.omega2])
+    }
+
+  # } else { #end of loop on if (stepsize[kiter]>0)
+  #   allpar[(kiter+1),]<-allpar[kiter,]
+  # }
+   if(Dargs$modeltype=="structural") {
+      theta<-c(fixed.psi,var.eta[Uargs$i1.omega2],varList$pres[Uargs$ind.res])
+    } else{
+      theta<-c(fixed.psi,var.eta[Uargs$i1.omega2])
+    }
+  parpop[(kiter+1),]<-theta
+
+print(theta)
+print(head(phiM))
+print(varList$pres)
+
+```
+
+
+```{r FIMforfit2b, eval=FALSE}
+saemixObject<-fit2b
+
+```
+
+
+```{r saemix.explorationPhase, eval=FALSE}
+kiter<-saemix.options$nbiter.burn+1
+
+for (kiter in (saemix.options$nbiter.burn+1):(saemix.options$nbiter.sa)) { # 
+# Burn-in - resetting sufficient statistics
+  if(opt$flag.fmin && kiter==saemix.options$nbiter.sa) {
+    cat("Inside first loop, kiter=",kiter,":\n")
+  	Uargs$COV1<-Uargs$COV[,Uargs$ind.fix11]
+  	ind.prov<-!(varList$ind.eta %in% Uargs$i0.omega2)
+  	varList$domega2<-varList$domega2[ind.prov,ind.prov,drop=FALSE] # keep in domega2 only indices of parameters with IIV
+  	varList$ind0.eta<-Uargs$i0.omega2
+  	varList$ind.eta<-1:(Uargs$nb.parameters)  	
+  	if(length(varList$ind0.eta)>0) varList$ind.eta<-varList$ind.eta[!(varList$ind.eta %in% varList$ind0.eta)] # update ind.eta, now only parameters with IIV
+  	Uargs$nb.etas<-length(varList$ind.eta)
+  	suffStat$statphi1<-0
+  	suffStat$statphi2<-0
+  	suffStat$statphi3<-0
+  }
+
+	# E-step
+  xmcmc<-estep(kiter, Uargs, Dargs, opt, structural.model, mean.phi, varList, DYF, phiM)
+  varList<-xmcmc$varList
+  DYF<-xmcmc$DYF
+  phiM<-xmcmc$phiM
+  #  psiM<-transphi(phiM,saemix.model["transform.par"])
+  
+  # M-step
+  if(opt$stepsize[kiter]>0) {
+############# Stochastic Approximation
+  	xstoch<-mstep(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, varList, phi, betas, suffStat)
+  	varList<-xstoch$varList
+  	mean.phi<-xstoch$mean.phi
+  	phi<-xstoch$phi
+  	betas<-xstoch$betas
+  	suffStat<-xstoch$suffStat
+  	
+  	beta.I<-betas[Uargs$indx.betaI]
+  	fixed.psi<-transphi(matrix(beta.I,nrow=1),saemix.model["transform.par"])
+  	betaC<-betas[Uargs$indx.betaC]
+  	var.eta<-mydiag(varList$omega)
+  	l1<-betas.ini
+  	l1[Uargs$indx.betaI]<-fixed.psi
+  	l1[Uargs$indx.betaC]<-betaC
+
+    if(Dargs$modeltype=="structural") {
+      allpar[(kiter+1),]<-c(l1,var.eta[Uargs$i1.omega2],varList$pres[Uargs$ind.res])
+    } else{
+      allpar[(kiter+1),]<-c(l1,var.eta[Uargs$i1.omega2])
+    }
+
+  } else { #end of loop on if (stepsize[kiter]>0)
+    allpar[(kiter+1),]<-allpar[kiter,]
+  }
+   if(Dargs$modeltype=="structural") {
+      theta<-c(fixed.psi,var.eta[Uargs$i1.omega2],varList$pres[Uargs$ind.res])
+    } else{
+      theta<-c(fixed.psi,var.eta[Uargs$i1.omega2])
+    }
+  parpop[(kiter+1),]<-theta
+
+# End of loop on kiter
+}
+print(theta)
+print(head(phiM))
+print(varList$pres)
+
+if(FALSE) {
+   namfile<-file.path(melDir,"simulationsTlag.csv")
+   dat1<-read.table(namfile,header=T,na=".")
+   dat1$conc[dat1$time==0]<-NA
+   namfile2<-file.path(melDir,"simulationsTlag_conc0.csv")
+   write.table(dat1,namfile2, row.names=FALSE, quote=FALSE,na=".")
+}
+
+```
+
+## Dataset failing with a combined error model
+
+```{r combinedErrorPb}
+load(file.path(melDir,"combinedError","saemix_simu"))
+
+## Structural model : One compartment, first-order absorption, linear elimination, noTlag ----
+model1cpt_firstorder=function(psi,id,xidep) { 
+  dose=4
+  tim=xidep[,1]  
+  ka=psi[id,1]
+  V=psi[id,2]
+  CL=psi[id,3]
+  k=CL/V
+  ypred=dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
+  return(ypred)
+}
+
+## Statistical model
+saemix_model=saemixModel(model=model1cpt_firstorder,
+                           description="One-compartment model with first-order absorption, no time lag, no F parameter",
+                           psi0=matrix(c(1.3,0.55,0.0415),
+                                       ncol=3,byrow=TRUE, 
+                                       dimnames=list(NULL, c("ka","V","CL"))),
+                           covariate.model = c(1,1,1),
+                           transform.par=c(1,1,1),
+                           error.model="combined")
+
+## Model ajustment
+saemix_options=list(seed=632545,save=FALSE,save.graphs=FALSE,nb.chains=3,nbiter.saemix=c(200,100))
+
+saemix_options=list(seed=152093,save=FALSE,save.graphs=FALSE,nb.chains=3,nbiter.saemix=c(200,100))
+saemix_fit=saemix(saemix_model,saemix_simu,saemix_options)
+
+```
+
+```{r combinedErrorPb.investigation1}
+saemix_options=list(seed=632545,save=FALSE,save.graphs=FALSE,nb.chains=3,nbiter.saemix=c(200,100))
+
+saemixObject<-new(Class="SaemixObject",data=saemix_simu,model=saemix_model,options=saemix_options)
+
+saemix.options<-saemixObject["options"]
+saemix.model<-saemixObject["model"]
+saemix.data<-saemixObject["data"]
+saemix.data@ocov<-saemix.data@ocov[saemix.data@data[,"mdv"]==0,,drop=FALSE]
+saemix.data@data<-saemix.data@data[saemix.data@data[,"mdv"]==0,]
+saemix.data@ntot.obs<-dim(saemix.data@data)[1]
+
+# Initialisation
+OLDRAND<-TRUE
+set.seed(saemix.options$seed)
+xinit<-initialiseMainAlgo(saemix.data,saemix.model,saemix.options)
+saemix.model<-xinit$saemix.model
+Dargs<-xinit$Dargs
+Uargs<-xinit$Uargs
+varList<-xinit$varList
+phiM<-xinit$phiM
+mean.phi<-xinit$mean.phi
+DYF<-xinit$DYF
+opt<-xinit$opt
+betas<-betas.ini<-xinit$betas
+fixed.psi<-xinit$fixedpsi.ini
+var.eta<-varList$diag.omega
+
+if (Dargs$modeltype=="structural"){
+  theta0<-c(fixed.psi,var.eta[Uargs$i1.omega2],varList$pres[Uargs$ind.res])
+  parpop<-matrix(data=0,nrow=(saemix.options$nbiter.tot+1),ncol=(Uargs$nb.parameters+length(Uargs$i1.omega2)+length(saemix.model["indx.res"])))
+  colnames(parpop)<-c(saemix.model["name.modpar"], saemix.model["name.random"], saemix.model["name.sigma"][saemix.model["indx.res"]])
+  allpar<-matrix(data=0,nrow=(saemix.options$nbiter.tot+1), ncol=(Uargs$nb.betas+length(Uargs$i1.omega2)+length(saemix.model["indx.res"])))
+  colnames(allpar)<-c(saemix.model["name.fixed"],saemix.model["name.random"], saemix.model["name.sigma"][saemix.model["indx.res"]])
+} else{
+  theta0<-c(fixed.psi,var.eta[Uargs$i1.omega2])
+  parpop<-matrix(data=0,nrow=(saemix.options$nbiter.tot+1),ncol=(Uargs$nb.parameters+length(Uargs$i1.omega2)))
+  colnames(parpop)<-c(saemix.model["name.modpar"], saemix.model["name.random"])
+  allpar<-matrix(data=0,nrow=(saemix.options$nbiter.tot+1), ncol=(Uargs$nb.betas+length(Uargs$i1.omega2)))
+  colnames(allpar)<-c(saemix.model["name.fixed"],saemix.model["name.random"])
+}
+
+parpop[1,]<-theta0
+allpar[1,]<-xinit$allpar0
+# List of sufficient statistics - change during call to stochasticApprox
+suffStat<-list(statphi1=0,statphi2=0,statphi3=0,statrese=0)
+phi<-array(data=0,dim=c(Dargs$N, Uargs$nb.parameters, saemix.options$nb.chains))
+
+# structural model, check nb of parameters
+structural.model<-saemix.model["model"]
+#  nb.parameters<-saemix.model["nb.parameters"]
+
+# Burn-in
+cat("\nBurn-in phase\n")
+for (kiter in 1:saemix.options$nbiter.burn) { # Iterative portion of algorithm
+# Burn-in - first loop useless
+# E-step
+  xmcmc<-estep(kiter, Uargs, Dargs, opt, structural.model, mean.phi, varList, DYF, phiM)
+  varList<-xmcmc$varList
+  DYF<-xmcmc$DYF
+  phiM<-xmcmc$phiM
+
+  # no M-step during burn-in phase
+  allpar[(kiter+1),]<-allpar[kiter,]
+  if(Dargs$modeltype=="structural") {
+    theta<-c(fixed.psi,var.eta[Uargs$i1.omega2],varList$pres[Uargs$ind.res])
+  } else{
+    theta<-c(fixed.psi,var.eta[Uargs$i1.omega2])
+  }
+  parpop[(kiter+1),]<-theta
+}
+print(theta)
+print(head(phiM))
+print(varList$pres)
+
+# Simulated annealing phase (K1)
+kiter<-saemix.options$nbiter.burn+1
+cat("\nRunning K1 iterations\n")
+for (kiter in (saemix.options$nbiter.burn+1):(saemix.options$nbiter.sa)) { # 
+# Burn-in - resetting sufficient statistics
+  if(opt$flag.fmin && kiter==saemix.options$nbiter.sa) {
+    cat("Inside first loop, kiter=",kiter,":\n")
+  	Uargs$COV1<-Uargs$COV[,Uargs$ind.fix11]
+  	ind.prov<-!(varList$ind.eta %in% Uargs$i0.omega2)
+  	varList$domega2<-varList$domega2[ind.prov,ind.prov,drop=FALSE] # keep in domega2 only indices of parameters with IIV
+  	varList$ind0.eta<-Uargs$i0.omega2
+  	varList$ind.eta<-1:(Uargs$nb.parameters)  	
+  	if(length(varList$ind0.eta)>0) varList$ind.eta<-varList$ind.eta[!(varList$ind.eta %in% varList$ind0.eta)] # update ind.eta, now only parameters with IIV
+  	Uargs$nb.etas<-length(varList$ind.eta)
+  	suffStat$statphi1<-0
+  	suffStat$statphi2<-0
+  	suffStat$statphi3<-0
+  }
+
+	# E-step
+  xmcmc<-estep(kiter, Uargs, Dargs, opt, structural.model, mean.phi, varList, DYF, phiM)
+  varList<-xmcmc$varList
+  DYF<-xmcmc$DYF
+  phiM<-xmcmc$phiM
+  #  psiM<-transphi(phiM,saemix.model["transform.par"])
+  
+  # M-step
+  if(opt$stepsize[kiter]>0) {
+############# Stochastic Approximation
+  	xstoch<-mstep(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, varList, phi, betas, suffStat)
+  	varList<-xstoch$varList
+  	mean.phi<-xstoch$mean.phi
+  	phi<-xstoch$phi
+  	betas<-xstoch$betas
+  	suffStat<-xstoch$suffStat
+  	
+  	beta.I<-betas[Uargs$indx.betaI]
+  	fixed.psi<-transphi(matrix(beta.I,nrow=1),saemix.model["transform.par"])
+  	betaC<-betas[Uargs$indx.betaC]
+  	var.eta<-mydiag(varList$omega)
+  	l1<-betas.ini
+  	l1[Uargs$indx.betaI]<-fixed.psi
+  	l1[Uargs$indx.betaC]<-betaC
+
+    if(Dargs$modeltype=="structural") {
+      allpar[(kiter+1),]<-c(l1,var.eta[Uargs$i1.omega2],varList$pres[Uargs$ind.res])
+    } else{
+      allpar[(kiter+1),]<-c(l1,var.eta[Uargs$i1.omega2])
+    }
+
+  } else { #end of loop on if (stepsize[kiter]>0)
+    allpar[(kiter+1),]<-allpar[kiter,]
+  }
+   if(Dargs$modeltype=="structural") {
+      theta<-c(fixed.psi,var.eta[Uargs$i1.omega2],varList$pres[Uargs$ind.res])
+    } else{
+      theta<-c(fixed.psi,var.eta[Uargs$i1.omega2])
+    }
+  parpop[(kiter+1),]<-theta
+
+# End of loop on kiter
+}
+cat("kiter=",kiter,"\n")
+print(theta)
+print(head(phiM))
+print(varList$pres)
+print(theta)
+
+```
+
+
+```{r combinedErrorPb.investigation2}
+for (kiter in (saemix.options$nbiter.sa+1):(saemix.options$nbiter.sa+1)) { # Iterative portion of algorithm
+	# E-step
+  xmcmc<-estep(kiter, Uargs, Dargs, opt, structural.model, mean.phi, varList, DYF, phiM)
+  varList<-xmcmc$varList
+  DYF<-xmcmc$DYF
+  phiM<-xmcmc$phiM
+  #  psiM<-transphi(phiM,saemix.model["transform.par"])
+  
+  # M-step
+  if(opt$stepsize[kiter]>0) {
+############# Stochastic Approximation
+  	xstoch<-mstep(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, varList, phi, betas, suffStat)
+  	varList<-xstoch$varList
+  	mean.phi<-xstoch$mean.phi
+  	phi<-xstoch$phi
+  	betas<-xstoch$betas
+  	suffStat<-xstoch$suffStat
+  	
+  	beta.I<-betas[Uargs$indx.betaI]
+  	fixed.psi<-transphi(matrix(beta.I,nrow=1),saemix.model["transform.par"])
+  	betaC<-betas[Uargs$indx.betaC]
+  	var.eta<-mydiag(varList$omega)
+  	l1<-betas.ini
+  	l1[Uargs$indx.betaI]<-fixed.psi
+  	l1[Uargs$indx.betaC]<-betaC
+
+    if(Dargs$modeltype=="structural") {
+      allpar[(kiter+1),]<-c(l1,var.eta[Uargs$i1.omega2],varList$pres[Uargs$ind.res])
+    } else{
+      allpar[(kiter+1),]<-c(l1,var.eta[Uargs$i1.omega2])
+    }
+
+  } else { #end of loop on if (stepsize[kiter]>0)
+    allpar[(kiter+1),]<-allpar[kiter,]
+  }
+   if(Dargs$modeltype=="structural") {
+      theta<-c(fixed.psi,var.eta[Uargs$i1.omega2],varList$pres[Uargs$ind.res])
+    } else{
+      theta<-c(fixed.psi,var.eta[Uargs$i1.omega2])
+    }
+  parpop[(kiter+1),]<-theta
+
+# End of loop on kiter
+}
+cat("kiter=",kiter,"\n")
+print(theta)
+print(head(phiM))
+print(varList$pres)
+print(theta)
+
+print(xmcmc$varList$pres)
+print(xstoch$varList$pres)
+
+```

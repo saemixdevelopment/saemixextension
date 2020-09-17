@@ -1,0 +1,4 @@
+eta1,eta2,coeff,statistics,p-value
+eta_Emax,eta_EC50,0,-0.565081,0.573297
+eta_Emax,eta_S0,0,0.726867,0.469023
+eta_EC50,eta_S0,0,0.312614,0.755231

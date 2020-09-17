@@ -1,0 +1,102 @@
+********************************************************************************
+*                          pd1emax.mlxtran                                     *
+*                          March 04, 2020 at 11:28:23                          *
+*                          Monolix version : 5.1.1                             *
+********************************************************************************
+
+
+POPULATION PARAMETERS ESTIMATION _______________________________________________
+
+Fixed Effects ----------------------------     se_sa    rse(%)
+Emax_pop                       :       107      6.19      5.77
+EC50_pop                       :      11.4     0.932       8.2
+beta_EC50_gender_1             :     0.406    0.0952      23.4
+S0_pop                         :      23.3      1.03       4.4
+
+Standard Deviation of the Random Effects -
+omega_Emax                     :     0.563    0.0436      7.75
+omega_EC50                     :     0.266     0.041      15.4
+omega_S0                       :     0.355    0.0355      9.99
+
+Error Model Parameters -------------------
+a                              :       4.4     0.312      7.09
+
+Elapsed time (seconds) :        3
+CPU time     (seconds) :        4
+
+ _______________________________________________________________________________
+
+
+
+CORRELATION MATRIX OF THE ESTIMATES ____________________________________________
+
+
+Fisher by Stochastic Approximation ---------------------------------------------
+Correlation Matrix :
+          Emax_pop         1
+          EC50_pop  0.039437         1
+beta_EC50_gender_1 0.0069743  -0.84981         1
+            S0_pop -0.040058   0.12068-0.0095874         1
+        omega_Emax -0.058301 -0.026091  0.015648  0.052024         1
+        omega_EC50  0.041511 -0.013649  0.090164  0.026789 -0.018331         1
+          omega_S0  0.025014 -0.036479  0.020878  -0.24655  -0.02411 -0.009634         1
+                 a -0.014093  0.029532 -0.043847  0.087949  -0.02067  -0.21114  -0.18477         1
+                               min       max   max/min
+Eigen values           :      0.14       1.9        14
+
+Elapsed time (seconds) :    0.09
+CPU time     (seconds) :       0
+
+ -------------------------------------------------------------------------------
+
+ _______________________________________________________________________________
+
+
+
+INDIVIDUAL PARAMETERS ESTIMATION _______________________________________________
+
+
+Individual Parameters Estimation by Conditional Mean ---------------------------
+             min        Q1    median        Q3       max
+Emax :      25.4      72.8       110       162       349
+EC50 :      9.17      12.9      16.3      18.5      24.2
+S0   :        12      19.5      23.1      28.3      51.4
+
+Elapsed time (seconds) :     0.1
+CPU time     (seconds) :       0
+
+ -------------------------------------------------------------------------------
+
+
+Individual Parameters Estimation by Conditional Mode ---------------------------
+             min        Q1    median        Q3       max
+Emax :      25.6      69.8       109       159       349
+EC50 :      8.12      12.7        16        18      24.9
+S0   :        12      19.8      23.4      28.9        50
+
+Elapsed time (seconds) :   0.027
+CPU time     (seconds) :       0
+
+ -------------------------------------------------------------------------------
+
+ _______________________________________________________________________________
+
+
+
+LOG-LIKELIHOOD ESTIMATION ______________________________________________________
+                                                            (is)
+
+-2 x log-likelihood                             :        2454.36
+Akaike Information Criteria               (AIC) :        2470.36
+Corrected Bayesian Information Criteria  (BICc) :        2495.59
+Bayesian Information Criteria             (BIC) :        2491.20
+
+Elapsed time                          (seconds) :           6.66
+CPU time                              (seconds) :          10.00
+
+
+[Importance Sampling] Standard error        : 0.244
+                      Sampling distribution : T-distribution with 5 degrees of freedom
+
+ _______________________________________________________________________________
+

@@ -1,0 +1,4 @@
+eta,covariate,statistics,p-value,test
+eta_Emax,gender,1.87455,0.174084,Fisher
+eta_EC50,gender,0.0890162,0.766063,Fisher
+eta_S0,gender,0.311774,0.577867,Fisher

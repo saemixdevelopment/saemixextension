@@ -1,0 +1,475 @@
+---
+title: "Estimating treatment effect on fixed parameter"
+author: "Emmanuelle"
+date: "26/05/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# Directories
+saemixDir<-"/home/eco/work/saemix/saemixextension"
+progDir<-file.path(saemixDir,"R")
+datDir<-file.path(saemixDir,"data")
+testDir<-file.path(saemixDir,"testbelhal")
+melDir<-file.path("/home/eco/work/saemix/bugs/melanie2004")
+
+# Libraries
+library(ggplot2)
+library(MASS)
+library(mvtnorm)
+
+# Sourcing saemix functions
+{
+  source(file.path(progDir,"aaa_generics.R"))
+  #source(file.path(progDir,"global.R"))
+  source(file.path(progDir,"SaemixData.R"))
+  source(file.path(progDir,"SaemixRes.R"))
+  source(file.path(progDir,"SaemixModel.R"))
+  source(file.path(progDir,"SaemixObject.R"))
+  source(file.path(progDir,"main.R"))
+  source(file.path(progDir,"func_aux.R"))
+  source(file.path(progDir,"main_initialiseMainAlgo.R"))
+  source(file.path(progDir,"main_estep.R"))
+  source(file.path(progDir,"main_mstep.R"))
+  source(file.path(progDir,"func_FIM.R"))
+  source(file.path(progDir,"func_plots.R"))
+  source(file.path(progDir,"func_distcond.R"))
+  source(file.path(progDir,"func_simulations.R"))
+  source(file.path(progDir,"compute_LL.R"))
+  source(file.path(progDir,"func_estimParam.R"))
+}
+```
+
+## Simulating data from a 2 compartment model with bioavailability F and IIV on F
+
+Study 1, Dose 15 mg, 11 sampling times, N=48 subjects in 2 groups.
+
+```{r simulExp2}
+model2cpt<-function(psi,id,xidep) {
+  tim<-xidep[,1]
+  dose<-xidep[,2]
+  ka<-psi[id,1]
+  V<-psi[id,2]
+  CL<-psi[id,3]
+  V2<-psi[id,4]
+  Q<-psi[id,5]
+  F<-psi[id,6]
+  kel<-CL/V
+  k12<-Q/V
+  k21<-Q/V2
+  bet<-(k12+k21+kel-sqrt((k12+k21+kel)**2-4*k21*kel))/2
+  alp<-k21*kel/bet
+  A<-ka/V*(k21-alp)/(ka-alp)/(bet-alp)
+  B<-ka/V*(k21-bet)/(ka-bet)/(alp-bet)
+  ypred<-dose*F*(A*exp(-alp*tim)+B*exp(-bet*tim)-(A+B)*exp(-ka*tim))
+  return(ypred)
+}
+
+psi1<-c(0.47,0.98,0.04,0.33,0.03,1)
+omega1<-diag(c(.57,.36,.26,0,0,.2)**2)
+omega1[2,3]<-omega1[3,2]<-.8*sqrt(omega1[2,2]*omega1[3,3])
+sig1<-0.15
+betaF<-log(.8)
+
+# Settings
+N <- 48
+dose<-15
+xtim<-c(0.25, 1, 2, 3, 4, 7, 13, 20, 42, 63, 84)
+
+# Simulating parameters
+etas<-rmvnorm(N,mean=c(0,0), sigma=omega1[2:3,2:3])
+etas<-cbind(rnorm(N, sd=sqrt(omega1[1,1])), etas, rep(0,N), rep(0,N), rnorm(N, sd=sqrt(omega1[6,6])))
+
+# simulations assuming F~N(1,0.2)
+param<-exp(etas)
+for(i in 1:6) param[,i]<-param[,i]*psi1[i]
+param[(N/2+1):N,6]<-param[(N/2+1):N,6]*exp(betaF)
+param1<-param
+
+# simulations assuming F~logit distribution with Fpop=0.95 in control group and Fpop=0.95*0.8 in treated group
+etaF<-log(param[,6])
+etaF[1:(N/2)]<-log(0.95/0.05)+etaF[1:(N/2)]
+etaF[(N/2+1):N]<-log(0.95*.8/(1-0.95*.8))+etaF[(N/2+1):N]
+param[,6]<-1/(1+exp(-etaF))
+param2<-param
+
+# Simulations without variability on F, F=1 in control group and F=0.8 in treated group
+param3<-param1
+param3[1:(N/2),6]<-1
+param3[(N/2+1):N,6]<-0.8
+
+# Simulating data
+xidep0<-data.frame(time=xtim,dose=dose)
+xidep1<-do.call(rbind,rep(list(xidep0),N))
+id1<-rep(1:N,each=length(xtim))
+
+if(FALSE) {
+  cat("Simulations of bioavailability as F~N(1,1.2), and mean(F)=0.8 in treated group\n")
+  for(i in 1:3) {
+    param<-switch(i, param1, param2, param3)
+    ypred<-model2cpt(param,id1,xidep1)
+    ypred<-ypred*(1+rnorm(length(ypred),sd=sig1))
+    simdat<-cbind(id1,xidep1,ypred,rep(c(0,1),each=(N/2)*length(xtim)))
+    colnames(simdat)<-c("id","time","dose","conc","trt")
+    if(i==1) simdat1<-simdat
+    if(i==2) simdat2<-simdat
+    if(i==3) simdat3<-simdat
+  }
+}
+
+# Creating MLX datasets
+if(FALSE) {
+  for(i in 1:3) {
+      simdat<-switch(i, simdat1, simdat2, simdat3)
+      mlxdat<-NULL
+      for(isuj in unique(simdat$id)) {
+        datsuj<-simdat[simdat$id==isuj,]
+        datsuj$dose<-NA
+        l1<-datsuj[1,]
+        l1[2:4]<-c(0,dose,NA)
+        mlxdat<-rbind(mlxdat,l1,datsuj)
+      }
+      namfile<-file.path(melDir,"biodisp",paste("simulated_biodisp",i,".csv",sep=""))
+      write.table(simdat,namfile,quote=FALSE, row.names = FALSE, na=".")
+      namfile<-file.path(melDir,"biodisp",paste("simulated_biodispMLX",i,".csv",sep=""))
+      write.table(mlxdat,namfile,quote=FALSE, row.names = FALSE, na=".")
+  }
+}
+
+# Reading datasets
+for(i in 1:3) {
+  namfile<-file.path(melDir,"biodisp",paste("simulated_biodisp",i,".csv",sep=""))
+  simdat<-read.table(namfile,header=TRUE, na=".")
+  assign(paste("simdat",i,sep=""),simdat)
+}
+
+```
+
+Simulated data:
+
+- parameters: ka=0.47, V=0.98, CL=0.04, V2=0.33, Q=0.03
+- variabilities: $\omega_{ka}$=.57,$\omega_{V}$=.36, $\omega_{CL}$=.26, $\omega_{F}$=.2 and $\rho$=0.8 for the correlation between V and CL
+- simulating bioavailability according to 3 models
+  - F~N(1,0.2)
+    - with IIV on F, simulated data has actual F with mean 0.96 in trt=0 (0.60-1.2), 0.77 with trt=1 (0.52-1.18)
+  - F~logit(Fpop=0.95,0.2)
+    - with IIV on F, simulated data has actual F with mean 0.72 in trt=0 (0.92-0.96), 0.92 with trt=1 (0.89-0.95)
+  - F=1 in control group, 0.8 in treated group (no IIV): betaF=log(0.8) so F=0.8 in treated group 
+
+## F simulated using a normal distribution
+
+saemix for dataset simulated with a normal distribution for F
+
+- with or without treatment effect, estimating IIV on F
+  - very good parameter estimates except for betaF (estimated to be -0.1 so exp(betaF)=0.9 instead of 0.8)
+  - SE are very large for V to Q and probably also betaF
+  - **completely normal** as the model is not identifiable
+- when F is fixed to 1, the SE are much better
+  - when F is fixed to 1, beta automatically set to 0 **changed:** now works and gives similar estimates compared to Monolix
+
+Monolix
+
+- all models give good estimates and normal SE **TODO** check SE in saemix and why we are diverging here for some models
+  - estimates of betaF similar in saemix and Monolix
+  - estimates for yfit2 and yfit4 very close in both software (so unclear why SE in saemix are so wrong, check+++)
+- with Monolix it is possible to estimate beta even if F is fixed...
+  - but the estimate of beta here isn't very good
+  - also the parameters are not identifiable (we can't estimate both F and all the CL/F, V/F,...) => maybe Monolix doesn't rely on the same small differences and we would need to run the model several times with different values of initial parameters to see the problem
+
+```{r fitSaemix.normal, echo=FALSE, results='hide',message=F, warning=F, include=F}
+# Saemix data
+simdat<-simdat1
+smx1.dat<-saemixData(name.data=simdat,header=TRUE,sep="",na=NA, name.group=c("id"), name.predictors=c("time","dose"),name.response=c("conc"), name.covariates="trt")
+plot(smx1.dat)
+
+# No treatment effect, estimating IIV on F
+mat1<-diag(c(1,1,1,0,0,1))
+mat1[2,3]<-mat1[3,2]<-1
+smx.model1<-saemixModel(model=model2cpt,description="Two compartment model", modeltype="structural", psi0=matrix(c(psi1,0,0,0,0,0,0),ncol=6,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL","V2","Q","F"))), transform.par=c(1,1,1,1,1,1),  covariance.model=mat1, error.model="proportional")
+saemix.options<-list(nb.chains=3,seed=123456,save=FALSE, save.graphs=FALSE)
+yfit1<-saemix(smx.model1, smx1.dat, saemix.options)
+
+# Treatment effect, estimating IIV on F
+smx.model2<-saemixModel(model=model2cpt,description="Two compartment model", modeltype="structural", psi0=matrix(c(psi1,0,0,0,0,0,0),ncol=6,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL","V2","Q","F"))), transform.par=c(1,1,1,1,1,1),  covariance.model=mat1, covariate.model=matrix(c(rep(0,5),1),nrow=1),error.model="proportional")
+saemix.options<-list(nb.chains=3,seed=123456,save=FALSE, save.graphs=FALSE)
+yfit2<-saemix(smx.model2, smx1.dat, saemix.options)
+
+# Fixing F=1, estimating IIV
+smx.model3<-saemixModel(model=model2cpt,description="Two compartment model", modeltype="structural", psi0=matrix(c(psi1,0,0,0,0,0,0),ncol=6,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL","V2","Q","F"))), transform.par=c(1,1,1,1,1,1),  covariance.model=mat1, error.model="proportional", fixed.estim = c(rep(1,5),0))
+saemix.options<-list(nb.chains=3,seed=123456,save=FALSE, save.graphs=FALSE)
+yfit3<-saemix(smx.model3, smx1.dat, saemix.options)
+
+# Fixing F=1, estimating IIV, treatment effect
+smx.model4<-saemixModel(model=model2cpt,description="Two compartment model", modeltype="structural", psi0=matrix(c(psi1,0,0,0,0,0,0),ncol=6,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL","V2","Q","F"))), transform.par=c(1,1,1,1,1,1),  covariance.model=mat1, error.model="proportional",  covariate.model=matrix(c(rep(0,5),1),nrow=1), fixed.estim = c(rep(1,5),0))
+saemix.options<-list(nb.chains=3,seed=123456,save=FALSE, save.graphs=FALSE)
+yfit4<-saemix(smx.model4, smx1.dat, saemix.options)
+
+# Fixing F=1, no IIV, estimating treatment effect
+mat2<-mat1
+mat2[6,6]<-0
+smx.model5<-saemixModel(model=model2cpt,description="Two compartment model", modeltype="structural", psi0=matrix(c(psi1,0,0,0,0,0,0),ncol=6,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL","V2","Q","F"))), transform.par=c(1,1,1,1,1,1),  covariance.model=mat2, error.model="proportional",  covariate.model=matrix(c(rep(0,5),1),nrow=1), fixed.estim = c(rep(1,5),0))
+saemix.options<-list(nb.chains=3,seed=123456,save=FALSE, save.graphs=FALSE)
+yfit5<-saemix(smx.model5, smx1.dat, saemix.options)
+
+```
+
+## Logistic model
+
+saemix for dataset simulated with a logistic distribution for F
+
+- parameter estimates are very similar in both treatment groups (see above)
+- with or without treatment effect, estimating IIV on F
+  - very good parameter estimates except for betaF (estimated to be 0.1 so exp(betaF)=1.10 instead of 0.8) and omegaF estimated to be 2.3 with very large SE **TODO** check, something looks wrong (but also true for MLX)
+    - omega2(F) which not only has a very large value (5.4 ie SD=2.3) but also has an abnormally high SE => pb with FIM ? or distribution itself (maybe not reporting the value of omega but of some transformation...)
+  - SE very high for betaF
+- when F is fixed to 0.95, omegaF remains high but more reasonable (0.8) with a high SE
+- when F is fixed to 1, beta automatically set to 0 again
+
+**TODO** check estimation of omega for a parameter with a log-normal distribution (maybe in transformation functions)
+
+- note that omegaF also estimated much larger than 0.2 with Monolix (0.8 in MLX versus 2.3 in saemix)
+
+Monolix
+
+- **warning** by default the logistic distribution in Monolix is over ]0-2[ (ie defined as $log(p/(2-p))$)
+  - here changed the default boundaries to 0-1 to match saemix)
+- all models give good estimates and normal SE **TODO** check SE in saemix and why we are diverging here for some models
+  - omegaF in models with or without treatment effect too high (0.8)
+  - F and betaF estimated: betaF estimated to be 2.5 in logistic model (SE=46%), ie 0.93 and 0.99 respectively for F in control and treated group
+  - F fixed to 0.95: betaF estimated to be -0.122, ie 0.95 and 0.94 respectively in control and treated groups
+  - estimates for ylog2 similar magnitude in both software except for betaF and omegaF
+- when F is fixed to 0.95, omegaF remains high (with RSE=70%)
+  - betaF=-0.12 but SE very high
+
+```{r fitSaemix.logistic, echo=FALSE, results='hide',message=F, warning=F, include=F}
+simdat<-simdat2
+smx2.dat<-saemixData(name.data=simdat,header=TRUE,sep="",na=NA, name.group=c("id"), name.predictors=c("time","dose"),name.response=c("conc"), name.covariates="trt")
+plot(smx2.dat)
+
+psi2<-psi1
+psi2[6]<-0.95
+
+# No treatment effect, estimating IIV on F
+smx.model1<-saemixModel(model=model2cpt,description="Two compartment model", modeltype="structural", psi0=matrix(c(psi2,0,0,0,0,0,0),ncol=6,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL","V2","Q","F"))), transform.par=c(1,1,1,1,1,3),  covariance.model=mat1, error.model="proportional")
+saemix.options<-list(nb.chains=3,seed=123456,save=FALSE, save.graphs=FALSE)
+ylog1<-saemix(smx.model1, smx2.dat, saemix.options)
+
+# Treatment effect, estimating IIV on F
+smx.model2<-saemixModel(model=model2cpt,description="Two compartment model", modeltype="structural", psi0=matrix(c(psi2,0,0,0,0,0,0),ncol=6,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL","V2","Q","F"))), transform.par=c(1,1,1,1,1,3),  covariance.model=mat1, covariate.model=matrix(c(rep(0,5),1),nrow=1),error.model="proportional")
+saemix.options<-list(nb.chains=3,seed=123456,save=FALSE, save.graphs=FALSE)
+ylog2<-saemix(smx.model2, smx2.dat, saemix.options)
+
+# Fixing F=1, estimating IIV
+smx.model3<-saemixModel(model=model2cpt,description="Two compartment model", modeltype="structural", psi0=matrix(c(psi2,0,0,0,0,0,0),ncol=6,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL","V2","Q","F"))), transform.par=c(1,1,1,1,1,3),  covariance.model=mat1, error.model="proportional", fixed.estim = c(rep(1,5),0))
+saemix.options<-list(nb.chains=3,seed=123456,save=FALSE, save.graphs=FALSE)
+ylog3<-saemix(smx.model3, smx2.dat, saemix.options)
+
+# Fixing F=1, estimating IIV, treatment effect
+smx.model4<-saemixModel(model=model2cpt,description="Two compartment model", modeltype="structural", psi0=matrix(c(psi2,0,0,0,0,0,0),ncol=6,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL","V2","Q","F"))), transform.par=c(1,1,1,1,1,3),  covariance.model=mat1, error.model="proportional",  covariate.model=matrix(c(rep(0,5),1),nrow=1), fixed.estim = c(rep(1,5),0))
+saemix.options<-list(nb.chains=3,seed=123456,save=FALSE, save.graphs=FALSE)
+ylog4<-saemix(smx.model4, smx2.dat, saemix.options)
+
+# Fixing F=1, estimating IIV, treatment effect
+mat2<-mat1
+mat2[6,6]<-0
+smx.model5<-saemixModel(model=model2cpt,description="Two compartment model", modeltype="structural", psi0=matrix(c(psi2,0,0,0,0,0,0),ncol=6,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL","V2","Q","F"))), transform.par=c(1,1,1,1,1,3),  covariance.model=mat2, error.model="proportional",  covariate.model=matrix(c(rep(0,5),1),nrow=1), fixed.estim = c(rep(1,5),0))
+saemix.options<-list(nb.chains=3,seed=123456,save=FALSE, save.graphs=FALSE)
+ylog5<-saemix(smx.model5, smx2.dat, saemix.options)
+
+print(ylog2@results@conf.int)
+print(ylog4@results@conf.int)
+
+saemixObject<-ylog4
+
+x<-ylog4@results@fixed.effects[6:7]
+x1<-log(x[1]/(1-x[1]))+x[2]
+1/(1+exp(-x1))
+
+x1<-log(x[1]/(1-x[1]))-0.122
+1/(1+exp(-x1))
+
+```
+
+
+
+# FIM for the model with a logistic distribution
+
+```{r saemix.FIMlogistic}
+saemixObject<-ylog3
+yfit<-fim.saemix(saemixObject)
+print(yfit@results)
+
+# Computing DF
+saemixObject<-ylog3
+
+saemixObject<-ylog4
+
+```
+
+# Logistic model for F
+
+```{r saemix.initialisation}
+# Which model
+which.model<-4
+
+# Data and options
+simdat<-simdat2
+smx2.dat<-saemixData(name.data=simdat,header=TRUE,sep="",na=NA, name.group=c("id"), name.predictors=c("time","dose"),name.response=c("conc"), name.covariates="trt")
+saemix.options<-list(nb.chains=3,seed=123456,save=FALSE, save.graphs=FALSE)
+
+# Treatment effect, estimating IIV on F
+if(which.model==2) {
+  smx.model2<-saemixModel(model=model2cpt,description="Two compartment model", modeltype="structural", psi0=matrix(c(psi2,0,0,0,0,0,0),ncol=6,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL","V2","Q","F"))), transform.par=c(1,1,1,1,1,3),  covariance.model=mat1, covariate.model=matrix(c(rep(0,5),1),nrow=1),error.model="proportional")
+  saemixObject<-new(Class="SaemixObject",data=smx2.dat,model=smx.model2,options=saemix.options)
+}
+
+# Fixing F=1, estimating IIV, treatment effect
+if(which.model==4) {
+  smx.model4<-saemixModel(model=model2cpt,description="Two compartment model", modeltype="structural", psi0=matrix(c(psi2,0,0,0,0,0,0),ncol=6,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL","V2","Q","F"))), transform.par=c(1,1,1,1,1,3),  covariance.model=mat1, error.model="proportional",  covariate.model=matrix(c(rep(0,5),1),nrow=1), fixed.estim = c(rep(1,5),0))
+  saemixObject<-new(Class="SaemixObject",data=smx2.dat,model=smx.model4,options=saemix.options)
+}
+
+  
+  opt.warn<-getOption("warn")
+  if(!saemixObject["options"]$warnings) options(warn=-1)
+
+  saemix.options<-saemixObject["options"]
+  saemix.model<-saemixObject["model"]
+  saemix.data<-saemixObject["data"]
+  saemix.data@ocov<-saemix.data@ocov[saemix.data@data[,"mdv"]==0,,drop=FALSE]
+  saemix.data@data<-saemix.data@data[saemix.data@data[,"mdv"]==0,]
+  saemix.data@ntot.obs<-dim(saemix.data@data)[1]
+
+# Initialisation
+  OLDRAND<-TRUE
+  set.seed(saemix.options$seed)
+  xinit<-initialiseMainAlgo(saemix.data,saemix.model,saemix.options)
+  saemix.model<-xinit$saemix.model
+  Dargs<-xinit$Dargs
+  Uargs<-xinit$Uargs
+  varList<-xinit$varList
+  phiM<-xinit$phiM
+  mean.phi<-xinit$mean.phi
+  DYF<-xinit$DYF
+  opt<-xinit$opt
+  betas<-betas.ini<-xinit$betas
+  fixed.psi<-xinit$fixedpsi.ini
+  var.eta<-varList$diag.omega
+
+  if (Dargs$modeltype=="structural"){
+    theta0<-c(fixed.psi,var.eta[Uargs$i1.omega2],varList$pres[Uargs$ind.res])
+    parpop<-matrix(data=0,nrow=(saemix.options$nbiter.tot+1),ncol=(Uargs$nb.parameters+length(Uargs$i1.omega2)+length(saemix.model["indx.res"])))
+    colnames(parpop)<-c(saemix.model["name.modpar"], saemix.model["name.random"], saemix.model["name.sigma"][saemix.model["indx.res"]])
+    allpar<-matrix(data=0,nrow=(saemix.options$nbiter.tot+1), ncol=(Uargs$nb.betas+length(Uargs$i1.omega2)+length(saemix.model["indx.res"])))
+    colnames(allpar)<-c(saemix.model["name.fixed"],saemix.model["name.random"], saemix.model["name.sigma"][saemix.model["indx.res"]])
+  } else{
+    theta0<-c(fixed.psi,var.eta[Uargs$i1.omega2])
+    parpop<-matrix(data=0,nrow=(saemix.options$nbiter.tot+1),ncol=(Uargs$nb.parameters+length(Uargs$i1.omega2)))
+    colnames(parpop)<-c(saemix.model["name.modpar"], saemix.model["name.random"])
+    allpar<-matrix(data=0,nrow=(saemix.options$nbiter.tot+1), ncol=(Uargs$nb.betas+length(Uargs$i1.omega2)))
+    colnames(allpar)<-c(saemix.model["name.fixed"],saemix.model["name.random"])
+  }
+  
+  parpop[1,]<-theta0
+  allpar[1,]<-xinit$allpar0
+  
+  # using several Markov chains - only useful if passed back to main routine...
+  # 	chdat<-new(Class="SaemixRepData",data=saemix.data, nb.chains=saemix.options$nb.chains)
+  # 	NM<-chdat["NM"]
+  # 	IdM<-chdat["dataM"]$IdM
+  # 	yM<-chdat["dataM"]$yM
+  # 	XM<-chdat["dataM"][,saemix.data["name.predictors"],drop=FALSE]
+  
+# List of sufficient statistics - change during call to stochasticApprox
+  suffStat<-list(statphi1=0,statphi2=0,statphi3=0,statrese=0)
+  phi<-array(data=0,dim=c(Dargs$N, Uargs$nb.parameters, saemix.options$nb.chains))
+
+# structural model, check nb of parameters
+  structural.model<-saemix.model["model"]
+  #  nb.parameters<-saemix.model["nb.parameters"]
+  
+```
+
+Burn-in iterations:
+
+```{r saemix.burnin}
+for (kiter in 1:saemix.options$nbiter.burn) { # Iterative portion of algorithm
+# Burn-in - first loop useless
+# E-step
+  xmcmc<-estep(kiter, Uargs, Dargs, opt, structural.model, mean.phi, varList, DYF, phiM)
+  varList<-xmcmc$varList
+  DYF<-xmcmc$DYF
+  phiM<-xmcmc$phiM
+
+  # no M-step during burn-in phase
+  allpar[(kiter+1),]<-allpar[kiter,]
+  if(Dargs$modeltype=="structural") {
+    theta<-c(fixed.psi,var.eta[Uargs$i1.omega2],varList$pres[Uargs$ind.res])
+  } else{
+    theta<-c(fixed.psi,var.eta[Uargs$i1.omega2])
+  }
+  parpop[(kiter+1),]<-theta
+}
+print(theta)
+print(head(phiM))
+print(varList$pres)
+```
+
+```{r saemix.explorationPhase1}
+kiter<-saemix.options$nbiter.burn+1
+	# E-step
+  xmcmc<-estep(kiter, Uargs, Dargs, opt, structural.model, mean.phi, varList, DYF, phiM)
+  varList<-xmcmc$varList
+  DYF<-xmcmc$DYF
+  phiM<-xmcmc$phiM
+
+  # M-step and stochastic Approximation
+  
+#  xstoch<-mstep(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, varList, phi, betas, suffStat)
+
+	# Update variances - TODO - check if here or elsewhere
+	nb.etas<-length(varList$ind.eta)
+	domega<-cutoff(mydiag(varList$omega[varList$ind.eta,varList$ind.eta]),.Machine$double.eps)
+	omega.eta<-varList$omega[varList$ind.eta,varList$ind.eta,drop=FALSE]
+	omega.eta<-omega.eta-mydiag(mydiag(varList$omega[varList$ind.eta,varList$ind.eta]))+mydiag(domega)
+	#  print(varList$omega.eta)
+	chol.omega<-try(chol(omega.eta))
+	d1.omega<-Uargs$LCOV[,varList$ind.eta]%*%solve(omega.eta)
+	d2.omega<-d1.omega%*%t(Uargs$LCOV[,varList$ind.eta])
+	comega<-Uargs$COV2*d2.omega
+	
+	psiM<-transphi(phiM,Dargs$transform.par)
+	fpred<-structural.model(psiM, Dargs$IdM, Dargs$XM)
+  	for(ityp in Dargs$etype.exp) fpred[Dargs$XM$ytype==ityp]<-log(cutoff(fpred[Dargs$XM$ytype==ityp]))
+#	if(Dargs$error.model=="exponential")
+#		fpred<-log(cutoff(fpred))
+	ff<-matrix(fpred,nrow=Dargs$nobs,ncol=Uargs$nchains)
+	for(k in 1:Uargs$nchains) phi[,,k]<-phiM[((k-1)*Dargs$N+1):(k*Dargs$N),]
+	# overall speed similar
+	#    phi<-aperm(array(phiM,c(N,nchains,3)),c(1,3,2))
+	stat1<-apply(phi[,varList$ind.eta,,drop=FALSE],c(1,2),sum) # sum on columns ind.eta of phi, across 3rd dimension
+	stat2<-matrix(data=0,nrow=nb.etas,ncol=nb.etas)
+	stat3<-apply(phi**2,c(1,2),sum) #  sum on phi**2, across 3rd dimension
+	statr<-0
+	for(k in 1:Uargs$nchains) {
+		phik<-phi[,varList$ind.eta,k]
+		stat2<-stat2+t(phik)%*%phik
+		fk<-ff[,k]
+		if(length(Dargs$error.model)==1) {
+		  if(!is.na(match(Dargs$error.model,c("constant","exponential"))))
+		    resk<-sum((Dargs$yobs-fk)**2) else {
+		      if(Dargs$error.model=="proportional") {
+		        idx.okpred<-which(fk>.Machine$double.eps)
+		        vec<-(Dargs$yobs-fk)**2/cutoff(fk**2,.Machine$double.eps)
+		        resk<-sum(vec[idx.okpred])
+		        resk1<-sum(vec)
+		        } else resk<-0
+		    }
+		} else resk<-0
+		statr<-statr+resk
+	}
+
+print(resk)
+print(resk1)
+```

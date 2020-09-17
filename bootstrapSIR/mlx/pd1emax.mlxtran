@@ -1,0 +1,68 @@
+<DATAFILE>
+
+[FILEINFO]
+file = '../pd1mlx.csv'
+delimiter = space
+header = {subject, dose, response, gender}
+
+[CONTENT]
+subject = {use=identifier}
+dose = {use=regressor}
+response = {use=observation, name=response, type=continuous}
+gender = {use=covariate, type=categorical}
+
+<MODEL>
+
+[COVARIATE]
+input = gender
+
+gender = {type=categorical, categories={0, 1}}
+
+[INDIVIDUAL]
+input = {EC50_pop, omega_EC50, Emax_pop, omega_Emax, S0_pop, omega_S0, gender, beta_EC50_gender_1}
+
+gender = {type=categorical, categories={0, 1}}
+
+DEFINITION:
+EC50 = {distribution=logNormal, typical=EC50_pop, covariate=gender, coefficient={0, beta_EC50_gender_1}, sd=omega_EC50}
+Emax = {distribution=logNormal, typical=Emax_pop, sd=omega_Emax}
+S0 = {distribution=logNormal, typical=S0_pop, sd=omega_S0}
+
+[LONGITUDINAL]
+input = {a}
+
+file = '../../../../copyMonolix/models/mlx2019/pd1.txt'
+
+DEFINITION:
+response = {distribution=normal, prediction=E, errorModel=constant(a)}
+
+<FIT>
+data = response
+model = response
+
+<PARAMETER>
+EC50_pop = {value=30, method=MLE}
+Emax_pop = {value=300, method=MLE}
+S0_pop = {value=20, method=MLE}
+a = {value=1, method=MLE}
+beta_EC50_gender_1 = {value=0, method=MLE}
+omega_EC50 = {value=1, method=MLE}
+omega_Emax = {value=1, method=MLE}
+omega_S0 = {value=1, method=MLE}
+
+<MONOLIX>
+
+[TASKS]
+populationParameters()
+individualParameters(method = {conditionalMean, conditionalMode })
+fim(method = StochasticApproximation)
+logLikelihood(method = ImportanceSampling)
+plotResult(method = {outputplot, indfits, obspred, residualsscatter, residualsdistribution, parameterdistribution, covariatemodeldiagnosis, randomeffects, covariancemodeldiagnosis, saemresults })
+
+[SETTINGS]
+GLOBAL:
+exportpath = 'pd1emax'
+
+INDIVIDUAL:
+nbsimulatedparameters = 200
+
