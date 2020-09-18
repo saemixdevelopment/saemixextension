@@ -385,7 +385,7 @@ saemix.plot.select<-function(saemixObject,data=FALSE,convergence=FALSE, likeliho
     if(!cok %in% c("y","Y","yes","")) boolpred<-FALSE 
   }
   if(boolsim & !boolres) {
-    saemixObject<-simul.saemix(saemixObject)
+    saemixObject<-saemix.simul(saemixObject)
     assign(namObj,saemixObject,envir=parent.frame())
   }
   if(boolpred) {
@@ -1231,7 +1231,7 @@ saemix.plot.npde<-function(saemixObject,...) {
 
 saemix.plot.vpc<-function(saemixObject,npc=FALSE,...) {
   if(length(saemixObject["sim.data"]["nsim"])==0) {
-    cat("Please simulate data first, using the simul.saemix function.\n") 
+    cat("Please simulate data first, using the saemix.simul function.\n") 
     return()
   }
 # Internal function

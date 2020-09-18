@@ -1027,7 +1027,7 @@ setMethod(f="plot",
         	cat("Performing simulations under the model.\n")
         }
         if(boolpred) {
-          x<-simul.saemix(x)
+          x<-saemix.simul(x)
           assign(namObj,x,envir=parent.frame())
         }
       }
