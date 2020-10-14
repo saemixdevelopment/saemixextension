@@ -54,6 +54,8 @@ An object of the SaemixRes class, representing the results of a fit through the 
 
 \item{\code{se.respar}}{a vector giving the estimated standard errors of estimation for the parameters of the residual variability}
 
+\item{\code{conf.int}}{a dataframe containing the estimated parameters, their estimation error (SE), coefficient of variation (CV), and the associated confidence intervals; the variabilities for the random effects are presented first as estimated (variances) then converted to standard deviations (SD), and the correlations are computed. For SD and correlations, the SE are estimated via the delta-method}
+
 \item{\code{parpop}}{a matrix tracking the estimates of the population parameters at each iteration}
 
 \item{\code{allpar}}{a matrix tracking the estimates of all the parameters (including covariate effects) at each iteration}
