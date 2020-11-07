@@ -16,7 +16,7 @@ Imports: graphics, stats, methods
 Suggests: testthat
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.1.0
+RoxygenNote: 7.1.1
 NeedsCompilation: no
 Collate: 
     'aaa_generics.R'

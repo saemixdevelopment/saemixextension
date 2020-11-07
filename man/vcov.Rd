@@ -4,8 +4,6 @@
 \alias{vcov}
 \alias{vcov.SaemixRes}
 \alias{vcov.SaemixObject}
-\alias{##vcov,SaemixRes}
-\alias{vcov,SaemixObject}
 \title{Extracts the Variance-Covariance Matrix for a Fitted Model Object}
 \usage{
 \method{vcov}{SaemixRes}(object, ...)

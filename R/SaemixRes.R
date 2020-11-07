@@ -889,7 +889,7 @@ fitted.SaemixRes<-function (object, type = c("ipred", "ypred", "ppred", "icpred"
 #' Returns the variance-covariance matrix of the main parameters of a fitted model object
 #' 
 #' @name vcov
-#' @aliases vcov vcov.SaemixRes vcov.SaemixObject ##vcov,SaemixRes vcov,SaemixObject
+#' @aliases vcov vcov.SaemixRes vcov.SaemixObject
 #' 
 #' @param object a fitted object from a call to saemix
 #' @param ...   further arguments to be passed to or from other methods
