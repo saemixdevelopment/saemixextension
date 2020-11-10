@@ -1133,14 +1133,13 @@ setMethod(f="plot",
 ##'
 ##' The likelihood in saemix can be computed by one of three methods: linearisation (linearisation of the model), importance sampling (stochastic integration) and gaussian quadrature (numerical integration). The linearised likelihood is obtained as a byproduct of the computation of the Fisher Information Matrix (fim=TRUE in the control options given to the saemix function).
 ##' If no method argument is given, this function will attempt to extract the likelihood computed by importance sampling (method="is").
-##' If the requested likelihood is not present in the object and the argument add=TRUE (the default), it will be computed and added to the object in addition to returning the computed value. If it is not present and add=FALSE, an error message is given.
+##' If the requested likelihood is not present in the object, an error message is given.
 ##'
 ##' @name logLik
 ##' @aliases AIC.SaemixObject BIC.SaemixObject logLik.SaemixObject
 ##'
 ##' @param object name of an SaemixObject object
 ##' @param method character string, one of c("is","lin","gq"), to select one of the available approximations to the log-likelihood (is: Importance Sampling; lin: linearisation and gq: Gaussian Quadrature).
-##' @param add boolean, specifying if the requested value should be added to the object in case it is not present. The default is TRUE.
 ##' @param ... additional arguments
 ##' @param k numeric, the penalty per parameter to be used; the default k = 2 is the classical AIC
 ##' @return Returns the selected statistical criterion (log-likelihood, AIC, BIC) extracted from the SaemixObject, computed with the 'method' argument if given.
@@ -1158,38 +1157,17 @@ setMethod(f="plot",
 #' @export
 
 ## log-likelihood for SaemixObject objects
-logLik.SaemixObject<- function(object, method=c("is","lin","gq"), add=TRUE, ...) {
+logLik.SaemixObject<- function(object, method=c("is","lin","gq"), ...) {
   method <- match.arg(method)
-  namObj<-deparse(substitute(object))
 
-  if (add) {
-    # Compute the requested LL if not present
-    if(method=="is" & length(object@results@ll.is)==0) {
-      object<-llis.saemix(object)
-      assign(namObj,object,envir=parent.frame())
-    }
-    if(method=="gq" & length(object@results@ll.gq)==0) {
-      object<-llgq.saemix(object)
-      assign(namObj,object,envir=parent.frame())
-    }
-    if(method=="lin" & length(object@results@ll.lin)==0) {
-      object<-fim.saemix(object)
-      assign(namObj,object,envir=parent.frame())
-    }
-  } else {
-    # OR: return if desired LL has not been computed
-    if(method=="gq" & length(object@results@ll.gq)==0) {
-      message("The log-likelihood by Gaussian Quadrature has not yet been computed.")
-      invisible()
-    }
-    if(method=="is" & length(object@results@ll.is)==0) {
-      message("The log-likelihood by Importance Sampling has not yet been computed.")
-      invisible()
-    }
-    if(method=="lin" & length(object@results@ll.lin)==0) {
-      message("The log-likelihood by linearisation has not yet been computed.")
-      invisible()
-    }
+  if(method=="gq" & length(object@results@ll.gq)==0) {
+    stop("The log-likelihood by Gaussian Quadrature has not yet been computed.")
+  }
+  if(method=="is" & length(object@results@ll.is)==0) {
+    stop("The log-likelihood by Importance Sampling has not yet been computed.")
+  }
+  if(method=="lin" & length(object@results@ll.lin)==0) {
+    stop("The log-likelihood by linearisation has not yet been computed.")
   }
   val<-switch(method,is=object@results@ll.is,lin=object@results@ll.lin, gq=object@results@ll.gq)
   attr(val, "nall") <- object@data@N
@@ -1202,28 +1180,17 @@ logLik.SaemixObject<- function(object, method=c("is","lin","gq"), add=TRUE, ...)
 #' @export 
 #' @rdname logLik
 
-AIC.SaemixObject<-function(object, ..., k=2) {
-  args1<-match.call(expand.dots=TRUE)
-  i1<-match("method",names(args1))
-  if(!is.na(i1)) {
-    str1<-as.character(args1[[i1]])
-    if(str1 %in% c("is","lin","gq")) method<-str1
-  } else {
-    if(length(object@results@ll.is)!=0 | length(object@results@ll.lin)==0) method<-"is" else method<-"lin"
-  }
-  # Compute the requested LL if not present
-  namObj<-deparse(substitute(object))
+AIC.SaemixObject<-function(object, method=c("is","lin","gq"), ..., k=2) {
+  method <- match.arg(method)
+
   if(method=="is" & length(object@results@ll.is)==0) {
-    object<-llis.saemix(object)
-    assign(namObj,object,envir=parent.frame())
+    stop("The log-likelihood by Importance Sampling has not yet been computed.")
   }
   if(method=="gq" & length(object@results@ll.gq)==0) {
-    object<-llgq.saemix(object)
-    assign(namObj,object,envir=parent.frame())
+    stop("The log-likelihood by Gaussian Quadrature has not yet been computed.")
   }
   if(method=="lin" & length(object@results@ll.lin)==0) {
-    object<-fim.saemix(object)
-    assign(namObj,object,envir=parent.frame())
+    stop("The log-likelihood by linearisation has not yet been computed.")
   }
   val<-switch(method,is=object@results@aic.is,lin=object@results@aic.lin, gq=object@results@aic.gq)
   val
@@ -1232,58 +1199,36 @@ AIC.SaemixObject<-function(object, ..., k=2) {
 #' @export
 #' @rdname logLik
 
-BIC.SaemixObject<-function(object, ...) {
+BIC.SaemixObject<-function(object, method=c("is","lin","gq"), ...) {
+  method <- match.arg(method)
 #  -2 * as.numeric(object) + attr(object, "df") * log(nobs(object))
-  args1<-match.call(expand.dots=TRUE)
-  i1<-match("method",names(args1))
-  if(!is.na(i1)) {
-    str1<-as.character(args1[[i1]])
-    if(str1 %in% c("is","lin","gq")) method<-str1
-  } else {
-    if(length(object@results@ll.is)!=0 | length(object@results@ll.lin)==0) method<-"is" else method<-"lin"
-  }
-  # Compute the requested LL if not present
-  namObj<-deparse(substitute(object))
+
   if(method=="is" & length(object@results@ll.is)==0) {
-    object<-llis.saemix(object)
-    assign(namObj,object,envir=parent.frame())
+    stop("The log-likelihood by Importance Sampling has not yet been computed.")
   }
   if(method=="gq" & length(object@results@ll.gq)==0) {
-    object<-llgq.saemix(object)
-    assign(namObj,object,envir=parent.frame())
+    stop("The log-likelihood by Gaussian Quadrature has not yet been computed.")
   }
   if(method=="lin" & length(object@results@ll.lin)==0) {
-    object<-fim.saemix(object)
-    assign(namObj,object,envir=parent.frame())
+    stop("The log-likelihood by linearisation has not yet been computed.")
   }
   val<-switch(method,is=object@results@bic.is,lin=object@results@bic.lin, gq=object@results@bic.gq)
   val
 }
 
 
-BIC.covariate<-function(object, ...) {
+BIC.covariate<-function(object, method=c("is","lin","gq"), ...) {
+  method <- match.arg(method)
   #  -2 * as.numeric(object) + attr(object, "df") * log(nobs(object))
-  args1<-match.call(expand.dots=TRUE)
-  i1<-match("method",names(args1))
-  if(!is.na(i1)) {
-    str1<-as.character(args1[[i1]])
-    if(str1 %in% c("is","lin","gq")) method<-str1
-  } else {
-    if(length(object@results@ll.is)!=0 | length(object@results@ll.lin)==0) method<-"is" else method<-"lin"
-  }
-  # Compute the requested LL if not present
-  namObj<-deparse(substitute(object))
+
   if(method=="is" & length(object@results@ll.is)==0) {
-    object<-llis.saemix(object)
-    assign(namObj,object,envir=parent.frame())
+    stop("The log-likelihood by Importance Sampling has not yet been computed.")
   }
   if(method=="gq" & length(object@results@ll.gq)==0) {
-    object<-llgq.saemix(object)
-    assign(namObj,object,envir=parent.frame())
+    stop("The log-likelihood by Gaussian Quadrature has not yet been computed.")
   }
   if(method=="lin" & length(object@results@ll.lin)==0) {
-    object<-fim.saemix(object)
-    assign(namObj,object,envir=parent.frame())
+    stop("The log-likelihood by linearisation has not yet been computed.")
   }
   val<-switch(method,is=object@results@bic.covariate.is,lin=object@results@bic.covariate.lin, gq=object@results@bic.covariate.gq)
   val

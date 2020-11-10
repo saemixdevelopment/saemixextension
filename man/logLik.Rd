@@ -8,18 +8,16 @@
 \alias{BIC.SaemixObject}
 \title{Extract likelihood from an SaemixObject resulting from a call to saemix}
 \usage{
-\method{logLik}{SaemixObject}(object, method = c("is", "lin", "gq"), add = TRUE, ...)
+\method{logLik}{SaemixObject}(object, method = c("is", "lin", "gq"), ...)
 
-\method{AIC}{SaemixObject}(object, ..., k = 2)
+\method{AIC}{SaemixObject}(object, method = c("is", "lin", "gq"), ..., k = 2)
 
-\method{BIC}{SaemixObject}(object, ...)
+\method{BIC}{SaemixObject}(object, method = c("is", "lin", "gq"), ...)
 }
 \arguments{
 \item{object}{name of an SaemixObject object}
 
 \item{method}{character string, one of c("is","lin","gq"), to select one of the available approximations to the log-likelihood (is: Importance Sampling; lin: linearisation and gq: Gaussian Quadrature).}
-
-\item{add}{boolean, specifying if the requested value should be added to the object in case it is not present. The default is TRUE.}
 
 \item{...}{additional arguments}
 
@@ -31,7 +29,7 @@ Returns the selected statistical criterion (log-likelihood, AIC, BIC) extracted 
 \description{
 The likelihood in saemix can be computed by one of three methods: linearisation (linearisation of the model), importance sampling (stochastic integration) and gaussian quadrature (numerical integration). The linearised likelihood is obtained as a byproduct of the computation of the Fisher Information Matrix (fim=TRUE in the control options given to the saemix function).
 If no method argument is given, this function will attempt to extract the likelihood computed by importance sampling (method="is").
-If the requested likelihood is not present in the object and the argument add=TRUE (the default), it will be computed and added to the object in addition to returning the computed value. If it is not present and add=FALSE, an error message is given.
+If the requested likelihood is not present in the object, an error message is given.
 }
 \references{
 Comets  E, Lavenu A, Lavielle M. Parameter estimation in nonlinear mixed effect models using saemix, an R implementation of the SAEM algorithm. Journal of Statistical Software 80, 3 (2017), 1-41.
