@@ -24,6 +24,7 @@ model_1cpt <- saemixModel(model = model1cpt,
     dimnames = list(NULL, c("ka", "V", "CL"))),
   transform.par = c(1, 1, 1))
 
-saemix.options <- list(seed = 123456, save = FALSE, save.graphs = FALSE)
+saemix.options <- list(seed = 123456, save = FALSE, save.graphs = FALSE,
+  displayProgress = FALSE)
 
 theo_fit_1 <-saemix(model_1cpt, theo_data, saemix.options)
