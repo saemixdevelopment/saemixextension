@@ -25,29 +25,6 @@ m_1cpt <- saemixModel(model = f_1cpt,
     dimnames = list(NULL, c("ka", "V", "CL"))),
   transform.par = c(1, 1, 1))
 
-m_1cpt_1_cov <- saemixModel(model = f_1cpt,
-  description = "One-compartment model, clearance dependent on weight",
-  psi0 = matrix(c(1., 20, 0.5, 0.1, 0, -0.01), ncol = 3, byrow = TRUE,
-    dimnames = list(NULL, c("ka", "V", "CL"))),
-  transform.par = c(1, 1, 1),
-  covariate.model = matrix(c(0, 0, 1, 0, 0, 0), ncol = 3, byrow = TRUE))
-
-m_1cpt_2_cov <- saemixModel(model = f_1cpt,
-  description = "One-compartment model, clearance dependent on weight and volume dependent on sex",
-  psi0 = matrix(c(1., 20, 0.5, 0.1, 0, -0.01), ncol = 3, byrow = TRUE,
-    dimnames = list(NULL, c("ka", "V", "CL"))),
-  transform.par = c(1, 1, 1),
-  covariate.model = matrix(c(0, 0, 1, 0, 1, 0), ncol = 3, byrow = TRUE))
-
-m_1cpt_3_cov <- saemixModel(model = f_1cpt,
-  description = "One-compartment model, clearance and absorption dependent on weight, volume dependent on sex",
-  psi0 = matrix(c(1., 20, 0.5, 0.1, 0, -0.01), ncol = 3, byrow = TRUE,
-    dimnames = list(NULL, c("ka", "V", "CL"))),
-  transform.par = c(1, 1, 1),
-  covariate.model = matrix(c(1, 0, 1, 0, 1, 0), ncol = 3, byrow = TRUE))
-
-saemix.options <- list(seed = 123456, save = FALSE, save.graphs = FALSE)
-
 theo_fit <- saemix(m_1cpt, theo_data, saemix.options)
 theo_fit_1_cov <- saemix(m_1cpt_1_cov, theo_data, saemix.options)
 theo_fit_2_cov <- saemix(m_1cpt_2_cov, theo_data, saemix.options)
