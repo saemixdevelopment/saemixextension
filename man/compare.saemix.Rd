@@ -4,13 +4,14 @@
 \alias{compare.saemix}
 \title{Model comparison with information criteria (AIC, BIC).}
 \usage{
-compare.saemix(mod.list, ...)
+compare.saemix(..., method = c("is", "lin", "gq"))
 }
 \arguments{
-\item{mod.list}{A list of two or more objects returned by the \code{\link{saemix}} function}
+\item{\dots}{Two or more objects returned by the \code{\link{saemix}} function}
 
 \item{method}{The method used for computing the likelihood : "is" (Importance Sampling),
-"ll" (Linearisation) or "gq" (Gaussian quadrature). Default "is"}
+"lin" (Linearisation) or "gq" (Gaussian quadrature). The default is to use importance sampling "is".
+If the requested likelihood is not available in all model objects, the method stops with an error.}
 }
 \value{
 A matrix of information criteria is returned, with at least two columns containing respectively
@@ -35,9 +36,9 @@ saemix.data<-saemixData(name.data=theo.saemix,header=TRUE,sep=" ",na=NA,
   units=list(x="hr",y="mg/L",covariates=c("kg","-")), name.X="Time")
 
 # Definition of models to be compared
-model1cpt<-function(psi,id,xidep) { 
+model1cpt<-function(psi,id,xidep) {
    dose<-xidep[,1]
-   tim<-xidep[,2]  
+   tim<-xidep[,2]
    ka<-psi[id,1]
    V<-psi[id,2]
    CL<-psi[id,3]
@@ -46,22 +47,22 @@ model1cpt<-function(psi,id,xidep) {
    return(ypred)
 }
 # Model with one covariate
-saemix.model1<-saemixModel(model=model1cpt,modeltype="structural", 
-                          description="One-compartment model with first-order absorption",
-                          psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))), 
-                          transform.par=c(1,1,1),covariate.model=matrix(c(0,0,1,0,0,0),ncol=3,byrow=TRUE))
-# Model with two covariates       
-saemix.model2<-saemixModel(model=model1cpt,modeltype="structural", 
-                           description="One-compartment model with first-order absorption", 
-                           psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))), 
-                           transform.par=c(1,1,1),covariate.model=matrix(c(0,0,1,0,1,0),ncol=3,byrow=TRUE))
+saemix.model1<-saemixModel(model=model1cpt,modeltype="structural",
+  description="One-compartment model, clearance dependent on weight",
+  psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))),
+  transform.par=c(1,1,1),covariate.model=matrix(c(0,0,1,0,0,0),ncol=3,byrow=TRUE))
+# Model with two covariates
+saemix.model2<-saemixModel(model=model1cpt,modeltype="structural",
+   description="One-compartment model, clearance dependent on weight and volume dependent on sex",
+   psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))),
+   transform.par=c(1,1,1),covariate.model=matrix(c(0,0,1,0,1,0),ncol=3,byrow=TRUE))
 # Model with three covariates
-saemix.model3<-saemixModel(model=model1cpt,modeltype="structural", 
-                           description="One-compartment model with first-order absorption", 
-                           psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))), 
-                           transform.par=c(1,1,1),covariate.model=matrix(c(1,0,1,0,1,0),ncol=3,byrow=TRUE))
+saemix.model3<-saemixModel(model=model1cpt,modeltype="structural",
+  description="One-compartment model, clearance and absorption dependent on weight, volume dependent on sex",
+  psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))),
+  transform.par=c(1,1,1),covariate.model=matrix(c(1,0,1,0,1,0),ncol=3,byrow=TRUE))
 
-# Running the main algorithm to estimate the population parameters                                                     
+# Running the main algorithm to estimate the population parameters
 saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE)
 saemix.fit1<-saemix(saemix.model1,saemix.data,saemix.options)
 saemix.fit2<-saemix(saemix.model2,saemix.data,saemix.options)
@@ -69,7 +70,9 @@ saemix.fit3<-saemix(saemix.model3,saemix.data,saemix.options)
 
 # Model comparison
 
-comparison.res <- compare.saemix(list(saemix.fit1, saemix.fit2,saemix.fit3))
+compare.saemix(saemix.fit1, saemix.fit2, saemix.fit3)
+compare.saemix(saemix.fit1, saemix.fit2, saemix.fit3, method = "lin")
+compare.saemix(saemix.fit1, saemix.fit2, saemix.fit3, method = "gq")
 
 }
 \references{
