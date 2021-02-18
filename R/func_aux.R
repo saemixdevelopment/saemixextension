@@ -240,7 +240,7 @@ error<-function(f,ab,etype) { # etype: error model
   return(g)
 }
 error.typ<-function(f,ab) {
-  g<-cutoff(ab[1]+ab[2]*abs(f))
+  g<-cutoff(sqrt(ab[1]^2+ab[2]^2*f^2))
   return(g)
 }
 
