@@ -1536,12 +1536,22 @@ createSaemixObject.initial<-function(model,data,control=list()) {
   Uargs<-xinit$Uargs
   varList<-xinit$varList
   
-  xres1<-new(Class="SaemixRes",modeltype="structural",status="initial",
-             name.fixed=saemix.model["name.fixed"], name.random=saemix.model["name.random"],name.sigma=saemix.model["name.sigma"],
-             fixed.effects=saemix.model@psi0[saemix.model@betaest.model==1],
-             fixed.psi=xinit$fixedpsi.ini,
-             betaC=xinit$betas[xinit$Uargs$indx.betaC],betas=xinit$betas,
-             omega=varList$omega,respar=varList$pres,MCOV=varList$MCOV)
+  if(saemix.model["modeltype"]=="structural"){
+    xres1<-new(Class="SaemixRes",modeltype="structural",status="initial",
+           name.fixed=saemix.model["name.fixed"], name.random=saemix.model["name.random"],name.sigma=saemix.model["name.sigma"],
+           fixed.effects=saemix.model@psi0[saemix.model@betaest.model==1],
+           fixed.psi=xinit$fixedpsi.ini,
+           betaC=xinit$betas[xinit$Uargs$indx.betaC],betas=xinit$betas,
+           omega=varList$omega,respar=varList$pres,MCOV=varList$MCOV)
+  } else{
+    xres1<-new(Class="SaemixRes",modeltype=saemix.model["modeltype"],status="initial",
+           name.fixed=saemix.model["name.fixed"], name.random=saemix.model["name.random"],name.sigma=saemix.model["name.sigma"],
+           fixed.effects=saemix.model@psi0[saemix.model@betaest.model==1],
+           fixed.psi=xinit$fixedpsi.ini,
+           betaC=xinit$betas[xinit$Uargs$indx.betaC],betas=xinit$betas,
+           omega=varList$omega,MCOV=varList$MCOV)
+  }
+
   xres1@indx.cov<-saemix.model@indx.cov
   xres1@indx.res<-saemix.model@indx.res
   xres1@indx.fix<-saemix.model@indx.fix
