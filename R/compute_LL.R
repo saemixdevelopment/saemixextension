@@ -250,8 +250,8 @@ llgq.saemix<-function(saemixObject) {
 	cond.var.phi<-saemix.res["cond.var.phi"]
 	cond.mean.phi<-saemix.res["cond.mean.phi"]
 	nphi1<-length(i1.omega2)
-	IOmega.phi1<-solve(Omega[i1.omega2,i1.omega2])
-	mean.phi1<-saemix.res["mean.phi"][,i1.omega2]
+	IOmega.phi1<-solve(Omega[i1.omega2,i1.omega2,drop=FALSE])
+	mean.phi1<-saemix.res["mean.phi"][,i1.omega2,drop=FALSE]
 	
 	io<-matrix(0,nrow=saemix.data["N"],ncol=max(saemix.data["nind.obs"]))
 	for(isuj in 1:saemix.data["N"])
@@ -265,9 +265,9 @@ llgq.saemix<-function(saemixObject) {
 	w<-(y$weights)*(2**nphi1)
 	# ECO TODO check dimensions (unclear in matlab)
 	nx<-dim(x)[1]
-	condsd.eta<-sqrt(cond.var.phi[,i1.omega2])
-	xmin<-cond.mean.phi[,i1.omega2]-nsd.gq*condsd.eta
-	xmax<-cond.mean.phi[,i1.omega2]+nsd.gq*condsd.eta
+	condsd.eta<-sqrt(cond.var.phi[,i1.omega2,drop=FALSE])
+	xmin<-cond.mean.phi[,i1.omega2,drop=FALSE]-nsd.gq*condsd.eta
+	xmax<-cond.mean.phi[,i1.omega2,drop=FALSE]+nsd.gq*condsd.eta
 	a<-(xmin+xmax)/2
 	b<-(xmax-xmin)/2
 	log.const<-0
@@ -291,13 +291,13 @@ llgq.saemix<-function(saemixObject) {
 			DYF[ind.io] <- f
 			ly<-colSums(DYF)
 		}
-		dphi1<-phi[,i1.omega2]-saemix.res["mean.phi"][,i1.omega2]
+		dphi1<-phi[,i1.omega2,drop=FALSE]-saemix.res["mean.phi"][,i1.omega2,drop=FALSE]
 		lphi1<-(-0.5)*rowSums((dphi1%*%IOmega.phi1)*dphi1)
 		ltot<-ly+lphi1
 		ltot[is.na(ltot)]<-(-Inf)
 		Q<-Q+w[j]*exp(ltot)
 	}
-	S<-saemix.data["N"]*log(det(Omega[i1.omega2,i1.omega2]))+ saemix.data["N"]*nphi1*log(2*pi)+ saemix.data["ntot.obs"]*log(2*pi)
+	S<-saemix.data["N"]*log(det(Omega[i1.omega2,i1.omega2, drop=FALSE]))+ saemix.data["N"]*nphi1*log(2*pi)+ saemix.data["ntot.obs"]*log(2*pi)
 	ll<-(-S/2) + sum(log(Q)+rowSums(log(b)))+ log.const
 	saemixObject["results"]["ll.gq"]<-ll
 	saemixObject["results"]["aic.gq"]<-(-2)*saemixObject["results"]["ll.gq"]+ 2*saemixObject["results"]["npar.est"]

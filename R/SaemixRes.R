@@ -523,11 +523,13 @@ setMethod("print","SaemixRes",
       tab<-cbind(tab,100*as.double(tab[,3])/as.double(tab[,2]))
       nampar<-unlist(strsplit(x@name.random,"omega2."))
       nampar<-nampar[nampar!=""]
-      for(i in 1:(length(nampar)-1)) {
-        for(j in (i+1):length(nampar)) {
-          if(x@omega[i,j]!=0) {
-            covar<-c(paste("cov",nampar[i],nampar[j],sep="."),x@omega[i,j],x@se.cov[i,j],x@se.cov[i,j]/x@omega[i,j]*100)
-            tab<-rbind(tab,covar)
+      if(length(nampar)>1) { # covariances only if more than one random effect in the model
+        for(i in 1:(length(nampar)-1)) {
+          for(j in (i+1):length(nampar)) {
+            if(x@omega[i,j]!=0) {
+              covar<-c(paste("cov",nampar[i],nampar[j],sep="."),x@omega[i,j],x@se.cov[i,j],x@se.cov[i,j]/x@omega[i,j]*100)
+              tab<-rbind(tab,covar)
+            }
           }
         }
       }
@@ -654,11 +656,13 @@ setMethod("show","SaemixRes",
       tab<-cbind(tab,100*as.double(tab[,3])/as.double(tab[,2]))
       nampar<-unlist(strsplit(object@name.random,"omega2."))
       nampar<-nampar[nampar!=""]
-      for(i in 1:(length(nampar)-1)) {
-        for(j in (i+1):length(nampar)) {
-          if(object@omega[i,j]!=0) {
-            covar<-c(paste("cov",nampar[i],nampar[j],sep="."),object@omega[i,j],object@se.cov[i,j],object@se.cov[i,j]/object@omega[i,j]*100)
-            tab<-rbind(tab,covar)
+      if(length(nampar)>1) { # covariances only if more than one random effect in the model
+        for(i in 1:(length(nampar)-1)) {
+          for(j in (i+1):length(nampar)) {
+            if(object@omega[i,j]!=0) {
+              covar<-c(paste("cov",nampar[i],nampar[j],sep="."),object@omega[i,j],object@se.cov[i,j],object@se.cov[i,j]/object@omega[i,j]*100)
+              tab<-rbind(tab,covar)
+            }
           }
         }
       }
@@ -743,16 +747,17 @@ setMethod("showall","SaemixRes",
             tab<-cbind(tab,100*abs(as.double(tab[,3])/as.double(tab[,2])))
             nampar<-unlist(strsplit(object@name.random,"omega2."))
             nampar<-nampar[nampar!=""]
-            for(i in 1:(length(nampar)-1)) {
-              for(j in (i+1):length(nampar)) {
-                if(object@omega[i,j]!=0) {
-                  covar<-c(paste("cov",nampar[i],nampar[j],sep="."),object@omega[i,j],object@se.cov[i,j],object@se.cov[i,j]/object@omega[i,j]*100)
-                  tab<-rbind(tab,covar)
+            if(length(nampar)>1) { # covariances only if more than one random effect in the model
+              for(i in 1:(length(nampar)-1)) {
+                for(j in (i+1):length(nampar)) {
+                  if(object@omega[i,j]!=0) {
+                    covar<-c(paste("cov",nampar[i],nampar[j],sep="."),object@omega[i,j],object@se.cov[i,j],object@se.cov[i,j]/object@omega[i,j]*100)
+                    tab<-rbind(tab,covar)
+                  }
                 }
               }
             }
-            
-        }else{
+        } else{
             tab<-cbind(c(object@name.fixed), c(object@fixed.effects),c(object@se.fixed))
             tab<-cbind(tab,100*abs(as.double(tab[,2])/as.double(tab[,1])))
         }

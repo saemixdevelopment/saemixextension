@@ -159,8 +159,6 @@ conddist.saemix<-function(saemixObject,nsamp=1,max.iter=NULL,...) {
   omega.eta<-omega.eta-mydiag(mydiag(saemixObject["results"]["omega"][ind.eta, ind.eta]))+mydiag(domega)
   chol.omega<-chol(omega.eta)
   pres<-saemixObject["results"]["respar"]
-  
-  Dargs<-list(transform.par=saemixObject["model"]["transform.par"], structural.model=saemixObject["model"]["model"],IdM=IdM,XM=XM,yM=yM,etype.exp=which(saemixObject["model"]["error.model"] == "exponential"), modeltype=saemixObject["model"]["modeltype"])
   args<-list(ind.ioM=ind.ioM)
   
   # # Preparing plots
@@ -190,6 +188,7 @@ conddist.saemix<-function(saemixObject,nsamp=1,max.iter=NULL,...) {
   phiM<-do.call(rbind,rep(list(saemixObject["results"]["cond.mean.phi"]),nsamp))
   etaM<-phiM[,ind.eta]-mean.phiM[,ind.eta]  
   Dargs<-list(transform.par=saemixObject["model"]["transform.par"], structural.model=saemixObject["model"]["model"],IdM=IdM,XM=XM,yM=yM,etype.exp=which(saemixObject["model"]["error.model"] == "exponential"), modeltype=saemixObject["model"]["modeltype"])
+  
   Uargs<-list(ind.ioM=ind.ioM)
   somega<-solve(omega.eta)
   
