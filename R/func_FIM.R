@@ -125,7 +125,7 @@ fim.saemix<-function(saemixObject) {
   f0<-F[,1,1]
   # g0<-cutoff(saemix.res["respar"][1]+saemix.res["respar"][2]*abs(f0))
   if (saemixObject["model"]["modeltype"]=="structural"){
-    g0<-error(f0,saemix.res@respar,saemix.data["data"]["ytype"]) 
+    g0<-error(f0,saemix.res@respar,saemix.data["data"][["ytype"]]) 
   }
   #  DF<-(F[,,3]-F[,,2])/matrix(rep(dphi,each=saemix.data["ntot.obs"]), ncol=length(dphi))/2 
   DF<-(F[,,3]-F[,,1])/matrix(rep(dphi,each=saemix.data["ntot.obs"]), ncol=length(dphi)) #gradient of f (changed from F[,,2] to F[,,1])
