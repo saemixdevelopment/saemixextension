@@ -200,7 +200,7 @@ initialiseMainAlgo<-function(saemix.data,saemix.model,saemix.options) {
 	kt<-0
 	omega<-saemix.model["omega.init"]
 	chol.omega<-try(chol(omega[ind.eta,ind.eta]),silent=TRUE)
-	if(class(chol.omega)=="try-error") {
+	if(inherits(chol.omega,"try-error")) {
 		#	cat("ind.eta=",ind.eta,"\n")
 		#	print(saemix.model["omega.init"])
 		#	print(omega[ind.eta,ind.eta])

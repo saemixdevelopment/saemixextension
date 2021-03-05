@@ -304,23 +304,23 @@ cond.mean.eta<-t(apply(cond.mean.eta,c(1,2),mean))
 # Compute the MAP estimates of the PSI_i's 
   if(saemix.options$map) {
     x<-try(saemixObject<-map.saemix(saemixObject))
-    if(class(x)=="try-error" & saemixObject@options$warnings) cat("Problem estimating the MAP parameters\n")
+    if(inherits(x,"try-error") & saemixObject@options$warnings) cat("Problem estimating the MAP parameters\n")
   }
 
 # Compute the Fisher Information Matrix & update saemix.res
   if(saemix.options$fim) {
     x<-try(saemixObject<-fim.saemix(saemixObject))
-    if(class(x)=="try-error" & saemixObject@options$warnings) cat("Problem estimating the FIM\n")
+    if(inherits(x,"try-error") & saemixObject@options$warnings) cat("Problem estimating the FIM\n")
   }
   
 # Estimate the log-likelihood via importance Sampling/Gaussian quadrature
   if(saemix.options$ll.is) {
     x<-try(saemixObject<-llis.saemix(saemixObject))
-    if(class(x)=="try-error" & saemixObject@options$warnings) cat("Problem estimating the likelihood by IS\n")
+    if(inherits(x,"try-error") & saemixObject@options$warnings) cat("Problem estimating the likelihood by IS\n")
   }
   if(saemix.options$ll.gq) {
     x<-try(saemixObject<-llgq.saemix(saemixObject))
-    if(class(x)=="try-error" & saemixObject@options$warnings) cat("Problem estimating the likelihood by GQ\n")
+    if(inherits(x,"try-error") & saemixObject@options$warnings) cat("Problem estimating the likelihood by GQ\n")
   }
   
 #### Pretty printing the results (TODO finish in particular cov2cor)
@@ -351,7 +351,7 @@ cond.mean.eta<-t(apply(cond.mean.eta,c(1,2),mean))
   if(saemix.options$save) {
     namres<-ifelse(saemix.options$directory=="","pop_parameters.txt", file.path(saemix.options$directory,"pop_parameters.txt"))
     xtry<-try(sink(namres))
-    if(class(xtry)!="try-error") {
+    if(!inherits(xtry,"try-error")) {
     print(saemixObject)
     sink()
     namres<-ifelse(saemix.options$directory=="","indiv_parameters.txt", file.path(saemix.options$directory,"indiv_parameters.txt"))
@@ -370,7 +370,7 @@ cond.mean.eta<-t(apply(cond.mean.eta,c(1,2),mean))
     if(saemix.options$directory=="") namgr<-"diagnostic_graphs.ps" else
       namgr<-file.path(saemix.options$directory,"diagnostic_graphs.ps")
     xtry<-try(postscript(namgr,horizontal=TRUE))
-    if(class(xtry)!="try-error") {
+    if(!inherits(xtry,"try-error")) {
     par(mfrow=c(1,1))
     try(plot(saemixObject,plot.type="data"))
 
