@@ -184,14 +184,14 @@ setMethod(
     npar<-dim(psi0)[2]
     if(missing(name.modpar) || length(name.modpar)==0) {
       y1<-try(name.modpar<-colnames(psi0))
-      if(class(y1)=="try-error") {
+      if(inherits(y1,"try-error")) {
         if(verbose) message("     Can't find parameter names.\n")
         name.modpar<-paste("theta",1:npar)
       }
     }
     if(is.null(colnames(psi0))) {
       y1<-try(colnames(psi0)<-name.modpar)
-      if(class(y1)=="try-error") {
+      if(inherits(y1,"try-error")) {
         if(verbose) message("Warning:\n   Problem with names of psi0\n")
         colnames(psi0)<-name.modpar<-paste("theta",1:npar)
       }
@@ -755,7 +755,7 @@ saemixModel<-function(model,psi0,description="",modeltype ="structural", name.re
     return("Creation of SaemixModel failed")  
   }
   xcal<-try(typeof(model))
-  if(class(xcal)=="try-error") {
+  if(inherits(xcal,"try-error")) {
     if(verbose) cat("Error in saemixModel:\n   the model function does not exist.\n")
     return("Creation of SaemixModel failed")  
   }
@@ -788,7 +788,7 @@ saemixModel<-function(model,psi0,description="",modeltype ="structural", name.re
   }
   xmod<-try(new(Class="SaemixModel",model=model,description=description , modeltype=modeltype,psi0=psi0, name.response=name.response, name.sigma=name.sigma, error.model=error.model, transform.par=transform.par,fixed.estim=fixed.estim, covariate.model=covariate.model,covariance.model=covariance.model, omega.init=omega.init,error.init=error.init,name.modpar=name.modpar))
   if(class(xmod)=="SaemixModel") x1<-try(validObject(xmod),silent=FALSE) else x1<-xmod
-  if(class(x1)!="try-error") {
+  if(!inherits(x1,"try-error")) {
     if(verbose) cat("\n\nThe following SaemixModel object was successfully created:\n\n")
     } else xmod<-"Creation of SaemixModel failed"
   if(verbose) print(xmod)
