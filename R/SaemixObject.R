@@ -771,9 +771,9 @@ saemix.predict<-function(object) {
   # Individual weighted residuals
   pres<-saemix.res["respar"]
   gpred<-error(ipred,pres,xind$ytype)
-  iwres<-(ipred-yobs)/gpred
+  iwres<-(yobs-ipred)/gpred
   gpred<-error(icond.pred,pres,xind$ytype)
-  icwres<-(icond.pred-yobs)/gpred
+  icwres<-(yobs-icond.pred)/gpred
   saemix.res["iwres"]<-iwres
   saemix.res["icwres"]<-icwres
   # Population predictions using the population parameters [ f(mu) ]
