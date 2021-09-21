@@ -92,9 +92,6 @@ map.saemix<-function(saemixObject) {
   }
   if(saemixObject['options']$warnings)cat("\n")
   map.psi<-transphi(phi.map,saemixObject["model"]["transform.par"])
-  # map.psi<-data.frame(id=id.list,map.psi)
-  # map.phi<-data.frame(id=id.list,phi.map)
-#  colnames(map.psi)<-c(saemixObject["data"]["name.group"], saemixObject["model"]["name.modpar"])
   map.psi<-data.frame(map.psi)
   map.phi<-data.frame(phi.map)
   colnames(map.psi)<-c(saemixObject["model"]["name.modpar"])
@@ -109,7 +106,7 @@ compute.eta.map<-function(saemixObject) {
   if(length(saemixObject["results"]["map.psi"])) {
       saemixObject<-map.saemix(saemixObject)
   }
-  psi<-saemixObject["results"]["map.psi"]
+  psi<-saemixObject["results"]["map.psi"][,-c(1)]
   phi<-transpsi(as.matrix(psi),saemixObject["model"]["transform.par"])
 
 # Computing COV again here (no need to include it in results)  
@@ -124,13 +121,14 @@ compute.eta.map<-function(saemixObject) {
   shrinkage<-100*(1-apply(eta,2,var)/mydiag(saemixObject["results"]["omega"]))
   names(shrinkage)<-paste("Sh.",names(shrinkage),".%",sep="")
   colnames(eta)<-paste("ETA(",colnames(eta),")",sep="")
-#  eta<-cbind(id=saemixObject["results"]["map.psi"][,1],eta)
-
+  eta<-cbind(id=saemixObject["results"]["map.psi"][,1],eta)
+  
   saemixObject["results"]["map.eta"]<-eta
   saemixObject["results"]["map.shrinkage"]<-shrinkage
   
   return(saemixObject)
 }
+
 
 #######################	Residuals - WRES and npde ########################
 
@@ -364,9 +362,14 @@ conditional.distribution_c<-function(phi1,phii,idi,xi,yi,mphi,idx,iomega,trpar,m
   psii<-transphi(matrix(phii,nrow=1),trpar)
   if(is.null(dim(psii))) psii<-matrix(psii,nrow=1)
   fi<-model(psii,idi,xi)
-  ind.exp<-which(err=="exponential")
-  for(ityp in ind.exp) fi[xi$ytype==ityp]<-log(cutoff(fi[xi$ytype==ityp]))
-  gi<-error(fi,pres,xi$ytype)      #    cutoff((pres[1]+pres[2]*abs(fi)))
+  if(err=="exponential")
+    fi<-log(cutoff(fi))
+  if (!(is.null(pres)) && pres[1] == pres) {
+    gi <- cutoff(pres[1])
+  } 
+  else{
+    gi<-error(fi,pres) #    cutoff((pres[1]+pres[2]*abs(fi)))
+  }
   Uy<-sum(0.5*((yi-fi)/gi)**2+log(gi))
   dphi<-phi1-mphi
   Uphi<-0.5*sum(dphi*(dphi%*%iomega))
