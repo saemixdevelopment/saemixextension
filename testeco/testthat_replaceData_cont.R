@@ -22,7 +22,7 @@ test_that("Newdata object with the same structure as the original data - 1 covar
 })
 
 test_that("Newdata object with the same structure as the original data - 2 covariates", {
-  saemixObject<-theo.fit2
+  saemixObject<-theo.fit3
   xtim<-seq(0,24,2)
   nsuj<-5
   xwei<-seq(50,90,length.out = nsuj)
@@ -70,7 +70,7 @@ test_that("Newdata object without predictors", {
 context("Testing replacement objects with missing items\n")
 
 test_that("Newdata object without a response", {
-  saemixObject<-theo.fit2
+  saemixObject<-theo.fit3
   xtim<-seq(0,24,2)
   nsuj<-5
   xwei<-seq(50,90,length.out = nsuj)
@@ -86,7 +86,7 @@ test_that("Newdata object without a response", {
 })
 
 test_that("Newdata object without Weight", {
-  saemixObject<-theo.fit2
+  saemixObject<-theo.fit3
   xtim<-seq(0,24,2)
   nsuj<-5
   xwei<-seq(50,90,length.out = nsuj)
@@ -104,7 +104,7 @@ test_that("Newdata object without Weight", {
 })
 
 test_that("Newdata object without covariates or response", {
-  saemixObject<-theo.fit2
+  saemixObject<-theo.fit3
   xtim<-seq(0,24,2)
   nsuj<-5
   xwei<-seq(50,90,length.out = nsuj)

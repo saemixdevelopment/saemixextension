@@ -1,3 +1,14 @@
+context("Testing saemixData \n")
+
+test_that("Using saemixData with dataframe", {
+  theo.saemix<-read.table(file.path(datDir,"theo.saemix.tab"),header=T,na=".")
+  expect_error(x<-saemixData(name.data=theo.saemix,header=TRUE,sep=" ",na=NA, name.group=c("Id"),name.predictors=c("Dose","Time"),name.response=c("Concentration"),name.covariates=c("Weight","Sex"),units=list(x="hr",y="mg/L", covariates=c("kg","-")), name.X="Time"))
+})
+
+test_that("Using saemixData with file on disk", {
+  x<-try(saemixData(name.data=file.path(datDir,"PD1.saemix.tab"),header=T,na=".", name.group="subject",name.predictors="dose",name.response="response", name.covariates="gender",units=list(x="mg",y="-",covariates="-"),verbose=TRUE))
+})
+
 context("Environment issue")
 
 test_that("Environment problem with saemixData... looks for a dataframe in the global environment", {
@@ -26,6 +37,7 @@ test_that("Empty SaemixData object, valid because automatic recognition sets nam
   expect_equal(x@name.response,'3')
   expect_true(validObject(x))
 })
+
 
 context("Testing creation of SaemixSimxData and SaemixRepData object\n")
 

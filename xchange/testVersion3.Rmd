@@ -1,0 +1,93 @@
+---
+title: "Test saemix 3.0"
+author: "Emmanuelle"
+date: "05/10/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+# Setup
+
+- set up work directories
+- two versions toggled by testMode
+  - if testMode is FALSE, load the functions in R
+  - if testMode is TRUE, load the library in a dev_mode environment
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# Directories
+saemixDir<-"/home/eco/work/saemix/saemixextension"
+progDir<-file.path(saemixDir,"R")
+datDir<-file.path(saemixDir,"data")
+ecoDir<-file.path(saemixDir,"testeco")
+belDir<-file.path(saemixDir,"testbelhal")
+
+# Libraries
+library(ggplot2)
+library(MASS)
+
+testMode<-FALSE
+
+```
+
+# Testing library
+
+```{r testLibrary, include=FALSE}
+# Sourcing saemix functions
+if(!testMode) {
+  source(file.path(progDir,"aaa_generics.R"))
+  #source(file.path(progDir,"global.R"))
+  source(file.path(progDir,"SaemixData.R"))
+  source(file.path(progDir,"SaemixRes.R"))
+  source(file.path(progDir,"SaemixModel.R"))
+  source(file.path(progDir,"SaemixObject.R"))
+  source(file.path(progDir,"main.R"))
+  source(file.path(progDir,"func_aux.R"))
+  source(file.path(progDir,"main_initialiseMainAlgo.R"))
+  source(file.path(progDir,"main_estep.R"))
+  source(file.path(progDir,"main_mstep.R"))
+  source(file.path(progDir,"func_FIM.R"))
+  source(file.path(progDir,"func_plots.R"))
+  source(file.path(progDir,"func_distcond.R"))
+  source(file.path(progDir,"func_simulations.R"))
+  source(file.path(progDir,"compute_LL.R"))
+  source(file.path(progDir,"func_estimParam.R"))
+}
+# Loading library
+if(testMode) {
+  dev_mode()
+  install.packages("saemix3.0.tar.gz",repos=NULL)
+  library(saemix)
+}
+```
+
+## Housekeeping and help functions
+
+```{r}
+cat("Check load message for date and author to contact \n")
+
+# Library
+if(testmode) {
+  ?saemix
+}
+  
+```
+
+
+## Continuous response model
+
+## Binary response model
+
+## Categorical response model
+
+## Count data model
+
+## TTE model
+
+## Exiting dev mode
+
+```{r testLibraryEnd, include=FALSE}
+if(testMode) 
+  dev_mode()
+```

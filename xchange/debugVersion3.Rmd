@@ -1,0 +1,585 @@
+---
+title: "Test individual functions in saemix 3.0"
+author: "Emmanuelle"
+date: "05/10/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+# Setup
+
+- set up work directories
+- two versions toggled by testMode
+  - if testMode is FALSE, load the functions in R
+  - if testMode is TRUE, use testthat functions
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# Directories
+saemixDir<-"/home/eco/work/saemix/saemixextension"
+progDir<-file.path(saemixDir,"R")
+datDir<-file.path(saemixDir,"data")
+ecoDir<-file.path(saemixDir,"testeco")
+belDir<-file.path(saemixDir,"testbelhal")
+
+# Libraries
+library(ggplot2)
+library(MASS)
+
+testMode<-FALSE
+
+```
+
+```{r sourceSaemixFunctions, include=FALSE}
+# Sourcing saemix functions
+if(!testMode) {
+  source(file.path(progDir,"aaa_generics.R"))
+  #source(file.path(progDir,"global.R"))
+  source(file.path(progDir,"SaemixData.R"))
+  source(file.path(progDir,"SaemixRes.R"))
+  source(file.path(progDir,"SaemixModel.R"))
+  source(file.path(progDir,"SaemixObject.R"))
+  source(file.path(progDir,"main.R"))
+  source(file.path(progDir,"func_aux.R"))
+  source(file.path(progDir,"main_initialiseMainAlgo.R"))
+  source(file.path(progDir,"main_estep.R"))
+  source(file.path(progDir,"main_mstep.R"))
+  source(file.path(progDir,"func_FIM.R"))
+  source(file.path(progDir,"func_plots.R"))
+  source(file.path(progDir,"func_distcond.R"))
+  source(file.path(progDir,"func_simulations.R"))
+  source(file.path(progDir,"compute_LL.R"))
+  source(file.path(progDir,"func_estimParam.R"))
+}
+```
+
+## notes from Belhal (notes.txt in testbelhal)
+
+1) for ORD data model, the response is a predictor. Test with new data without individual observations is non applicable.
+
+2) For ORD data: problem in estimating parameters with new data (map and pop params) NEED TO DEBUG. Could be in map.saemix???
+
+3) COUNT data model: WHEN ONLY ONE PARAM TO ESTIMATE (fixed.estim=c(1,0)) OBTAIN: 
+
+ Error in cbind(blocA, t(blocC)) : 
+le nombre de lignes des matrices doit correspondre (voir argument 2)
+
+
+
+# Classes
+
+## Data: SaemixData object
+
+- testthat functions 
+  - **TODO** fix problems with testthat (probably call with helper functions)
+  - normally should run through automatedTests_eco.R but doesn't work => look at how to set up automated testthat files
+- testthat for classes
+  - testeco/testthat_saemixData-class.R: works interactively (running tests one by one)
+  - testbelhal/testthat_saemixData-class.R: works interactively
+- testthat for read function (?)
+  - testeco/testthat_saemixData-read.R: works interactively (running tests one by one)
+  - testbelhal/testthat_saemixData-read.R: works interactively
+     - removed the parts concerning continuous models
+- summary function in testthat_summary.R works
+
+- code below is the interactive version of testthat for data classes
+
+- **TODO** test and check
+  - update testeco/testthat_saemixData-covariates.R 
+  - update testeco/testthat_replaceData-cont.R (tested, works, but needs for theo.fit3 or theo.fit2 to be created before)
+
+- **TODO**
+  - silence the warnings "NA introduits"
+  - problem reading binary data "Column name(s)  do(es) not exist in the dataset, please check" (doesn't appear for TTE data)
+
+```{r saemixDataClass, messages=FALSE}
+# SaemixData class
+## From data on disk
+namtest<-"Creating SaemixData object from file on disk\n"
+cat(namtest)
+x<-try(saemixData(name.data=file.path(datDir,"theo.saemix.tab"),header=TRUE,sep=" ",na=NA, name.group=c("Id"),name.predictors=c("Dose","Time"),name.response=c("Concentration"),name.covariates=c("Weight","Sex"),units=list(x="hr",y="mg/L", covariates=c("kg","-")), name.X="Time"))
+if(is(x, "try-error")) cat("Problem in",namtest)
+
+## From data as a dataframe in the environment
+namtest<-"Creating SaemixData object from dataframe\n"
+cat(namtest)
+theo.saemix<-read.table(file.path(datDir,"theo.saemix.tab"),header=T,na=".")
+x<-try(saemixData(name.data=theo.saemix,header=TRUE,sep=" ",na=NA, name.group=c("Id"),name.predictors=c("Dose","Time"),name.response=c("Concentration"),name.covariates=c("Weight","Sex"),units=list(x="hr",y="mg/L", covariates=c("kg","-")), name.X="Time"))
+if(is(x, "try-error")) cat("Problem in",namtest)
+
+# SaemixRepData class
+namtest<-"Creating SaemixRepData object\n"
+cat(namtest)
+xrep<-new(Class="SaemixRepData",data=x)
+print(xrep)
+if(is(x, "try-error")) cat("Problem in",namtest)
+  
+# SaemixSimData class
+namtest<-"Creating SaemixSimData object\n"
+cat(namtest)
+xrep<-new(Class="SaemixSimData",data=x)
+print(xrep)
+if(is(x, "try-error")) cat("Problem in",namtest)
+  
+```
+
+## Model: SaemixModel object
+
+Testing simple models
+
+- Changes made
+  - define modelType at the beginning of initialize to allow empty objects to be printed out
+  - added a test for empty models in print to print out an appropriate message
+- summary function in testthat_summary.R works
+- **TODO**
+  - print function for empty models returns NULL, would rather it returned nothing
+  - check if function to validate covariance model works
+    - change name for consistency (no underscore)
+
+```{r SaemixModelClass, warnings=FALSE}
+# Empty model
+namtest<-"Creating empty SaemixModel object\n"
+cat(namtest)
+xmod<-new(Class="SaemixModel")
+print(xmod)
+if(is(xmod, "try-error")) cat("Problem in",namtest)
+
+# Minimal model
+namtest<-"Creating minimal SaemixModel object\n"
+cat(namtest)
+  model1cpt<-function(psi,id,xidep) { 
+    dose<-xidep[,1]
+    tim<-xidep[,2]  
+    ka<-psi[id,1]
+    V<-psi[id,2]
+    CL<-psi[id,3]
+    k<-CL/V
+    ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
+    return(ypred)
+  }
+xmod<-saemixModel(model=model1cpt, psi0=matrix(c(1.,20,0.5), ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))), modeltype="structural")
+if(is(xmod, "try-error")) cat("Problem in",namtest)
+
+# Model with all elements
+namtest<-"Creating full SaemixModel object\n"
+cat(namtest)
+xmod<-saemixModel(model=model1cpt,description="One-compartment model with first-order absorption", psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))), transform.par=c(1,1,1), covariate.model=matrix(c(0,0,1,0,0,0),ncol=3,byrow=TRUE), fixed.estim=c(1,1,1), covariance.model=matrix(c(1,0,0,0,1,1,0,1,1),ncol=3,byrow=TRUE), omega.init=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE), error.model="combined",error.init=c(1,0.5))
+if(is(xmod, "try-error")) cat("Problem in",namtest)
+
+```
+
+## Results: SaemixRes object
+
+- created testthat (short)
+- added a test to vcov to handle empty objects
+  - print, fitted, etc work as expected
+  - added some messages for empty objects or not available types
+- **TODO**
+  - resid() or fitted() don't work, I need to use resid.SaemixRes, but I should be able to dispatch based on argument type like vcov
+
+```{r SaemixResClass, warnings=FALSE}
+xres<-new(Class="SaemixRes")
+print(xres)
+
+resid.SaemixRes(xres)
+fitted.SaemixRes(xres)
+vcov(xres)
+
+```
+
+## Fitted object: SaemixObject object
+
+- class
+
+- summary function
+  - tests in **testthat_summary.R** currently failed (list size has increased, probably becuase of the changes to the statistical criterion) **TODO**
+
+```{r SaemixObjectClass, warnings=FALSE}
+# Control options
+xopt<-saemixControl()
+cat("K1=",xopt$nbiter.saemix," nb.SA=",xopt$nbiter.sa,"\n")
+
+# Empty object
+smx.data<-saemixData(name.data=file.path(datDir,"theo.saemix.tab"),header=T,na=".", name.group=c("Id"),name.predictors=c("Dose","Time"),name.covariates=c("Weight","Sex"), name.response=c("Concentration"),units=list(x="hr",y="mg/L"), name.X="Time",verbose=F)
+model1cpt<-function(psi,id,xidep) { 
+  dose<-xidep[,1]
+  tim<-xidep[,2]  
+  ka<-psi[id,1]
+  V<-psi[id,2]
+  CL<-psi[id,3]
+  k<-CL/V
+  ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
+  return(ypred)
+}
+smx.model<-saemixModel(model=model1cpt,description="One-compartment model with first-order absorption", psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))), transform.par=c(1,1,1), covariate.model=matrix(c(0,0,1,0,0,0),ncol=3,byrow=TRUE), fixed.estim=c(1,1,1), covariance.model=matrix(c(1,0,0,0,1,1,0,1,1),ncol=3,byrow=TRUE), omega.init=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE), error.model="combined",error.init=c(1,0.5))
+smx.opt<-saemixControl(nb.chains=5,nbiter.saemix = c(500,300), ipar.lmcmc = 100)
+x<-createSaemixObject.empty(smx.model,smx.data,smx.opt)
+print(x)
+
+show(x)
+```
+
+## Auxiliary functions
+
+### error type, error, ssq
+
+- moved to combined 2 error model for residual error ($g^2=a^2 + b^2 f^2$)
+  - **TODO** add to documentation 
+  - added to CHANGES
+- modified testthat_ssq.R to create testthat_ssq_combined2.R
+
+# NLMEM fits
+
+## Continuous response model
+
+### Main fit
+
+- Theophylline data
+
+```{r fitContinuous, warnings=FALSE}
+# Theophylline data, base model
+theo.saemix<-read.table(file.path(datDir,"theo.saemix.tab"),header=T)
+saemix.data<-saemixData(name.data=theo.saemix,header=TRUE,sep=" ",na=NA, 
+                        name.group=c("Id"),name.predictors=c("Dose","Time"),
+                        name.response=c("Concentration"),name.covariates=c("Weight","Sex"),
+                        units=list(x="hr",y="mg/L",covariates=c("kg","-")), name.X="Time", verbose = FALSE)
+
+model1cpt<-function(psi,id,xidep) { 
+  dose<-xidep[,1]
+  tim<-xidep[,2]  
+  ka<-psi[id,1]
+  V<-psi[id,2]
+  CL<-psi[id,3]
+  k<-CL/V
+  ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
+  return(ypred)
+}
+
+# Model with covariate Weight
+saemix.model<-saemixModel(model=model1cpt,modeltype="structural",
+                          description="One-compartment model with first-order absorption",
+                          psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))),
+                          transform.par=c(1,1,1),covariate.model=matrix(c(0,0,1,0,0,0),ncol=3,byrow=TRUE), verbose=FALSE)
+
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
+saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
+
+# Model with 2 covariates and a covariance model
+saemix.model3<-saemixModel(model=model1cpt,modeltype="structural",
+          description="One-compartment model with first-order absorption",
+          psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))),
+          covariance.model=matrix(c(1,0,0,0,1,1,0,1,1),ncol=3,byrow=TRUE),
+          covariate.model=matrix(c(0,0,1,0,1,0),ncol=3,byrow=TRUE),
+          transform.par=c(1,1,1),error.model="proportional")
+
+saemix.options<-list(seed=12345,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
+saemix.fit3<-saemix(saemix.model3,saemix.data,saemix.options)
+
+theo.fit1<-saemix.fit
+theo.fit3<-saemix.fit3
+
+```
+
+### Individual parameters and predictions
+
+- predict function
+  - **TODO** check why we don't have predictions at the end of the fit ? We should have them by default (from MAP at least for individual predictions and for ypred for population predictions)
+
+```{r predictContinuous, warnings=FALSE}
+saemixObject<-theo.fit1
+
+# Conditional distribution
+myfit <- conddist.saemix(saemixObject, nsamp = 100)
+dim(myfit@results@psi.samp)
+
+# Predictions for the observations in the original data
+## Extract predictions - empty for the moment (?)
+vec<-predict(saemixObject)
+vec<-predict(saemixObject, type="ypred")
+
+# Fit then extract predictions
+fit.pred<-saemix.predict(saemixObject)
+predict(fit.pred)
+
+# Predictions for the observations in a new dataset
+## Create a new dataset
+xtim<-seq(0,24,2)
+nsuj<-5
+xwei<-seq(50,90,length.out = nsuj)
+xsex<-rep(c("F","M"),length.out=nsuj)
+xdose<-seq(280,320,length.out=nsuj)
+theo.newdata<-data.frame(Id=rep(1:nsuj,each=length(xtim)),Time=rep(xtim,nsuj),Dose=rep(xdose,each=length(xtim)), Weight=rep(xwei,each=length(xtim)),Sex=rep(xsex,each=length(xtim)))
+
+psiM<-data.frame(ka=seq(1.6,2,0.1),V=seq(34,30),CL=c(2,2.5,2,2.5,2))
+fpred<-saemixObject["model"]["model"](psiM, theo.newdata$Id, theo.newdata[,c("Dose","Time")])
+theo.newdata$Concentration<-fpred+rnorm(length(fpred),sd=0.74)
+theo.psiM<-psiM
+test.newdata<-theo.newdata
+
+## Use predict function
+mylist<-predict.newdata(saemixObject, theo.newdata, type=c("ipred", "ypred", "ppred", "icpred"))
+param<-mylist$param$map.psi
+par(mfrow=c(2,2))
+for(i in 1:3) {
+  plot(theo.psiM[,i],param[,i],main=colnames(psiM)[i],xlab="Simulated",ylab="Estimated")
+  abline(0,1)
+}
+
+apred<-mylist$predictions
+par(mfrow=c(2,2))
+plot(theo.newdata$Concentration,apred$ipred,pch=20,col="Blue", xlab="Observed concentrations", ylab="Predicted individual concentrations")
+points(theo.newdata$Concentration,apred$icpred,pch=20,col="Red", xlab="Observed concentrations", ylab="Predicted individual concentrations")
+abline(0,1)
+legend(0.5,8,pch=20,col=c("Blue","Red"),c("icpred","ipred"))
+
+plot(apred$icpred,apred$ipred,pch=20,col="Black", xlab="Predicted concentrations", ylab="Predicted individual concentrations")
+abline(0,1)
+
+plot(theo.newdata$Concentration,apred$ypred,pch=20,col="Black", xlab="Observed concentrations", ylab="Predicted population concentrations")
+points(theo.newdata$Concentration,apred$ppred,pch=20,col="Red", xlab="Observed concentrations", ylab="Predicted population concentrations")
+abline(0,1)
+legend(0.5,8,pch=20,col=c("Black","Red"),c("ypred","ppred"))
+
+plot(apred$ypred,apred$ppred,pch=20,col="Black")
+abline(0,1)
+
+```
+
+### Plots
+
+- **bug**
+  - individual fit doesn't work (optim(par = phi1, fn = conditional.distribution_c, phii = phii,
+  la fonction ne peut être évaluée aux paramètres initiaux) for theo.fit3 (check why)
+  - covariate plots not working ("The following plot types were not found or are ambiguous: randeff.versus.covariates, parameters.versus.covariates")
+- **TODO**
+  - include new npde plots
+  - include mirror plot
+  - include diagnostic plots with samples from the conditional distribution (next version 3.1 ?)
+
+```{r plotContinuous, warnings=FALSE}
+myfit<-theo.fit1
+# Generic plots
+plot(myfit)
+
+# Individual plots
+plot(myfit, plot.type="data")
+plot(myfit, plot.type="convergence")
+plot(myfit, plot.type="likelihood")
+plot(myfit, plot.type="vpc")
+plot(myfit, plot.type="npde")
+plot(myfit, plot.type="random.effects")
+plot(myfit, plot.type="correlations")
+plot(myfit, plot.type="marginal.distribution")
+try(plot(myfit, plot.type="individual.fit"))
+plot(myfit, plot.type="population.fit")
+try(plot(myfit, plot.type="both.fit"))
+try(plot(myfit, plot.type="observations.vs.predictions"))
+plot(myfit, plot.type="parameters.versus.covariates")
+plot(myfit, plot.type="randeff.versus.covariates")
+
+# Simulations
+mysim<-saemix.simul(myfit)
+
+## Mirror plot
+nmir<-5
+isamp<-sample(1:mysim@sim.data@nsim, nmir, replace=FALSE)
+datsim<-mysim@sim.data@datasim[mysim@sim.data@datasim$irep %in% isamp, ]
+gdat<-cbind(mysim@data@data[,c(mysim@data@name.group, mysim@data@name.X, mysim@data@name.response)], data="Original")
+gdat1<-data.frame(id=datsim[,c("idsim")], x=rep(gdat[,2],nmir),y=datsim[,"ysim"], data=as.character(datsim[,"irep"]))
+colnames(gdat)<-colnames(gdat1)
+gdat<-rbind(gdat, gdat1)
+
+ggplot(gdat, aes(x=x, y=y, group=id)) + geom_line() + facet_wrap(.~data, nrow=2, ncol=3) + theme_bw() + labs(x=paste0(mysim@data@name.X, " (",mysim@data@units$x,")"), y=paste0(mysim@data@name.response, " (",mysim@data@units$y,")"))
+
+```
+
+## Binary response
+
+- **TODO** 
+  - error message "le nombre d'objets à remplacer n'est pas multiple de la taille du remplacement"
+- **BUG**
+  - check prediction function, the results don't seem very good in terms of prediction of the data...
+  - predict function should call predictions if not already there
+
+```{r fitBinary, warnings=FALSE}
+nsuj<-1000
+xtim<-c(0:3)
+parnam<-c("Intercept","beta.time")
+param<-c(0,-0.37)
+omega<-c(.21,.1)
+
+partab<-as.data.frame(matrix(data=0,nrow=nsuj,ncol=2,dimnames=list(NULL,parnam)))
+for(i in 1:2) partab[,i]<-rnorm(nsuj,mean=param[i],sd=omega[i])
+
+psim<-data.frame()
+for(itim in xtim) {
+  logit.sim<-partab[,1]+partab[,2]*itim
+  xtab<-exp(logit.sim)/(1+exp(logit.sim))
+  psim<-rbind(psim,xtab)
+}
+datsim<-data.frame(id=rep(1:nsuj,each=length(xtim)),time=rep(xtim,nsuj),psim=unlist(psim))
+rownames(datsim)<-NULL
+ysim<-rbinom(nsuj*length(xtim),size=1,prob=datsim$psim)
+summary(datsim)
+datsim$y<-ysim
+datsim$risk<-ifelse(datsim$id>500,1,0)
+
+# Running saemix
+saemix.data<-saemixData(name.data=datsim,
+      name.group=c("id"),name.predictors=c("time","y"), name.covariates=c("risk"),name.X=c("time"))
+
+binary.model<-function(psi,id,xidep) {
+  tim<-xidep[,1]
+  y<-xidep[,2]
+  inter<-psi[id,1]
+  slope<-psi[id,2]
+  logit<-inter+slope*tim
+  pevent<-exp(logit)/(1+exp(logit))
+  logpdf<-rep(0,length(tim))
+  P.obs = (y==0)*(1-pevent)+(y==1)*pevent
+  logpdf <- log(P.obs)
+  return(logpdf)
+}
+
+saemix.model<-saemixModel(model=binary.model,description="Binary model",
+        modeltype="likelihood",
+        psi0=matrix(c(0,-.5,0.5,0),ncol=2,byrow=TRUE,dimnames=list(NULL,parnam[1:2])),
+        transform.par=c(0,0),covariance.model=matrix(c(1,0,0,1),ncol=2))
+
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, fim=FALSE, displayProgress=FALSE)
+# saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
+
+binary.fit<-saemix(saemix.model,saemix.data,saemix.options)
+plot(binary.fit, plot.type="convergence")
+
+binary.fit<-saemix.predict(binary.fit)
+vec<-predict(binary.fit)
+ypred<-as.numeric(exp(vec)>=0.5)
+print(table(ypred,datsim$y))
+print(fisher.test(table(ypred,datsim$y)))
+
+```
+
+## Ordinal data
+
+### Ordinal example from Belhal
+
+- **TODO**
+  - check results compared to previous version 
+  - check LL by GQ to compare to LL by IS
+  - test the optimisation and change the algorithm for one-dimension
+
+```{r fitOrdinal, warnings=FALSE}
+smx.ord <- read.table(file.path(datDir,"categorical1_data.txt"),header=T)
+saemix.data<-saemixData(name.data=smx.ord, header=TRUE, sep=" ", na=NA, 
+                        name.group=c("ID"), name.predictors=c("Y"), name.X=c("TIME"))
+
+ordinal.model<-function(psi,id,xidep) {
+  y<-xidep[,1]
+  alp1<-psi[id,1]
+  alp2<-psi[id,2]
+  alp3<-psi[id,3]
+  logit1<-alp1
+  logit2<-alp1+alp2
+  logit3<-alp1+alp2+alp3
+  pge1<-exp(logit1)/(1+exp(logit1))
+  pge2<-exp(logit2)/(1+exp(logit2))
+  pge3<-exp(logit3)/(1+exp(logit3))
+  logpdf<-rep(0,length(y))
+  P.obs = (y==0)*pge1+(y==1)*(pge2 - pge1)+(y==2)*(pge3 - pge2)+(y==3)*(1 - pge3)
+  logpdf <- log(P.obs)
+
+  return(logpdf)
+}
+
+saemix.model<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",
+                          psi0=matrix(c(3,1,1),ncol=3,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3"))),
+                          omega.init=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE),
+                          transform.par=c(0,1,1),covariance.model=matrix(c(1,0,0,0,1,0,0,0,0),ncol=3))
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, fim=FALSE, displayProgress=FALSE)
+saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
+
+ord.fit<-saemix.fit
+plot(ord.fit, plot.type="convergence")
+
+```
+
+### Ordinal example with 7 categories (Lucie)
+
+## Count model
+
+
+## TTE model
+
+```{r fitTTE, warnings=FALSE}
+# TTE model
+tte.saemix<-read.table(file.path(datDir,"rttellis.csv"),header=T, sep=",")
+tte.saemix <- tte.saemix[tte.saemix$ytype==2,]
+saemix.data<-saemixData(name.data=tte.saemix, name.group=c("id"),
+  name.predictors=c("time"), name.response="y")
+
+tte.model<-function(psi,id,xidep) {
+  T<-xidep[,1]
+  N <- nrow(psi)
+  Nj <- length(T)
+  # censoringtime = 6
+  censoringtime = max(T)
+  lambda <- psi[id,1]
+  beta <- psi[id,2]
+  init <- which(T==0)
+  cens <- which(T==censoringtime)
+  ind <- setdiff(1:Nj, append(init,cens))
+  hazard <- (beta/lambda)*(T/lambda)^(beta-1)
+  H <- (T/lambda)^beta
+  logpdf <- rep(0,Nj)
+  logpdf[cens] <- -H[cens] + H[cens-1]
+  logpdf[ind] <- -H[ind] + H[ind-1] + log(hazard[ind])
+  return(logpdf)
+}
+
+saemix.model<-saemixModel(model=tte.model,description="time model",modeltype="likelihood",
+  psi0=matrix(c(2,1),ncol=2,byrow=TRUE,dimnames=list(NULL,
+  c("lambda","beta"))),
+  transform.par=c(1,1),covariance.model=matrix(c(1,0,0,1),ncol=2,
+  byrow=TRUE))
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, fim=FALSE, displayProgress=FALSE)
+saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
+
+tte.fit<-saemix.fit
+
+```
+
+```{r predictTTE, warnings=FALSE}
+# Model predictions
+## New dataset
+xtim<-seq(0,4,1)
+nsuj<-8
+test.newdata<-data.frame(id=rep(1:nsuj,each=length(xtim)),time=rep(xtim,nsuj))
+
+saemixObject<-tte.fit
+psiM<-data.frame(lambda=seq(1.6,2,length.out=length(unique(test.newdata$id))),beta = seq(1,3,4))
+
+simul.tte<-function(psi,id,xidep) {
+  T<-xidep
+  N <- nrow(psi)
+  Nj <- length(T)
+  censoringtime = 4
+  lambda <- psi[id,1]
+  beta <- psi[id,2]
+  obs <-rep(0,length(T))
+
+  for (i in (1:N)){
+    obs[id==i] <- rweibull(n=length(id[id==i]), shape=lambda[i], scale=beta[i])
+  }  
+
+  return(obs)
+}
+
+preds <- simul.tte(psiM, test.newdata$id, test.newdata[,c("time")])
+test.newdata$y<-preds
+tte.newdata <- test.newdata
+tte.psiM<-psiM
+
+```
+

@@ -11,6 +11,29 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+# Johannes
+
+- February 2021: Error model
+    - currently implemented as combined 1, consider switching to combined 2
+    Johannes 18/02/2021 suggests:
+    error.typ<-function(f,ab) {
+    -  g<-cutoff(ab[1]+ab[2]*abs(f)) 
+    +  g<-cutoff(sqrt(ab[1]^2+ab[2]^2*f^2)) 
+    return(g)
+
+- March 2021: validate.names
+    - I noticed that in the read method of SaemixData you call validate.names on 
+name.group. In my case, this generates a warning ("NA values introduced by 
+coercion") which is suppressed by the call to options("warn" = -1) in the very 
+beginning of the method definition .... WHAT?
+    - This looks as if validate.names needs some attention not to generate warnings 
+in valid use cases! The way it is, this warning pops up if one wishes to catch warnings from 
+saemixData with tryCatch.
+    - This confirms my impression that setting options within a function is not good 
+practice, even if you reset them at the end. In case there are good reasons to 
+set options, it is preferable to reset them using on.exit, which is more fail-
+safe.
+
 # Bug fixes and improvements
 
 ## Bug fixes

@@ -1,9 +1,30 @@
-context("Environment issue")
+context("Data provided in a dataframe")
 
-test_that("Environment problem with saemixData... looks for a dataframe in the global environment", {
+test_that("Reading a file with binary observation data", {
   tte.saemix<-read.table(file.path(datDir,"rttellis.csv"),header=T,sep=",",na=".")
-  expect_error(x<-saemixData(name.data=tte.saemix,header=TRUE,sep=" ",na=NA,
-    name.group=c("id"),name.predictors=c("time"), name.response="y"))
+  tte.saemix<-tte.saemix[tte.saemix$ytype==2,]
+#  expect_error(x<-saemixData(name.data=tte.saemix,header=TRUE,sep=" ",na=NA,
+#    name.group=c("id"),name.predictors=c("time"), name.response="y"))
+  x<-saemixData(name.data=tte.saemix,header=TRUE,sep=" ",na=NA,
+                name.group=c("id"),name.predictors=c("time"), name.response="y")
+  expect_equal(x@N,10)
+  expect_equal(x@name.group,'id')
+  expect_equal(x@name.predictors,'time')
+  expect_equal(x@name.response,'y')
+  expect_equal(sum(x@data$y),23)
+})
+
+test_that("Reading a file with TTE observation data (not sure what this data represents, infinite y)", {
+  tte.saemix<-read.table(file.path(datDir,"rttellis.csv"),header=T,sep=",",na=".")
+  tte.saemix<-tte.saemix[tte.saemix$ytype==1,]
+  #  expect_error(x<-saemixData(name.data=tte.saemix,header=TRUE,sep=" ",na=NA,
+  #    name.group=c("id"),name.predictors=c("time"), name.response="y"))
+  x<-saemixData(name.data=tte.saemix,header=TRUE,sep=" ",na=NA,
+                name.group=c("id"),name.predictors=c("time"), name.response="y")
+  expect_equal(x@N,10)
+  expect_equal(x@name.group,'id')
+  expect_equal(x@name.predictors,'time')
+  expect_equal(x@name.response,'y')
 })
 
 context("Testing creating a new element of class")

@@ -44,7 +44,7 @@ test_file(file.path(saemixDir,"testeco","testthat_saemixModel.R"))
 #####################################################
 ###### Testing auxiliary functions
 
-test_file(file.path(saemixDir,"testeco","testthat_functions.R"))
+test_file(file.path(saemixDir,"testeco","testthat_ssq_combined2.R"))
 
 ###########################################################
 ################### Running models with continuous data

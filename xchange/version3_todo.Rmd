@@ -1,0 +1,200 @@
+---
+title: "Moving to saemix 3.0"
+author: "Emmanuelle"
+date: "05/10/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+# TODO list
+
+- **DONE** kompare files with 2.4 to take into account changes made for the CRAN compiler
+- **DONE** error models
+  - combined 2 versus combined 1
+- **TODO** bugfixes
+  - **DONE** simulated annealing
+- **TODO** testthat functions
+  - SaemixData class
+    - **DONE** class structure, reading data
+    - validate names
+    - covariates
+  - SaemixModel class
+    - **DONE** class structure, defining model
+    - validate covariance model
+  - SaemixObject class
+      - **DONE** class structure
+      - computation of BIC, AIC (Maud)
+      - summary function
+  - plots
+  - computations ?
+- documentation
+  - error models
+  - new models from Belhal for responses defined by their likelihood
+  - new references
+  - new defaults: no plot
+  - interface to mkin
+
+# Comparing 2.4 and 3.0
+
+## Function list
+
+### 2.4
+
+aaa_generics.R  func_diagnostics.R  func_FIM.R          main_estep.R               main.R         SaemixObject.R
+compute_LL.R    func_distcond.R     func_plots.R        main_initialiseMainAlgo.R  SaemixData.R   SaemixRes.R
+func_aux.R      func_estimParam.R   func_simulations.R  main_mstep.R               SaemixModel.R  zzz.R
+
+### 3.0
+
+aaa_generics.R  func_aux.R              func_estimParam.R   func_stepwise.R            main.R          SaemixRes.R
+backward.R      func_compare.R          func_FIM.R          main_estep.R               SaemixData.R    stepwise.R
+compute_LL.R    func_distcond_noplot.R  func_plots.R        main_initialiseMainAlgo.R  SaemixModel.R   zzz.R
+forward.R       func_distcond.R         func_simulations.R  main_mstep.R               SaemixObject.R
+
+### functions in 3.0 not in 2.4
+
+- covariate selection algorithm (Maud)
+  - forward.R, backward.R, stepwise.R, func_stepwise.R,  func_compare.R
+  - func_diagnostics.R (? Maud or something else ?)
+- version without plots of func_distcond.R 
+
+## Function comparison
+
+See **changes2.4to3.0.ods** for side-by-side comparison of functions tracing the changes between 2.4 and 3.0, as well as the changes carried over from 2.4 immediately.
+
+### Loading
+
+#### aaa_generics.R TODO
+
+- check generic definition of read
+- check aliases for some internal functions
+
+#### zzz.R
+
+- check if the current version works or if we need to add date
+
+### Classes
+
+#### SaemixData
+
+- check object validation
+  - create testthat functions
+- harmonise output messages across the package
+  - no messages to be output to stdin by default
+- new slot automatic in 3.0
+  - normally allows automatic recognition and filling in arguments not given
+  - $\square$ TODO: testthat function
+  - also test validate.names()
+- use is(x, "data.frame") instead of testing class(x)=="data.frame" (class may have more than 1 value)
+
+#### SaemixModel
+
+- main change in 3.0: added discrete response with a modelType argument
+  - for joint models, will need some tweak (maybe as a vector of response types ?)
+- new function validate_covariance.model
+  - $\square$ TODO: change name to validate.covariance.model
+  - check function (add testthat) and add documentation
+
+#### SaemixRes
+
+- check definition of ypred and ppred
+  - ypred should be f(theta_MAP) and ppred should be E(f(theta))
+
+#### SaemixObject
+
+- maybe change name saemix.simul to saemix.simulate
+- $\square$ TODO: logLik.saemix, AIC.SaemixObject, BIC.SaemixObject
+  - Maud made changes in the 2.4
+  - but Johannes also made some changes in 3.0
+  - $\square$ TODO: add Johannes's changes to the 2.4 version
+- options
+  - $\square$ TODO: see CRAN for the rules (like for 2.4, in compute_LL.R)
+
+### Computational functions
+
+#### compute_LL.R
+
+- check if alias ggq.mlx exists
+
+#### func_aux.R
+
+- modified combined error model
+  - $\square$ TODO: add to documentation
+- conditional distribution function split into 2 functions according to nature of the model
+  - $\square$ TODO:  add to documentation
+- check computation of compute.LLy
+
+### func_FIM.R
+
+- $\square$ TODO: secure the code for discrete data models (only compute LL by linearisation ? do not use altogether ?)
+- $\square$ TODO: check cat and replace with message
+  - check name of option to print out messages (maybe name of option changed)
+
+### Main algorithm
+
+#### main_initialiseMainAlgo.R
+
+- $\square$ TODO: check cat and replace with message
+  - check name of option to print out messages (maybe name of option changed)
+
+#### main_estep.R
+
+- check computation of compute.LLy now completely replacing the computation of U.y
+- 4th kernel added (Laplacian kernel)
+  - $\square$ TODO:  add default option (0 iterations)
+  - $\square$ TODO:  add to documentation and recommendations
+  
+#### main_mstep.R
+
+- check computation of sigma and influence of SA (nbiter.saemix changed to nbiter.sa)
+  - $\square$ TODO: check
+- $\square$ TODO: add Lucie's changes +++
+  - ask Lucie to check afterwards
+
+#### main.R
+
+- $\square$ TODO: check cat and replace with message
+  - check name of option to print out messages (maybe name of option changed)
+
+### Parameters, Simulations
+  
+#### func_distcond.R
+
+- commented out the plots for the moment
+  - $\square$ TODO: add option to output the graphs
+  
+#### func_estimParam.R
+
+- renamed the function to predict newdata as in 2.4 (also has an Roxygen documentation now)
+  - copied the old file in newCode
+  - $\square$ TODO: check that the code within is similar
+
+#### func_simulations.R
+
+- renamed simul.saemix in saemix.simul in 3.0 for consistency (all functions start with saemix and not end with it)
+  - $\square$ TODO:  add to documentation and CHANGELOG
+
+### Plots
+
+- $\square$ TODO: check cat and replace with message
+  - check name of option to print out messages (maybe name of option changed)
+
+## New functions by Maud
+
+### BIC criterion
+
+- definition and computation included in SaemixObject (see above)
+  - $\square$ TODO:  add to documentation and CHANGELOG
+
+### Algorithm
+
+- create a notebook to test the algorithm and integrate it
+- add test example
+  - $\square$ TODO:  add to documentation
+
+### HMM
+
+$\square$ TODO: check status with Maud
+
+  
