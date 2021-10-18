@@ -589,10 +589,10 @@ validate.names<-function(usernames,datanames,recognisednames=c(),verbose=TRUE, a
   valnames<-usernames
   remcol<-c() # keep track of columns to remove
   # Detect names given as column numbers
-  convnames<-as.integer(usernames)
+  convnames<-as_integer(usernames)
   icol.int<-which(!is.na(convnames))
   if(length(icol.int)>0) {
-    namcol.int<-as.integer(usernames[icol.int])
+    namcol.int<-as_integer(usernames[icol.int])
     ioutrange<-namcol.int[namcol.int>length(datanames) | namcol.int<0]
     if(length(ioutrange)>0) {
       if(verbose) cat("Column number(s)",ioutrange,"do(es) not exist in the dataset, please check\n")
@@ -653,8 +653,6 @@ validate.names<-function(usernames,datanames,recognisednames=c(),verbose=TRUE, a
 setMethod("read",
           signature="SaemixData",
   function(object, dat = NULL) {
-    ow <- options("warn")
-    options("warn"=-1)
 # ce test devrait aller dans la definition de la classe
     if(class(object@name.data)!="character") {
       if(object@messages) cat("Please provide the name of the data (data.frame or path to file on disk) as a character string.\n")
@@ -669,7 +667,7 @@ setMethod("read",
       na.strings<-object@na
       if(is.null(na.strings)) na.strings<-"NA"
       dat<-try(read.table(object@name.data,header=header,sep=sep,na.strings=na.strings))
-      if(class(dat)=="try-error") stop("The file ",object@name.data," does not exist. Please check the name and path.\n")      
+      if(inherits(dat,"try-error")) stop("The file ",object@name.data," does not exist. Please check the name and path.\n")      
       if(object@messages) {
         cat("These are the first lines of the dataset as read into R. Please check the format of the data is appropriate, if not, modify the na and/or sep items and retry:\n")
         print(head(dat))
@@ -710,8 +708,8 @@ setMethod("read",
     
 		if(length(object@name.covariates)>0) {
     	if(object@name.covariates[1]!="") {
-  		i1<-as.integer(object@name.covariates[!is.na(as.integer(object@name.covariates))])
-      object@name.covariates[!is.na(as.integer(object@name.covariates))]<- colnames(dat)[i1]
+  		i1<-as_integer(object@name.covariates[!is.na(as_integer(object@name.covariates))])
+      object@name.covariates[!is.na(as_integer(object@name.covariates))]<- colnames(dat)[i1]
     	}
   		idx<-object@name.covariates[!(object@name.covariates %in% colnames(dat))]
   		if(length(idx)>0) {
@@ -726,11 +724,11 @@ setMethod("read",
     }
 	if(nchar(object@name.X)==0)
       object@name.X<-object@name.predictors[1]
-    if(!is.na(as.integer(object@name.X))) {
-      if(dim(dat)[2]<as.integer(object@name.X)) {
+    if(!is.na(as_integer(object@name.X))) {
+      if(dim(dat)[2]<as_integer(object@name.X)) {
         if(object@messages) cat("Attribute name.X",object@name.X,"does not correspond to a valid column in the dataset, setting the X axis for graphs to",object@name.predictors[1],".\n")
 	object@name.X<-object@name.predictors[1]
-      } else object@name.X<-colnames(dat)[as.integer(object@name.X)]
+      } else object@name.X<-colnames(dat)[as_integer(object@name.X)]
     } 
     if(match(object@name.X,object@name.predictors,nomatch=0)==0) {
       if(object@messages) cat("Attribute name.X",object@name.X,"does not correspond to a valid column in the dataset, setting the X axis for graphs to",object@name.predictors[1],".\n")
@@ -755,7 +753,7 @@ setMethod("read",
 # Saving covariates in the original format in ocov, transforming binary covariates in dat to factors
     object@ocov<-dat[,object@name.covariates,drop=FALSE]
     for(icov in object@name.covariates) {
-      if(length(unique(dat[,icov]))==2) dat[,icov]<-as.integer(factor(dat[,icov]))-1
+      if(length(unique(dat[,icov]))==2) dat[,icov]<-as_integer(factor(dat[,icov]))-1
     }   
 # Removing missing values in predictor columns
 # dat<-dat[!is.na(dat[,object@name.response]),]
@@ -789,7 +787,6 @@ setMethod("read",
     dat<-cbind(index=rep(1:object@N,times=nind.obs),dat)
     object@data<-dat
     
-    options(ow) # reset
     validObject(object)
     return(object)
   }
@@ -1528,5 +1525,7 @@ subset.SaemixData<-function (x, subset, ...) {
     x1["data"]$index<-rep(1:x1["N"],times=nind.obs)
     return(x1)
 }
+
+as_integer <- function(x) suppressWarnings(as.integer(x))
 
 ####################################################################################
