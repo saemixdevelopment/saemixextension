@@ -65,8 +65,7 @@
 #'
 #' compare.saemix(saemix.fit1, saemix.fit2, saemix.fit3)
 #' compare.saemix(saemix.fit1, saemix.fit2, saemix.fit3, method = "lin")
-#' # We would need to run llgq.saemix first to make this work
-#' #compare.saemix(saemix.fit1, saemix.fit2, saemix.fit3, method = "gq")
+#' compare.saemix(saemix.fit1, saemix.fit2, saemix.fit3, method = "gq")
 #'
 #' @export compare.saemix
 

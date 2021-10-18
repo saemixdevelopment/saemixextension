@@ -147,7 +147,7 @@ fim.saemix<-function(saemixObject) {
     # Invert avoiding numerical problems
     Gi[[i]]<-round(Vi*1e10)/1e10
     VD<-try(eigen(Gi[[i]]))
-    if(inherits(VD,"try-error")) {
+    if(class(VD)=="try-error") {
       cat("Unable to compute the FIM by linearisation.\n")
       stop()
       #    return(saemixObject)
@@ -311,7 +311,7 @@ fim.saemix<-function(saemixObject) {
     #   indMF[[i]][1:npar,1:npar]<-Fmui
     # }
     Cth<-try(solve(Fth))
-    if(inherits(Cth,"try-error")) {
+    if(class(Cth)=="try-error") {
       cat("Error computing the Fisher Information Matrix: singular system.\n")
       Cth<-NA*Fth
     }
@@ -328,7 +328,7 @@ fim.saemix<-function(saemixObject) {
   
   FO<-MF[-c(1:npar),-c(1:npar)]
   CO<-try(solve(FO))
-  if(inherits(CO,"try-error")) {
+  if(class(CO)=="try-error") {
     CO<-NA*FO
     cat("Error computing the Fisher Information Matrix: singular system.\n")
   }
