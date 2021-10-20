@@ -71,4 +71,4 @@ test_that("Model comparison works as expected", {
   expect_true(all(comp_3[1, "BIC"] < comp_3[2:4, "BIC"]))
   expect_true(all(comp_3[1, "BIC.cov"] < comp_3[2:4, "BIC.cov"]))
 
-}
+})

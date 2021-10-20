@@ -13,7 +13,7 @@
 #' covariate.init is only used if the direction argument is "both". 
 #' @return An object of the SaemixObject class storing the covariate model and the covariance structure of 
 #' random effects of the final model.
-#' @author Emmanuelle Comets <emmanuelle.comets@@inserm.fr>, Maud Delattre
+#' @author Maud Delattre
 #' @references Delattre, M., Lavielle, M. and Poursat, M.A. (2014) A note on BIC in mixed effects models. 
 #' Electronic Journal of Statistics 8(1) p. 456-475
 #' Delattre, M. and Poursat, M.A. (2017) BIC strategies for model choice in a population approach. 
@@ -40,9 +40,10 @@
 #' }
 #' 
 #' saemix.model1<-saemixModel(model=model1cpt,modeltype="structural", 
-#'                           description="One-compartment model with first-order absorption",
-#'                           psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))), 
-#'                           transform.par=c(1,1,1),covariate.model=matrix(c(0,0,1,0,0,0),ncol=3,byrow=TRUE))
+#'      description="One-compartment model with first-order absorption",
+#'      psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3,byrow=TRUE, 
+#'      dimnames=list(NULL, c("ka","V","CL"))), transform.par=c(1,1,1),
+#'      covariate.model=matrix(c(0,0,1,0,0,0),ncol=3,byrow=TRUE))
 #'                           
 #' saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE)
 #' saemix.fit1<-saemix(saemix.model1,saemix.data,saemix.options)     

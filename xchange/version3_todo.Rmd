@@ -28,12 +28,26 @@ output:
       - summary function
   - plots
   - computations ?
+  - display options
+    - displayProgress=FALSE by default ?
+    - verbose=FALSE ?
+    - or indicate how to suppress all messages ? (maybe not a good idea)
 - documentation
   - error models
   - new models from Belhal for responses defined by their likelihood
   - new references
-  - new defaults: no plot
-  - interface to mkin
+  - new defaults: no plot for conditional distribution
+  - interface to mkin ?
+  - error messages to solve better ?
+    - unable to find starting parameter values
+    - add FAQ as to how to diagnose this
+    - maybe need a predict function for these models
+  - bookdown: https://github.com/saemixdevelopment/saemix_bookdown
+    - case-studies for categorical data and RTTE data
+      - simulate using R instead of mlx
+    - move online or keep pdf/tex version ?
+      - if move completely online, need to transform the LaTeX guide into a bookdown
+      - copy on iame github
 
 # Comparing 2.4 and 3.0
 
@@ -107,7 +121,7 @@ See **changes2.4to3.0.ods** for side-by-side comparison of functions tracing the
 - $\square$ TODO: logLik.saemix, AIC.SaemixObject, BIC.SaemixObject
   - Maud made changes in the 2.4
   - but Johannes also made some changes in 3.0
-  - $\square$ TODO: add Johannes's changes to the 2.4 version
+  - $\text{\rlap{$\checkmark$}}\square$ TODO: add Johannes's changes to the 2.4 version **in fact** already in 2.4 but 
 - options
   - $\square$ TODO: see CRAN for the rules (like for 2.4, in compute_LL.R)
 

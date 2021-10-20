@@ -101,7 +101,8 @@ setGeneric(name="showall",
 #' @aliases psi.SaemixObject psi.saemix phi.SaemixObject eta.SaemixObject phi.saemix eta.saemix
 #' 
 #' @param object an SaemixObject object returned by the \code{\link{saemix}} function
-#' @param type a string specifying whether to use the MAP (type="mode") or the mean (type="mean") of the conditional distribution of the individual parameters. Defaults to mode
+#' @param type a string specifying whether to use the MAP (type="mode") or the mean (type="mean") 
+#' of the conditional distribution of the individual parameters. Defaults to mode
 #' @return a matrix with the individual parameters (psi/phi) or the random effects (eta). 
 #' These functions are used to access and output the estimates of
 #' parameters and random effects. When the object passed to the function does
@@ -109,7 +110,8 @@ setGeneric(name="showall",
 #' then returned (invisibly) with these estimates added to the results.
 #' @section Methods: \describe{
 #' \item{list("signature(object = \"SaemixObject\")")}{ please refer to the PDF
-#' documentation for the models} }
+#' documentation for the models} 
+#' }
 #' @author Emmanuelle Comets <emmanuelle.comets@@inserm.fr>, Audrey Lavenu,
 #' Marc Lavielle.
 #' @seealso \code{\link{SaemixData}},\code{\link{SaemixModel}},
@@ -364,6 +366,392 @@ NULL
 #' These are not to be called by the user.
 #' 
 #' @name saemix.internal
-#' @aliases .First.lib plotnpde ssq error.typ
+#' @aliases .First.lib ssq error.typ
 #' @keywords internal
 NULL
+
+############################# help files for datasets included with the package
+
+#' Pharmacokinetics of theophylline
+#'
+#' The \code{theo.saemix} data frame has 132 rows and 6 columns of data from
+#' an experiment on the pharmacokinetics of theophylline. A column with gender was
+#' added to the original data for demo purposes, and contains simulated data.
+#'
+#' Boeckmann, Sheiner and Beal (1994) report data from a study by Dr. Robert
+#' Upton of the kinetics of the anti-asthmatic drug theophylline.  Twelve
+#' subjects were given oral doses of theophylline then serum concentrations
+#' were measured at 11 time points over the next 25 hours.
+#'
+#' These data are analyzed in Davidian and Giltinan (1995) and Pinheiro and
+#' Bates (2000) using a two-compartment open pharmacokinetic model.
+#'
+#' These data are also available in the library \code{datasets} under the name
+#' \code{Theoph} in a slightly modified format and including the data at time
+#' 0.  Here, we use the file in the format provided in the \emph{NONMEM}
+#' installation path (see the User Guide for that software for details).
+#'
+#' @docType data
+#' @name theo.saemix
+#' @usage theo.saemix
+#' @format This data frame contains the following columns: 
+#' \describe{
+#' \item{Id}{an ordered factor with levels \code{1}, \dots{}, \code{12}
+#' identifying the subject on whom the observation was made.  The ordering is
+#' by time at which the observation was made.  } 
+#' \item{Dose}{dose of theophylline administered orally to the subject (mg/kg).  } 
+#' \item{Time}{time since drug administration when the sample was drawn (hr).  }
+#' \item{Concentration}{theophylline concentration in the sample (mg/L).  } 
+#' \item{Weight}{ weight of the subject (kg).  } 
+#' \item{Sex}{ gender (simulated, 0=male, 1=female} }
+#' 
+#' @source Boeckmann, A. J., Sheiner, L. B. and Beal, S. L. (1994),
+#' \emph{NONMEM Users Guide: Part V}, NONMEM Project Group, University of
+#' California, San Francisco.
+#'
+#' @references Davidian, M. and Giltinan, D. M. (1995) \emph{Nonlinear Models for Repeated
+#' Measurement Data}, Chapman & Hall (section 5.5, p. 145 and section 6.6, p.
+#' 176)
+#'
+#' Pinheiro, J. C. and Bates, D. M. (2000) \emph{Mixed-effects Models in S and
+#' S-PLUS}, Springer (Appendix A.29)
+#' 
+#' @examples
+#' data(theo.saemix)
+#'
+#' #Plotting the theophylline data
+#' plot(Concentration~Time,data=theo.saemix,xlab="Time after dose (hr)",
+#' ylab="Theophylline concentration (mg/L)")
+#' 
+#' saemix.data<-saemixData(name.data=theo.saemix,header=TRUE,sep=" ",na=NA, 
+#'   name.group=c("Id"),name.predictors=c("Dose","Time"),
+#'   name.response=c("Concentration"),name.covariates=c("Weight","Sex"),
+#'   units=list(x="hr",y="mg/L",covariates=c("kg","-")), name.X="Time")
+#'   model1cpt<-function(psi,id,xidep) { 
+#'     dose<-xidep[,1]
+#'     tim<-xidep[,2]  
+#'     ka<-psi[id,1]
+#'     V<-psi[id,2]
+#'     CL<-psi[id,3]
+#'     k<-CL/V
+#'     ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
+#'     return(ypred)
+#'     }
+#' # Default model, no covariate
+#' saemix.model<-saemixModel(model=model1cpt,
+#'        description="One-compartment model with first-order absorption",
+#'        psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3,byrow=TRUE, 
+#'        dimnames=list(NULL, c("ka","V","CL"))),transform.par=c(1,1,1))
+#'  # Note: remove the options save=FALSE and save.graphs=FALSE 
+#'  # to save the results and graphs
+#'  saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE)
+#'  \donttest{
+#'  # Not run (strict time constraints for CRAN)
+#'  saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
+#'  }
+#'  # Model with covariates
+#'  saemix.model<-saemixModel(model=model1cpt,
+#'       description="One-compartment model with first-order absorption",
+#'       psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3,byrow=TRUE, 
+#'       dimnames=list(NULL, c("ka","V","CL"))),transform.par=c(1,1,1), 
+#'       covariate.model=matrix(c(0,0,1,0,0,0),ncol=3,byrow=TRUE),fixed.estim=c(1,1,1),
+#'       covariance.model=matrix(c(1,0,0,0,1,1,0,1,1),ncol=3,byrow=TRUE),
+#'       omega.init=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE),error.model="combined")
+#'       
+#'  saemix.options<-list(seed=39546,save=FALSE,save.graphs=FALSE)
+#'  \donttest{
+#'  # Not run (strict time constraints for CRAN)
+#'  saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
+#'  }
+#'  
+#' @keywords datasets
+
+NULL
+
+#' Data simulated according to an Emax response model, in SAEM format
+#'
+#' The \code{PD1.saemix} and \code{PD2.saemix} data frames were simulated
+#' according to an Emax dose-response model.
+#'
+#' @docType data
+#' @name PD1.saemix
+#' @aliases PD2.saemix
+#' 
+#' @usage PD1.saemix
+#' @usage PD2.saemix
+#' 
+#' @format This data frame contains the following columns: 
+#' \describe{
+#' \item{subject}{an variable identifying the subject on whom the observation was made.  
+#' The ordering is by the dose at which the observation was made.  } 
+#' \item{dose}{ simulated dose.  } 
+#' \item{response}{simulated response}
+#' \item{gender}{ gender (0 for male, 1 for female) } }
+#' @details These examples were used by P. Girard and F. Mentre for the symposium dedicated to Comparison of Algorithms Using Simulated Data Sets and Blind Analysis, that took place in Lyon, France, September 2004.
+#' The datasets contain 100 individuals, each receiving 3 different doses:(0, 10, 90), (5, 25, 65) or (0, 20, 30). 
+#' It was assumed that doses were given in a cross-over study with sufficient wash out period to avoid carry over. 
+#' Responses (y_ij) were simulated with the following pharmacodynamic model:
+#' y_ij = E0_i + D_ij Emax_i/(D_ij + ED50_i) +epsilon_ij 
+#' The individual parameters were simulated according to
+#'   log (E0_i) = log (E0) + eta_i1
+#'   log (Emax_i) = log (Emax) + eta_i2
+#'   log (E50_i) = log (E50) +  beta w_i + eta_i3
+#'   
+#' @details PD1.saemix contains the data simulated with a gender effect, beta=0.3.
+#' PD2.saemix contains the data simulated without a gender effect, beta=0.
+#' 
+#' @references Girard P., Mentre F. Comparison of Algorithms Using Simulated Data Sets and Blind Analysis workshop, Lyon, France, September 2004. 
+#' 
+#' @examples
+#' data(PD1.saemix)
+#' saemix.data<-saemixData(name.data=PD1.saemix,header=TRUE,name.group=c("subject"),
+#'       name.predictors=c("dose"),name.response=c("response"),
+#'       name.covariates=c("gender"), units=list(x="mg",y="-",covariates=c("-")))
+#' 
+#' modelemax<-function(psi,id,xidep) {
+#' # input:
+#' #   psi : matrix of parameters (3 columns, E0, Emax, EC50)
+#' #   id : vector of indices 
+#' #   xidep : dependent variables (same nb of rows as length of id)
+#' # returns:
+#' #   a vector of predictions of length equal to length of id
+#'   dose<-xidep[,1]
+#'   e0<-psi[id,1]
+#'   emax<-psi[id,2]
+#'   e50<-psi[id,3]
+#'   f<-e0+emax*dose/(e50+dose)
+#'   return(f)
+#' }
+#' 
+#' # Plotting the data
+#' plot(saemix.data,main="Simulated data PD1")
+#' \donttest{
+#' # Compare models with and without covariates with LL by Importance Sampling
+#' model1<-saemixModel(model=modelemax,description="Emax growth model", 
+#'        psi0=matrix(c(20,300,20,0,0,0),ncol=3,byrow=TRUE,dimnames=list(NULL,
+#'        c("E0","Emax","EC50"))), transform.par=c(1,1,1),
+#'        covariate.model=matrix(c(0,0,0), ncol=3,byrow=TRUE),fixed.estim=c(1,1,1))
+#' 
+#' model2<-saemixModel(model=modelemax,description="Emax growth model", 
+#'        psi0=matrix(c(20,300,20,0,0,0),ncol=3,byrow=TRUE,dimnames=list(NULL, 
+#'        c("E0","Emax","EC50"))), transform.par=c(1,1,1),
+#'        covariate.model=matrix(c(0,0,1), ncol=3,byrow=TRUE),fixed.estim=c(1,1,1))
+#' 
+#' # SE not computed as not needed for the test
+#' saemix.options<-list(algorithms=c(0,1,1),nb.chains=3,seed=765754, 
+#'        nbiter.saemix=c(500,300),save=FALSE,save.graphs=FALSE)
+#' 
+#' fit1<-saemix(model1,saemix.data,saemix.options)
+#' fit2<-saemix(model2,saemix.data,saemix.options)
+#' wstat<-(-2)*(fit1["results"]["ll.is"]-fit2["results"]["ll.is"])
+#' 
+#' cat("LRT test for covariate effect on EC50: p-value=",1-pchisq(wstat,1),"\n")
+#' }
+#' @keywords datasets
+NULL
+  
+#' Heights of Boys in Oxford
+#'
+#' The \code{oxboys.saemix} data collects the height and age of students in Oxford measured over time.
+#' The data frame has 234 rows and 4 columns.
+#' 
+#' @docType data
+#' @name oxboys.saemix
+#' 
+#' @usage oxboys.saemix
+#' 
+#' @format This data frame contains the following columns: 
+#' \describe{
+#' \item{Subject}{an ordered factor giving a unique identifier for each boy in the experiment } 
+#' \item{age}{a numeric vector giving the standardized age (dimensionless)} 
+#' \item{height}{a numeric vector giving the height of the boy (cm)}
+#' \item{Occasion}{ an ordered factor - the result of converting 'age' from a continuous variable to a count so these slightly unbalanced data can be analyzed as balanced } }
+#'   
+#' @details These data are described in Goldstein (1987) as data on the height of a selection of boys from Oxford, England 
+#' versus a standardized age. The dataset can be found in the package \code{nlme}.
+#'  We use an linear model for this data:
+#'  y_ij = Base_i + slope_i x_ij +epsilon_ij 
+#' 
+#' @references Pinheiro, J. C. and Bates, D. M. (2000), \emph{Mixed-Effects Models in S and S-PLUS}, Springer, New York.  (Appendix A.19)
+#' 
+#' @examples
+#' data(oxboys.saemix)
+#' saemix.data<-saemixData(name.data=oxboys.saemix,header=TRUE,
+#'       name.group=c("Subject"),name.predictors=c("age"),name.response=c("height"),
+#'       units=list(x="yr",y="cm"))
+#' 
+#' # plot the data
+#' plot(saemix.data)
+#' 
+#' growth.linear<-function(psi,id,xidep) {
+#'   x<-xidep[,1]
+#'   base<-psi[id,1]
+#'   slope<-psi[id,2]
+#'   f<-base+slope*x
+#'   return(f)
+#' }
+#' saemix.model<-saemixModel(model=growth.linear,description="Linear model",
+#'       psi0=matrix(c(140,1),ncol=2,byrow=TRUE,dimnames=list(NULL,c("base","slope"))),
+#'       transform.par=c(1,0),covariance.model=matrix(c(1,1,1,1),ncol=2,byrow=TRUE), 
+#'       error.model="constant")
+#' 
+#' saemix.options<-list(algorithms=c(1,1,1),nb.chains=1,seed=201004,
+#'       save=FALSE,save.graphs=FALSE)
+#' \donttest{
+#' saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
+#' }
+#' 
+#' @keywords datasets
+NULL
+
+
+#' Evolution of the weight of 560 cows, in SAEM format
+#'
+#' The \code{cow.saemix} data contains records of the weight of 560 cows on 9 or 10 occasions. 
+#' 
+#' @docType data
+#' @name cow.saemix
+#' 
+#' @usage cow.saemix
+#' 
+#' @format This data frame contains the following columns: 
+#' \describe{
+#' \item{cow}{the unique identifier for each cow } 
+#' \item{time}{time (days)} 
+#' \item{weight}{a numeric vector giving the weight of the cow (kg)}
+#' \item{birthyear}{year of birth (between 1988 and 1998)}
+#' \item{twin}{existence of a twin (no=1, yes=2)}
+#' \item{birthrank}{the rank of birth (beetween 3 and 7)}
+#' }
+#'   
+#' @details An exponential model was assumed to describe the weight gain with time:
+#'  y_ij = A_i (1- B_i exp( - K_i t_ij)) +epsilon_ij 
+#' 
+#' @references Pinheiro, J. C. and Bates, D. M. (2000), \emph{Mixed-Effects Models in S and S-PLUS}, Springer, New York.  (Appendix A.19)
+#' 
+#' @examples
+#' data(cow.saemix)
+#' saemix.data<-saemixData(name.data=cow.saemix,header=TRUE,name.group=c("cow"), 
+#'       name.predictors=c("time"),name.response=c("weight"), 
+#'       name.covariates=c("birthyear","twin","birthrank"), 
+#'       units=list(x="days",y="kg",covariates=c("yr","-","-")))
+#' 
+#' growthcow<-function(psi,id,xidep) {
+#'   x<-xidep[,1]
+#'   a<-psi[id,1]
+#'   b<-psi[id,2]
+#'   k<-psi[id,3]
+#'   f<-a*(1-b*exp(-k*x))
+#'   return(f)
+#' }
+#' saemix.model<-saemixModel(model=growthcow,
+#'       description="Exponential growth model", 
+#'       psi0=matrix(c(700,0.9,0.02,0,0,0),ncol=3,byrow=TRUE, 
+#'         dimnames=list(NULL,c("A","B","k"))),transform.par=c(1,1,1),fixed.estim=c(1,1,1), 
+#'       covariate.model=matrix(c(0,0,0),ncol=3,byrow=TRUE), 
+#'       covariance.model=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE), 
+#'       omega.init=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE),error.model="constant")
+#' 
+#' saemix.options<-list(algorithms=c(1,1,1),nb.chains=1,nbiter.saemix=c(200,100), 
+#'              seed=4526,save=FALSE,save.graphs=FALSE)
+#' 
+#' # Plotting the data
+#' plot(saemix.data,xlab="Time (day)",ylab="Weight of the cow (kg)")
+#' \donttest{
+#' saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
+#' }
+#' 
+#' @keywords datasets
+NULL
+
+
+#' Wheat yield in crops treated with fertiliser, in SAEM format
+#'
+#' The\code{yield.saemix} contains data from winter wheat experiments.
+#' 
+#' @docType data
+#' @name yield.saemix
+#' 
+#' @usage yield.saemix
+#' 
+#' @format This data frame contains the following columns: 
+#' \describe{
+#' \item{site}{the site number}
+#' \item{dose}{dose of nitrogen fertiliser (kg/ha)} 
+#' \item{yield}{grain yield (kg/ha)} 
+#' \item{soil.nitrogen}{end-of-winter mineral soil nitrogen (NO3- plus NH4+) in the 0 to 90 cm layer was measured on each site/year (kg/ha)}
+#' }
+#'   
+#' @details The data in the \code{yield.saemix} comes from 37 winter wheat experiments carried out between 1990 and 1996 
+#' on commercial farms near Paris, France. Each experiment was from a different site. 
+#' Two soil types were represented, a loam soil and a chalky soil. Common winter wheat varieties were used. 
+#' Each experiment consisted of five to eight different nitrogen fertiliser rates, for a total of 224 nitrogen treatments. 
+#' Nitrogen fertilizer was applied in two applications during the growing season. For each nitrogen treatment, 
+#' grain yield (adjusted to 150 g.kg-1 grain moisture content) was measured. In addition, 
+#' end-of-winter mineral soil nitrogen (NO3- plus NH4+) in the 0 to 90 cm layer was measured on each site-year 
+#' during February when the crops were tillering. Yield and end-of-winter mineral soil nitrogen measurements 
+#' were in the ranges 3.44-11.54 t.ha-1 , and 40-180 kg.ha-1 respectively.
+#' 
+#' @source Makowski, D., Wallach, D., and Meynard, J.-M (1999). Models of yield, grain protein, and residual mineral 
+#' nitrogen responses to applied nitrogen for winter wheat. Agronomy Journal 91: 377-385. 
+#' 
+#' @examples
+#' data(yield.saemix)
+#' saemix.data<-saemixData(name.data=yield.saemix,header=TRUE,name.group=c("site"),
+#'       name.predictors=c("dose"),name.response=c("yield"),
+#'       name.covariates=c("soil.nitrogen"),units=list(x="kg/ha",y="t/ha",covariates=c("kg/ha")))
+#' 
+#' #  Model: linear + plateau
+#' yield.LP<-function(psi,id,xidep) {
+#'   x<-xidep[,1]
+#'   ymax<-psi[id,1]
+#'   xmax<-psi[id,2]
+#'   slope<-psi[id,3]
+#'   f<-ymax+slope*(x-xmax)
+#'   #'  cat(length(f),"  ",length(ymax),"\n")
+#'   f[x>xmax]<-ymax[x>xmax]
+#'   return(f)
+#' }
+#' saemix.model<-saemixModel(model=yield.LP,description="Linear plus plateau model",   
+#'         psi0=matrix(c(8,100,0.2,0,0,0),ncol=3,byrow=TRUE,dimnames=list(NULL,   
+#'             c("Ymax","Xmax","slope"))),covariate.model=matrix(c(0,0,0),ncol=3,byrow=TRUE), 
+#'         transform.par=c(0,0,0),covariance.model=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3, 
+#'             byrow=TRUE),error.model="constant")
+#' 
+#' saemix.options<-list(algorithms=c(1,1,1),nb.chains=1,seed=666, 
+#'        save=FALSE,save.graphs=FALSE)
+#' 
+#' # Plotting the data
+#' plot(saemix.data,xlab="Fertiliser dose (kg/ha)", ylab="Wheat yield (t/ha)")
+#' 
+#' \donttest{
+#' saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
+#' 
+#' # Comparing the likelihoods obtained by linearisation and importance sampling 
+#' # to the likelihood obtained by Gaussian Quadrature
+#' saemix.fit<-llgq.saemix(saemix.fit)
+#' {
+#'    cat("LL by Importance sampling, LL_IS=",saemix.fit["results"]["ll.is"],"\n")
+#'    cat("LL by linearisation, LL_lin=",saemix.fit["results"]["ll.lin"],"\n")
+#'    cat("LL by Gaussian Quadrature, LL_GQ=",saemix.fit["results"]["ll.gq"],"\n")
+#' }
+#' 
+#' # Testing for an effect of covariate soil.nitrogen on Xmax
+#' saemix.model2<-saemixModel(model=yield.LP,description="Linear plus plateau model", 
+#'          psi0=matrix(c(8,100,0.2,0,0,0),ncol=3,byrow=TRUE,dimnames=list(NULL, 
+#'             c("Ymax","Xmax","slope"))),covariate.model=matrix(c(0,1,0),ncol=3,byrow=TRUE), 
+#'          transform.par=c(0,0,0),covariance.model=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3, 
+#'              byrow=TRUE),error.model="constant")
+#' 
+#' saemix.fit2<-saemix(saemix.model2,saemix.data,saemix.options)
+#' # BIC for the two models
+#' {
+#'   cat("Model without covariate, BIC=",saemix.fit["results"]["bic.is"],"\n")
+#'   cat("Model with covariate, BIC=",saemix.fit2["results"]["bic.is"],"\n")
+#'   pval<-1-pchisq(-2*saemix.fit["results"]["ll.is"]+2*saemix.fit2["results"]["ll.is"],1)
+#'   cat("        LRT: p=",pval,"\n")
+#' }
+#' }
+#' #' @keywords datasets
+NULL
+

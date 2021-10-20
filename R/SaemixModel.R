@@ -1,5 +1,5 @@
 ####################################################################################
-####      SaemixModel class - definition        ####
+####			SaemixModel class - definition				####
 ####################################################################################
 #' Class "SaemixModel"
 #' 
@@ -34,7 +34,7 @@
 #'     \item{print}{\code{signature(x = "SaemixModel")}: prints details about the object (more extensive than show)}
 #'     \item{showall}{\code{signature(object = "SaemixModel")}: shows all the elements in the object}
 #'     \item{show}{\code{signature(object = "SaemixModel")}: prints details about the object}
-#'   }
+#' 	 }
 #' @references Comets  E, Lavenu A, Lavielle M. Parameter estimation in nonlinear mixed effect models using saemix, an R implementation of the SAEM algorithm. Journal of Statistical Software 80, 3 (2017), 1-41.
 #' 
 #' Kuhn E, Lavielle M. Maximum likelihood estimation in nonlinear mixed effects models. Computational Statistics and Data Analysis 49, 4 (2005), 1020-1038.
@@ -56,32 +56,32 @@
 setClass(
   Class="SaemixModel",
   representation=representation(
-    model="function",     # name of model function
-    description="character",  # model description
+    model="function", 		# name of model function
+    description="character",	# model description
     modeltype="character",     # type of model (structural, for continuous responses, or likelihood)
-    psi0="matrix",    # CI for parameter estimates
-    transform.par="numeric",  # distribution for model parameters
-    fixed.estim="numeric",  # 1 for fixed parameters estimated
-    error.model="character",  # residual error model
-    covariate.model="matrix", # covariate model
-    betaest.model="matrix", # 1st line=ones, next lines=covariate model
-    covariance.model="matrix",  # covariance model
-    omega.init="matrix",  # CI for Omega
-    error.init="numeric", # CI for residual error
-    nb.parameters="integer",  # nb of parameters in the model
-    name.modpar="character",  # name of parameters in the model (columns of psi0)
-    name.fixed="character", # name of fixed parameters
-    name.random="character",  # name of random parameters
-    name.sigma="character", # name of residual parameters (maybe not necessary)
+    psi0="matrix",		# CI for parameter estimates
+    transform.par="numeric",	# distribution for model parameters
+    fixed.estim="numeric",	# 1 for fixed parameters estimated
+    error.model="character",	# residual error model
+    covariate.model="matrix",	# covariate model
+    betaest.model="matrix",	# 1st line=ones, next lines=covariate model
+    covariance.model="matrix",	# covariance model
+    omega.init="matrix",	# CI for Omega
+    error.init="numeric",	# CI for residual error
+    nb.parameters="integer",	# nb of parameters in the model
+    name.modpar="character",	# name of parameters in the model (columns of psi0)
+    name.fixed="character",	# name of fixed parameters
+    name.random="character",	# name of random parameters
+    name.sigma="character",	# name of residual parameters (maybe not necessary)
     name.predictors="character",# name of predictors 
-    name.X="character", # name of X 
-    name.response="character",  # name of response
-    name.cov="character", # name of covariates
-    indx.fix="numeric",   # index of mean param estimated (was indx.betaI)
-    indx.cov="numeric",   # index of cov param estimated (was indx.betaC)
-    indx.omega="numeric", # index of random param estimated (was i1.omega2)
-    indx.res="numeric",   # index of param of residual errors estimated (was indx.res)
-    Mcovariates="data.frame"  # matrix of individual covariates in the model
+    name.X="character",	# name of X 
+    name.response="character",	# name of response
+    name.cov="character",	# name of covariates
+    indx.fix="numeric",		# index of mean param estimated (was indx.betaI)
+    indx.cov="numeric",		# index of cov param estimated (was indx.betaC)
+    indx.omega="numeric",	# index of random param estimated (was i1.omega2)
+    indx.res="numeric",		# index of param of residual errors estimated (was indx.res)
+    Mcovariates="data.frame"	# matrix of individual covariates in the model
   ),
   validity=function(object){
 #    cat ("--- Checking SaemixModel object ---\n")
@@ -105,11 +105,11 @@ setClass(
       message("[ SaemixModel : Error ] SAEM needs at least two parameters to work on.")
       return("Psi0 has size 1")
     }
-    if(sum(object@fixed.estim*mydiag(object@covariance.model))==0) {
-      message("[ SaemixModel : Error ] ")
-      if(sum(mydiag(object@covariance.model))==0) message("At least one parameter with IIV must be included in the model.") else message("At least one parameter with IIV must be estimated and not fixed in the model.")
-      return("Invalid IIV structure")
-    }
+		if(sum(object@fixed.estim*mydiag(object@covariance.model))==0) {
+			message("[ SaemixModel : Error ] ")
+			if(sum(mydiag(object@covariance.model))==0) message("At least one parameter with IIV must be included in the model.") else message("At least one parameter with IIV must be estimated and not fixed in the model.")
+			return("Invalid IIV structure")
+		}
     if(is.na(sum(match(object@error.model,c('constant','proportional','combined', 'exponential'))))) {
       message("[ SaemixModel : Error ] Invalid residual error model")
       return("Invalid residual error model")
@@ -168,6 +168,8 @@ setMethod(
   signature="SaemixModel",
   definition=function(.Object,model,description,modeltype,psi0, name.response, name.sigma, transform.par,fixed.estim, error.model,covariate.model,covariance.model,omega.init,error.init, name.modpar, verbose=TRUE){
 #    cat ("--- initialising SaemixModel Object --- \n")
+    if(missing(modeltype)) modeltype<-"structural"
+    .Object@modeltype<-modeltype
     if(missing(model)) {
 #      cat("Error initialising SaemixModel object:\n   The model must be a function, accepting 3 arguments: psi (a vector of parameters), id (a vector of indices) and xidep (a matrix of predictors). Please see the documentation for examples.\n")
       return(.Object)
@@ -175,8 +177,6 @@ setMethod(
     .Object@model<-model
     if(missing(description)) description<-""
     .Object@description<-description
-    if(missing(modeltype)) modeltype<-"structural"
-    .Object@modeltype<-modeltype
     if(missing(psi0) || length(psi0)==0) {
       if(verbose) message("Error initialising SaemixModel object:\n   Please provide initial estimates for the fixed effect (a matrix with columns named after the parameters in the model).\n")
       return(.Object)
@@ -184,14 +184,14 @@ setMethod(
     npar<-dim(psi0)[2]
     if(missing(name.modpar) || length(name.modpar)==0) {
       y1<-try(name.modpar<-colnames(psi0))
-      if(class(y1)=="try-error") {
+      if(inherits(y1,"try-error")) {
         if(verbose) message("     Can't find parameter names.\n")
         name.modpar<-paste("theta",1:npar)
       }
     }
     if(is.null(colnames(psi0))) {
       y1<-try(colnames(psi0)<-name.modpar)
-      if(class(y1)=="try-error") {
+      if(inherits(y1,"try-error")) {
         if(verbose) message("Warning:\n   Problem with names of psi0\n")
         colnames(psi0)<-name.modpar<-paste("theta",1:npar)
       }
@@ -199,9 +199,9 @@ setMethod(
     if(missing(name.response)) name.response<-""
     .Object@name.response<-name.response
     if(!missing(covariate.model)) {
-      if(dim(psi0)[1]<2 & sum(covariate.model)>0){
-        psi0<-rbind(psi0,rep(0,dim(psi0)[2]))
-      }
+    	if(dim(psi0)[1]<2 & sum(covariate.model)>0){
+    		psi0<-rbind(psi0,rep(0,dim(psi0)[2]))
+    	}
     }
     if(is.null(rownames(psi0))) {
       rownames(psi0)<-rep("",dim(psi0)[1])
@@ -240,7 +240,7 @@ setMethod(
       if(verbose) message("Error initialising SaemixModel object:\n   The covariance model needs to have the same size as the number of parameters.\n")
       return(.Object)
     }
-    if(!valid_covariance.model(covariance.model, verbose)) return(.Object)
+    if(!validate.covariance.model(covariance.model, verbose)) return(.Object)
     if(is.null(colnames(covariance.model))) colnames(covariance.model)<-rownames(covariance.model)<-colnames(psi0)
     .Object@covariance.model<-covariance.model
     indx.omega<-which(diag(covariance.model)>0)
@@ -256,7 +256,7 @@ setMethod(
       diag.omegi<-rep(1,npar)
       j1<-which(transform.par==0)
       if(length(j1)>0) {
-        diag.omegi[j1]<-sapply(psi0[1,j1]**2,function(x) { x[x<1]<-1; return(x)})
+      	diag.omegi[j1]<-sapply(psi0[1,j1]**2,function(x) { x[x<1]<-1; return(x)})
 #      for(i in j1) d[i]<-max(psi0[i]^2,1)
       }
       omega.init<-diag(diag.omegi,nrow=npar)
@@ -265,11 +265,11 @@ setMethod(
       if(dim(omega.init)[1]==length(colnames(psi0))) colnames(omega.init)<-rownames(omega.init)<-colnames(psi0) else message("The dimensions of omega.init don't agree with the number of parameters")
     }
     .Object@omega.init<-omega.init
-    if(sum(.Object@fixed.estim*mydiag(.Object@covariance.model))==0) {
-      message("Error initialising SaemixModel object:\n")
-#     if(sum(mydiag(.Object@covariance.model))==0) cat("At least one parameter with IIV must be included in the model.\n") else cat("At least one parameter with IIV must be estimated and not fixed in the model.\n")
-      return(.Object)
-    }
+		if(sum(.Object@fixed.estim*mydiag(.Object@covariance.model))==0) {
+			message("Error initialising SaemixModel object:\n")
+#			if(sum(mydiag(.Object@covariance.model))==0) cat("At least one parameter with IIV must be included in the model.\n") else cat("At least one parameter with IIV must be estimated and not fixed in the model.\n")
+			return(.Object)
+		}
 
 ## Residual Error model.
 # error models are a + bf described by [a b]
@@ -334,12 +334,12 @@ setMethod(
 )
 
 ####################################################################################
-####      saemixModel class - accesseur       ####
+####			saemixModel class - accesseur				####
 ####################################################################################
 
 #' Get/set methods for SaemixModel object
 #' 
-#' Access slots of a SaemixModel object using the object["slot"] format
+#' Access slots of a SaemixModel object using the object\["slot"\] format
 #' 
 #' @param x object
 #' @param i element to be replaced
@@ -427,7 +427,7 @@ setReplaceMethod(
 )
 
 ####################################################################################
-####      SaemixModel class - method to print/show data   ####
+####			SaemixModel class - method to print/show data		####
 ####################################################################################
 
 #' @rdname print-methods
@@ -436,6 +436,10 @@ setReplaceMethod(
 setMethod("print","SaemixModel",
   function(x,...) {
     cat("Nonlinear mixed-effects model\n")
+    if( is.null(body(x@model))) {
+      cat("No model function set yet\n")
+      return()
+    }
     distrib<-c("normal","log-normal","probit","logit")
     cat("  Model function")
     if(length(x@description)>0 && nchar(x@description)>0) cat(": ",x@description)
@@ -454,7 +458,7 @@ setMethod("print","SaemixModel",
     print(tab,quote=FALSE)
     st1<-paste(x@name.sigma,x@error.init,sep="=")
     if (x@modeltype=="structural"){
-      cat("  Error model:",x@error.model,", initial values:",st1[x@indx.res],"\n")
+    cat("  Error model:",x@error.model,", initial values:",st1[x@indx.res],"\n")
     }
    if(dim(x@covariate.model)[1]>0) {
       cat("  Covariate model:")
@@ -539,7 +543,7 @@ setMethod("showall","SaemixModel",
 
 
 ####################################################################################
-####        Summary method for SaemixModel      ####
+####				Summary method for SaemixModel			####
 ####################################################################################
 
 #' @rdname summary-methods
@@ -548,7 +552,7 @@ setMethod("showall","SaemixModel",
 setMethod("summary","SaemixModel",
   function(object, print=TRUE, ...) {
     if(print) {
-      cat("Nonlinear mixed-effects model\n")
+    	cat("Nonlinear mixed-effects model\n")
     cat("  Model function")
     if(length(object@description)>0 && nchar(object@description)>0) {
       cat(": ",object@description,"\n")}
@@ -573,7 +577,7 @@ setMethod("summary","SaemixModel",
 )
 
 ####################################################################################
-####      SaemixModel class - method to plot      ####
+####			SaemixModel class - method to plot			####
 ####################################################################################
 
 #' Plot model predictions using an SaemixModel object
@@ -609,13 +613,13 @@ setMethod("plot","SaemixModel",
         npred<-1+length(predictors)
       } else {
         if(npred>1 & (missing(predictors) || length(predictors)<(npred-1))) {
-        cat("Please provide the value of the predictors other than X\n")
-        return()
+        message("Please provide the value of the predictors other than X\n")
+        return("Missing predictors")
       }
      }
     }
     if(length(x@name.response)>1) {
-      cat("Currently the plot can only be obtained for single-response models.\n")
+      message("Currently the plot can only be obtained for single-response models.\n")
       return()
     }
     npts<-100
@@ -633,33 +637,172 @@ setMethod("plot","SaemixModel",
     }
     ypred<-try(x@model(psi,id,xdep))
     if(!is.numeric(ypred)) {
-      cat("Problem when attempting to obtain predictions from the model.\n")
-      cat("Usage: plot(x,range=c(0,1),psi,predictors) \n")
-      cat("Possible solutions can be:\n")
-      cat("   1. provide suitable values for X (option range=c(<lower bound>, <upper bound>))\n")
-      cat("   2. provide values for additional predictors (option predictors=c(<value for predictor 1>, <value for predictor 2>, ...)).\n")
-      cat("   3. check values for the model parameters (defaults to component psi0[1,] of the model).\n")
-      cat("   4. the predictor used the X-axis is assumed to be in the first column; please check your model is written in a compatible way.\n")
+      message("Problem when attempting to obtain predictions from the model.\n")
+      message("Usage: plot(x,range=c(0,1),psi,predictors) \n")
+      message("Possible solutions can be:\n")
+      message("   1. provide suitable values for X (option range=c(<lower bound>, <upper bound>))\n")
+      message("   2. provide values for additional predictors (option predictors=c(<value for predictor 1>, <value for predictor 2>, ...)).\n")
+      message("   3. check values for the model parameters (defaults to component psi0[1,] of the model).\n")
+      message("   4. the predictor used the X-axis is assumed to be in the first column; please check your model is written in a compatible way.\n")
     } else {
-      if(length(x@name.X)==0 | length(x@name.predictors)==0) cat("Warning: X predictor supposed to be on the first axis\n")
-      cat("Plot characteristics:\n")
+      if(length(x@name.X)==0 | length(x@name.predictors)==0) message("Warning: X predictor supposed to be on the first axis\n")
+      message("Plot characteristics:\n")
       if(npred>1) {
         for(j in 1:dim(xdep)[2]) {
     if(length(x@name.X)==0) {
-      if(j>1) cat("   predictor:",colnames(xdep)[j],"=",xdep[1,j],"\n")
+      if(j>1) message("   predictor:",colnames(xdep)[j],"=",xdep[1,j],"\n")
     } else {
-      if(colnames(xdep)[j]!=x@name.X) cat("    predictor:",colnames(xdep)[j],"=",xdep[1,j],"\n")
+      if(colnames(xdep)[j]!=x@name.X) message("    predictor:",colnames(xdep)[j],"=",xdep[1,j],"\n")
     }
       }}
-      cat("   range for X-axis:",min(xval),"-",max(xval),"\n")
-      cat("   parameters used in the simulation:", paste(x@name.modpar,"=",psi[1,],collapse=", "),"\n")
+      message("   range for X-axis:",min(xval),"-",max(xval),"\n")
+      message("   parameters used in the simulation:", paste(x@name.modpar,"=",psi[1,],collapse=", "),"\n")
       plot(xval,ypred,type="l",xlab=ifelse(length(x@name.X)==0, "X",x@name.X),ylab=ifelse(length(x@name.response)==0, "Response",x@name.response))
     }
   }
 )
 
 ####################################################################################
-####      SaemixModel class - User-level function     ####
+####			SaemixModel class - method to obtain predictions given a set of predictors and parameters			####
+####################################################################################
+
+#' Predictions for a new dataset
+#' 
+#' @param object an SaemixModel object
+#' @param psi a vector or a dataframe giving the parameters for which predictions are to be computed (defaults to NA). 
+#' The number of columns in psi (or the number of elements of psi, if psi is given as a vector) should match the number of
+#' parameters in the model, otherwise an error message will be shown and the function will return empty.
+#' If psi is NA, the predictions are computed for the population parameters in the model (first line of the psi0 slot). 
+#' If psi is a dataframe, each line will be used for a separate 'subject' in the predictors dataframe, as 
+#' indicated by the id argument; if id is not given, only the first line of psi will be used. 
+#' @param predictors a dataframe with the predictors for the model (must correspond to the predictors used by the model function)
+#' @param id a vector of indices of length equal to the number of lines in predictors, matching each line of predictors to the 
+#' corresponding line in psi, ie the parameters for this predictors (defaults to NA). If id is given, the unique values in id must be equal
+#' to the number of lines in psi, otherwise id will be set to 1. If id is given and its values do not take the consecutive values 1:N, the
+#' indices will be matched to 1:N to follow the lines in psi.
+#' 
+#' @details The function uses the model slot of the SaemixModel object to obtain predictions, using the predictors object. The
+#' user is responsible for giving all the predictors needed by the model function.
+#' if psi is not given, the predictions will be computed for the population parameters (first line of the psi0 slot) of the object.
+#' 
+#' @details The predictions correspond to the structure of the model; for models defined in terms of their likelihood, the predictions 
+#' are the log-pdf of the model (see documentation for details).
+#' 
+#' @details Warning: this function is currently under development and the output may change in future versions of the package to conform to the usual predict functions.
+#' 
+#' @return a list with two components
+#' \describe{
+#' \item{param}{a dataframe with the estimated parameters}
+#' \item{predictions}{a dataframe with the population predictions}
+#' }
+#' 
+#' @aliases predict.SaemixModel
+#' 
+#' @examples 
+#' # TODO
+#' @export
+
+predict.SaemixModel<-function(object, predictors, psi=NA, id=NA) {
+  xidep<-predictors
+  if(is.na(id) || length(id)!=dim(predictors)[1]) 
+    id<-rep(1,dim(xidep)[1]) 
+  idkeep<-id
+  if(max(id)>length(unique(id))) { # indexes need to go from 1 to N
+    id1<-1:length(unique(id))
+    id2<-unique(id)
+    id<-id1[match(id,id2)]
+  }
+  if(is.na(psi)) psi<-object["psi0"][1,,drop=FALSE]
+  if(is.null(dim(psi))) psi<-as.data.frame(t(psi)) # psi given as a vector
+  if(dim(psi)[2] != object@nb.parameters) {
+    message(paste0("psi must have a number of columns equal to the number of parameters in the model (",object@nb.parameters,")\n")
+    )
+    return()
+  }
+  if(dim(psi)[1]==1 & length(unique(id))>1)
+    psi<-do.call(rbind,rep(list(psi),length(unique(id))))
+  colnames(psi)<-colnames(object["psi0"])
+  rownames(psi)<-NULL
+  ypred<-object["model"](psi, id, xidep)
+  return(list(param=cbind(id=1:dim(psi)[1],psi), predictions=data.frame(id=idkeep, xidep, pred=unname(ypred))))
+}
+#' Plot model predictions for a new dataset
+#' 
+#' @param smx.model an SaemixModel object
+#' @param smx.data an SaemixData object
+#' @param psi a vector or a dataframe giving the parameters for which predictions are to be computed (defaults to NA). 
+#' The number of columns in psi (or the number of elements of psi, if psi is given as a vector) should match the number of
+#' parameters in the model, otherwise an error message will be shown and the function will return empty.
+#' If psi is NA, the predictions are computed for the population parameters in the model (first line of the psi0 slot). 
+#' If psi is a dataframe, each line will be used for a separate subject of the smx.data object. Elements of psi will be recycled 
+#' if psi has less lines than the number of subjects in the dataset.
+#' 
+#' @details The function uses the model slot of the SaemixModel object to obtain predictions, using the dataset contained in the 
+#' SaemixData object. The user is responsible for making sure data and model match.
+#' if psi is not given, the predictions will be computed for the population parameters (first line of the psi0 slot) of the object.
+#' 
+#' @details Currently this function only works for models defined as 'structural'.
+#' 
+#' @return a ggplot object
+#' 
+#' @aliases plot.SaemixModel
+#' 
+#' @examples 
+#' # TODO
+#' @export
+
+####################################################################################
+####			SaemixModel & SaemixData class - method to plot	predictions from a model for the data in a dataset		####
+####################################################################################
+
+plot.saemixModel <- function(smx.model, smx.data, psi=NA) {
+  if(smx.model@modeltype!="likelihood") {
+    message("Currently plots of the model are only available for continuous response models\n")
+    return()
+  }
+  if(is.na(psi)) psi<-smx.model["psi0"][1,,drop=FALSE]
+  if(is.null(dim(psi))) psi<-as.data.frame(t(psi)) # psi given as a vector
+  if(dim(psi)[2] != smx.model@nb.parameters) {
+    message(paste0("psi must have a number of columns equal to the number of parameters in the model (",smx.model@nb.parameters,")\n"))
+    return()
+  }
+  if(dim(psi)[1]==1 || dim(psi)[1]<smx.data@N)
+    psi<-do.call(rbind,rep(list(psi),length.out=smx.data@N))
+  
+  nvalues<-100
+  xt<-seq(min(smx.data@data[,smx.data["name.X"]]), max(smx.data@data[,smx.data["name.X"]]), length.out=nvalues)
+  xidep<-data.frame(x=xt)
+  colnames(xidep)<-smx.data["name.X"]
+  if(length(smx.data@name.predictors)>1) {
+    id<-smx.data@data[,smx.data@name.group]
+    otherpred<-smx.data@name.predictors[smx.data@name.predictors != smx.data["name.X"]]
+    x1<-smx.data@data[match(unique(id), id), otherpred, drop=FALSE]
+    dat1<-NULL
+    for(i in 1:length(unique(id)))
+      dat1<-rbind(dat1, 
+                  do.call(rbind,rep(list(x1[i,,drop=FALSE]), nvalues)))
+    xidep<-cbind(xidep, dat1)
+    colnames(xidep[2:dim(xidep)[2]])<-otherpred
+    xidep<-xidep[,smx.data["name.predictors"]] # Sort the predictors back in the correct order...
+  }
+  id<-rep(1:length(unique(id)), each=nvalues)
+  y<-predict.SaemixModel(smx.model, predictors=xidep, psi=psi, id=id)
+  gpred<-cbind(id=id,xidep,y=y$predictions$pred)
+  colnames(gpred)[colnames(gpred)==smx.data@name.X]<-"x"
+  
+  gdat<-smx.data@data
+  colnames(gdat)[colnames(gdat)==smx.data@name.X]<-"x"
+  colnames(gdat)[colnames(gdat)==smx.data@name.response]<-"y"
+  colnames(gdat)[colnames(gdat)==smx.data@name.group]<-"id"
+  
+  g1<-ggplot(data=gdat, aes(x=x, y=y, group=id)) + geom_point() + geom_line(data=gpred,aes(x=x, y=y)) + facet_wrap(.~id, nrow=3, ncol=4) + 
+    labs(x=smx.data@name.X, y=smx.data@name.response) + theme_bw()
+  return(g1)
+} 
+
+
+####################################################################################
+####			SaemixModel class - User-level function			####
 ####################################################################################
 
 #' Function to create a SaemixModel object
@@ -728,14 +871,14 @@ setMethod("plot","SaemixModel",
 #' @examples
 #' 
 #' model1cpt<-function(psi,id,xidep) { 
-#'    dose<-xidep[,1]
-#'    tim<-xidep[,2]  
-#'    ka<-psi[id,1]
-#'    V<-psi[id,2]
-#'    CL<-psi[id,3]
-#'    k<-CL/V
-#'    ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
-#'    return(ypred)
+#' 	  dose<-xidep[,1]
+#' 	  tim<-xidep[,2]  
+#' 	  ka<-psi[id,1]
+#' 	  V<-psi[id,2]
+#' 	  CL<-psi[id,3]
+#' 	  k<-CL/V
+#' 	  ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
+#' 	  return(ypred)
 #' }
 #' 
 #' saemix.model<-saemixModel(model=model1cpt,
@@ -755,7 +898,7 @@ saemixModel<-function(model,psi0,description="",modeltype ="structural", name.re
     return("Creation of SaemixModel failed")  
   }
   xcal<-try(typeof(model))
-  if(class(xcal)=="try-error") {
+  if(inherits(xcal,"try-error")) {
     if(verbose) cat("Error in saemixModel:\n   the model function does not exist.\n")
     return("Creation of SaemixModel failed")  
   }
@@ -788,7 +931,7 @@ saemixModel<-function(model,psi0,description="",modeltype ="structural", name.re
   }
   xmod<-try(new(Class="SaemixModel",model=model,description=description , modeltype=modeltype,psi0=psi0, name.response=name.response, name.sigma=name.sigma, error.model=error.model, transform.par=transform.par,fixed.estim=fixed.estim, covariate.model=covariate.model,covariance.model=covariance.model, omega.init=omega.init,error.init=error.init,name.modpar=name.modpar))
   if(class(xmod)=="SaemixModel") x1<-try(validObject(xmod),silent=FALSE) else x1<-xmod
-  if(class(x1)!="try-error") {
+  if(!inherits(x1,"try-error")) {
     if(verbose) cat("\n\nThe following SaemixModel object was successfully created:\n\n")
     } else xmod<-"Creation of SaemixModel failed"
   if(verbose) print(xmod)
@@ -802,9 +945,10 @@ saemixModel<-function(model,psi0,description="",modeltype ="structural", name.re
 #' 
 #' Extract or replace the diagonal of a matrix, or construct a diagonal matrix (replace diag function from R-base)
 #' 
-#' @param x a matrix, vector or 1D array, or missing.
-#' @param nrow, ncol Optional dimensions for the result when x is not a matrix. 
-#' @param value either a single value or a vector of length equal to that of the current diagonal. Should be of a mode which can be coerced to that of x.
+#' @param x	a matrix, vector or 1D array, or missing.
+#' @param nrow Optional number of rows for the result when x is not a matrix. 
+#' @param ncol Optional number of columns for the result when x is not a matrix. 
+#' 
 #' @return If x is a matrix then diag(x) returns the diagonal of x. The resulting vector will have names if the matrix x has matching column and rownames.
 #' @seealso \code{diag}
 #' @author Emmanuelle Comets <emmanuelle.comets@@inserm.fr>, Audrey Lavenu,
@@ -848,34 +992,60 @@ mydiag <- function (x = 1, nrow, ncol) {
 }
 
 ############ VALIDITY OF COVARIANCE MODEL 
-valid_covariance.model <- function(covariance.model, verbose=TRUE){
-  cm <- covariance.model
-  
+
+
+#' Validate the structure of the covariance model
+#' 
+#' Check that a matrix corresponds to a structure defining a covariance model for a non-linear mixed effect model.
+#' Such a matrix should be composed of only 0s and 1s, with at least one element set to 1, and should be square and symmetrical.
+#' 1s on the diagonal indicate that the corresponding parameter has interindividual variability and that its variance will be estimated.
+#' 1s as off-diagonal elements indicate that a covariance between the two corresponding parameters will be estimated.
+#' 
+#' @param x	a matrix
+#' @param verbose	a boolean indicating whether warnings should be output if x is not a valid covariance model
+#' 
+#' @return a boolean, TRUE if x is an acceptable structure and FALSE if not. Messages will be output to describe why x isn't a valid covariance model if the argument verbose is TRUE.
+#' @seealso \code{SaemixModel}
+#' @author Emmanuelle Comets <emmanuelle.comets@@inserm.fr>, Belhal Karimi
+#' @keywords models
+#' @examples
+#' 
+#' covarmodel<-diag(c(1,1,0))
+#' validate.covariance.model(covarmodel) # should return TRUE
+#' 
+#' @export validate.covariance.model
+#' 
+validate.covariance.model <- function(x, verbose=TRUE){
   #non-square matrix
-  if(dim(cm)[1]!=dim(cm)[2]) {
+  if(dim(x)[1]!=dim(x)[2]) {
     if(verbose) message("Error initialising SaemixModel object:\n   The covariance model needs to be a square matrix, please check dimensions.\n")
     return(FALSE)
   }
-  
+  # only 0s
+  s <- sum(abs(x))
+  if(s==0) {
+    if(verbose) message("At least one parameter should have IIV in the model, the covariance model may not be only 0s.")
+#   return(FALSE)
+  }
   
   #values other than 1 or 0
-  s <- sum(cm[cm!=1 & cm!=0])
+  s <- sum(x[x!=1 & x!=0])
   if (s>0){
     if(verbose) message("Error initialising SaemixModel object:\n  Invalid covariance model, only 0 or 1 values accepted, please change covariance model.\n")
     return(FALSE)
   }
   
   #asymmetrical
-  if (!all(t(cm)==cm)){
-    if(verbose) message("Error initialising SaemixModel object:\n  The matrix of covariance model is not symmetrical, please change covariance model.\n")
+  if (!all(t(x)==x)){
+    if(verbose) message("Error initialising SaemixModel object:\n  The matrix defining the covariance model is not symmetrical, please change covariance model.\n")
     return(FALSE)
   }
   
   #values other than 0 when diagonal number is 0
-  for (i in 1:nrow(cm)){
-    for(j in 1:ncol(cm)){
-      if (cm[i,j]!=0){
-        if(cm[i,i]==0 |cm[j,j]==0){
+  for (i in 1:nrow(x)){
+    for(j in 1:ncol(x)){
+      if (x[i,j]!=0){
+        if(x[i,i]==0 |x[j,j]==0){
           if(verbose) message("Error initialising SaemixModel object:\n  The covariance model is invalid, please change covariance model.\n")
           return(FALSE)
         }

@@ -1,0 +1,142 @@
+---
+title: "Package compilation for saemix 3.0 and basic run"
+author: "Emmanuelle Comets"
+date: "18/10/2021"
+output:
+  pdf_document:
+  latex_engine: xelatex
+html_document: default
+---
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(devtools)
+library(roxygen2)
+saemixDir<-"/home/eco/work/saemix/saemixextension"
+workDir<-"/home/eco/work/saemix/versions/saemix3.0"
+knitr::opts_chunk$set(root.dir = workDir)
+```
+
+## Copy files
+
+```{r copyFileDev}
+cmd<-paste("rm -r ",file.path(workDir,"*"),sep="")
+system(cmd)
+
+dir.create(workDir)
+dir.create(file.path(workDir,"saemix"))
+
+cmd<-paste("cp -rp ",file.path(saemixDir,"R")," ", file.path(workDir,"saemix","/"),sep="")
+system(cmd)
+for(ifile in c("CHANGES","DESCRIPTION")) {
+  cmd<-paste("cp ",file.path(saemixDir,ifile)," ", file.path(workDir,"saemix"),sep="")
+  system(cmd)
+}
+
+
+```
+
+## Compilation
+
+```{r compilation}
+# Reduce size of viral load simulation data (to 500 simulations) for CRAN
+setwd(file.path(workDir,"saemix"))
+knitr::opts_chunk$set(root.dir = file.path(workDir,"saemix"))
+
+devtools::document(file.path(workDir,"saemix"))
+roxygenise()
+setwd(workDir)
+system("R CMD build saemix")
+
+
+testExamples<-TRUE
+# Test examples
+if(testExamples) system("R CMD check --as-cran --run-donttest saemix_3.0.tar.gz") else system("R CMD check --as-cran saemix_3.0.tar.gz")
+```
+
+
+#### Examples on CRAN
+
+Examples with CPU or elapsed time > 5s
+              user system elapsed
+cow.saemix  18.827  0.088  18.916
+PD1.saemix  13.894  0.040  14.092
+theo.saemix  7.095  0.016   7.112
+
+### Warnings
+
+## Check
+
+### Install package in development mode
+  
+```{r devModeInstall}
+dev_mode() # development mode
+install.packages(pkgs=file.path(workDir,"saemix_3.0.tar.gz"),repos=NULL)
+library(saemix)
+library(testthat)
+```
+
+### Running theopp example
+
+Documentation not found
+
+```{r helpTheo}
+?theo.saemix
+```
+
+Run on the theophylline example
+
+```{r runTheo, echo=FALSE}
+data(theo.saemix)
+
+saemix.data<-saemixData(name.data=theo.saemix,header=TRUE,sep=" ",na=NA,
+   name.group=c("Id"),name.predictors=c("Dose","Time"),
+   name.response=c("Concentration"),name.covariates=c("Weight","Sex"),
+   units=list(x="hr",y="mg/L", covariates=c("kg","-")), name.X="Time", verbose=FALSE)
+print(saemix.data)
+
+model1cpt<-function(psi,id,xidep) { 
+	  dose<-xidep[,1]
+	  tim<-xidep[,2]  
+	  ka<-psi[id,1]
+	  V<-psi[id,2]
+	  CL<-psi[id,3]
+	  k<-CL/V
+	  ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
+	  return(ypred)
+}
+
+saemix.model<-saemixModel(model=model1cpt,
+  description="One-compartment model with first-order absorption", 
+  psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3, byrow=TRUE,
+  dimnames=list(NULL, c("ka","V","CL"))),transform.par=c(1,1,1),
+  covariate.model=matrix(c(0,1,0,0,0,0),ncol=3,byrow=TRUE),fixed.estim=c(1,1,1),
+  covariance.model=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE),
+  omega.init=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE),error.model="constant", verbose=FALSE)
+print(saemix.model)
+
+saemix.fit<-saemix(model=saemix.model,
+                   data=saemix.data,
+                   control=list(seed=632545,directory="newtheo", save=FALSE,save.graphs=FALSE, warnings=FALSE))
+
+# Prints a summary of the results
+print(saemix.fit)
+
+# Outputs the estimates of individual parameters
+psi(saemix.fit)
+```
+
+Plot results:
+
+```{r plotTheo, echo=FALSE}
+# Shows some diagnostic plots to evaluate the fit
+plot(saemix.fit)
+plot(saemix.fit, plot.type="vpc")
+plot(saemix.fit, plot.type="npde")
+plot(saemix.fit, plot.type="individual")
+```
+
+```{r deactivateDevMode, echo=FALSE, hide=T}
+dev_mode()
+```
+

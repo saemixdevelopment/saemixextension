@@ -1,0 +1,239 @@
+%\documentclass[journal]{../style/IEEE/IEEEtran}
+\documentclass[11pt,a4paper]{book}
+\usepackage{epsfig}
+%\usepackage{graphicx}
+\usepackage[dvipsnames]{color}
+\DeclareGraphicsExtensions{.jpg, .eps}
+\DeclareGraphicsRule{.jpg}{eps}{.jpg.bb}{`jpeg2ps -h -r 600#1}
+\usepackage{amsmath,amssymb,amsthm,indentfirst,array,bbm}
+\usepackage{fancyheadings}
+\usepackage{longtable}
+
+%\usepackage{wsuipa}
+
+\usepackage[pdftex,colorlinks]{hyperref}
+%\usepackage[pdftex]
+%\usepackage[colorlinks]{hyperref}
+
+\unitlength 1cm \textwidth 16cm \textheight 20.5cm \topmargin 0.0cm \oddsidemargin 0cm
+\evensidemargin 0cm
+\parskip 0.3cm
+\setlength{\LTcapwidth}{\textwidth} % caption length for longtable
+
+\begin{document}
+%\baselineskip 0.8cm
+
+\bibliographystyle{acm}
+
+\def\monolix{{\sc SAEMIX}}
+\def\R{{\sf R}}
+
+\def\chemingraphiques{fig_nb/}
+%\def\cheminbiblio{}
+\def\fixed_effect{\mu}
+\def\covariate{c}
+\def\Covariate{C}
+%\def\psig{\boldsymbol{\phi}}
+\def\psig{\psi}
+\def\psigprime{\psig^{\prime}}
+\def\psigiprime{\psig_i^{\prime}}
+\def\psigk{\psig^{(k)}}
+%\def\psigki{\boldsymbol{\phi_i^{(k)}}}
+\def\psigki{{\psig_i^{(k)}}}
+\def\psigkun{\psig^{(k+1)}}
+\def\psigkuni{\psig_i^{(k+1)}}
+%\def\psigi{\boldsymbol{\phi_i}}
+\def\psigi{{\psig_i}}
+\def\psigil{{\psig_{i,\ell}}}
+\def\phig{{\phi}}
+\def\phigi{{\phig_i}}
+\def\phigil{{\phig_{i,\ell}}}
+\def\intercept{{\fixed_effect}}
+%\def\mugkun{\boldsymbol{\fixed_effect_k}}
+\def\mugkun{\fixed_effect_{k+1}}
+%\def\etagi{\boldsymbol{\eta_i}}
+\def\etagi{{\eta_i}}
+%\def\magi{\boldsymbol{A_i}}
+\def\magi{{\Covariate_i}}
+%\def\mgamma{\boldsymbol{\Gamma}}
+%\def\mgammakun{\boldsymbol{\Gamma_k}}
+\def\IIV{{\Omega}}
+\def\IIVk{{\IIV_{k}}}
+\def\IIVkun{{\IIV_{k+1}}}
+\def\sigmakun{\sigma^2_{{k+1}}}
+%\def\thetag{\boldsymbol{\theta}}
+\def\thetag{{\theta}}
+%\def\thetagk{\boldsymbol{\theta_k}}
+\def\thetagk{{\theta_k}}
+%\def\thetagkun{\boldsymbol{\theta_{k+1}}}
+\def\thetagkun{{\theta_{k+1}}}
+%\def\thetagkunm{\boldsymbol{\theta_{k-1}}}
+\def\thetagkunm{\theta_{k-1}}
+\def\sgk{s_{k}}
+\def\sgkun{s_{k+1}}
+%\def\yg{\boldsymbol{y}}
+%\def\xg{\boldsymbol{x}}
+\def\yg{y}
+\def\xg{x}
+\def\meanprior{{\fixed_effect_\star}}
+\def\varprior{{V_\star}}
+\def\thetaprior{{\theta_\star}}
+\def\dprior{{d_\star}}
+
+\def\nbeta{{n_{\fixed_effect}}}
+\def\neta{{n_\eta}}
+\def\ncov{M}
+\def\npsi{{n_\psig}}
+\def\nreg{{n_x}}
+\def\npde{{\rm npde}}
+\def\pde{{\rm pde}}
+\def\pd{{\rm pd}}
+\def\V{{\mathbf{V}}}
+\def\E{{\mathbf{E}}}
+\def\y{{\mathbf{y}}}
+\def\true{{\sf TRUE}}
+\def\false{{\sf FALSE}}
+
+% raccourcis de traitement de texte
+\newcommand{\h}{\hspace{0.5cm}}
+\newcommand{\Prob}[1]{ \mathbb{P}\!\left(#1\right)}
+\newcommand{\esp}[1]{\mathbb{E}\left(#1\right)}
+\newcommand{\var}[1]{\mbox{Var}\left(#1\right)}
+\newcommand{\eq}[1]{(\ref{#1})}
+%
+%\newcommand{\Rset}[1]{\mbox{$\mathbb{R}^{#1}$}}
+\newcommand{\Rset}{\mbox{$\mathbb{R}$}}
+\newcommand{\Nset}{\mbox{$\mathbb{N}$}}
+\newcommand{\Lset}{\mbox{$\mathbb{L}_1(\mathbb{R})$}}
+\newcommand{\Cset}[1]{\mbox{$\mathbb{C}^{#1}$}}
+\newcommand{\Pset}{\mbox{$\mathbb{P}$}}
+\newcommand{\Fr}{\mbox{$\mathcal{F}$}}
+\newcommand{\Sr}{\mbox{$\mathcal{S}$}}
+\newcommand{\Er}{\mbox{$\mathcal{E}$}}
+\newcommand{\Lr}{\mbox{$\mathcal{L}$}}
+\newcommand{\Yr}{\mbox{$\mathcal{Y}$}}
+\newcommand{\Nr}{\mbox{$\mathcal{N}$}}
+\newcommand{\Kr}{\mbox{$\mathcal{K}$}}
+\newcommand{\Xr}{\mbox{$\mathcal{X}$}}
+\newcommand{\limite}[2]{\mathop{\longrightarrow}\limits_{\mathrm{#1}}^{\mathrm{#2}}}
+\newcommand{\pscal}[2] { \left< #1 , #2 \right> }
+\newcommand{\tils} {\tilde{S}}
+\newcommand{\Dt}[1]{\partial_\theta #1}
+\newcommand{\DDt}[1]{\partial^2_\theta #1}
+\newcommand{\Ds}[1]{\partial_s #1}
+\newcommand{\htheta}{{\widehat{\theta}}}
+\newcommand{\hthetaf}{{\widehat{\theta}_f}}
+\newcommand{\hmu}{{\widehat{\intercept}}}
+\newcommand{\hGamma}{{\widehat{\IIV}}}
+\newcommand{\homega}{{\widehat{\omega}}}
+\newcommand{\hthetag}{{\widehat{\theta}}}
+\def\ag{a}
+\def\bg{b}
+\def\cg{c}
+\def\Ag{A}
+\def\Bg{B}
+\def\Cg{C}
+%\newcommand{\hthetag}{{\widehat{\theta}_{ML}}}
+%\newcommand{\hthetag}{\theta_{ML}}
+\newcommand{\thes}{{\theta^\star}}
+\newcommand*{\ligne}[1][1]{\noindent \rule[0.4em]{\textwidth}{0.5pt}\par}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+\newtheorem{lem}{Lemma}[section]
+\newtheorem{proposition}[lem]{Proposition}
+\newtheorem{Rem}{Remark}
+%
+%\def\lignem{\noindent \line(1,0){6} \ \ {\small \monolix} \line(1,0){6} \\[0.2cm] }
+\def\ligne{\noindent \line(1,0){14}}
+\newcommand{\lignex}[1]{\noindent \line(1,0){7} \ \ {\small \sc Examples } \line(1,0){6} \\[0.2cm]
+\begin{minipage}[t]{15cm} \texttt{\small  #1} \end{minipage} \\[0.2cm] \line(1,0){15} }
+\newcommand{\lignem}[1]{\noindent \line(1,0){7} \ \ {\small \monolix } \line(1,0){6} \\[0.2cm]
+\begin{minipage}[t]{15cm} {\texttt{\small  #1}} \end{minipage} \\[0.2cm] \line(1,0){15} }
+
+\pagestyle{empty}
+\begin{center}
+$\phantom{  }$ 
+\vskip 3cm
+{\color[named]{Maroon}
+{\Huge \bf \monolix} \\[.5cm]
+{\Large Version 3.0} \\[.5cm]
+{\sc November 2021}
+\\[1cm]
+}
+
+{\color[named]{Brown} { \Large \itshape Emmanuelle Comets~$^{1,2}$, Audrey Lavenu~$^2$, Marc Lavielle~$^3$}
+}
+
+{\color[named]{Brown} { \Large \itshape Belhal Karimi~$^{4}$, Maud Delattre~$^5$, Johannes Ranke~$^6$}
+}
+
+{\color[named]{Brown} { \Large \itshape Lucie Fayette~$^{1,2}$, Marilou Chanel~$^{1,2}$, Sofia Kaisaridi$^{1,2}$}
+}
+\vskip 5cm
+\end{center}
+
+{\color[named]{Brown}{$^1$ INSERM, IAME UMR 1137, Paris, France;  Universit\'e Paris Diderot, Paris, France}}
+
+{\color[named]{Brown}{$^2$ University Rennes-I, Rennes, France; INSERM CIC 1414, Rennes, France}}
+
+{\color[named]{Brown}{$^3$ INRIA, Saclay, France}}
+
+{\color[named]{Brown}{$^4$ INRIA, Saclay, France}}
+
+{\color[named]{Brown}{$^5$ France}}
+
+{\color[named]{Brown}{$^5$ Germany}}
+
+\vskip 1cm
+{\color[named]{Brown}{\bf Email:} emmanuelle.comets@inserm.fr}
+
+\pagestyle{fancy}
+\renewcommand{\chaptermark}[1]{
+\markboth{\sc{
+}\ {\sc \thechapter}.
+\ #1}{}}
+\renewcommand{\sectionmark}[1]{
+\markright{#1}{}}
+
+%\renewcommand{\sectionmark}[1]{\markright{#1}{}}
+\renewcommand{\footrulewidth}{1pt}
+\newcommand{\D}{\displaystyle} \normalsize
+%\renewcommand{\sectionmark}[1]{\markboth{#1}{}}
+%\renewcommand{\subsectionmark}[1]{\markright{#1}}
+%\rfoot{\leftmark\\\rightmark} \lhead{\includegraphics[width=1cm]{fig_nb/logo_monolix.png}}
+
+%\lhead{\includegraphics[width=1cm]{fig_nb/logo_monolix.png}}
+%\rfoot{\sc SAEM 0.9}
+%\lhead[]{\bfseries \sectionmark}
+%\chead{}
+%\rhead[]{\bfseries \sectionmark}
+%\rhead{\leftmark}
+
+\parskip 0.1cm
+%{\scriptsize
+{\small \tableofcontents }
+\parskip 0.4cm
+
+\newpage
+
+\input{intro_saem.tex}
+
+\newpage
+
+\input{methodo_saem.tex}
+
+\newpage
+
+\input{examples_saem.tex}
+
+\newpage
+
+\input{classS4.tex}
+
+\newpage
+\addcontentsline{toc}{chapter}{{\bf Bibliography}}
+
+\bibliography{docsaem}
+
+\end{document}
+

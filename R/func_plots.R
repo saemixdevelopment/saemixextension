@@ -43,12 +43,12 @@
 #' \item par.name Name of the parameter to be used in the plots. Defaults to the first parameter in the model
 #' \item pch Symbol type. Defaults to 20, corresponding to small dots
 #' \item pcol Main symbol color (default: black)
-#' \item range Range (expressed in number of SD) over which to plot the marginal distribution. Defaults to 4, so that the random effects for the marginal distribution is taken over the range [-4 SD; 4 SD]
+#' \item range Range (expressed in number of SD) over which to plot the marginal distribution. Defaults to 4, so that the random effects for the marginal distribution is taken over the range \[-4 SD; 4 SD\]
 #' \item res.plot Type of residual plot ("res.vs.x": scatterplot versus X, "res.vs.pred": scatterplot versus predictions, "hist": histogram, "qqplot": QQ-plot) (default: "res.vs.x")
 #'\item smooth When TRUE, smoothed lines are added in the plots of predictions versus observations (default: FALSE)
 #' \item tit Title of the graph (default: none) 
 #' \item type Type of the plot (as in the \emph{R} plot function. Defaults to "b", so that both lines and symbols are shown
-#' \item units Name of the predictor used in the plots (X). Defaults to the name of the first predictor in the model (saemix.data$names$predictors[1])
+#' \item units Name of the predictor used in the plots (X). Defaults to the name of the first predictor in the model (saemix.data$names$predictors\[1\])
 #' \item vpc.bin Number of binning intervals when plotting the VPC (the (vpc.bin-1) breakpoints are taken as the empirical quantiles of the X data). Defaults to 10
 #' \item vpc.interval Size of the prediction intervals.Defaults to 0.95 for the 95\% prediction interval
 #' \item vpc.obs Should the observations be overlayed on the VPC plot. Defaults to TRUE
@@ -71,9 +71,12 @@
 #' } 
 #' 
 #' @aliases saemix.plot.setoptions saemix.data.setoptions replace.plot.options replace.data.options
+#' 
 #' @param saemixObject an object returned by the \code{\link{saemix}} function
+#' 
 #' @return A list containing the options set at their default value. This list
 #' can be stored in an object and its elements modified to provide suitable graphs.
+#' 
 #' @author Emmanuelle Comets \email{emmanuelle.comets@@inserm.fr}, Audrey Lavenu, Marc Lavielle.
 #' @seealso \code{\link{SaemixObject}},\code{\link{saemix}},
 #' \code{\link{saemix.plot.data}}, \code{\link{saemix.plot.convergence}},
@@ -215,7 +218,9 @@ replace.plot.options<-function(plot.opt,...) {
       if(match(names(args1)[i],names(plot.opt),nomatch=0)>0)    
 #    plot.opt[[names(args1)[i]]]<-args1[[i]] else {
     plot.opt[[names(args1)[i]]]<-eval(args1[[i]]) else {
-      if(names(args1)[i]!="plot.type") cat("Argument",names(args1)[i],"not available, check spelling.\n")
+      if(names(args1)[i]!="plot.type") {
+        if(plot.opt$interactive) cat("Argument",names(args1)[i],"not available, check spelling.\n")
+      }
     }
    }
   }
@@ -291,7 +296,9 @@ replace.plot.options<-function(plot.opt,...) {
 #' @param vpc if TRUE, produce Visual Predictive Check plots. Defaults to FALSE
 #' @param npde if TRUE, produce plots of the npde. Defaults to FALSE
 #' @param \dots optional arguments passed to the plots
+#' 
 #' @return None
+#' 
 #' @author Emmanuelle Comets <emmanuelle.comets@@inserm.fr>, Audrey Lavenu,
 #' Marc Lavielle.
 #' @seealso \code{\link{SaemixObject}},\code{\link{saemix}},
@@ -385,7 +392,7 @@ saemix.plot.select<-function(saemixObject,data=FALSE,convergence=FALSE, likeliho
     if(!cok %in% c("y","Y","yes","")) boolpred<-FALSE 
   }
   if(boolsim & !boolres) {
-    saemixObject<-saemix.simul(saemixObject)
+    saemixObject<-simulate.saemix(saemixObject)
     assign(namObj,saemixObject,envir=parent.frame())
   }
   if(boolpred) {
@@ -436,6 +443,7 @@ saemix.plot.select<-function(saemixObject,data=FALSE,convergence=FALSE, likeliho
 #' @aliases default.saemix.plots basic.gof advanced.gof covariate.fits individual.fits
 #' @param saemixObject an object returned by the \code{\link{saemix}} function
 #' @param \dots optional arguments passed to the plots
+#' 
 #' @return Depending on the type argument, the following plots are produced:
 #' \itemize{
 #' \item{default.saemix.plots}{ by default, the following plots are
@@ -534,7 +542,7 @@ default.saemix.plots<-function(saemixObject,...) {
 
 basic.gof<-function(saemixObject,...) {
 # Basic goodness of fit plots
-  cat("Now producing basic goodness of fit plots\n")
+  if(saemixObject@options$warnings) cat("Now producing basic goodness of fit plots\n")
   namObj<-deparse(substitute(saemixObject))
   if(length(saemixObject["results"]["ipred"])==0) {
     saemixObject<-saemix.predict(saemixObject)
@@ -545,7 +553,7 @@ basic.gof<-function(saemixObject,...) {
 
 advanced.gof<-function(saemixObject,...) {
 # Advanced goodness of fit plots
-  cat("Now producing advanced goodness of fit plots\n")
+  if(saemixObject@options$warnings) cat("Now producing advanced goodness of fit plots\n")
   namObj<-deparse(substitute(saemixObject))
   if(length(saemixObject["results"]["ipred"])==0) {
     saemixObject<-saemix.predict(saemixObject)
@@ -560,7 +568,7 @@ advanced.gof<-function(saemixObject,...) {
 
 individual.fits<-function(saemixObject,...) {
 # Individual plots
-  cat("Now producing plots of individual fits\n")
+  if(saemixObject@options$warnings) cat("Now producing plots of individual fits\n")
   namObj<-deparse(substitute(saemixObject))
   if(length(saemixObject["results"]["ipred"])==0) {
     saemixObject<-saemix.predict(saemixObject)
@@ -572,10 +580,10 @@ individual.fits<-function(saemixObject,...) {
 covariate.fits<-function(saemixObject,which="parameters",...) {
 # Parameters or random effects versus covariates
   if(which=="parameters") {
-    cat("Now producing plots of parameters versus covariates\n")
+    if(saemixObject@options$warnings) cat("Now producing plots of parameters versus covariates\n")
     plot(saemixObject,plot.type="parameters.vs.covariates",...)
   } else {
-    cat("Now producing plots of random effects versus covariates\n")
+    if(saemixObject@options$warnings) cat("Now producing plots of random effects versus covariates\n")
     plot(saemixObject,plot.type="randeff.vs.covariates",...)
   }
 }
@@ -756,6 +764,8 @@ covariate.fits<-function(saemixObject,which="parameters",...) {
 saemix.plot.data<-function(saemixObject,...) {
 # Plot of the data as spaghetti plot
 # options: change data point, line type, line color, lines plotted or not, points plotted or not...
+  oldpar <- par(no.readonly = TRUE)    # code line i
+  on.exit(par(oldpar))            # code line i + 1
   plot.opt<-saemixObject["prefs"]
   plot.opt$new<-TRUE
   plot.opt$plot.type<-"l"
@@ -772,6 +782,8 @@ saemix.plot.data<-function(saemixObject,...) {
 
 saemix.plot.convergence<-function(saemixObject,niter=0,...) {
 # Convergence plots for all the fixed effects, random effects and residual variability
+  oldpar <- par(no.readonly = TRUE)    # code line i
+  on.exit(par(oldpar))            # code line i + 1
   plot.opt<-saemixObject["prefs"]
   plot.opt$xlab<-"Iteration"
   plot.opt<-replace.plot.options(plot.opt,...)
@@ -820,6 +832,8 @@ saemix.plot.convergence<-function(saemixObject,niter=0,...) {
 
 saemix.plot.llis<-function(saemixObject,...) {
 # Plot of the evolution of the log-likelihood by importance sampling
+  oldpar <- par(no.readonly = TRUE)    # code line i
+  on.exit(par(oldpar))            # code line i + 1
     plot.opt<-saemixObject["prefs"]
     plot.opt$main<-"-2xLL by Importance Sampling"
     plot.opt$xlab<-"Iteration"
@@ -841,6 +855,8 @@ saemix.plot.llis<-function(saemixObject,...) {
 
 saemix.plot.obsvspred<-function(saemixObject,...) {
 # Predictions versus observations
+  oldpar <- par(no.readonly = TRUE)    # code line i
+  on.exit(par(oldpar))            # code line i + 1
   plot.opt<-saemixObject["prefs"]
   plot.opt$ylab<-"Observations"
   plot.opt$xlab<-"Predictions"
@@ -875,6 +891,8 @@ saemix.plot.obsvspred<-function(saemixObject,...) {
 
 saemix.plot.distribresiduals<-function(saemixObject,...) {
 # Histogram and QQ-plot
+  oldpar <- par(no.readonly = TRUE)    # code line i
+  on.exit(par(oldpar))            # code line i + 1
   plot.opt<-saemixObject["prefs"]
   plot.opt$main<-""
   plot.opt$level<-0:1
@@ -898,8 +916,8 @@ saemix.plot.distribresiduals<-function(saemixObject,...) {
   plot.ind<-FALSE
   if(1%in%plot.opt$level) {
     if(length(saemixObject["results"]["iwres"])==0) {
-      cat("Please compute individual residuals first using predict().\n")
-      return()
+      if(saemixObject@options$warnings) cat("Please compute individual residuals first using predict().\n")
+      return("No individual residuals")
     }
     plot.ind<-TRUE
     if(plot.opt$indiv.par=="map") {
@@ -911,8 +929,8 @@ saemix.plot.distribresiduals<-function(saemixObject,...) {
   plot.pop<-FALSE
   if(0%in%plot.opt$level) {
     if(length(saemixObject["results"]["wres"])==0 | length(saemixObject["results"]["npde"])==0) {
-      cat("Please compute WRES and npde first by using compute.sres().\n")
-      return()
+      if(saemixObject@options$warnings) cat("Please compute WRES and npde first by using compute.sres().\n")
+      return("No WRES or npde")
     }
     plot.pop<-TRUE
     wres<-saemixObject["results"]["wres"]
@@ -992,6 +1010,8 @@ saemix.plot.distribresiduals<-function(saemixObject,...) {
 
 saemix.plot.scatterresiduals<-function(saemixObject,...) {
 # Graphs of residuals versus time and predictions
+  oldpar <- par(no.readonly = TRUE)    # code line i
+  on.exit(par(oldpar))            # code line i + 1
   plot.opt<-saemixObject["prefs"]
   plot.opt$main<-""
   plot.opt$level<-0:1
@@ -1014,8 +1034,8 @@ saemix.plot.scatterresiduals<-function(saemixObject,...) {
   plot.ind<-FALSE
   if(1%in%plot.opt$level) {
     if(length(saemixObject["results"]["iwres"])==0) {
-      cat("Please compute individual residuals first using predict().\n")
-      return()
+      if(saemixObject@options$warnings) cat("Please compute individual residuals first using predict().\n")
+      return("No individual residuals")
     }
     plot.ind<-TRUE
     if(plot.opt$indiv.par=="map") {
@@ -1029,8 +1049,8 @@ saemix.plot.scatterresiduals<-function(saemixObject,...) {
   plot.pop<-FALSE
   if(0%in%plot.opt$level) {
     if(length(saemixObject["results"]["wres"])==0 | length(saemixObject["results"]["npde"])==0) {
-      cat("Please compute WRES and npde first by using compute.sres().\n")
-      return()
+      if(saemixObject@options$warnings) cat("Please compute WRES and npde first by using compute.sres().\n")
+      return("No WRES or npde")
     }
     plot.pop<-TRUE
     wres<-saemixObject["results"]["wres"]
@@ -1101,6 +1121,8 @@ saemix.plot.scatterresiduals<-function(saemixObject,...) {
 
 saemix.plot.fits<-function(saemixObject,...) {
 # Plot of the model fits overlayed on the data
+  oldpar <- par(no.readonly = TRUE)    # code line i
+  on.exit(par(oldpar))            # code line i + 1
   plot.opt<-saemixObject["prefs"]
   plot.opt$main<-""
   plot.opt$xlab<-paste(saemixObject["data"]["name.X"]," (",saemixObject["data"]["units"]$x,")",sep="")
@@ -1127,15 +1149,15 @@ saemix.plot.fits<-function(saemixObject,...) {
   indplot<-(length(grep(1,plot.opt$level))>0)
   popplot<-(length(grep(0,plot.opt$level))>0)
   if(indplot & plot.opt$smooth & length(saemixObject["results"]["map.psi"])==0) {
-    cat("Individual parameter estimates should be computed to produce individual plots, conditional means will be used.\n")
+    if(saemixObject@options$warnings) cat("Individual parameter estimates should be computed to produce individual plots, conditional means will be used.\n")
   }
   if(indplot & !(plot.opt$smooth) & length(saemixObject["results"]["ipred"])==0) {
-    cat("For graphs of predictions, please use predict first.\n") 
-    return()
+    if(saemixObject@options$warnings) cat("For graphs of predictions, please use predict first.\n") 
+    return("Run predict first")
   }
   if(popplot & !(plot.opt$smooth) & length(saemixObject["results"]["ypred"])==0) {
     cat("For graphs of predictions, please use predict first.\n") 
-    return()
+    if(saemixObject@options$warnings) return("Run predict first")
   }
   logtyp<-""
   if(plot.opt$xlog) logtyp<-paste(logtyp,"x",sep="")
@@ -1163,7 +1185,7 @@ saemix.plot.fits<-function(saemixObject,...) {
       if(indplot) {
 # ECO TODO change this when several occasions
         if(length(saemixObject["results"]["map.psi"])>0)
-	 ypred<-saemixObject["model"]["model"](saemixObject["results"]["map.psi"],idx,xdep) else {
+          ypred<-saemixObject["model"]["model"](saemixObject["results"]["map.psi"],idx,xdep)  else {
          psiM<-transphi(saemixObject["results"]["cond.mean.phi"], saemixObject["model"]["transform.par"])
          ypred<-saemixObject["model"]["model"](psiM,idx,xdep)
         }
@@ -1197,7 +1219,9 @@ saemix.plot.fits<-function(saemixObject,...) {
 #######################	   Advanced GOF plots (VPC, npde) ########################
     
 plotnpde<-function(xobs,npde,ypred) {
-    nclass<-10
+  oldpar <- par(no.readonly = TRUE)    # code line i
+  on.exit(par(oldpar))            # code line i + 1
+  nclass<-10
     par(mfrow=c(2,2))
     qqnorm(sort(npde),xlab="Sample quantiles (npde)",ylab="Theoretical Quantiles", cex.lab=1.5,main="Q-Q plot versus N(0,1) for npde")
     qqline(sort(npde))
@@ -1221,8 +1245,8 @@ plotnpde<-function(xobs,npde,ypred) {
 
 saemix.plot.npde<-function(saemixObject,...) {
   if(length(saemixObject["results"]["npde"])==0) {
-    cat("Please estimate the npde first\n")
-    return()
+    if(saemixObject@options$warnings) cat("Please estimate the npde first\n")
+    return("No npde")
   }
   plotnpde(saemixObject["data"]["data"][,saemixObject["data"]["name.X"]], saemixObject["results"]["npde"],saemixObject["results"]["ypred"])
   y<-testnpde(saemixObject["results"]["npde"])
@@ -1231,9 +1255,12 @@ saemix.plot.npde<-function(saemixObject,...) {
 
 saemix.plot.vpc<-function(saemixObject,npc=FALSE,...) {
   if(length(saemixObject["sim.data"]["nsim"])==0) {
-    cat("Please simulate data first, using the saemix.simul function.\n") 
-    return()
+    message("Please simulate data first, using the simulate.saemix function.\n") 
+    return("No simulated data")
   }
+  oldpar <- par(no.readonly = TRUE)    # code line i
+  on.exit(par(oldpar))            # code line i + 1
+  
 # Internal function
 compute.vpc.pi<-function(ysim,xgrp,idrep,nbin,vpc.pi=0.95) {
   nsim<-length(unique(idrep))
@@ -1265,11 +1292,11 @@ compute.vpc.pi<-function(ysim,xgrp,idrep,nbin,vpc.pi=0.95) {
   if(plot.opt$ylog) logtyp<-paste(logtyp,"y",sep="")
   
   if(!is.na(pmatch(plot.opt$vpc.method,"optimal"))) {
-    cat("Optimal binning not yet implemented, reverting to equal binning\n")
+    if(saemixObject@options$warnings) cat("Optimal binning not yet implemented, reverting to equal binning\n")
     plot.opt$vpc.method<-"equal"
   }
   if(!is.na(pmatch(plot.opt$vpc.method,"user")) & is.null(plot.opt$vpc.breaks)) {
-    cat("User-defined method specified, but vpc.breaks is empty; reverting to equal binning\n")
+    if(saemixObject@options$warnings) cat("User-defined method specified, but vpc.breaks is empty; reverting to equal binning\n")
     plot.opt$vpc.method<-"equal"
   }
   if(!is.na(pmatch(plot.opt$vpc.method,c("equal","width"))) & is.null(plot.opt$vpc.bin)) {
@@ -1315,8 +1342,10 @@ compute.vpc.pi<-function(ysim,xgrp,idrep,nbin,vpc.pi=0.95) {
       tab<-cbind(Interval=names(xpl),Centered.On=format(xpl,digits=2))
       row.names(tab)<-1:dim(tab)[1]
       xnam<-switch(EXPR=plot.opt$vpc.method,equal="binning by quantiles on X", width="equal sized intervals",user="user-defined bins")
-      cat("Method used for VPC:",xnam,", dividing into the following intervals\n")
-      print(tab,quote=F)
+      if(saemixObject@options$warnings) {
+        cat("Method used for VPC:",xnam,", dividing into the following intervals\n")
+        print(tab,quote=F)
+      }
     }
 # Observed data
     ypl<-tapply(ydat,xgrp,mean)
@@ -1385,6 +1414,8 @@ compute.vpc.pi<-function(ysim,xgrp,idrep,nbin,vpc.pi=0.95) {
 
 #######################	   Distribution of random effects ########################
 saemix.plot.correlations<-function(saemixObject,...) {
+  oldpar <- par(no.readonly = TRUE)    # code line i
+  on.exit(par(oldpar))            # code line i + 1
   plot.opt<-saemixObject["prefs"]
   plot.opt$which.par<-"all"
   plot.opt$main<-"Correlations between random effects"
@@ -1395,7 +1426,7 @@ saemix.plot.correlations<-function(saemixObject,...) {
   if(plot.opt$indiv.par=="map" & length(saemixObject["results"]["map.psi"])) {
     indiv.par<-saemixObject["results"]["map.psi"]
   } else {
-    if(plot.opt$indiv.par=="map") cat("No MAP estimates, using the conditional means for individual parameters.\n")
+    if(plot.opt$indiv.par=="map" & (saemixObject@options$warnings) ) cat("No MAP estimates, using the conditional means for individual parameters.\n")
     indiv.par<-transphi(saemixObject["results"]["cond.mean.phi"], saemixObject["model"]["transform.par"])
   }
   labs<-saemixObject["model"]["name.modpar"][plist]
@@ -1403,6 +1434,8 @@ saemix.plot.correlations<-function(saemixObject,...) {
 }
 
 saemix.plot.randeff<-function(saemixObject,...) {
+  oldpar <- par(no.readonly = TRUE)    # code line i
+  on.exit(par(oldpar))            # code line i + 1
   plot.opt<-saemixObject["prefs"]
   plot.opt$which.par<-"all"
   plot.opt$main<-""
@@ -1445,6 +1478,8 @@ saemix.plot.distpsi<-function(saemixObject,...) {
 # Plots the distribution of the model parameters conditional on covariates 
 # plot.opt$cov.value: value of the covariates used
 # Adds an histogram of individual parameter estimates if plot.opt$indiv.histo==TRUE
+  oldpar <- par(no.readonly = TRUE)    # code line i
+  on.exit(par(oldpar))            # code line i + 1
   plot.opt<-saemixObject["prefs"]
   plot.opt$which.par<-"all"
   plot.opt$main<-""
@@ -1475,7 +1510,7 @@ saemix.plot.distpsi<-function(saemixObject,...) {
     if(plot.opt$indiv.par=="map" & length(saemixObject["results"]["map.psi"])) {
       indiv.par<-saemixObject["results"]["map.psi"]
     } else {
-      if(plot.opt$indiv.par=="map") cat("No MAP estimates, using the conditional means for individual parameters.\n")
+      if(plot.opt$indiv.par=="map" & (saemixObject@options$warnings) ) cat("No MAP estimates, using the conditional means for individual parameters.\n")
       indiv.par<-transphi(saemixObject["results"]["cond.mean.phi"], saemixObject["model"]["transform.par"])
     }
   }
@@ -1510,7 +1545,7 @@ saemix.plot.distpsi<-function(saemixObject,...) {
         tit<-paste(tit,sep1,saemixObject["model"]["name.cov"][icov],"=",xcov, ifelse(xunit=="-","",xunit),sep="")
         }
       }
-      if(length(idcov)>0 & plot.opt$indiv.histo) cat("Warning: histograms of individual parameter estimates do not make sense since covariates enter the model for parameter",nampar[ipar],"\n")
+      if(length(idcov)>0 & plot.opt$indiv.histo & (saemixObject@options$warnings) ) cat("Warning: histograms of individual parameter estimates do not make sense since covariates enter the model for parameter",nampar[ipar],"\n")
     }
     xpl1<-mpar[ipar]+xpl*sqrt(diag(saemixObject["results"]["omega"]))[ipar]
     xpl2<-transphi(matrix(xpl1,ncol=1),saemixObject["model"]["transform.par"][ipar])
@@ -1554,6 +1589,8 @@ saemix.plot.randeffcov<-function(saemixObject,...) {
 
 saemix.plot.parcov.aux<-function(saemixObject,partype="p",...) {
 # Plot of parameters (parytype="p") or random effects ("r") versus covariates
+  oldpar <- par(no.readonly = TRUE)    # code line i
+  on.exit(par(oldpar))            # code line i + 1
   plot.opt<-saemixObject["prefs"]
   plot.opt$which.par<-"all"
   plot.opt$which.cov<-"all"
@@ -1572,12 +1609,12 @@ saemix.plot.parcov.aux<-function(saemixObject,partype="p",...) {
   if(!is.integer(plot.opt$which.cov)) clist<-match(plot.opt$which.cov,namcov)
   clist<-clist[!is.na(clist)]
   if(length(plist)==0) {
-    cat("Cannot find parameter",plot.opt$which.par,", please check parameter names\n")
-    return()
+    if(saemixObject@options$warnings) cat("Cannot find parameter",plot.opt$which.par,", please check parameter names\n")
+    return("Parameter not found")
   }
   if(length(clist)==0) {
-    cat("Cannot find covariates",plot.opt$which.cov,", please check covariate names\n")
-    return()
+    if(saemixObject@options$warnings) cat("Cannot find covariates",plot.opt$which.cov,", please check covariate names\n")
+    return("Covariate not found")
   }
   replot<-FALSE
   mfrow<-plot.opt$mfrow
@@ -1591,11 +1628,11 @@ saemix.plot.parcov.aux<-function(saemixObject,partype="p",...) {
     }
     if(!replot) par(mfrow=mfrow,ask=plot.opt$ask)
   }
-# ECO removed column Id from all parameter dataframes
+  # ECO removed column Id from all parameter dataframes
   if(partype=="r") { # random effects versus covariates
   if(tolower(plot.opt$indiv.par)=="map") {
     if(length(saemixObject["results"]["map.eta"])==0) {
-      cat("Computing ETA estimates and adding them to fitted object.\n")
+      if(saemixObject@options$warnings) cat("Computing ETA estimates and adding them to fitted object.\n")
       saemixObject<-compute.eta.map(saemixObject)
     }
     param<-saemixObject["results"]["map.eta"]
@@ -1604,7 +1641,7 @@ saemix.plot.parcov.aux<-function(saemixObject,partype="p",...) {
   } else { # parameters versus covariates
     if(tolower(plot.opt$indiv.par)=="map") 
       param<-saemixObject["results"]["map.psi"] else 
-      param<-transphi(saemixObject["results"]["cond.mean.phi"], saemixObject["model"]["transform.par"])
+        param<-transphi(saemixObject["results"]["cond.mean.phi"], saemixObject["model"]["transform.par"])
   }
 
 # ECO: will not work with IOV  

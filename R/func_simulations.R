@@ -37,10 +37,10 @@
 #' (Rorschach) plots (Abstract 738), in: 14th Meeting of the Population
 #' Approach Group in Europe, Pamplona, Spain, 2005.
 #' @keywords model
-#' @export saemix.simul
+#' @export simulate.saemix
 
 
-saemix.simul<-function(saemixObject,nsim=saemixObject["options"]$nb.sim, predictions=TRUE,res.var=TRUE,uncertainty=FALSE) {
+simulate.saemix<-function(saemixObject,nsim=saemixObject["options"]$nb.sim, predictions=TRUE,res.var=TRUE,uncertainty=FALSE) {
   # Simulate individual parameters from the population distribution
   # predictions: if TRUE, use the parameters to predict observations
   # res.var: if TRUE, add residual error to the predictions to obtain simulated data

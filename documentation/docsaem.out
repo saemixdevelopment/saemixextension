@@ -1,0 +1,45 @@
+\BOOKMARK [0][-]{chapter.1}{Introduction}{}
+\BOOKMARK [1][-]{section.1.1}{The objectives}{chapter.1}
+\BOOKMARK [1][-]{section.1.2}{The nonlinear mixed effects model}{chapter.1}
+\BOOKMARK [2][-]{subsection.1.2.1}{The statistical model for the individual parameters}{section.1.2}
+\BOOKMARK [2][-]{subsection.1.2.2}{The residual error model}{section.1.2}
+\BOOKMARK [1][-]{section.1.3}{Citing SAEMIX}{chapter.1}
+\BOOKMARK [0][-]{chapter.2}{Methodology and algorithms}{}
+\BOOKMARK [1][-]{section.2.1}{Estimation of the parameters}{chapter.2}
+\BOOKMARK [2][-]{subsection.2.1.1}{The SAEM algorithm}{section.2.1}
+\BOOKMARK [2][-]{subsection.2.1.2}{The MCMC-SAEM algorithm}{section.2.1}
+\BOOKMARK [2][-]{subsection.2.1.3}{The Simulated Annealing SAEM algorithm}{section.2.1}
+\BOOKMARK [1][-]{section.2.2}{Estimation of the Fisher Information matrix}{chapter.2}
+\BOOKMARK [2][-]{subsection.2.2.1}{Linearization of the model}{section.2.2}
+\BOOKMARK [2][-]{subsection.2.2.2}{A stochastic approximation of the Fisher Information Matrix}{section.2.2}
+\BOOKMARK [1][-]{section.2.3}{Estimation of the individual parameters}{chapter.2}
+\BOOKMARK [1][-]{section.2.4}{Estimation of the likelihood}{chapter.2}
+\BOOKMARK [2][-]{subsection.2.4.1}{Linearization of the model}{section.2.4}
+\BOOKMARK [2][-]{subsection.2.4.2}{Estimation using importance sampling}{section.2.4}
+\BOOKMARK [2][-]{subsection.2.4.3}{Estimation using Gaussian Quadrature}{section.2.4}
+\BOOKMARK [1][-]{section.2.5}{Model predictions}{chapter.2}
+\BOOKMARK [2][-]{subsection.2.5.1}{Population predictions}{section.2.5}
+\BOOKMARK [2][-]{subsection.2.5.2}{Individual predictions}{section.2.5}
+\BOOKMARK [1][-]{section.2.6}{Estimation of the weighted residuals}{chapter.2}
+\BOOKMARK [2][-]{subsection.2.6.1}{Population Weighted Residuals}{section.2.6}
+\BOOKMARK [2][-]{subsection.2.6.2}{Individual Weighted Residuals}{section.2.6}
+\BOOKMARK [2][-]{subsection.2.6.3}{Normalised Prediction Distribution Errors}{section.2.6}
+\BOOKMARK [1][-]{section.2.7}{Inputs and outputs}{chapter.2}
+\BOOKMARK [2][-]{subsection.2.7.1}{The inputs}{section.2.7}
+\BOOKMARK [2][-]{subsection.2.7.2}{The outputs}{section.2.7}
+\BOOKMARK [2][-]{subsection.2.7.3}{Plots}{section.2.7}
+\BOOKMARK [0][-]{chapter.3}{Examples}{}
+\BOOKMARK [1][-]{section.3.1}{Theophylline pharmacokinetics}{chapter.3}
+\BOOKMARK [2][-]{subsection.3.1.1}{One-compartment model}{section.3.1}
+\BOOKMARK [2][-]{subsection.3.1.2}{One-compartment model at steady-state}{section.3.1}
+\BOOKMARK [1][-]{section.3.2}{Simulated pharmacodynamic model}{chapter.3}
+\BOOKMARK [1][-]{section.3.3}{Weight gain of cows}{chapter.3}
+\BOOKMARK [1][-]{section.3.4}{Height of Oxford boys}{chapter.3}
+\BOOKMARK [1][-]{section.3.5}{A yield model}{chapter.3}
+\BOOKMARK [0][-]{chapter.4}{S4 classes}{}
+\BOOKMARK [1][-]{section.4.1}{A very short introduction to S4 classes}{chapter.4}
+\BOOKMARK [1][-]{section.4.2}{S4 classes used in SAEMIX}{chapter.4}
+\BOOKMARK [2][-]{subsection.4.2.1}{S4 objects}{section.4.2}
+\BOOKMARK [2][-]{subsection.4.2.2}{Methods for S4 objects in SAEMIX}{section.4.2}
+\BOOKMARK [2][-]{subsection.4.2.3}{Accessing S4 objects in SAEMIX}{section.4.2}
+\BOOKMARK [0][-]{section*.10}{Bibliography}{}

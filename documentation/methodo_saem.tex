@@ -1,0 +1,889 @@
+
+\chapter{Methodology and algorithms}  \label{chapter_methodology}
+\section{Estimation of the parameters}
+\subsection{The SAEM algorithm}\label{saem}
+
+We are in a classical framework of incomplete data: the observed data is $\yg=(y_{ij} \, ; \, 1  \leq i \leq N \ , 1 \leq j \leq n_i)$, whereas the random parameters $(\psig=\psigi$ \, ; \, $1 \leq i \leq N)$ are the non observed data. Then, the complete data of the model is $(\yg,\psig)$. Our purpose is to compute the maximum likelihood estimator of the unknown set of parameters $\thetag=(\fixed_effect,\IIV,\ag,\bg,\cg)$, by maximizing the likelihood of the observations $\ell(\yg ;\theta)$.
+
+In the case of a linear model, the estimation of the unknown parameters can be treated with the usual EM algorithm. At iteration $k$ of EM, the E-step consists in computing the conditional expectation of the complete log-likelihood $Q_k(\theta)= \esp{\log p(\yg,\psig;\theta) | \yg,\theta_{k-1} }$ and the M-step consists in computing the value $\theta_{k}$ that maximises $Q_k(\theta)$.
+
+Following \cite{Dempster77,Wu83}, the EM sequence $(\theta_k)$ converges to a stationary point of the observed likelihood ({\it i.e} a point where the derivative of $\ell$ is 0) under general regularity conditions. In cases  where the regression function $f$ does not linearly depend on the random  effects, the E-step cannot be performed in a closed-form.
+
+The stochastic approximation version  of the  standard EM  algorithm, proposed by \cite{Delyon} consists in replacing the usual E-step of EM by a stochastic procedure. At iteration $k$ of SAEM:
+\begin{itemize}
+\item {\em Simulation-step} : draw $\psigk$ from the conditional distribution  $p(\cdot|\yg;\thetagk)$.
+\item {\em Stochastic approximation} : update $Q_k(\theta)$ according to
+\begin{equation}
+ Q_k(\theta) = Q_{k-1}(\theta) + \gamma_k ( \log p(\yg,\psigk;\theta) - Q_{k-1}(\theta) )
+\end{equation}
+where $(\gamma_k)$ is a decreasing sequence of positive numbers with $\gamma_1=1$. 
+\item {\em Maximization-step} : update $\thetagk$ according to 
+$$\thetagkun={\rm Arg}\max_{\thetag} Q_k(\theta).$$
+\end{itemize}
+
+
+It is shown in \cite{Delyon} that SAEM converges to a maximum (local or global) of the likelihood of the observations under very general conditions.
+
+Here, the complete log-likelihood can be written
+\begin{eqnarray*}
+\log p(\yg,\psig;\theta) & = &  \log p(\yg,h(\phig);\theta) \\
+&=& - \sum_{i,j}\log( g(x_{ij},\psigi,\xi) )
+-\frac{1}{2} \sum_{i,j}\left( \frac{y_{ij} - f(x_{ij},\psigi)}{g(x_{ij},\psigi,\xi) } \right)^2 \\
+& & -\frac{N}{2} \log (|\IIV|) -\frac{1}{2}\sum_{i=1}^{N}(\phigi-\magi\fixed_effect)^\prime \IIV^{-1}(\phigi-\magi\fixed_effect)
+ -\frac{ N_{tot}+Nd}{2}\log(2\pi)
+\end{eqnarray*}
+where $N_{tot}=\sum_{i=1}^{N}n_i$ is the total number of observations.
+
+First, consider a constant residual error model ($g=a$). The set of parameters to estimate is $\theta=(\fixed_effect, \IIV, \ag)$. Then, the complete model belongs to the exponential family and the approximation step reduces to only updating the sufficient statistics of the complete model:
+\begin{eqnarray*}
+s_{1,i,k} &= & s_{1,i,k-1}  + \gamma_k \left(  \phig_{i,k} - s_{1,i,k-1}   \right) , \hspace{1em}i=1,\ldots,N \\
+ s_{2,k} &= & s_{2,k-1}  + \gamma_k \left( \sum_{i=1}^{N} \phig_{i,k} \, \phig_{i,k}^\prime - s_{2,k-1}   \right)  \\
+ s_{3,k} &= & s_{3,k-1}  + \gamma_k \left( \sum_{i,j} \left( y_{ij} - f(x_{ij},\psigki) \right) ^2      - s_{3,k-1} \right) .
+% s_{3,k} &= & s_{3,k-1}  + \gamma_k \left( S_{3,k-1}   - s_{3,k-1} \right) .
+\end{eqnarray*}
+Then, $\theta_{k+1}$ is obtained in the maximization step as follows:
+ \begin{eqnarray}
+\mugkun &= &\left( \sum_{i=1}^{N}  \magi^\prime \IIVk ^{-1} \magi\right)^{-1} \sum_{i=1}^N \magi^\prime \IIVk ^{-1} s_{1,i,k}  \\
+\IIVkun &=& \frac{1}{N} \left(s_{2,k}- \sum_{i=1}^N(\magi\mugkun)s_{1,i,k}^\prime -\sum_{i=1}^N s_{1,i,k}(\magi\mugkun)^\prime +\sum_{i=1}^N (\magi\mugkun)(\magi\mugkun)^\prime\right) \label{react_gamma} \\
+\ag_{k+1} & = & \sqrt{ \frac{s_{3,k}}{N_{tot}} }
+\end{eqnarray}
+
+
+\noindent {\bf Remark 1:  } The sequence of step sizes used in \monolix~decreases as $k^{-a}$. More precisely, for any sequence of integers $K_1,K_2,\ldots,K_J$ and any sequence $a_1,a_2,\ldots,a_J$ of real numbers such that $0\leq a_1 <a_2<\ldots<a_J\leq 1$, we define the sequence of step sizes $(\gamma_k)$ as follows:
+\begin{equation} \label{stepsize1}
+\gamma_k = \frac{1}{k^{a_1}} \quad \mbox{for any } 1\leq k \leq K_1
+\end{equation}
+and for $2\leq j \leq J$,
+\begin{equation} \label{stepsize2}
+\gamma_k = \frac{1}{\left(k - K_{j-1}+\gamma_{K_{j-1}}^{-1/a_j}\right) ^{a_j}} \quad \mbox{for any } \sum_{i=1}^{j-1} K_i +1\leq k \leq \sum_{i=1}^{j} K_i
+\end{equation}
+Here, $K=\sum_{j=1}^{J}K_j$ is the total number of iterations.
+
+We recommend to use $a_1=0$ (that is $\gamma_k=1$) during the first iterations, and $a_J=1$ during the last iterations. Indeed, the initial guess  $\theta_0$ may  be far  from the maximum likelihood value  we are looking for and the first iterations with $\gamma_k=1$ allow to converge quickly to a neighborhood of the maximum likelihood estimator. Then, smaller step sizes ensure the almost sure convergence of the algorithm to the maximum likelihood estimator.
+
+
+\frame{\parbox{15cm} {\vspace*{.2cm} \quad In the case where $J=2$ with $a_1=0$ and $a_2=1$, the sequence of step sizes  is
+\begin{eqnarray*}
+\gamma_k &=& 1  \quad  \quad \quad \quad  \mbox{ for } 1\leq k \leq K_1 \\
+ &=& \frac{1}{k-K_1+1}  \quad \mbox{ for } K_1+1 \leq  k \leq K_1+K_2
+\end{eqnarray*}
+}}
+
+
+\noindent {\bf Remark 2:  } The estimated covariance matrix $\IIVkun$ defined in (\ref{react_gamma}) is a full covariance matrix. However, the covariance matrix $\IIV$ of the random effects can have any covariance structure. If we assume, for example, that there is no correlation between the random effects, we will set to 0 the non diagonal elements of $\IIVkun$ defined in (\ref{react_gamma}).
+
+We can also assume that a random effect has no variance. If the $\ell$th random effect has a variance equal to 0, then the $\ell$th individual parameter is no longer random and the simulation step of SAEM needs some modification. During the first $K_0$ iterations, we use SAEM as it was described above, considering that all the effects are random and assuming that there is no correlation between the $\ell$th random effect and the other ones ($\omega^2_{\ell \ell^\prime}=0$ for any $\ell \neq \ell^\prime$). Then, during the next iterations, we use again SAEM, but the variance of this random effect is no longer estimated: it is forced to decrease at each iteration by setting
+\begin{equation}
+\omega^2_{\ell\ell,k+1}= \alpha \ {\omega^2_{\ell\ell,k}} \quad , \quad K_0 \leq k \leq K
+\end{equation}
+where $\alpha$ is chosen between 0 and 1 such that $\omega^2_{\ell\ell,K}= 10^{-6}\omega^2_{\ell\ell,K_0}$.
+
+\noindent {\bf Remark 3:} - For a  residual variance model of the form $g=  \bg \, f^\cg$, where $\cg$ is fixed, the complete model also belongs to the exponential family and the estimation of $\bg$ is straightforward:  the sufficient statistics sequence $(s_{3,k})$ is defined by
+$$ s_{3,k} =  s_{3,k-1}  + \gamma_k \left(
+\sum_{i,j} \left( \frac{y_{ij} - f(x_{ij},\psigki)}{f^\cg (x_{ij},\psigki)}  \right) ^2  - s_{3,k-1}
+\right) $$ and $\bg_{k+1} =  \sqrt{ s_{3,k}/ N_{tot} }$.
+
+- For a general residual variance model $g= \ag + \bg \, f^\cg$, the complete model does not belong to the exponential family and the estimates of the residual variance parameters $(\ag,\bg,\cg)$ cannot be expressed as a function of some sufficient statistics. Then, let $(\Ag_k,\Bg_k,\Cg_k)$ that minimise the complete log-likelihood:
+$$(A_k, B_k,C_k) = {\rm Arg}\min_{(\ag,\bg,\cg)}
+\left\{ \sum_{i,j}\log( \ag + \bg f^{\cg}(x_{ij},\psigki) ) +\frac{1}{2} \sum_{i,j}\left(
+\frac{y_{ij} - f(x_{ij},\psigki)}{\ag + \bg f^{\cg}(x_{ij},\psigki) } \right)^2 \right\}
+$$
+We update the residual variance parameters as follows:
+ \begin{eqnarray}
+\ag_{k+1} & = & \ag_{k} +  \gamma_k \left(  A_k - \ag_{k}  \right)   \\
+\bg_{k+1} & = & \bg_{k} +  \gamma_k \left(  B_k - \bg_{k}  \right)   \\
+\cg_{k+1} & = & \cg_{k} +  \gamma_k \left(  C_k - \cg_{k}  \right)
+\end{eqnarray}
+The estimation of $\fixed_effect$ and $\IIV$ remains unchanged.
+
+
+\subsection{The MCMC-SAEM algorithm}
+For model (1.1), the simulation step cannot be directly performed. Kuhn and Lavielle \cite{Kuhn01} propose to combine the SAEM algorithm with a MCMC (Markov Chain Monte Carlo) procedure. This procedure consists in replacing the Simulation-step at iteration $k$ by $m$ iterations of the Hastings-Metropolis algorithm.
+
+Here, we will consider the Gaussian parameters $(\phigi)$. For $i=1,2,\ldots,N$
+\begin{itemize}
+\item let $\phig_{i,0}=\phig_{i}^{(k-1)}$
+\item for $p=1,2,\ldots,m$,
+\begin{enumerate}
+\item draw $ \tilde{\phig}_{i,p}$ using the proposal kernel
+$ q_{\theta_k}( \phig_{i,p-1} ,\cdot) $
+\item set $ \phig_{i,p} =  \tilde{\phig}_{i,p} $ with probability
+$$ \alpha( \phig_{i,p-1} ,  \tilde{\phig}_{i,p} ) = \min \left(1, \frac
+{ p( \tilde{\phig}_{i,p} |y_i;\theta_k) q_{\theta_k}(\tilde{\phig}_{i,p} , \phig_{i,p-1} )}
+{ p( \phig_{i,p-1} |y_i;\theta_k) q_{\theta_k}(\phig_{i,p-1} ,\tilde{\phig}_{i,p} )} \right)$$ and
+$\phig_{i,p} =  \phig_{i,p-1}$ with probability $1- \alpha( \phig_{i,p-1} ,  \tilde{\phig}_{i,p} ) $.
+\end{enumerate}
+\item let $\phig_i^{(k)} =  \phig_{i,m}$.
+ \end{itemize}
+
+Several transition kernels, associated to different proposals can be successively used. We use the four following proposal kernels:
+
+\begin{enumerate}
+\item $q_{\theta_k}^{(1)}$  is the prior distribution of $\phig_i$ at iteration $k$, that is the Gaussian distribution \\
+${\cal N}(C_i\fixed_effect_k,\IIV_k)$ and then
+$$ \alpha( \phig_{i,p-1} ,  \tilde{\phig}_{i,p} ) = \min \left(1, \frac{ p( y_i|\tilde{\phig}_{i,p};\theta_k) } { p( y_i|\phig_{i,p-1};\theta_k) } \right)$$
+\item $q_{\theta_k}^{(2)}$ is a random permutation of the $\phig_i$: generate a random permutation $\sigma$ of $\{1,2,\ldots,N\}$ and set $\tilde{\phig}_{i,p}=\phig_{\sigma(i),p-1}$.
+\item $q_{\theta_k}^{(3)}$ is the multidimensional random walk ${\cal N}( \phig_{i,p-1} , \kappa\IIV_k)$. This kernel is symmetric and then 
+$$ \alpha( \phig_{i,p-1} ,  \tilde{\phig}_{i,p} ) = \min \left(1, \frac{ p( y_i,\tilde{\phig}_{i,p};\theta_k) } { p( y_i,\phig_{i,p-1};\theta_k) } \right)$$
+\item $q_{\theta_k}^{(4)}$ is a succession of $d$ unidimensional Gaussian random walks: each component of $\phig_i$ are successively updated.
+\end{enumerate}
+Then, the simulation-step at iteration $k$ consists in running $m_1$ iterations of the Hasting-Metropolis with proposal $q_{\theta_k}^{(1)}$, $m_2$ iterations with proposal $q_{\theta_k}^{(2)}$, $m_3$ iterations with proposal $q_{\theta_k}^{(3)}$ and $m_4$ iterations with proposal $q_{\theta_k}^{(4)}$.
+
+
+\noindent {\bf Remark 1 : \ } During the first $K_b$ iterations ("burning" iterations) of SAEM, we only run the MCMC algorithm but the parameters are not updated.
+
+ \noindent {\bf Remark 2 : \ } When the number $N$ of subjects is small, convergence of the algorithm can be improved by running $L$ Markov Chain instead of only one. The simulation step requires to draw $L$ sequences $ { \phig^{(k,1)}} ,\ldots , { \phig^{(k,L)}} $ at iteration $k$ and to combine stochastic approximation and Monte Carlo in the approximation step:
+\begin{equation} \label{approx2}
+ Q_k(\theta) = Q_{k-1}(\theta) + \gamma_k \left( \frac{1}{L}\sum_{\ell=1}^{L} \log p(\yg, { \phig^{(k,\ell)}} ;\theta) - Q_{k-1}(\theta) \right)
+\end{equation}
+
+
+\subsection{The Simulated Annealing SAEM algorithm}
+Convergence of SAEM can strongly depend on the initial guess if the likelihood $\ell$ possesses several local maxima. The Simulated Annealing version of SAEM improves the convergence of the algorithm toward the global maximum of $\ell$.
+
+For the sake of simplicity, we will consider here a constant residual error model $g=\ag$. Let 
+$$ U(\yg,\phig;\theta) = \frac{1}{2\ag^2} \sum_{i,j}\left(y_{ij} - f(x_{ij},h(\phigi)) \right)^2 +\frac{1}{2}\sum_{i=1}^{N}(\phigi-\magi\fixed_effect)^\prime \IIV^{-1}(\phigi-\magi\fixed_effect)$$ 
+Then, we can write the complete likelihood:
+\begin{eqnarray*}
+p(\yg,\phig;\theta)  =  C(\theta)\, e^{-U(\yg,\phig;\theta)}
+\end{eqnarray*}
+where $C(\theta)$ is a normalizing constant that only depends on $\theta$.
+
+For any {\it temperature} $T\geq0$, we consider the complete model
+\begin{eqnarray*}
+p_T(\yg,\phig;\theta)  =  C_T(\theta)\, e^{-\frac{1}{T}U(\yg,\phig;\theta)}
+\end{eqnarray*}
+where $C_T(\theta)$ is a normalizing constant. This model consists in replacing the variance matrix $\IIV$ by $T\IIV$ and the residual variance $\ag^2$ by $T\ag^2$. In other words, a model ``with a large temperature'' is a model with large variances.
+
+We introduce a decreasing temperature sequence $(T_k, 1\leq k \leq K)$ and use the MCMC-SAEM algorithm considering the complete model $p_{T_k}(\yg,\phig;\theta)$  at iteration $k$ (while the usual version of MCMC-SAEM uses $T_k=1$ at each iteration). The sequence $(T_k)$ is large during the first iterations and decreases to 1 with exponential rate. This is done by choosing large initial variances $\IIV_0$ and $\ag^2_0$ and setting
+\begin{eqnarray}
+ \tilde{\IIV}_{k+1} &=& \frac{1}{N} \left(s_{2,k}- \sum_{i=1}^N(\magi\mugkun)s_{1,i,k}^\prime -\sum_{i=1}^N s_{1,i,k}(\magi\mugkun)^\prime +\sum_{i=1}^N (\magi\mugkun)(\magi\mugkun)^\prime\right)  \\
+\ag_{k+1} & = & \sqrt{ \frac{s_{3,k}}{N_{tot}} }\\
+\IIV_{k+1} &=& \max\left( \tau \IIV_{k}  \ , \ \tilde{\IIV}_{k+1}  \right)  \label{tau1} \\
+\ag^2_{k+1} & = &  \max\left( \tau \ag^2_{k} \ , \  \frac{s_{3,k}}{N} \right) \label{tau2}
+\end{eqnarray}
+%\begin{eqnarray}
+% \IIV_k  & = &  \tau \IIV_{k-1} ,  \label{tau1} \\
+%\ag^2_k & = & \tau \ag^2_{k-1} \label{tau2}
+%\end{eqnarray}
+during the first iterations of the algorithm and where $0\leq\tau\leq 1$.
+
+These large values of the variances make the conditional distribution $p(\phi|y;\theta )$ less concentrated around its mode. This procedure allows the sequence $(\theta_k)$ to escape from the local maxima of the likelihood and to converge to a neighborhood of the global maximum of $\ell$. After that, the usual MCMC-SAEM algorithm is used, estimating the variances at each iteration.
+
+
+\noindent {\bf Remark 1:} The Simulated Annealing version of SAEM is performed during the first $K_{sa}$ iterations. Of course, SAEM without any simulated annealing can be run by setting $\tau=0$. On the other hand, simulated annealing is obtained with $\tau$ close to 1.
+
+\noindent {\bf Remark 2:} We can use two different coefficients $\tau_1$ and $\tau_2$ for $\IIV$ and $\ag^2$ in \monolix. It is possible, for example, to choose $\tau_1<1$ and $\tau_2>1$, with a small initial residual variance and large initial inter-subject variances. In this case, SAEM tries to obtain the best possible fit during the first iterations, allowing a large inter-subject variability. During the next iterations, this variability is reduced and the residual variance increases until reaching the best possible trade-off between these two criteria.
+
+\section{Estimation of the Fisher Information matrix} \label{sec_fish} Let $\thes$ be the true unknown value of $\theta$, and let $\hthetag$ be the maximum likelihood estimate of $\theta$. If the observed likelihood function $\ell$ is sufficiently smooth, asymptotic theory for maximum-likelihood estimation holds and
+
+\begin{equation}
+\sqrt{N}(\hthetag-\thes) \limite{N\to \infty}{} {\mathcal N}(0,I(\thes)^{-1})
+\end{equation}
+where $I(\thes)=- \DDt \log \ell(y;\thes)$ is the true Fisher information matrix. Thus, an estimate of the asymptotic covariance of $\hthetag$ is the  inverse of the Fisher information matrix $I(\hthetag)=- \DDt \log \ell(y;\hthetag)$.
+
+\subsection{Linearization of the model}
+The Fisher information matrix of the nonlinear mixed effects model defined in (1) cannot be computed in a closed-form.
+
+An alternative is  to approximate this information matrix  by the Fisher information matrix of the Gaussian model deduced from the nonlinear mixed effects model after linearization of the function $f$ around the conditional expectation of the individual Gaussian parameters $(\esp{\phi_{i}|y;\hat{\theta}}, 1\leq
+i \leq N) $. The Fisher information matrix of this Gaussian model is a block matrix (no correlations between the estimated fixed effects and the estimated variances). The gradient of $f$ is numerically computed.
+
+\noindent {\bf Remark 1: } We do not recommend the linearization of the model to estimate the parameters of the model, as it is done with the FO and FOCE algorithms. On the other hand, many numerical experiments have shown that this approach can be used to estimate the Fisher information matrix.
+
+\noindent {\bf Remark 2: } Obviously, this approach cannot be used with discrete data models\ldots
+
+\subsection{A stochastic approximation of the Fisher Information Matrix}
+It is possible to obtain an estimation of the Fisher information matrix using the Louis's missing information principle \cite{Louis82}:
+
+\begin{equation}\label{louis}
+\DDt \log \ell(y;\theta) = \mathrm{E}\big(\DDt \log p(y,\phig; \theta) | y ; \theta \big) +
+\mathrm{Cov}\big(\Dt \log p(y,\phig;\theta)| y ; \theta \big)
+\end{equation}
+where
+\begin{align*} \quad
+\mathrm{Cov}\big(\Dt \log p(y,\phig;\theta)| y ; \theta \big) &=
+\mathrm{E} \big(\Dt \log p(y,\phig; \theta) \Dt \log p(y,\phig; \theta)^\prime |y ; \theta \big)  \\
+& -
+\mathrm{E} \big( \Dt \log p(y,\phig; \theta) |y ; \theta \big)\mathrm{E} \big( \Dt \log p(y,\phig; \theta) |y ; \theta \big)^\prime
+\end{align*}
+and
+$$\Dt \log g(y;\theta) = \mathrm{E} \big( \Dt \log p(y,\phig; \theta) |y ; \theta \big)$$
+Here, $\Dt u$ is the gradient of $u$ ({\it i.e.} the vector of first derivatives of $u$ with respect to $\theta$) and  $\DDt u$ is the hessian of $u$ ({\it i.e.} the matrix of second derivatives of $u$ with respect to $\theta$).
+
+Then, using SAEM, the matrix $\DDt \log \ell (y;\hthetag)$ can be approximated by the sequence $(H_k)$ defined as follows:
+\begin{align*}
+\Delta_k&=\Delta_{k-1}+\gamma_k\left(\partial_{\theta}\log
+f(y,\phi_k;\theta_k)-\Delta_{k-1}\right)\\
+D_k  &=   D_{k-1}   +   \gamma_k  \left( \DDt \log  f (y,  \phi_k;
+    \theta_k)   - D_{k-1} \right) \\
+G_k  &=   G_{k-1}   +   \gamma_k  \left(  \Dt \log f(y, \phi_k; \theta_k) \Dt \log f(y, \phi_k; \theta_k)^t - G_{k-1} \right) \\
+H_{k} &= D_k + G_k - \Delta_k \Delta_k^t
+\end{align*}
+
+In the current version of \monolix, only the linearisation approach has been implemented.
+
+\section{Estimation of the individual parameters} \label{section_indivparam}
+
+When the parameters of the model have been estimated, we can estimate the individual parameters $(\psigi)$. To do that, we will estimate the individual normally distributed parameters $(\phigi)$ and derive the estimates of $(\psigi)$ using the transformation $\psigi= h(\psigi)$.
+
+Let $\hat{\theta}$ be the estimated value of $\theta$ computed with the SAEM algorithm and let $p(\phigi|y_i;\hat{\theta})$ be the conditional distribution of $\phigi$ for $1\leq i \leq N$.
+
+We use the MCMC procedure used in the SAEM algorithm to estimate these conditional distributions. More precisely, for $1\leq i \leq N$, we empirically estimate:
+
+\begin{itemize}
+  \item the conditional mode (or Maximum A Posteriori)
+  $ m(\phigi|y_i;\hat{\theta})={\rm Arg}\max_\phigi p(\phigi|y_i;\hat{\theta})$,
+  \item the conditional mean
+  $ E(\phigi|y_i;\hat{\theta})$,
+  \item the conditional standard deviation
+ $ sd(\phigi|y_i;\hat{\theta})$.
+ \end{itemize}
+
+ \noindent{\bf Remarks:}
+ \begin{enumerate}
+  \item The prior distribution of $\phigi$ is a normal distribution, but not the conditional distribution $p(\phigi|y_i;\hat{\theta})$ (remember that the structural model is not a linear function of $\phigi$\ldots). Then, the conditional mode $m(\phigi|y_i;\hat{\theta})$ and the conditional expectation $ E(\phigi|y_i;\hat{\theta})$ are two different predictors of $\phigi$.
+  \item If the transformation $h$ is not linear,
+      \begin{eqnarray*}
+       \esp{\psigi|y_i;\hat{\theta}} &=&  \esp{h(\phigi|y_i;\hat{\theta}} \\
+       &\neq& h\left(\esp{\phigi|y_i;\hat{\theta}}  \right)
+       \end{eqnarray*}
+       In \monolix, we estimate $\esp{\phigi|y_i;\hat{\theta}}$ and $\esp{\psigi|y_i;\hat{\theta}}$.
+\end{enumerate}
+
+The number of iterations of the MCMC algorithm used to estimate the conditional mean and standard deviation is adaptively chosen as follows:
+\begin{enumerate}
+  \item the $(\phig_i)$ are initialised with the last value obtained in SAEM
+  \item we run the Hastings-Metropolis with kernel $q^{(1)}$, $q^{(3)}$ and $q^{(4)}$ and compute at each iteration the empirical conditional mean and s.d. of $\phig_i$:
+  \begin{eqnarray}
+  e_{i,K} &= &\frac{1}{K}\sum_{k=1}^K \phig_{i,k} \\
+  sd_{i,K} &= &\sqrt{\frac{1}{K}\sum_{k=1}^K \phig_{i,k}^2 - e_{i,K}^2 }
+  \end{eqnarray}
+  where $\phig_{i,k}$ is the value of $\phig_i$ at iteration $k$ of the MCMC algorithm.
+  \item we stop the algorithm at iteration $K$ and use $e_{i,K}$ and $sd_{i,K}$ to estimate the conditional mean and s.d. of $\phig_i$ if, for any $ K-L_{mcmc}+1 \leq k \leq K$,
+  \begin{eqnarray}
+  % \nonumber to remove numbering (before each equation)
+  \label{Lmcmc}  (1-\rho_{mcmc})\bar{e}_K & \leq & \bar{e}_k \leq  (1+\rho_{mcmc})\bar{e}_{K} \\
+  \nonumber  (1-\rho_{mcmc})\bar{sd}_{K} & \leq & \bar{sd}_{k} \leq  (1+\rho_{mcmc})\bar{sd}_{K}
+  \end{eqnarray}
+where $0<\rho_{mcmc}<1$. That means that the sequence of empirical means and s.d. must stay in a $\rho_{mcmc}$-confidence interval during $L_{mcmc}$ iterations.
+\end{enumerate}
+
+\section{Estimation of the likelihood} \label{estilik}
+\subsection{Linearization of the model}
+The likelihood of the nonlinear mixed effects model defined in (1) cannot be computed in a closed-form.
+
+An alternative is  to approximate this likelihood  by the likelihood of the Gaussian model deduced from the nonlinear mixed
+effects model after linearization of the function $f$ around
+the predictions of the individual parameters $(\phigi, 1\leq i \leq N) $.
+%the conditional expectation of the individual parameters $(\esp{\phig_{i}|y;\hat{\theta}}, 1\leq i \leq N) $.
+
+\subsection{Estimation using importance sampling}
+
+The likelihood of the observations can be estimated without any approximation using a Monte-Carlo approach. The likelihood $\ell$ of the observations can be decomposed as follows:
+\begin{eqnarray*}
+ \ell(\yg;\thetag) &=& \int p(\yg,\phig;\thetag)\,d\phig \\
+&=& \int h(\yg|\phig;\thetag)\pi(\phig;\thetag)\,d\phig
+\end{eqnarray*}
+where $\pi$ is the so-called {\it prior distribution} of $\phig$. According to (\ref{prior}), $\pi$ is a Gaussian distribution.
+
+For any distribution $\tilde{\pi}$ absolutely continuous with respect to the prior distribution $\pi$, we can write
+$$
+\ell(\yg;\thetag) = \int h(\yg|\phig;\thetag) \frac {\pi(\phig;\thetag)}{
+\tilde{\pi}(\phig;\thetag) }  \tilde{\pi}(\phig;\thetag) \,d\phig
+$$
+
+
+Then, $\ell(\yg;\thetag)$ can be approximated via an {\it Importance Sampling} integration method:
+\begin{enumerate}
+\item draw $\phig^{(1)} ,\phig^{(2)} ,\ldots,\phig^{(M)} $ with the distribution $\tilde{\pi}(\cdot;\thetag)$,
+\item let
+\begin{equation} \label{islike}
+ \ell_M(\yg;\thetag) =\frac{1}{M} \sum_{j=1}^{M} h(y|\phig^{(j)};\thetag )\frac{\pi( \phig^{(j)} ;\thetag)}{ \tilde{\pi}(\phig^{(j)} ;\thetag) }
+\end{equation}
+\end{enumerate}
+
+The statistical properties of the estimator $\ell_M(\yg;\thetag)$ of the likelihood
+$\ell(\yg;\thetag)$ strongly depend on the sampling distribution  $\tilde{\pi}$. First, note that
+\begin{eqnarray*}
+\esp{{\ell}_M(\yg;\thetag)} &=& \ell(\yg;\thetag), \\
+\var{{\ell}_M(\yg;\thetag)} &=& {\cal O}(1/M).
+\end{eqnarray*}
+Furthermore, if $\tilde{\pi}$ is the conditional distribution $p(\phi|\yg;\thetag)$, the variance of the estimator is null and $\hat{\ell}_M(\yg;\thetag) = \ell(\yg;\thetag)$ for any value of $M$. That means that an accurate estimation of $\ell(\yg;\thetag)$ can be obtained with a small value of $M$ if the sampling distribution is close to the conditional distribution $p(\phi|\yg;\thetag)$.
+
+In \monolix, for $i=1,2,\ldots, N$, we empirically estimate the conditional mean $\esp{\phigi|y_{i};\hthetag}$ and the conditional variance $\var{\phigi|y_{i};\hthetag}$ of $\phigi$ as described above. Then, the $\phigi^{(j)}$ are drawn with the sampling distribution $\tilde{\pi}$ as follows:
+$$\phigi^{(j)} = \esp{\phigi|y_{i};\hthetag} + \var{\phigi|y_{i};\hthetag}^{\frac{1}{2}} \times T_{ij}$$
+where $(T_{ij})$ is a sequence of {\it i.i.d.} random variables distributed with a $t-$distribution with $\nu$ degrees of freedom. In the current version of \monolix, the default value is $\nu=5$. 
+
+%It is also possible to automatically test different d.f in $\{2, 5, 10, 20\}$ and to select the one that provides the smallest empirical variance for $\ell_M(\yg;\thetag)$.
+% ECO TODO: à faire dans une version utltérieure
+
+The quality of the approximation depends on the estimates of the conditional mean and variances of the individual distributions.
+
+\subsection{Estimation using Gaussian Quadrature} \label{sec:gqlike}
+
+% ECO TODO
+% see nia06_GHQ.pdf, hartford00
+
+Gauss-Hermite quadrature methods use a fixed set of $K_{GQ}$ ordinates (called nodes) and weights $(x_k, w_k)_{k=1,...,K_{GQ}}$ to approximate the likelihood function.
+
+As for importance sampling, the quality of the approximation depends on the estimates of $\esp{\phigi|y_{i};\hthetag}$ and $\var{\phigi|y_{i};\hthetag}$.
+
+% Adaptive Gaussian quadrature are an alternative numerical approach that centres the Gaussian approximation to the likelihood at the posterior mode of the random effects. Although each integral takes longer to compute, the gain in accuracy over standard Gaussian quadrature can be very large.
+
+\section{Model predictions} \label{section_preds}
+
+\subsection{Population predictions}
+
+Population predictions represent the predictions from the model in the absence of data, and they only take into account individual design variables (eg dose regimen) and covariates.
+
+Two types of population predictions are available in \monolix:
+\begin{enumerate}
+  \item the predictions using the population parameters: $f\left(x_{ij} ; h\left( \mathbb{E}_{\hat{\theta}}(\phigi) \right) \right)= f(x_{ij} ; h(C_i \hat{\fixed_effect}))$. These are provided in the output under the name \texttt{ypred}
+  \item the population mean predictions:  $\mathbb{E}_{\hat{\theta}}(f(x_{ij} ; \psigi) ))=\mathbb{E}_{\hat{\theta}}(f(x_{ij} ; h(\phigi) ))$. These are provided in the output under the name \texttt{ppred}
+\end{enumerate}
+
+\subsection{Individual predictions}
+
+Individual predictions take into account not only covariates and individual design variables such as dose regimen, but also use the observations in that individual to obtain the parameters providing the best fit for that particular subject, given the population parameters.
+
+In section~\ref{section_indivparam}, we described how the conditional distribution of the parameters for each individual is obtained in \monolix. Two types of individual parameters are reported in the output:
+\begin{enumerate}
+\item the conditional mode (or Maximum A Posteriori): $ m(\phigi|y_i;\hat{\theta})={\rm Arg}\max_\phigi p(\phigi|y_i;\hat{\theta})$. These are reported in the output as \texttt{map.psi}
+\item the conditional mean: $ E(\phigi|y_i;\hat{\theta})$. These are reported in the output as \texttt{cond.mean.psi}
+\end{enumerate}
+Correspondingly, two types of individual predictions can be obtained in \monolix:
+\begin{enumerate}
+\item the predictions obtained using the conditional mode are reported in the output as \texttt{ipred}
+\item the predictions obtained using the conditional mean are reported in the output as \texttt{icpred}
+\end{enumerate}
+
+\section{Estimation of the weighted residuals} \label{section_wres}
+
+\subsection{Population Weighted Residuals}
+The vector of Population Weighted Residuals are evaluated as:
+$$PWRES_{i} = Var_{\hat{\theta}}(y_{i})^{-1/2} \left( y_{i} - \hat{y}^{pop}_{i} \right)$$
+where $\hat{y}^{pop}_{ij}$ is the population prediction of $y_{ij}$ and $Var_{\hat{\theta}}(y_{ij})$ is the variance-covariance matrix of $y_{i}$.
+
+Weighted residuals are computed using the population mean predictions \texttt{ppred} $\mathbb{E}_{\hat{\theta}}(f(x_{ij} ; \psigi) ))=\mathbb{E}_{\hat{\theta}}(f(x_{ij} ; h(\phigi) ))$ for $\hat{y}^{pop}_{ij}$. $\mathbb{E}_{\hat{\theta}}(f(x_{ij} ; h(\phigi)  )$ and $Var_{\hat{\theta}}(y_{ij})$ are estimated with a Monte-Carlo procedure.
+
+\noindent {\bf Remark:} This computation is performed during the computation of pd/npde, so that a basic \monolix~object does not include these elements.
+
+% ECO TODO: voir quelle version je calcule... idem pour IWRES bien préciser
+
+\subsection{Individual Weighted Residuals}
+
+The Individual Weighted Residuals are evaluated as
+$$IWRES_{ij} = \frac{y_{ij} - \hat{y}^{ind}_{ij}} {\hat{\sigma}^{ind}_{ij}}$$
+where  $\hat{y}^{ind}_{ij} = f(x_{ij} ; \hat{\psig}_i )$ is the individual prediction of $y_{ij}$ and $(\hat{\sigma}^{ind}_{ij})^2 = g(x_{ij} ; \hat{\phig}_i,\hat{\xi})^2$ is the residual variance of $y_{ij}$.
+
+The two types of individual parameters described in section~\ref{section_preds} yield two types of individual weighted residuals in the \monolix~output:
+\begin{enumerate}
+\item the individual weighted residuals obtained using the conditional mode are reported in the output as \texttt{iwres}
+\item the individual weighted residuals obtained using the conditional mean are reported in the output as \texttt{icwres}
+\end{enumerate}
+
+\noindent {\bf Remark:} When a transformed residual error model is used (an exponential error model for instance), the weighted residuals are computed using $t(y)$ instead of $y$.
+
+\subsection{Normalised Prediction Distribution Errors}
+
+The Normalised Prediction Distribution Errors are defined as follow
+$$\npde_{ij}=\Phi^{-1}(\hat{p}_{ij})$$
+where $\Phi$ is the $\Nr(0,1)$ cumulative distribution function and where $\hat{p}_{ij}$ is an empirical estimator of
+$$p_{ij} = \Prob{Y_{ij}<y_{ij}}$$
+obtained by Monte-Carlo. 
+
+In more details, prediction discrepancies ($\pd$) are first obtained, as the percentile of the observation in the cumulative distribution function $F_{ij}$ of the predictive distribution of $Y_{ij}$ under the model being evaluated. $F_{ij}$ is obtained by simulating $K$ datasets under the model, and the corresponding prediction discrepancies is given by:
+\begin{equation}
+\pd_{ij} = F_{ij}(y_{ij}) \approx \frac{1}{K} \sum_{k=1}^K \delta_{ijk} \label{eq:pdedef}
+\end{equation}
+where $\delta_{ijk}=1$ if $y_{ij}^{sim(k)} < y_{ij}$ and 0 otherwise, $y_{ij}^{sim(k)}$ denoting the value of $y_{ij}$ simulated in the k$^{\rm th}$ replication.
+
+To handle correlations within the observations obtained in the same individual, we first compute the empirical mean $\hat{\E}(\y_i)$ and empirical variance-covariance matrix $\var(\y_i)$ over the $K$ simulations. Decorrelation is performed simultaneously for simulated data:
+\begin{equation}
+\y_{i}^{sim(k)*}= \hat{\V}_i^{-1/2} (\y_{i}^{sim(k)}-\hat{\E}(\y_i)) \label{eq:decorrsim}
+\end{equation}
+and for observed data:
+\begin{equation}
+\y_{i}^*= \hat{\V}_i^{-1/2} (\y_{i}-\hat{\E}(\y_i)) \label{eq:decorrobs}
+\end{equation}
+
+Decorrelated $\pd$ are then obtained using the same formula as in~(\ref{eq:pdedef}) but with the decorrelated data, and we call the resulting variables prediction distribution errors ($\pde$):
+\begin{equation}
+\pde_{ij} = F^*_{ij}(y^*_{ij}) \approx \frac{1}{K} \sum_{k=1}^K \delta_{ijk}^*
+\end{equation}
+where $\delta_{ijk}^*=1$ if $y_{ij}^{sim(k)*} < y_{ij}^*$ and 0 otherwise.
+
+Normalised prediction distribution errors ($\npde$) are then obtained as:
+\begin{equation}
+\npde_{ij} = \Phi^{-1} (\pde_{ij})
+\end{equation}
+
+\begin{description}
+\item[Remark:] the empirical mean and covariance-matrix computed here are also used for the decorrelation step in the computation of the population weighted residuals, $WRES$. The $WRES$ in \monolix ~are thus computed in conjunction with the more advanced metric $\npde$.
+\end{description}
+
+
+\section{Inputs and outputs} \label{sec:methodsinpout}
+
+\subsection{The inputs}
+
+To summarise, \monolix~requires to define the model and to fix some parameters used for the algorithms. First, it is necessary to define:
+\begin{itemize}
+\item the structural model, that is the regression function $f$ defined in (\ref{nlme}),
+\item the covariate model, that is the structure of the matrix $\fixed_effect$ defined in (\ref{prior}) and the covariates $(\covariate_i)$.
+\item the variance-covariance model for the random effects, that is the structure of the variance-covariance matrix $\IIV$ defined in (\ref{prior}).
+\item the residual variance model, that is the regression function $g$.
+\end{itemize}
+The only mandatory elements for a \monolix~fit are:
+\begin{itemize}
+\item a data object, defined by at least: 
+   \begin{itemize}
+   \item the name of the data file
+   \item we advise to also specify the names of the columns containing the grouping variable, the predictor(s) and the response, although the program will attempt to recognise suitable columns
+   \end{itemize}
+\item a model object, defined by at least:
+   \begin{itemize}
+   \item the name of a valid model function
+   \item the matrix of starting values \texttt{psi0}
+      \begin{itemize}
+      \item if no covariates are present in the model, a single line is sufficient, which will contain the starting values for the fixed effects $\mu$ in the model
+      \item if covariates are present in the model: if \texttt{psi0} has more than 1 line, the next lines are assumed to represent the starting values for the covariate models (only parameters actually present in the model will be estimated, even if \texttt{psi0} contains non-null values; otherwise, values of 0 will be assumed.
+      \end{itemize}
+   \end{itemize}
+\end{itemize}
+
+Then, it is necessary to specify several parameters for running the algorithms:
+\begin{itemize}
+\item the SAEM algorithm requires to specify
+\begin{itemize}
+\item the initial values of the fixed effects $\fixed_effect_0$, the initial variance covariance matrix $\IIV_0$ of the random effects and the initial residual variance coefficients $\ag_0$, $\bg_0$ and $\cg_0$,
+\item the sequence of step sizes $(\gamma_k)$, that is the numbers of iterations $(K_1,K_2)$ and the coefficients  $(a_1,a_2)$ defined in (\ref{stepsize1}) and (\ref{stepsize2}),
+%\item the number of iterations $K_0$ used to estimate non random individual parameters.
+\item the number of burning iterations $K_b$ used with the same value $\theta_0$ before updating the sequence $(\theta_k)$.
+\end{itemize}
+\item the MCMC algorithm requires to set
+\begin{itemize}
+\item the number of Markov Chains $L$,
+\item the numbers $m_1$, $m_2$, $m_3$ and $m_4$ of iterations of the Hasting-Metropolis algorithm,
+\item the probability of acceptance $\rho$ for  kernel $q^{(3)}$ and $q^{(4)}$,
+\end{itemize}
+\item the algorithm to estimate the conditional distribution of the $(\phig_i)$ requires to set
+\begin{itemize}
+\item the width of the confidence interval $\rho_{mcmc}$ (see (\ref{Lmcmc}),
+\item the number of iterations $L_{mcmc}$.
+\end{itemize}
+\item the Simulated Annealing algorithm requires to set
+\begin{itemize}
+\item the coefficient $\tau_1$ and $\tau_2$ defining the decrease of the temperature (see (\ref{tau1},\ref{tau2}))
+\item the number of iterations $K_{sa}$.
+\end{itemize}
+\item the Importance Sampling algorithm requires to set
+\begin{itemize}
+\item the Monte Carlo number $M$ used to estimate the observed likelihood (see (\ref{islike})).
+\end{itemize}
+\item the Gaussian Quadrature algorithm requires to set
+\begin{itemize}
+\item the number of quadrature points $N_{QG}$ used to compute each integral (see (\ref{sec:gqlike}))
+\item the width of each integral $N_{QG}$
+\end{itemize}
+\end{itemize}
+
+In the \R~implementation of \monolix, most of these parameters, as well as other variables used by the algorithm, are set through a list which is included in the object returned by an \monolix~fit. Table~\ref{tab:options} shows the correspondance between the parameters and the elements in this list.
+\begin{center}
+\begin{longtable}{r p{8cm} p{3cm} c}
+\hline {\bf Parameter} & {\bf Meaning} & {\bf Option name} & {\bf Default value}\\
+\hline
+\endfirsthead
+\multicolumn{4}{l}{{\itshape \bfseries \tablename\ \thetable{} -- cont.}} \\
+\hline {\bf Parameter} & {\bf Meaning} & {\bf Option name} & {\bf Default value}\\
+\hline
+\endhead
+\hline \multicolumn{4}{r}{{-- {\it To be continued}}} \\ 
+\endfoot
+%\hline
+\endlastfoot
+& & \\
+\hline
+$L$ & number of Markov Chains & {\sf nb.chains} & 1$^*$ \\
+$K_1, K_2$ & Number of iterations during the two periods & {\sf nbiter.saemix} & c(300,100)\\
+$K_b$ & Number of burning iterations & {\sf nbiter.burn} & 5 \\
+$m_1, m_2, m_3$ & Number of iterations of kernels $q^{(2)}$, $q^{(3)}$ and $q^{(4)}$ at each iteration of SAEM& {\sf nbiter.mcmc} & c(2,2,2)\\
+ & Number of iterations during which simulated annealing is performed & {\sf nbiter.sa} &  \\
+$\rho$ & Probability of acceptance for kernels $q^{(2)}$ and $q^{(3)}$ & {\sf proba.mcmc} & 0.4 \\
+ & Stepsize for kernels $q^{(2)}$ and $q^{(3)}$ & {\sf stepsize.rw} & 0.4 \\
+ & Initial variance parameters for kernels $q^{(2)}$ and $q^{(3)}$ & {\sf rw.init} & 0.5\\
+$\tau$ & Parameter controlling cooling in the Simulated Annealing algorithm & {\sf alpha.sa} & 0.97 \\
+$M$ & Number of Monte-Carlo samples used to estimate the likelihood by Importance Sampling & {\sf nmc.is} & 5000 \\
+$\nu$ & Number of degrees of freedom of the Student distribution used for the estimation of the log-likelihood by Importance Sampling & {\sf nu.is} & 4 \\
+$K_{GQ}$ & Number of nodes used for Gaussian Quadrature & {\sf nnodes.gq} & 12 \\
+ & Width of the distribution used for Gaussian Quadrature (in SD) & {\sf nsd.gq} & 4 \\
+$L_{mcmc}$ & Number of iterations required to assume convergence for the conditional estimates & {\sf ipar.lmcmc} & 50\\
+$\rho_{mcmc}$ & Confidence interval for the conditional mean and variance & {\sf ipar.rmcmc} & 0.95 \\
+\multicolumn{2}{l}{Other variables} \\
+& Algorithms to be run in a call to {\sf saemix()}: a vector of 3 values of 0/1, representing respectively individual parameter estimates (MAP), estimation of the Fisher information matrix and estimation of the LL by importance sampling  & {\sf algorithms} & c(1,1,1) \\
+& Plot graphs during the estimation of the LL by IS & {\sf print.is} & \false \\
+ & Maximum number of iterations for the estimation of fixed effects & {\sf maxim.maxiter} & 100\\
+& Whether convergence plots should be drawn at regular intervals during the estimation & {\sf displayProgress}& \true \\
+& Interval (in number of iterations) between two convergence plots & {\sf nbdisplay} &  \\
+& Seed to initialise the random number generator & {\sf seed} & 123456 \\
+\hline
+\\
+\caption{Parameters set as options in the {\sf options} list. To set an option, one would define it as an element of this list (see examples), and any option not defined by the user is automatically set to its default value.} \label{tab:options}
+\end{longtable} 
+\par \kern -1cm{\itshape $^*$ the default number of chains is 1, except when the number of subjects is smaller than 50, where it defaults to $n_c$ where $n_c$ is the smallest integer such that $n_c\;N \geq 50$}
+\end{center}
+
+
+Assuming the result of the \monolix~fit has been stored in an object {\sf saemix.fit}, the list of options can be accessed using the following instruction (see section~\ref{sec:saemixS4} for more details on how to access elements of objects in \R):
+\begin{verbatim}
+saemix.fit["options"]
+\end{verbatim}
+For example, to see the number of chains, one would type in \R:
+\begin{verbatim}
+saemix.fit["options"]$nb.chains
+\end{verbatim}
+
+The easiest way to set options is to pass them in a list when calling the main fitting function, as can be seen in the example section (section~\ref{sec:exampletheo}).
+
+\clearpage
+\subsection{The outputs}
+
+In the \R~implementation of \monolix, the object returned after a call to the main fitting function {\sf saemix()} contains the following elements:
+\begin{itemize}
+\item data: the data object, created by a call to the {\sf saemixData()} function, and containing the dataset to be used in the analysis
+\item model: the model object, created by a call to the {\sf saemixModel()} function, and containing the model characteristics
+\item options: a list containing the options for the estimation algorithm (see above)
+\item prefs: a list containing the graphical preferences for plots, which will be described in the next section
+\item results: the results object
+\item rep.data: the replicated data (when available)
+\item sim.data: the simulated data (when available)
+\end{itemize}
+Assuming the result of a call to {\sf saemix()} has been ascribed to the object \verb+yfit+, these elements can be accessed, for example for the results element, with the following command:
+\begin{verbatim}
+yfit["results"]
+\end{verbatim}
+The results object is an object of class {\sf SaemixRes}. Most users will not need to access the elements since functions have been created to output the results. However, elements of the results object can also be accessed individually; for example, the likelihood estimated by importance sampling can be accessed as:
+\begin{verbatim}
+yfit["results"]["ll.is"]
+\end{verbatim}
+More details on S4 structures (objects and methods), and on how to access the elements of S4 objects can be found in~\ref{chapter_classS4}.
+
+Table~\ref{tab:resSlots} shows the most important elements present in the results object (some of these are only present after a call to a specific function, or when the proper option has been set; for instance, estimates of individual parameters are only estimated when the first element of the {\sf algorithm} element in {\sf options} is 1).
+\begin{center}
+\begin{longtable}{r p{12cm}}
+\hline {\bf Element} & {\bf Meaning}\\
+\hline
+& \\
+\endfirsthead
+\multicolumn{2}{l}{{\itshape \bfseries \tablename\ \thetable{} -- cont.}} \\
+\hline {\bf Element} & {\bf Meaning}\\
+\hline
+& \\
+\endhead
+\hline \multicolumn{2}{r}{{-- {\it To be continued}}} \\ 
+\endfoot
+%\hline
+\endlastfoot
+{\sf npar.est} & Number of parameter estimates \\
+{\sf fixed.effects} & Estimates of the fixed effects \\ 
+{\sf se.fixed} & Standard errors of estimation of the fixed effects\\
+{\sf respar} & Estimates of the parameters of the residual error model \\ 
+{\sf se.repar} & Standard errors of estimation of the residual parameters\\
+{\sf omega} & Estimates of the fixed effects \\ 
+{\sf se.omega} & Standard errors of the estimation of the fixed effects\\
+{\sf ll.is} & Log-likelihood estimated by importance sampling\\
+{\sf aic.is} & AIC using the log-likelihood estimated by importance sampling \\
+{\sf bic.is} & BIC using the log-likelihood estimated by importance sampling \\
+{\sf ll.lin} & Log-likelihood estimated by linearisation\\
+{\sf aic.lin} & AIC using the log-likelihood estimated by linearisation \\
+{\sf bic.lin} & BIC using the log-likelihood estimated by linearisation \\
+{\sf ll.gq} & Log-likelihood estimated by gaussian quadrature\\
+{\sf aic.gq} & AIC using the log-likelihood estimated by gaussian quadrature \\
+{\sf bic.gq} & BIC using the log-likelihood estimated by gaussian quadrature \\
+{\sf map.psi} & Individual estimates of the parameters ($\psi$), obtained as the mode of the conditional distribution (MAP)\\
+{\sf map.phi} & Estimate of the corresponding individual $\phi$\\
+{\sf map.eta} & Estimate of the corresponding random effect \\
+{\sf map.shrinkage} & Shrinkage for the MAP estimates \\
+{\sf cond.mean.psi} & Individual estimates of the parameters, obtained as the mean of the conditional distribution \\
+{\sf cond.mean.phi} & Estimate of the corresponding individual $\phi$\\
+{\sf cond.mean.eta} & Estimate of the corresponding random effect \\
+{\sf cond.var.phi} & Estimate of the variance of the individual $\phi$ \\
+{\sf cond.shrinkage} & Shrinkage for the conditional estimates \\
+%{\sf phi} & Individual parameters simulated in the different chains during the algorithm \\
+%{\sf mean.phi} & Average of the individual parameters simulated in the different chains during the algorithm\\
+{\sf phi.samp} & Samples from the individual conditional distribution of the $\phi$\\
+{\sf phi.samp.var} & Variance of the samples from the individual conditional distribution of the $\phi$\\
+{\sf ypred} & Population predictions, computed for the mean population parameters $ypred_{ij}= f\left(x_{ij} ; h\left( \mathbb{E}_{\hat{\theta}}(\phigi) \right) \right)$ \\
+{\sf ppred} & Population mean predictions, obtained as the expectation of the predictions $ppred_{ij}= \mathbb{E}_{\hat{\theta}}(f(x_{ij} ; \psigi) ))$\\
+{\sf ipred} & Individual predictions, computed using the MAP estimates of the individual parameters \\
+{\sf icpred} & Individual predictions, computed using the conditional estimates of the individual parameters \\
+{\sf wres} & Weighted population residuals, computed using {\sf ppred} (see section~\ref{section_wres}) \\
+{\sf pd} & Prediction discrepancies \\
+{\sf npde} & Normalised prediction distribution errors \\
+{\sf iwres} & Individual weighted residuals, using the MAP estimates of the individual parameters (using the same computations as ipred) \\
+{\sf icwres} & Individual weighted residuals using the conditional estimates of the individual parameters (using the same computations as icpred) \\
+
+{\sf } & \\
+\hline
+\\
+\caption{Elements contained in the results object.} \label{tab:resSlots}
+\end{longtable} 
+\end{center}
+A full list of all the elements in a results object can be obtained by the command:
+\begin{verbatim}
+getSlots("SaemixRes")
+\end{verbatim}
+
+% ECO TODO: pourquoi on garde phi et mean.phi à la fin, ne faudrait-il pas les virer des outputs ? ou bien garder phi sur toutes les chaînes ?
+
+\noindent {\bf a) Estimation of the parameters:}
+
+The SAEM algorithm computes the maximum likelihood estimate $\hthetag$ and estimates its covariance matrix $I({\hthetag})^{-1}/N$ using the Fisher Information Matrix, as defined in Section~\ref{sec_fish}.
+
+Recall that $d$ is the number of individual parameters, then for $j=1,2\ldots d$, we can
+\begin{enumerate}
+\item estimate the vector of fixed effects $\fixed_effect$ (intercept and coefficients of the covariates) by $(\hat{\fixed_effect})$,
+\item estimate the standard errors of $\fixed_effect$,
+\item test if some components of $\fixed_effect$ are null by computing the significance level of the Wald test.
+\end{enumerate}
+
+Let $\IIV=(\omega_{jl}, 1\leq j,l \leq d)$. Then, for any $j,l=1,2\ldots d$, we can
+\begin{enumerate}
+\item estimate $\omega_{jl}$ by $\homega_{jl}$, for all $1\leq j,l \leq d$,
+\item estimate the standard error of $\homega_{jl}$, for all $1\leq j,l \leq d$,
+%\item test ``$\omega_{jl}=0$", by computing the significance level of the Wald test.
+\end{enumerate}
+%(In this version of \monolix, the standard errors of the non diagonal elements $\homega_{jl}$, with $j\neq l$, are not computed and the Wald test is only performed for the diagonal elements of $\IIV$).
+
+\noindent {\bf b) Estimation of the conditional distributions:}
+
+The MCMC algorithm provides an estimation of the conditional means, conditional modes and conditional standard deviations of the individual parameters and of the random effects. 
+
+The function can be called with an argument {\sf nsamp} which runs several sampling chains in parallel, providing several independent samples from the individual conditional distribution for each subject. The number of iterations necessary to obtain convergence (that is, for the successive empirical conditional mean and sd to remain within the requested precision for all chains) is reported, and if the option {\sf displayProgress} is \true, plots are produced during the estimation process showing the evolution of the different sampling chains.
+
+\begin{itemize}
+\item the conditional mode can be found in \monolix~in the results component of the object, as {\sf map.psi} (there is also a \texttt{map.phi} component for the corresponding $\phi$ and a \texttt{map.eta} for the random effects)
+\item the conditional expectation can be found in {\sf cond.mean.psi} and the variance in {\sf cond.var.psi} (the corresponding $\phi$ and $\eta$ are also available)
+\end{itemize}
+
+\noindent {\bf c) Estimation of the likelihood:}
+
+The \monolix~algorithm can provide three different approximations to the likelihoods, through importance sampling, linearisation or gaussian quadrature. 
+
+%The Importance Sampling algorithm computes an estimate $ \ell_M(\yg;\hthetag)$ of the observed likelihood together with its standard error.
+
+\noindent {\bf d) Hypothesis testing and model selection:}
+
+We can test the covariate model, the covariance model and the residual error model.
+
+The AIC and BIC criteria are defined by
+\begin{eqnarray}
+AIC &=& - 2 \log \ell_M(\yg;\hthetag) + 2 P \\
+BIC &=& - 2 \log \ell_M(\yg;\hthetag) + \log(N) P
+\end{eqnarray}
+where $P$ is the total number of parameters to be estimated and $N$ is the number of subjects. Note that the BIC defined using this formula is in fact the corrected BIC (BICc) proposed by Raftery to better account for the information in mixed-effect models~\cite{Raftery95}; it differs from the traditional BIC which uses a factor $\log(N_{tot})$ instead of $\log(N)$. The same formula is also used in {\sc Monolix}.
+
+When comparing two nested models ${\cal M}_0$ and ${\cal M}_1$ with dimensions $P_0$ and $P_1$ (with $P_1>P_0$), the Likelihood Ratio Test uses the test statistic 
+$$LRT = 2 ( \log \ell_{M,1}(\yg;\hthetag_1) -  \log \ell_{M,0}(\yg;\hthetag_0) )$$
+According to the hypotheses to test, the limiting distribution of $LRT$ under the null hypothesis is either a $\chi ^2$ distribution, or a mixture of a $\chi^2$ distribution and a
+$\delta-Dirac$ distribution. For example:
+\begin{itemize}
+\item[-] to test whether some fixed effects are null, assuming the same covariance structure of the random effects, one should use
+$$LRT \limite{N\to \infty}{} \chi^2(P_1-P_0) $$
+\item[-] to test whether some correlations of the covariance matrix $\IIV$ are null, assuming the same covariate model, one should use 
+$$LRT \limite{N\to \infty}{} \chi^2(P_1-P_0) $$
+\item[-] to test whether the variance of one of the random effects is zero, assuming the same covariate model, one should use
+$$LRT \limite{N\to \infty}{} \frac{1}{2} \chi^2(1) + \frac{1}{2}\delta_0 $$
+\end{itemize}
+
+\noindent {\bf e) Estimation of the weighted residuals:}
+
+The Population Weighted Residuals $(PWRES_{ij})$,  the Individual Weighted Residuals $(IWRES_{ij})$ and the Normalised Prediction Distribution Errors $(\npde_{ij})$ are computed as described Section~\ref{section_wres}.
+
+\newpage
+\subsection{Plots} \label{sec:plot.functions}
+
+The generic function {\sf plot.saemix} can be used to obtain a number of plots used to assess and diagnose the model. This function is called using the following arguments:
+\begin{verbatim}
+plot(saemix.fit,plot.type="plot.type")
+\end{verbatim}
+where {\sf saemix.fit} is the object returned after a successful call to {\sf saemix}, and {\sf "plot.type"} is the type of plot chosen. The following plot types are available:
+\begin{itemize}
+\item "data": spaghetti plot of the data
+\item "convergence": a plot of the convergence graphs; this is the default type when {\sf type} is not given
+\item "likelihood": estimate of the likelihood through importance sampling versus the number of MCMC samples
+\item "individual.fit": plot of the individual fits overlayed on the data, for each subject in the dataset
+\item "population.fit": plot of the fits obtained with the population parameters and the individual covariates and design, overlayed on the data, for each subject in the dataset% ECO TODO: a enlever ?
+\item "both.fit": plot of the individual and population fits, overlayed on the data % ECO TODO: a enlever ?
+\item "observations.vs.predictions": observations versus predictions(left: population predictions, right: individual predictions)
+\item "random.effects": boxplot of the random effects. With the option "m", a horizontal line is added representing the estimate of the population parameter
+\item "parameters.versus.covariates": plot of a parameter versus all covariates in the model (uses the individual estimates); for continuous covariates, a scatterplot is produced, while for categorical covariates a boxplot is shown. With the option "m", a horizontal line is added representing the estimate of the population parameter. With the options "l" or "s", a curve representing a linear regression ("l") or a spline regression ("s") is added. Several options can be combined (see below) %ECO TODO ou dataset ?
+\item "randeff.versus.covariates": plot of a random effect versus all covariates in the model (uses the individual estimates) %ECO TODO ou dataset ?
+\item "correlations": matrix of scatterplot showing the correlations between pairs of random effects (uses the individual estimates)
+\item "marginal.distribution": distribution of the random effects
+\item "residuals.distribution": distribution of the standardised residuals, computed using the population predictions (weighted residuals), the individual predictions (individual weighted residuals) and optionally if available the $\npde$. Both histograms and QQ-plots of the residuals are given
+\item "residuals.scatter": scatterplot of standardised residuals versus the predictor (X) and versus the predictions. The residuals are computed using the population predictions (weighted residuals), the individual predictions (individual weighted residuals) and optionally if available the $\npde$. The corresponding predictions are the individual predictions for individual residuals, and population predictions for $\npde$ and population residuals
+\item "vpc": Visual Predictive Check; prediction intervals can be added to the plots. To produce prediction intervals, different methods are available for binning (grouping points), which can be selected through the {\sf vpc.method} argument:
+\begin{itemize}
+\item[{\sf equal}:] the quantile of the data are used to define the breaks, yielding a similar number of points in each interval;
+\item[{\sf width}:] bins of equal width (if the option {\sf xlog} is set to \true, the bins will be of equal width on the logarithmic scale);
+\item[{\sf user}:] user-defined breaks (set as the vector in {\sf vpc.breaks} argument; it is possible to give only the inner breaks or to include the boundaries (min/max));
+%\item[{\sf optimal}:] an optimal binning algorithm which uses clustering techniques to group the data appropriately and performs better for unbalanced designs~\cite{Lavielle11} (not implemented yet); the algorithm uses a penalised criterion with a parameter {\sf vpc.lambda} that can be tuned by the user.
+\end{itemize}
+In the first three methods, there will be at most {\sf vpc.bin} bins, and the boundaries of each interval, as well as the value used to plot the corresponding point, will be shown.
+\item "npde": plots of the $\npde$ (distribution, histogram, and scatterplots versus the regression variable and versus predictions), as displayed in the $\npde$ library~\cite{CometsCMPB08}. Tests comparing the empirical distribution of the $\npde$ to the theoretical $\mathcal{N}(0,1)$ distribution by a combined test are also displayed.
+\end{itemize}
+Several plots can be produced by setting {\sf plot.type} to be a vector. Partial matching will be used (so that {\sf plot.type="individual"} will produce individual fits, but {\sf plot.type="residuals"} will produce an error message because it could correspond to two different types of plots). After a successful fit, if the option {\sf save.graphs} is \true, the following plots are produced by default and saved to a file named {\sf diagnostic\_graphs.ps} in the directory containing fit results: spaghetti plot of the data, convergence plots, likelihood by importance sampling, plots of predictions versus observations for population and individual estimates, boxplots of the random effects, correlation between the random effects. Individual fits are also saved, in a separate file called {\sf individual\_fits.ps}. Some of these plots may be missing if the corresponding estimates have not been requested (eg if the likelihood has not been computed by importance sampling, the plot won't be available).
+
+%ECO TODO
+% décrire options des graphes
+
+\bigskip Each plot can also be obtained individually using a specific function, which allows total flexibility over the layout, including options to change plotting symbols, colors, or which subjects are to be used. Table~\ref{tab:plot.functions} gives the names of the individual functions corresponding to the plots listed above.
+ \begin{table}[!h]
+\begin{center}
+\begin{tabular}{r p{10cm}}
+\hline Plot function name & Brief description\\
+\hline
+{\sf saemix.plot.data()} & Spaghetti plot of the data \\
+{\sf saemix.plot.convergence()} & Convergence plots for all estimated parameters \\
+{\sf saemix.plot.llis()} & Plot of the log-likelihood estimated by importance sampling \\
+{\sf saemix.plot.obsvspred()} & Plot of the predictions versus the observations \\
+{\sf saemix.plot.fits()} & Individual fit \\
+{\sf saemix.plot.distpsi()} & Estimated distribution of the random effects \\
+{\sf saemix.plot.randeff()} & Boxplot of a random effect \\
+{\sf saemix.plot.parcov()} & Plot of parameters versus covariates \\
+{\sf saemix.plot.randeffcov()} & Plot of random effects versus covariates \\
+{\sf saemix.plot.scatterresiduals()} & Scatterplots of residuals versus predictor and predictions \\
+{\sf saemix.plot.distribresiduals()} & Plot of the distribution of the residuals \\
+{\sf saemix.plot.vpc()} & Visual Predictive Check \\
+{\sf saemix.plot.npde()} & Plots of the npde \\
+%{\sf } &  \\
+\hline
+\end{tabular}
+\caption{Names of the individual functions used to obtain each type of plot. Please refer to the inline help for the arguments to provide to each function.} \label{tab:plot.functions}
+\end{center}
+\par \kern -0.5cm
+\end{table} 
+
+A help page describing these plots is available in the inline help:
+\begin{verbatim}
+?saemix.plot.data
+\end{verbatim}
+
+%\newpage
+\par \kern -0.5cm
+A common argument to all the functions is a list of options. This list can be set using the function {\sf saemix.plot.setoptions()}, and it is automatically set during the fit by {\sf saemix()} and stored in the Slot {\sf prefs} of the object. The options can then be modified through this list, for instance changing the new default color to red for all plots is done by setting the attribute {\sf col} in the list:
+\begin{verbatim}
+saemix.fit["prefs"]$col<-"red"
+\end{verbatim}
+Options can also be set on the fly for a given plot, by simply adding it to the call to {\sf plot()} as an argument (see examples in section~\ref{sec:exampletheo}):
+\begin{verbatim}
+plot(saemix.fit,plot.type="data",col="red",main="Raw data")
+\end{verbatim}
+
+The list of options that can be changed are given in table~\ref{tab:plot.options}, along with their default value. Not all options apply to all graphs.
+%\newpage
+%\begin{table}[!h]
+\begin{center}
+\begin{longtable}{r p{8cm} p{3cm}}
+\hline {\bf Parameter} & {\bf Description} & {\bf Default value}\\
+\hline
+\endfirsthead
+\multicolumn{3}{l}{{\itshape \bfseries \tablename\ \thetable{} -- cont.}} \\
+\hline {\bf Parameter} & {\bf Description} & {\bf Default value}\\
+\hline
+\endhead
+\hline \multicolumn{3}{r}{{-- {\it To be continued}}} \\ 
+\endfoot
+%\hline
+\endlastfoot
+
+& & \\
+\multicolumn{3}{l}{{\itshape \bfseries General graphical options}} \\
+{\sf ask} & Whether users should be prompted before each new plot (if \true) & \false \\
+{\sf new} & Whether a new plot should be produced  & \true \\
+{\sf interactive} & Whether users should be prompted before predictions or simulations are performed (if \true) & \false \\
+{\sf mfrow} & Page layout (NA: layout set by the plot function or before) & NA \\
+{\sf main} & Title & empty \\
+{\sf xlab} & Label for the X-axis & empty \\
+{\sf ylab} & Label for the Y-axis & empty \\
+{\sf type} & Type of the plot (as in the \R~plot function) & b (lines and symbols) \\
+{\sf col} & Main symbol color & black \\
+{\sf xlog} & Scale for the X-axis (\true: logarithmic scale) & \false \\
+{\sf ylog} & Scale for the Y-axis (\true: logarithmic scale) & \false \\
+{\sf cex} & A numerical value giving the amount by which plotting text and symbols should be magnified relative to the default & 1 \\
+{\sf cex.axis} & Magnification to be used for axis annotation relative to the current setting of 'cex' & 1 \\
+{\sf cex.lab} & Magnification to be used for x and y labels relative to the current setting of 'cex' & 1 \\
+{\sf cex.main} & Magnification to be used for main titles relative to the current setting of 'cex' & 1 \\
+{\sf pch} & Symbol type & 20 (dot) \\
+{\sf lty} & Line type & 1 (straight line) \\
+{\sf lwd} & Line width & 1 \\
+{\sf xlim} & Range for the X-axis (NA: ranges set by the plot function) & NA \\
+{\sf ylim} & Range for the Y-axis (NA: ranges set by the plot function) & NA \\
+{\sf ablinecol} & Color of the horizontal/vertical lines added to the plots & "DarkRed" \\
+{\sf ablinelty} & Type of the lines added to the plots & 2 (dashed) \\
+{\sf ablinelwd} & Width of the lines added to the plots & 2 \\
+& & \\
+\multicolumn{3}{l}{{\itshape \bfseries Options controlling the type of plots}} \\
+{\sf ilist} & List of subjects to include in the individual plots & all \\
+{\sf level} & Level of grouping to use (0=population, 1=individual) & 0:1 \\
+{\sf smooth} & Whether a smooth should be added to certain plots & \false \\
+{\sf line.smooth} & Type of smoothing (l=line, s=spline) & s \\
+{\sf indiv.par} & Type of individual estimates (map= conditional mode, eap=conditional mean) & map \\
+{\sf which.par} & Which parameters to use for the plot & all \\
+{\sf which.cov} & Which covariates to use for the plot  & all \\
+{\sf which.pres} & Which type of residuals to plot at the population level (when level includes 0) & c("wres","npde") \\
+{\sf which.resplot} & Type of residual plot ("res.vs.x": scatterplot & c("res.vs.x","res.vs.pred", \\
+&  versus X, "res.vs.pred": scatterplot versus predictions, "dist.hist": histogram, "dist.qqplot": QQ-plot) & "dist.qqplot","dist.hist") \\
+& & \\
+\multicolumn{3}{l}{{\itshape \bfseries Specific graphical options}} \\
+{\sf obs.col} & Symbol color to use for observations & black \\
+{\sf ipred.col} & Symbol color to use for individual predictions & black \\
+{\sf ppred.col} & Symbol color to use for population predictions & black \\
+{\sf obs.lty} & Line type to use for observations & 1 \\
+{\sf ipred.lty} & Line type to use for individual predictions & 2 \\
+{\sf ppred.lty} & Line type to use for population predictions & 3 \\
+{\sf obs.lwd} & Line width to use for observations & 1 \\
+{\sf ipred.lwd} & Line width to use for individual predictions & 1 \\
+{\sf ppred.lwd} & Line width to use for population predictions & 1 \\
+{\sf obs.pch} & Symbol type to use for observations & 20 \\
+{\sf ipred.pch} & Symbol type to use for individual predictions & 20 \\
+{\sf ppred.pch} & Symbol type to use for population predictions & 20 \\
+& & \\
+\multicolumn{3}{l}{{\itshape \bfseries Options for marginal distribution}} \\
+{\sf indiv.histo} & When \true, an histogram of the estimates of the individual parameters will be added to the plots of the distribution of the parameters & \false \\
+{\sf cov.value} & The value for each covariate to be used to condition on for the marginal distribution (NA: median will be used) & NA \\
+{\sf range} & Range (expressed in number of SD) over which to plot the marginal distribution & 3 \\
+& & \\
+\multicolumn{3}{l}{{\itshape \bfseries Graphical options for VPC and residual plots}} \\
+{\sf vpc.method} & Method used to bin points (one of "equal", "width", "user" or "optimal"); at least the first two letters of the method need to be specified (the "optimal" method is not implemented yet) & "equal" \\
+{\sf vpc.bin} & number of binning intervals & 10 \\
+{\sf vpc.interval} & size of interval & 0.95 \\
+{\sf vpc.breaks} & vector of breaks used with user-defined breaks (vpc.method="user") & NULL \\
+{\sf vpc.lambda} & value of lambda used to select the optimal number of bins through a penalised criterion & 0.3 \\
+{\sf vpc.pi} & whether prediction intervals should be plotted for the median and the limits of the VPC interval & \true \\
+{\sf vpc.obs} & whether observations should be overlayed on the plot & \true \\
+{\sf fillcol} & Color used to fill histograms (individual parameter estimates) or to plot intervals in standard VPC-type plots (VPC, pd, npde) & "lightblue1" \\
+{\sf col.fillmed} & Color used to fill prediction intervals around the median (for VPC, pd, npde) & "pink" \\
+{\sf col.fillpi} & Color used to fill prediction intervals around the limits of intervals (for VPC, pd, npde) & "slategray1" \\
+{\sf col.lmed} & Color used to plot the median of simulated values (for VPC, pd, npde) & "indianred4" \\
+{\sf col.lpi} & Color used to plot the simulated limit of prediction intervals (for VPC, pd, npde) & "slategray4" \\
+{\sf col.pobs} & Color used to plot the symbols for observations (for VPC, pd, npde) & "steelblue4" \\
+{\sf col.lobs} & Color used to plot the line corresponding to given percentiles of observations (for VPC, pd, npde) & "steelblue4" \\
+{\sf lty.lmed} & Line type used to plot the median of simulated values (for VPC, pd, npde) &  2 \\
+{\sf lty.lpi} & Line type used to plot the simulated limit of prediction intervals (for VPC, pd, npde) & 2 \\
+{\sf lty.lobs} & Line type used to plot the line corresponding to given percentiles of observations (for VPC, pd, npde) & 1 \\
+{\sf lwd.lmed} & Line width used to plot the median of simulated values (for VPC, pd, npde) &  2 \\
+{\sf lwd.lpi} & Line width used to plot the simulated limit of prediction intervals (for VPC, pd, npde) & 1 \\
+{\sf lwd.lobs} & Line width used to plot the line corresponding to given percentiles of observations (for VPC, pd, npde) & 2 \\
+& & \\
+\multicolumn{3}{l}{{\itshape \bfseries Specific graphical options}} \\
+{\sf pcol} & Main symbol color & black \\
+{\sf lcol} & Main line color & black \\
+{\sf } &  &  \\
+\hline
+\\
+\caption{Default graphical parameters. Any option not defined by the user is automatically set to its default value.} \label{tab:plot.options}
+\end{longtable} 
+\end{center}
+%\end{table} 

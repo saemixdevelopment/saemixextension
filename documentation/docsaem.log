@@ -1,0 +1,811 @@
+This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=latex 2012.12.27)  25 FEB 2014 09:08
+entering extended mode
+ %&-line parsing enabled.
+**docsaem.tex
+(./docsaem.tex
+LaTeX2e <2009/09/24>
+Babel <v3.8l> and hyphenation patterns for english, usenglishmax, dumylang, noh
+yphenation, loaded.
+(/usr/share/texmf-texlive/tex/latex/base/book.cls
+Document Class: book 2007/10/19 v1.4h Standard LaTeX document class
+(/usr/share/texmf-texlive/tex/latex/base/bk11.clo
+File: bk11.clo 2007/10/19 v1.4h Standard LaTeX file (size option)
+)
+\c@part=\count79
+\c@chapter=\count80
+\c@section=\count81
+\c@subsection=\count82
+\c@subsubsection=\count83
+\c@paragraph=\count84
+\c@subparagraph=\count85
+\c@figure=\count86
+\c@table=\count87
+\abovecaptionskip=\skip41
+\belowcaptionskip=\skip42
+\bibindent=\dimen102
+)
+(/usr/share/texmf-texlive/tex/latex/graphics/epsfig.sty
+Package: epsfig 1999/02/16 v1.7a (e)psfig emulation (SPQR)
+
+(/usr/share/texmf-texlive/tex/latex/graphics/graphicx.sty
+Package: graphicx 1999/02/16 v1.0f Enhanced LaTeX Graphics (DPC,SPQR)
+
+(/usr/share/texmf-texlive/tex/latex/graphics/keyval.sty
+Package: keyval 1999/03/16 v1.13 key=value parser (DPC)
+\KV@toks@=\toks14
+)
+(/usr/share/texmf-texlive/tex/latex/graphics/graphics.sty
+Package: graphics 2009/02/05 v1.0o Standard LaTeX Graphics (DPC,SPQR)
+
+(/usr/share/texmf-texlive/tex/latex/graphics/trig.sty
+Package: trig 1999/03/16 v1.09 sin cos tan (DPC)
+)
+(/etc/texmf/tex/latex/config/graphics.cfg
+File: graphics.cfg 2009/08/28 v1.8 graphics configuration of TeX Live
+)
+Package graphics Info: Driver file: dvips.def on input line 91.
+
+(/usr/share/texmf-texlive/tex/latex/graphics/dvips.def
+File: dvips.def 1999/02/16 v3.0i Driver-dependant file (DPC,SPQR)
+))
+\Gin@req@height=\dimen103
+\Gin@req@width=\dimen104
+)
+\epsfxsize=\dimen105
+\epsfysize=\dimen106
+)
+(/usr/share/texmf-texlive/tex/latex/graphics/color.sty
+Package: color 2005/11/14 v1.0j Standard LaTeX Color (DPC)
+
+(/etc/texmf/tex/latex/config/color.cfg
+File: color.cfg 2007/01/18 v1.5 color configuration of teTeX/TeXLive
+)
+Package color Info: Driver file: dvips.def on input line 130.
+
+(/usr/share/texmf-texlive/tex/latex/graphics/dvipsnam.def
+File: dvipsnam.def 1999/02/16 v3.0i Driver-dependant file (DPC,SPQR)
+))
+(/usr/share/texmf-texlive/tex/latex/amsmath/amsmath.sty
+Package: amsmath 2000/07/18 v2.13 AMS math features
+\@mathmargin=\skip43
+
+For additional information on amsmath, use the `?' option.
+(/usr/share/texmf-texlive/tex/latex/amsmath/amstext.sty
+Package: amstext 2000/06/29 v2.01
+
+(/usr/share/texmf-texlive/tex/latex/amsmath/amsgen.sty
+File: amsgen.sty 1999/11/30 v2.0
+\@emptytoks=\toks15
+\ex@=\dimen107
+))
+(/usr/share/texmf-texlive/tex/latex/amsmath/amsbsy.sty
+Package: amsbsy 1999/11/29 v1.2d
+\pmbraise@=\dimen108
+)
+(/usr/share/texmf-texlive/tex/latex/amsmath/amsopn.sty
+Package: amsopn 1999/12/14 v2.01 operator names
+)
+\inf@bad=\count88
+LaTeX Info: Redefining \frac on input line 211.
+\uproot@=\count89
+\leftroot@=\count90
+LaTeX Info: Redefining \overline on input line 307.
+\classnum@=\count91
+\DOTSCASE@=\count92
+LaTeX Info: Redefining \ldots on input line 379.
+LaTeX Info: Redefining \dots on input line 382.
+LaTeX Info: Redefining \cdots on input line 467.
+\Mathstrutbox@=\box26
+\strutbox@=\box27
+\big@size=\dimen109
+LaTeX Font Info:    Redeclaring font encoding OML on input line 567.
+LaTeX Font Info:    Redeclaring font encoding OMS on input line 568.
+\macc@depth=\count93
+\c@MaxMatrixCols=\count94
+\dotsspace@=\muskip10
+\c@parentequation=\count95
+\dspbrk@lvl=\count96
+\tag@help=\toks16
+\row@=\count97
+\column@=\count98
+\maxfields@=\count99
+\andhelp@=\toks17
+\eqnshift@=\dimen110
+\alignsep@=\dimen111
+\tagshift@=\dimen112
+\tagwidth@=\dimen113
+\totwidth@=\dimen114
+\lineht@=\dimen115
+\@envbody=\toks18
+\multlinegap=\skip44
+\multlinetaggap=\skip45
+\mathdisplay@stack=\toks19
+LaTeX Info: Redefining \[ on input line 2666.
+LaTeX Info: Redefining \] on input line 2667.
+)
+(/usr/share/texmf-texlive/tex/latex/amsfonts/amssymb.sty
+Package: amssymb 2009/06/22 v3.00
+
+(/usr/share/texmf-texlive/tex/latex/amsfonts/amsfonts.sty
+Package: amsfonts 2009/06/22 v3.00 Basic AMSFonts support
+\symAMSa=\mathgroup4
+\symAMSb=\mathgroup5
+LaTeX Font Info:    Overwriting math alphabet `\mathfrak' in version `bold'
+(Font)                  U/euf/m/n --> U/euf/b/n on input line 96.
+))
+(/usr/share/texmf-texlive/tex/latex/amscls/amsthm.sty
+Package: amsthm 2004/08/06 v2.20
+\thm@style=\toks20
+\thm@bodyfont=\toks21
+\thm@headfont=\toks22
+\thm@notefont=\toks23
+\thm@headpunct=\toks24
+\thm@preskip=\skip46
+\thm@postskip=\skip47
+\thm@headsep=\skip48
+\dth@everypar=\toks25
+)
+(/usr/share/texmf-texlive/tex/latex/tools/indentfirst.sty
+Package: indentfirst 1995/11/23 v1.03 Indent first paragraph (DPC)
+)
+(/usr/share/texmf-texlive/tex/latex/tools/array.sty
+Package: array 2008/09/09 v2.4c Tabular extension package (FMi)
+\col@sep=\dimen116
+\extrarowheight=\dimen117
+\NC@list=\toks26
+\extratabsurround=\skip49
+\backup@length=\skip50
+)
+(/usr/share/texmf-texlive/tex/latex/bbm-macros/bbm.sty
+Package: bbm 1999/03/15 V 1.2 provides fonts for set symbols - TH
+LaTeX Font Info:    Overwriting math alphabet `\mathbbm' in version `bold'
+(Font)                  U/bbm/m/n --> U/bbm/bx/n on input line 33.
+LaTeX Font Info:    Overwriting math alphabet `\mathbbmss' in version `bold'
+(Font)                  U/bbmss/m/n --> U/bbmss/bx/n on input line 35.
+)
+(/usr/share/texmf-texlive/tex/latex/fancyhdr/fancyheadings.sty
+Package: fancyheadings 2008/02/04 1.99 Dummy package to call fancyhdr
+
+
+Package fancyheadings Warning: Please stop using fancyheadings!
+(fancyheadings)                Use fancyhdr instead.
+(fancyheadings)                We will call fancyhdr with the very same
+(fancyheadings)                options you passed to fancyheadings.
+(fancyheadings)                
+(fancyheadings)                fancyhdr is 99 percent compatible with
+(fancyheadings)                fancyheadings. The only incompatibility is
+(fancyheadings)                that \headrulewidth and \footrulewidth and
+(fancyheadings)                their \plain... versions are no longer length
+(fancyheadings)                parameters, but normal macros (to be changed
+(fancyheadings)                with \renewcommand rather than \setlength)..
+
+(/usr/share/texmf-texlive/tex/latex/fancyhdr/fancyhdr.sty
+\fancy@headwidth=\skip51
+\f@ncyO@elh=\skip52
+\f@ncyO@erh=\skip53
+\f@ncyO@olh=\skip54
+\f@ncyO@orh=\skip55
+\f@ncyO@elf=\skip56
+\f@ncyO@erf=\skip57
+\f@ncyO@olf=\skip58
+\f@ncyO@orf=\skip59
+))
+(/usr/share/texmf-texlive/tex/latex/tools/longtable.sty
+Package: longtable 2004/02/01 v4.11 Multi-page Table package (DPC)
+\LTleft=\skip60
+\LTright=\skip61
+\LTpre=\skip62
+\LTpost=\skip63
+\LTchunksize=\count100
+\LTcapwidth=\dimen118
+\LT@head=\box28
+\LT@firsthead=\box29
+\LT@foot=\box30
+\LT@lastfoot=\box31
+\LT@cols=\count101
+\LT@rows=\count102
+\c@LT@tables=\count103
+\c@LT@chunks=\count104
+\LT@p@ftn=\toks27
+)
+(/usr/share/texmf-texlive/tex/latex/hyperref/hyperref.sty
+Package: hyperref 2009/10/09 v6.79a Hypertext links for LaTeX
+
+(/usr/share/texmf-texlive/tex/generic/oberdiek/ifpdf.sty
+Package: ifpdf 2009/04/10 v2.0 Provides the ifpdf switch (HO)
+Package ifpdf Info: pdfTeX in pdf mode not detected.
+)
+(/usr/share/texmf-texlive/tex/generic/oberdiek/ifvtex.sty
+Package: ifvtex 2008/11/04 v1.4 Switches for detecting VTeX and its modes (HO)
+Package ifvtex Info: VTeX not detected.
+)
+(/usr/share/texmf-texlive/tex/generic/ifxetex/ifxetex.sty
+Package: ifxetex 2009/01/23 v0.5 Provides ifxetex conditional
+)
+(/usr/share/texmf-texlive/tex/latex/oberdiek/hycolor.sty
+Package: hycolor 2009/10/02 v1.5 Code for color options of hyperref/bookmark (H
+O)
+
+(/usr/share/texmf-texlive/tex/latex/oberdiek/xcolor-patch.sty
+Package: xcolor-patch 2009/10/02 xcolor patch
+))
+\@linkdim=\dimen119
+\Hy@linkcounter=\count105
+\Hy@pagecounter=\count106
+
+(/usr/share/texmf-texlive/tex/latex/hyperref/pd1enc.def
+File: pd1enc.def 2009/10/09 v6.79a Hyperref: PDFDocEncoding definition (HO)
+)
+(/usr/share/texmf-texlive/tex/generic/oberdiek/etexcmds.sty
+Package: etexcmds 2007/12/12 v1.2 Prefix for e-TeX command names (HO)
+
+(/usr/share/texmf-texlive/tex/generic/oberdiek/infwarerr.sty
+Package: infwarerr 2007/09/09 v1.2 Providing info/warning/message (HO)
+)
+Package etexcmds Info: Could not find \expanded.
+(etexcmds)             That can mean that you are not using pdfTeX 1.50 or
+(etexcmds)             that some package has redefined \expanded.
+(etexcmds)             In the latter case, load this package earlier.
+)
+(/usr/share/texmf-texlive/tex/latex/latexconfig/hyperref.cfg
+File: hyperref.cfg 2002/06/06 v1.2 hyperref configuration of TeXLive
+)
+(/usr/share/texmf-texlive/tex/latex/oberdiek/kvoptions.sty
+Package: kvoptions 2009/08/13 v3.4 Keyval support for LaTeX options (HO)
+
+(/usr/share/texmf-texlive/tex/generic/oberdiek/kvsetkeys.sty
+Package: kvsetkeys 2009/07/30 v1.5 Key value parser with default handler suppor
+t (HO)
+))
+Package hyperref Info: Option `colorlinks' set `true' on input line 2864.
+Package hyperref Info: Hyper figures OFF on input line 2975.
+Package hyperref Info: Link nesting OFF on input line 2980.
+Package hyperref Info: Hyper index ON on input line 2983.
+Package hyperref Info: Plain pages OFF on input line 2990.
+Package hyperref Info: Backreferencing OFF on input line 2995.
+
+Implicit mode ON; LaTeX internals redefined
+Package hyperref Info: Bookmarks ON on input line 3191.
+(/usr/share/texmf-texlive/tex/latex/ltxmisc/url.sty
+\Urlmuskip=\muskip11
+Package: url 2006/04/12  ver 3.3  Verb mode for urls, etc.
+)
+LaTeX Info: Redefining \url on input line 3428.
+
+(/usr/share/texmf-texlive/tex/generic/oberdiek/bitset.sty
+Package: bitset 2007/09/28 v1.0 Data type bit set (HO)
+
+(/usr/share/texmf-texlive/tex/generic/oberdiek/intcalc.sty
+Package: intcalc 2007/09/27 v1.1 Expandable integer calculations (HO)
+)
+(/usr/share/texmf-texlive/tex/generic/oberdiek/bigintcalc.sty
+Package: bigintcalc 2007/11/11 v1.1 Expandable big integer calculations (HO)
+
+(/usr/share/texmf-texlive/tex/generic/oberdiek/pdftexcmds.sty
+Package: pdftexcmds 2009/09/23 v0.6 LuaTeX support for pdfTeX utility functions
+ (HO)
+
+(/usr/share/texmf-texlive/tex/generic/oberdiek/ifluatex.sty
+Package: ifluatex 2009/04/17 v1.2 Provides the ifluatex switch (HO)
+Package ifluatex Info: LuaTeX not detected.
+)
+(/usr/share/texmf-texlive/tex/generic/oberdiek/ltxcmds.sty
+Package: ltxcmds 2009/08/05 v1.0 Some LaTeX kernel commands for general use (HO
+)
+)
+Package pdftexcmds Info: LuaTeX not detected.
+Package pdftexcmds Info: \pdf@primitive is available.
+Package pdftexcmds Info: \pdf@ifprimitive is available.
+)))
+\Fld@menulength=\count107
+\Field@Width=\dimen120
+\Fld@charsize=\dimen121
+\Field@toks=\toks28
+Package hyperref Info: Hyper figures OFF on input line 4377.
+Package hyperref Info: Link nesting OFF on input line 4382.
+Package hyperref Info: Hyper index ON on input line 4385.
+Package hyperref Info: backreferencing OFF on input line 4392.
+Package hyperref Info: Link coloring ON on input line 4395.
+Package hyperref Info: Link coloring with OCG OFF on input line 4402.
+Package hyperref Info: PDF/A mode OFF on input line 4407.
+
+(/usr/share/texmf-texlive/tex/generic/oberdiek/atbegshi.sty
+Package: atbegshi 2008/07/31 v1.9 At begin shipout hook (HO)
+)
+\Hy@abspage=\count108
+\c@Item=\count109
+\c@Hfootnote=\count110
+)
+
+Package hyperref Warning: Wrong driver `hpdftex.def';
+(hyperref)                pdfTeX is not running in PDF mode.
+(hyperref)                Using default driver.
+
+*hyperref using default driver hdvips*
+(/usr/share/texmf-texlive/tex/latex/hyperref/hdvips.def
+File: hdvips.def 2009/10/09 v6.79a Hyperref driver for dvips
+
+(/usr/share/texmf-texlive/tex/latex/hyperref/pdfmark.def
+File: pdfmark.def 2009/10/09 v6.79a Hyperref definitions for pdfmark specials
+\pdf@docset=\toks29
+\pdf@box=\box32
+\pdf@toks=\toks30
+\pdf@defaulttoks=\toks31
+\Fld@listcount=\count111
+)) (./docsaem.aux)
+\openout1 = `docsaem.aux'.
+
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 23.
+LaTeX Font Info:    ... okay on input line 23.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 23.
+LaTeX Font Info:    ... okay on input line 23.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 23.
+LaTeX Font Info:    ... okay on input line 23.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 23.
+LaTeX Font Info:    ... okay on input line 23.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 23.
+LaTeX Font Info:    ... okay on input line 23.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 23.
+LaTeX Font Info:    ... okay on input line 23.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 23.
+LaTeX Font Info:    ... okay on input line 23.
+Package hyperref Info: Link coloring ON on input line 23.
+
+(/usr/share/texmf-texlive/tex/latex/hyperref/nameref.sty
+Package: nameref 2007/05/29 v2.31 Cross-referencing by name of section
+
+(/usr/share/texmf-texlive/tex/latex/oberdiek/refcount.sty
+Package: refcount 2008/08/11 v3.1 Data extraction from references (HO)
+)
+\c@section@level=\count112
+)
+LaTeX Info: Redefining \ref on input line 23.
+LaTeX Info: Redefining \pageref on input line 23.
+ (./docsaem.out)
+(./docsaem.out)
+\@outlinefile=\write3
+\openout3 = `docsaem.out'.
+
+\AtBeginShipoutBox=\box33
+\c@lem=\count113
+\c@Rem=\count114
+LaTeX Font Info:    Try loading font information for U+msa on input line 155.
+ (/usr/share/texmf-texlive/tex/latex/amsfonts/umsa.fd
+File: umsa.fd 2009/06/22 v3.00 AMS symbols A
+)
+LaTeX Font Info:    Try loading font information for U+msb on input line 155.
+
+(/usr/share/texmf-texlive/tex/latex/amsfonts/umsb.fd
+File: umsb.fd 2009/06/22 v3.00 AMS symbols B
+)
+
+Package Fancyhdr Warning: \headheight is too small (12.0pt): 
+ Make it at least 13.59999pt.
+ We now make it that large for the rest of the document.
+ This may cause the page layout to be inconsistent, however.
+
+[1
+
+] [2
+
+] (./docsaem.toc [3])
+\tf@toc=\write4
+\openout4 = `docsaem.toc'.
+
+ [4] (./intro_saem.tex
+Chapter 1.
+[5
+
+]
+LaTeX Font Info:    Try loading font information for OMS+cmr on input line 25.
+ (/usr/share/texmf-texlive/tex/latex/base/omscmr.fd
+File: omscmr.fd 1999/05/25 v2.5h Standard LaTeX font definitions
+)
+LaTeX Font Info:    Font shape `OMS/cmr/m/n' in size <10.95> not available
+(Font)              Font shape `OMS/cmsy/m/n' tried instead on input line 25.
+ [6] [7] [8] [9])
+[10] (./methodo_saem.tex
+Chapter 2.
+
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [11
+
+]
+[12] [13] [14] [15] [16] [17] [18] [19] [20]
+Underfull \vbox (badness 4217) has occurred while \output is active []
+
+ [21]
+[22]
+Overfull \hbox (12.44455pt too wide) in paragraph at lines 367--368
+[]\OT1/cmr/m/n/10.95 Weighted resid-u-als are com-puted us-ing the pop-u-la-tio
+n mean pre-dic-tions \OT1/cmtt/m/n/10.95 ppred $\U/msb/m/n/10.95 E[]\OT1/cmr/m/
+n/10.95 (\OML/cmm/m/it/10.95 f\OT1/cmr/m/n/10.95 (\OML/cmm/m/it/10.95 x[]\OT1/c
+mr/m/n/10.95 ; []))) =
+ []
+
+[23] [24] [25]
+Overfull \hbox (36.86163pt too wide) in alignment at lines 493--496
+ [] [] [] [] 
+ []
+
+
+Overfull \hbox (36.86163pt too wide) in alignment at lines 496--500
+ [] [] [] [] 
+ []
+
+
+Overfull \hbox (36.86163pt too wide) in alignment at lines 500--502
+ [] [] [] [] 
+ []
+
+
+Overfull \hbox (36.86163pt too wide) in alignment at lines 502--504
+ [] [] [] [] 
+ []
+
+
+Overfull \hbox (36.86163pt too wide) in alignment at lines 504--526
+ [] [] [] [] 
+ []
+
+[26]
+Overfull \hbox (36.86163pt too wide) in alignment at lines 526--532
+ [] [] [] [] 
+ []
+
+[27] [28] [29
+
+] [30] [31] [32]
+Overfull \hbox (19.06741pt too wide) in paragraph at lines 701--702
+[]\OT1/cmr/m/n/10.95 The Pop-u-la-tion Weighted Resid-u-als $(\OML/cmm/m/it/10.
+95 PWRES[]\OT1/cmr/m/n/10.95 )$, the In-di-vid-ual Weighted Resid-u-als $(\OML/
+cmm/m/it/10.95 IWRES[]\OT1/cmr/m/n/10.95 )$
+ []
+
+[33] [34] [35] [36]
+Overfull \hbox (38.16402pt too wide) in paragraph at lines 836--837
+[]|\OT1/cmr/m/n/10.95 c("res.vs.x","res.vs.pred",| 
+ []
+
+
+Overfull \hbox (33.4494pt too wide) in paragraph at lines 837--838
+[]|\OT1/cmr/m/n/10.95 "dist.qqplot","dist.hist")| 
+ []
+
+[37] [38] [39]) [40] (./examples_saem.tex
+Chapter 3.
+[41
+
+]
+File: figs/theo_rawdata.eps Graphic file (type eps)
+ <figs/theo_rawdata.eps>
+Overfull \hbox (37.05035pt too wide) in paragraph at lines 56--57
+ [] 
+ []
+
+[42]
+Overfull \hbox (33.39438pt too wide) in paragraph at lines 89--89
+[]\OT1/cmtt/m/n/10.95 name.group=c("Id"),name.predictors=c("Dose","Time"),name.
+response=c("Concentration"),[] 
+ []
+
+
+Overfull \hbox (33.39438pt too wide) in paragraph at lines 89--89
+[]\OT1/cmtt/m/n/10.95 name.covariates=c("Weight","Sex"),units=list(x="hr",y="mg
+/L",covariates=c("kg","-")),[] 
+ []
+
+
+Overfull \hbox (16.14832pt too wide) in paragraph at lines 89--89
+[]\OT1/cmtt/m/n/10.95 omega.init=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE)
+, error.model="constant")[] 
+ []
+
+[43]
+Overfull \hbox (16.14832pt too wide) in paragraph at lines 105--105
+[]\OT1/cmtt/m/n/10.95 psi0=matrix(c(1.,20,0.5,0,0.1,0.1,0,0,-0.1),ncol=3, byrow
+=TRUE,dimnames=list(NULL,[] 
+ []
+
+[44]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [45]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [46]
+[47]
+File: figs/theo_convergence.eps Graphic file (type eps)
+ <figs/theo_convergence.eps>
+File: figs/theo_llis.eps Graphic file (type eps)
+ <figs/theo_llis.eps>
+
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+File: figs/theo_diagnos.eps Graphic file (type eps)
+<figs/theo_diagnos.eps>
+
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+File: figs/theo_individualfits_smooth.eps Graphic file (type eps)
+<figs/theo_individualfits_smooth.eps>
+
+LaTeX Warning: Float too large for page by 11.68689pt on input line 299.
+
+
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+[48] [49] [50]
+File: figs/theo_individualfits_smoothlog.eps Graphic file (type eps)
+ <figs/theo_individualfits_smoothlog.eps>
+Overfull \hbox (16.53346pt too wide) in paragraph at lines 308--309
+ [] 
+ []
+
+
+Overfull \hbox (16.14832pt too wide) in paragraph at lines 320--320
+[]\OT1/cmtt/m/n/10.95 plot(saemix.fit,plot.type="individual.fit",new=FALSE,ilis
+t=1:4,smooth=TRUE,ylog=T,[] 
+ []
+
+[51
+
+]
+File: figs/theo_VPC.eps Graphic file (type eps)
+ <figs/theo_VPC.eps>
+Overfull \hbox (16.53346pt too wide) in paragraph at lines 333--334
+ [] 
+ []
+
+[52]
+File: figs/theo_residscatter.eps Graphic file (type eps)
+ <figs/theo_residscatter.eps>
+Overfull \hbox (16.53346pt too wide) in paragraph at lines 352--353
+ [] 
+ []
+
+
+Overfull \hbox (16.14832pt too wide) in paragraph at lines 367--367
+[]\OT1/cmtt/m/n/10.95 omega.init=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE)
+, error.model="constant")[] 
+ []
+
+[53]
+Overfull \hbox (4.65094pt too wide) in paragraph at lines 404--404
+[]  \OT1/cmtt/m/n/10.95 description="One-compartment model with first-order abs
+orption, Steady-state",[] 
+ []
+
+[54]
+LaTeX Font Info:    Try loading font information for OMS+cmss on input line 417
+.
+LaTeX Font Info:    No file OMScmss.fd. on input line 417.
+
+
+LaTeX Font Warning: Font shape `OMS/cmss/m/n' undefined
+(Font)              using `OMS/cmsy/m/n' instead
+(Font)              for symbol `textbullet' on input line 417.
+
+File: figs/PD_rawdata.eps Graphic file (type eps)
+<figs/PD_rawdata.eps>
+Overfull \hbox (37.05035pt too wide) in paragraph at lines 440--441
+ [] 
+ []
+
+
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+[55]
+Overfull \hbox (16.14832pt too wide) in paragraph at lines 486--486
+[]\OT1/cmtt/m/n/10.95 saemix.data1<-saemixData(name.data=PD1.saemix,header=TRUE
+,name.group=c("subject"),[] 
+ []
+
+
+Overfull \hbox (16.14832pt too wide) in paragraph at lines 486--486
+[]\OT1/cmtt/m/n/10.95 name.predictors=c("dose"),name.response=c("response"),nam
+e.covariates=c("gender"),[] 
+ []
+
+
+Overfull \hbox (16.14832pt too wide) in paragraph at lines 486--486
+[]\OT1/cmtt/m/n/10.95 saemix.data2<-saemixData(name.data=PD2.saemix,header=TRUE
+,name.group=c("subject"),[] 
+ []
+
+
+Overfull \hbox (16.14832pt too wide) in paragraph at lines 486--486
+[]\OT1/cmtt/m/n/10.95 name.predictors=c("dose"),name.response=c("response"),nam
+e.covariates=c("gender"),[] 
+ []
+
+[56]
+File: figs/PD1_convergence.eps Graphic file (type eps)
+ <figs/PD1_convergence.eps>
+
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+[57] [58]
+File: figs/PD2_convergence.eps Graphic file (type eps)
+ <figs/PD2_convergence.eps>
+File: figs/PD1_individualfits.eps Graphic file (type eps)
+ <figs/PD1_individualfits.eps>
+
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+[59
+
+] [60]
+File: figs/weightcow_rawdata.eps Graphic file (type eps)
+ <figs/weightcow_rawdata.eps>
+
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+[61
+
+]
+Overfull \hbox (4.65094pt too wide) in paragraph at lines 609--609
+[]\OT1/cmtt/m/n/10.95 dimnames=list(NULL,c("A","B","k"))),transform.par=c(1,1,1
+),fixed.estim=c(1,1,1),[] 
+ []
+
+
+Overfull \hbox (10.39963pt too wide) in paragraph at lines 609--609
+[]\OT1/cmtt/m/n/10.95 omega.init=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE)
+,error.model="constant")[] 
+ []
+
+[62]
+Overfull \hbox (30.72351pt too wide) in paragraph at lines 640--641
+\OT1/cmss/m/n/10.95 First, de-fault plot op-tions are set in a list called saem
+ix.plot.options us-ing the func-tion saemix.plot.setoptions.
+ []
+
+[63]
+File: figs/cow_indivfit4.eps Graphic file (type eps)
+ <figs/cow_indivfit4.eps> [64]
+File: figs/oxboys_rawdata.eps Graphic file (type eps)
+ <figs/oxboys_rawdata.eps>
+Overfull \hbox (10.39963pt too wide) in paragraph at lines 710--710
+[]\OT1/cmtt/m/n/10.95 saemix.data<-saemixData(name.data=oxboys.saemix,header=T,
+name.group=c("Subject"),[] 
+ []
+
+[65]
+File: figs/yield_rawdata.eps Graphic file (type eps)
+ <figs/yield_rawdata.eps>
+Overfull \hbox (16.53346pt too wide) in paragraph at lines 724--725
+ [] 
+ []
+
+
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+[66]
+Overfull \hbox (4.65094pt too wide) in paragraph at lines 798--798
+[]\OT1/cmtt/m/n/10.95 saemix.data<-saemixData(name.data=yield.saemix,header=TRU
+E,name.group=c("site"),[] 
+ []
+
+
+Overfull \hbox (44.89175pt too wide) in paragraph at lines 798--798
+[]\OT1/cmtt/m/n/10.95 name.predictors=c("dose"),name.response=c("yield"), name.
+covariates=c("soil.nitrogen"),[] 
+ []
+
+[67]
+Overfull \hbox (16.14832pt too wide) in paragraph at lines 798--798
+[]\OT1/cmtt/m/n/10.95 psi0=matrix(c(8,100,0.2,0,0,0),ncol=3,byrow=T, dimnames=l
+ist(NULL,c("Ymax","Xmax",[] 
+ []
+
+
+Overfull \hbox (27.64569pt too wide) in paragraph at lines 798--798
+[]\OT1/cmtt/m/n/10.95 transform.par=c(0,0,0),covariance.model=matrix(c(1,0,0,0,
+1,0,0,0,1),ncol=3,byrow=T),[] 
+ []
+
+
+Overfull \hbox (16.14832pt too wide) in paragraph at lines 798--798
+[]\OT1/cmtt/m/n/10.95 saemix.model2<-saemixModel(model=yield.QP,description="Qu
+adratic + plateau model",[] 
+ []
+
+
+Overfull \hbox (33.39438pt too wide) in paragraph at lines 798--798
+[]\OT1/cmtt/m/n/10.95 psi0=matrix(c(10,120,0.005,0,0,0),ncol=3,byrow=T, dimname
+s=list(NULL,c("Ymax","Xmax",[] 
+ []
+
+
+Overfull \hbox (27.64569pt too wide) in paragraph at lines 798--798
+[]\OT1/cmtt/m/n/10.95 "slope"))), covariate.model=matrix(c(0,0,0),ncol=3,byrow=
+T), transform.par=c(0,0,0),[] 
+ []
+
+
+Overfull \hbox (27.64569pt too wide) in paragraph at lines 798--798
+[]\OT1/cmtt/m/n/10.95 covariance.model=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow
+=T),error.model="constant")[] 
+ []
+
+[68]
+File: figs/yield_comparemodels_diagnos.eps Graphic file (type eps)
+ <figs/yield_comparemodels_diagnos.eps>
+File: figs/yield_comparemodels_indiv.eps Graphic file (type eps)
+
+<figs/yield_comparemodels_indiv.eps>
+
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+[69] [70]
+File: figs/yield_parvscov.eps Graphic file (type eps)
+ <figs/yield_parvscov.eps>
+Overfull \hbox (16.14832pt too wide) in paragraph at lines 862--862
+[]\OT1/cmtt/m/n/10.95 psi0=matrix(c(8,100,0.2,0,0,0),ncol=3,byrow=T, dimnames=l
+ist(NULL,c("Ymax","Xmax",[] 
+ []
+
+
+Overfull \hbox (27.64569pt too wide) in paragraph at lines 862--862
+[]\OT1/cmtt/m/n/10.95 transform.par=c(0,0,0),covariance.model=matrix(c(1,0,0,0,
+1,0,0,0,1),ncol=3,byrow=T),[] 
+ []
+
+[71
+
+]
+Overfull \hbox (21.897pt too wide) in paragraph at lines 862--862
+[]  \OT1/cmtt/m/n/10.95 cat("     without covariate, -2xLL=",(saemix.fit1["resu
+lts"]["ll.is"])*(-2),"\n")[] 
+ []
+
+
+Overfull \hbox (4.65094pt too wide) in paragraph at lines 862--862
+[]  \OT1/cmtt/m/n/10.95 cat("     with covariate, -2xLL=",(saemix.fit3["results
+"]["ll.is"])*(-2),"\n")[] 
+ []
+
+) [72] (./classS4.tex
+Chapter 4.
+[73
+
+] [74] [75] [76] [77] [78]
+Overfull \hbox (33.39438pt too wide) in paragraph at lines 154--154
+[]\OT1/cmtt/m/n/10.95 name.group=c("Id"),name.predictors=c("Dose","Time"),name.
+response=c("Concentration"),[] 
+ []
+
+
+Overfull \hbox (33.39438pt too wide) in paragraph at lines 154--154
+[]\OT1/cmtt/m/n/10.95 name.covariates=c("Weight","Sex"),units=list(x="hr",y="mg
+/L",covariates=c("kg","-")),[] 
+ []
+
+) [79] (./docsaem.bbl [80
+
+]
+
+LaTeX Font Warning: Font shape `OT1/cmss/m/it' in size <10.95> not available
+(Font)              Font shape `OT1/cmss/m/sl' tried instead on input line 7.
+
+[81] [82]) [83] (./docsaem.aux)
+
+LaTeX Font Warning: Some font shapes were not available, defaults substituted.
+
+ )
+(\end occurred inside a group at level 1)
+
+### simple group (level 1) entered at line 251 ({)
+### bottom level 
+Here is how much of TeX's memory you used:
+ 5630 strings out of 495062
+ 77874 string characters out of 1182643
+ 168981 words of memory out of 3000000
+ 8657 multiletter control sequences out of 15000+50000
+ 19232 words of font info for 71 fonts, out of 3000000 for 9000
+ 28 hyphenation exceptions out of 8191
+ 38i,16n,45p,1175b,478s stack positions out of 5000i,500n,10000p,200000b,50000s
+
+Output written on docsaem.dvi (83 pages, 329760 bytes).

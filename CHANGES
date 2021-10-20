@@ -1,6 +1,18 @@
-Version 3.0 -  September 2021
+Version 3.0 -  November 2021
+
 o Extension to noncontinuous data models
    * New argument in saemixModel to differentiate between continuous (type = structural) and noncontinuous (type = likelihood)
+
+o Covariate model building
+   * new statistical criterion taking into account the fixed or random nature of estimated parameters in the weighting of the BIC (element BIC.covariate in the results component of a fitted object) [Delattre et al. 2014]
+   * compare.saemix function to compare several saemix fitted objects
+   * automated covariate selection via backward, forward and stepwise algorithms
+
+o Bugfixes
+   * the number of iterations with simulated annealing set by default has been corrected. It should have been equal to K1/2 where K1 is the first element of the vector nb.saemix in the list of options, but in the previous version it was incorrectly set to K1. This has now been corrected.
+
+o Changes
+   * function simul.saemix has been renamed simulate.saemix
 
    
 Version 2.4 -  February 2021

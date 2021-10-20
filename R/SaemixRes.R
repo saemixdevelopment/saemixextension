@@ -1,5 +1,5 @@
 ####################################################################################
-####            SaemixRes class - definition                ####
+####			SaemixRes class - definition				####
 ####################################################################################
 
 ###############################
@@ -12,7 +12,7 @@
 #' @name SaemixRes-class 
 #' @docType class
 #' @aliases SaemixRes SaemixRes-class
-#' @aliases [<-,SaemixRes-method plot,SaemixRes print,SaemixRes showall,SaemixRes show,SaemixRes 
+#' @aliases plot,SaemixRes print,SaemixRes showall,SaemixRes show,SaemixRes 
 #' 
 #' @section Objects from the Class: 
 #' An object of the SaemixData class can be created by using the function \code{\link{saemixData}} and contain the following slots:
@@ -92,7 +92,7 @@
 #'     \item{showall}{\code{signature(object = "SaemixRes")}: shows all the elements in the object}
 #'     \item{show}{\code{signature(object = "SaemixRes")}: prints details about the object}
 #'     \item{summary}{\code{signature(object = "SaemixRes")}: summary of the results. Returns a list with a number of elements extracted from the results ().}
-#'   }
+#' 	 }
 #' @references Comets  E, Lavenu A, Lavielle M. Parameter estimation in nonlinear mixed effect models using saemix, an R implementation of the SAEM algorithm. Journal of Statistical Software 80, 3 (2017), 1-41.
 #' 
 #' Kuhn E, Lavielle M. Maximum likelihood estimation in nonlinear mixed effects models. Computational Statistics and Data Analysis 49, 4 (2005), 1020-1038.
@@ -115,46 +115,46 @@ setClass(
   representation=representation(
     modeltype="character", # string giving the type of the model used for analysis
     status="character", # string indicating the status of the fit; set to "empty" at initialisation, used to pass on error messages or fit status
-    name.fixed="character", # names of fixed parameters in the model
-    name.random="character",    # names of random effects
-    name.sigma="character", # names of parameters of residual error model
-    npar.est="numeric",     # nb of parameters estimated (fixed, random & resid)
+    name.fixed="character",	# names of fixed parameters in the model
+    name.random="character",	# names of random effects
+    name.sigma="character",	# names of parameters of residual error model
+    npar.est="numeric",		# nb of parameters estimated (fixed, random & resid)
     nbeta.random="numeric", #nb of estimated fixed effects for the random parameters in the model
     nbeta.fixed="numeric", #nb of estimated fixed effects for the non random parameters in the model
-    fixed.effects="numeric",    # vector with h(mu) and betas in estimation order
-    fixed.psi="numeric",    # h(mu)
-    betas="matrix",     # estimated mu
-    betaC="numeric",        # estimated fixed effects for covariates
-    omega="matrix",     # estimated omega
-    respar="numeric",       # estimated residual variability
-    fim="matrix",       # Fisher information matrix
-    se.fixed="numeric",     # estimated SE for fixed effects
-    se.omega="numeric", # estimated SE for Omega (diagonal terms of Omega, presented as  vector)
-    se.cov="matrix",    # matrix giving the estimated SE for each term of the covariance matrix (diagonal elements represent the SE on the variances of the random effects and off-diagonal elements represent the SE on the covariance terms)
-    se.respar="numeric",    # estimated SE for residual variability
+    fixed.effects="numeric",	# vector with h(mu) and betas in estimation order
+    fixed.psi="numeric",	# h(mu)
+    betas="matrix",		# estimated mu
+    betaC="numeric",		# estimated fixed effects for covariates
+    omega="matrix",		# estimated omega
+    respar="numeric",		# estimated residual variability
+    fim="matrix",		# Fisher information matrix
+    se.fixed="numeric",		# estimated SE for fixed effects
+    se.omega="numeric",	# estimated SE for Omega (diagonal terms of Omega, presented as  vector)
+    se.cov="matrix",	# matrix giving the estimated SE for each term of the covariance matrix (diagonal elements represent the SE on the variances of the random effects and off-diagonal elements represent the SE on the covariance terms)
+    se.respar="numeric",	# estimated SE for residual variability
     conf.int="data.frame",   # Estimates, SE, CV and confidence intervals (assuming normality of the estimators)
-    parpop="matrix",    # population parameters at each iteration
-    allpar="matrix",    # all parameters (including covariate effects) at each iteration
-    indx.fix="numeric", # index of mean param estimated (was indx.betaI)
-    indx.cov="numeric", # index of cov param estimated (was indx.betaC)
-    indx.omega="numeric",   # index of random param estimated (was i1.omega2)
-    indx.res="numeric", # index of param of residual errors estimated (was indx.res)
-    MCOV="matrix",      # ECO TODO define
+    parpop="matrix",	# population parameters at each iteration
+    allpar="matrix",	# all parameters (including covariate effects) at each iteration
+    indx.fix="numeric",	# index of mean param estimated (was indx.betaI)
+    indx.cov="numeric",	# index of cov param estimated (was indx.betaC)
+    indx.omega="numeric",	# index of random param estimated (was i1.omega2)
+    indx.res="numeric",	# index of param of residual errors estimated (was indx.res)
+    MCOV="matrix",		# ECO TODO define
 # Individual parameters
-    cond.mean.phi="matrix", # Cond mean estimates of Phi (mean of conditional distribution)
-    cond.mean.psi="matrix", # Cond mean estimates of Psi (h(cond.mean.phi))
+    cond.mean.phi="matrix",	# Cond mean estimates of Phi (mean of conditional distribution)
+    cond.mean.psi="matrix",	# Cond mean estimates of Psi (h(cond.mean.phi))
     cond.var.phi="matrix",  # Variability on cond.mean.phi (var of conditional distribution)
-    cond.mean.eta="matrix", # Cond mean estimates of eta (CHECK FORMULA)
-    cond.shrinkage="numeric",   # Shrinkage for cond mean estimates of Eta
+    cond.mean.eta="matrix",	# Cond mean estimates of eta (CHECK FORMULA)
+    cond.shrinkage="numeric",	# Shrinkage for cond mean estimates of Eta
     mean.phi="matrix",  # population estimate (Ci*mu) including covariate effects
-    map.psi="data.frame",   # MAP estimates of individual parameters 
-    map.phi="data.frame",   # MAP estimates of phi
-    map.eta="matrix",       # ETAs corresponding to the MAP estimates (computed as map.phi-COV%*%MCOV in compute.eta.map)
-    map.shrinkage="numeric",    # shrinkage on MAP estimates
+    map.psi="data.frame",	# MAP estimates of individual parameters 
+    map.phi="data.frame",	# MAP estimates of phi
+    map.eta="matrix",		# ETAs corresponding to the MAP estimates (computed as map.phi-COV%*%MCOV in compute.eta.map)
+    map.shrinkage="numeric", 	# shrinkage on MAP estimates
     phi="matrix",       # ECO TODO define
-    psi.samp="array",       # nb.chains samples in the individual conditional distributions (psi)
-    phi.samp="array",       # nb.chains samples in the individual conditional distributions (phi)
-    phi.samp.var="array",   # variance of samples
+    psi.samp="array",		# nb.chains samples in the individual conditional distributions (psi)
+    phi.samp="array",		# nb.chains samples in the individual conditional distributions (phi)
+    phi.samp.var="array",	# variance of samples
 # Statistical criteria
     ll.lin="numeric",           # for each method (linearisation, IS, GQ)
     aic.lin="numeric",          # ll=log-likelihood
@@ -170,17 +170,17 @@ setClass(
     bic.gq="numeric",
     bic.covariate.gq="numeric",
 # Model predictions and residuals
-        predictions="data.frame", # data frame containing all the predictions and residuals below
+		predictions="data.frame", # data frame containing all the predictions and residuals below
     ppred="numeric",        # vector of mean population predictions
     ypred="numeric",        # vector of population predictions with MAP
-    ipred="numeric",        # vector of individual predictions with MAP
-    icpred="numeric",       # vector of individual predictions with conditional estimates
-    ires="numeric",       # vector of individual residuals with MAP (ipred-x)
-    iwres="numeric",        # vector of individual weighted residuals with MAP
-    icwres="numeric",       # vector of individual weighted residuals with conditional estimates
-    wres="numeric",     # vector of WRES (population weighted residuals)
-    npde="numeric",     # vector of npde
-    pd="numeric"        # vector of prediction discrepancies
+    ipred="numeric",		# vector of individual predictions with MAP
+    icpred="numeric",		# vector of individual predictions with conditional estimates
+    ires="numeric",		  # vector of individual residuals with MAP (ipred-x)
+    iwres="numeric",		# vector of individual weighted residuals with MAP
+    icwres="numeric",		# vector of individual weighted residuals with conditional estimates
+    wres="numeric",		# vector of WRES (population weighted residuals)
+    npde="numeric",		# vector of npde
+    pd="numeric"		# vector of prediction discrepancies
   ),
   validity=function(object){
 #    cat ("--- Checking SaemixRes object ---\n")
@@ -264,12 +264,12 @@ setMethod(
 )
 
 ####################################################################################
-####            SaemixRes class - accesseur             ####
+####			SaemixRes class - accesseur				####
 ####################################################################################
 
 ##' Get/set methods for SaemixRes object
 ##' 
-##' Access slots of a SaemixRes object using the object["slot"] format
+##' Access slots of a SaemixRes object using the object\["slot"\] format
 ##' 
 #' @param x object
 #' @param i element to be replaced
@@ -341,7 +341,7 @@ setMethod(
     "aic.gq"={return(x@aic.gq)},
     "bic.gq"={return(x@bic.gq)},
     "bic.covariate.gq"={return(x@bic.covariate.gq)},
-    "predictions"={return(x@predictions)},
+        "predictions"={return(x@predictions)},
     "ypred"={return(x@ypred)},
     "ppred"={return(x@ppred)},
     "ipred"={return(x@ipred)},
@@ -444,7 +444,7 @@ setReplaceMethod(
 )
 
 ####################################################################################
-####            SaemixRes class - method to print/show data     ####
+####			SaemixRes class - method to print/show data		####
 ####################################################################################
 
 #' @rdname print-methods
@@ -480,14 +480,14 @@ setMethod("print","SaemixRes",
     cat("----------------------------------------------------\n")
     if(length(x@se.fixed)==0) {
       if(x@modeltype=="structural") {
-             tab<-cbind(c(x@name.fixed,x@name.sigma[x@indx.res]), c(x@fixed.effects,x@respar[x@indx.res]))
+      tab<-cbind(c(x@name.fixed,x@name.sigma[x@indx.res]), c(x@fixed.effects,x@respar[x@indx.res]))
         }else{
             tab<-cbind(c(x@name.fixed), c(x@fixed.effects))
         }
       colnames(tab)<-c("Parameter","Estimate")
     } else {
        if(x@modeltype=="structural") {
-            tab<-cbind(c(x@name.fixed,x@name.sigma[x@indx.res]), c(x@fixed.effects,x@respar[x@indx.res]),c(x@se.fixed,x@se.respar[x@indx.res]))
+      tab<-cbind(c(x@name.fixed,x@name.sigma[x@indx.res]), c(x@fixed.effects,x@respar[x@indx.res]),c(x@se.fixed,x@se.respar[x@indx.res]))
         }else{
             tab<-cbind(c(x@name.fixed), c(x@fixed.effects),c(x@se.fixed))
         }
@@ -524,14 +524,14 @@ setMethod("print","SaemixRes",
       nampar<-unlist(strsplit(x@name.random,"omega2."))
       nampar<-nampar[nampar!=""]
       if(length(nampar)>1) { # covariances only if more than one random effect in the model
-        for(i in 1:(length(nampar)-1)) {
-          for(j in (i+1):length(nampar)) {
-            if(x@omega[i,j]!=0) {
-              covar<-c(paste("cov",nampar[i],nampar[j],sep="."),x@omega[i,j],x@se.cov[i,j],x@se.cov[i,j]/x@omega[i,j]*100)
-              tab<-rbind(tab,covar)
-            }
+      for(i in 1:(length(nampar)-1)) {
+        for(j in (i+1):length(nampar)) {
+          if(x@omega[i,j]!=0) {
+            covar<-c(paste("cov",nampar[i],nampar[j],sep="."),x@omega[i,j],x@se.cov[i,j],x@se.cov[i,j]/x@omega[i,j]*100)
+            tab<-rbind(tab,covar)
           }
         }
+      }
       }
       colnames(tab)<-c("Parameter","Estimate","SE","CV(%)")
     }
@@ -614,7 +614,7 @@ setMethod("show","SaemixRes",
     cat("Fixed effects\n")
     if(length(object@se.fixed)==0) {
       if(object@modeltype=="structural") {
-             tab<-cbind(c(object@name.fixed,object@name.sigma[object@indx.res]), c(object@fixed.effects,object@respar[object@indx.res]))
+      tab<-cbind(c(object@name.fixed,object@name.sigma[object@indx.res]), c(object@fixed.effects,object@respar[object@indx.res]))
         }else{
             tab<-cbind(c(object@name.fixed), c(object@fixed.effects))
         }
@@ -622,7 +622,7 @@ setMethod("show","SaemixRes",
     } else {
        if(object@modeltype=="structural") {
             tab<-cbind(c(object@name.fixed,object@name.sigma[object@indx.res]), c(object@fixed.effects,object@respar[object@indx.res]),c(object@se.fixed,object@se.respar[object@indx.res]))
-            tab<-cbind(tab,100*abs(as.double(tab[,3])/as.double(tab[,2])))
+      tab<-cbind(tab,100*abs(as.double(tab[,3])/as.double(tab[,2])))
         }else{
             tab<-cbind(c(object@name.fixed), c(object@fixed.effects),c(object@se.fixed))
             tab<-cbind(tab,100*abs(as.double(tab[,3])/as.double(tab[,3])))
@@ -657,14 +657,14 @@ setMethod("show","SaemixRes",
       nampar<-unlist(strsplit(object@name.random,"omega2."))
       nampar<-nampar[nampar!=""]
       if(length(nampar)>1) { # covariances only if more than one random effect in the model
-        for(i in 1:(length(nampar)-1)) {
-          for(j in (i+1):length(nampar)) {
-            if(object@omega[i,j]!=0) {
-              covar<-c(paste("cov",nampar[i],nampar[j],sep="."),object@omega[i,j],object@se.cov[i,j],object@se.cov[i,j]/object@omega[i,j]*100)
-              tab<-rbind(tab,covar)
-            }
+      for(i in 1:(length(nampar)-1)) {
+        for(j in (i+1):length(nampar)) {
+          if(object@omega[i,j]!=0) {
+            covar<-c(paste("cov",nampar[i],nampar[j],sep="."),object@omega[i,j],object@se.cov[i,j],object@se.cov[i,j]/object@omega[i,j]*100)
+            tab<-rbind(tab,covar)
           }
         }
+      }
       }
       colnames(tab)<-c("Parameter","Estimate","  SE"," CV(%)")
     }
@@ -736,7 +736,7 @@ setMethod("showall","SaemixRes",
     cat("----------------------------------------------------\n")
     if(length(object@se.fixed)==0) {
       if(object@modeltype=="structural") {
-             tab<-cbind(c(object@name.fixed,object@name.sigma[object@indx.res]), c(object@fixed.effects,object@respar[object@indx.res]))
+      tab<-cbind(c(object@name.fixed,object@name.sigma[object@indx.res]), c(object@fixed.effects,object@respar[object@indx.res]))
         }else{
             tab<-cbind(c(object@name.fixed), c(object@fixed.effects))
         }
@@ -744,7 +744,7 @@ setMethod("showall","SaemixRes",
     } else {
        if(object@modeltype=="structural") {
             tab<-cbind(c(object@name.fixed,object@name.sigma[object@indx.res]), c(object@fixed.effects,object@respar[object@indx.res]),c(object@se.fixed,object@se.respar[object@indx.res]))
-            tab<-cbind(tab,100*abs(as.double(tab[,3])/as.double(tab[,2])))
+      tab<-cbind(tab,100*abs(as.double(tab[,3])/as.double(tab[,2])))
             nampar<-unlist(strsplit(object@name.random,"omega2."))
             nampar<-nampar[nampar!=""]
             if(length(nampar)>1) { # covariances only if more than one random effect in the model
@@ -786,8 +786,18 @@ setMethod("showall","SaemixRes",
       tab<-cbind(object@name.random,diag(object@omega)[object@indx.omega])
       colnames(tab)<-c("Parameter","Estimate")
     } else {
-      tab<-cbind(object@name.random,diag(object@omega)[object@indx.omega],object@se.omega[object@indx.omega])
-      tab<-cbind(tab,100*as.double(tab[,3])/as.double(tab[,2]))
+      tab<-cbind(c(object@name.fixed,object@name.sigma[object@indx.res]), c(object@fixed.effects,object@respar[object@indx.res]),c(object@se.fixed,object@se.respar[object@indx.res]))
+      tab<-cbind(tab,100*abs(as.double(tab[,3])/as.double(tab[,2])))
+      nampar<-unlist(strsplit(object@name.random,"omega2."))
+      nampar<-nampar[nampar!=""]
+      for(i in 1:(length(nampar)-1)) {
+        for(j in (i+1):length(nampar)) {
+          if(object@omega[i,j]!=0) {
+            covar<-c(paste("cov",nampar[i],nampar[j],sep="."),object@omega[i,j],object@se.cov[i,j],object@se.cov[i,j]/object@omega[i,j]*100)
+            tab<-rbind(tab,covar)
+          }
+        }
+      }
       colnames(tab)<-c("Parameter","Estimate","SE","CV(%)")
     }
       for(i in 2:dim(tab)[2]) 
@@ -820,7 +830,7 @@ setMethod("showall","SaemixRes",
 )
 
 ####################################################################################
-####            SaemixRes class - extracting residuals  and fitted values       ####
+####			SaemixRes class - extracting residuals	and fitted values		####
 ####################################################################################
 # resid.lm
 #           function (object, type = c("working", "response", "deviance", 
@@ -858,7 +868,7 @@ setMethod("showall","SaemixRes",
 resid.SaemixRes<-function (object, type = c("ires", "wres", "npde", "pd", "iwres", "icwres"), ...) {
             type <- match.arg(type)
             res <- switch(type, ires=object@ires, wres=object@wres, npde=object@npde, iwres=object@iwres, icwres=object@icwres, pd=object@pd)
-            res
+            if(length(res)>0) return(res) else message(paste("No residuals of type",type,"available\n"))
 }
 
 
@@ -882,7 +892,7 @@ resid.SaemixRes<-function (object, type = c("ires", "wres", "npde", "pd", "iwres
 fitted.SaemixRes<-function (object, type = c("ipred", "ypred", "ppred", "icpred"), ...) {
   type <- match.arg(type)
   pred <- switch(type, ipred=object@ipred, ypred=object@ypred, ppred=object@ppred, ipred=object@ipred, icpred=object@icpred)
-  pred
+  if(length(pred)>0) return(pred) else message(paste("No fitted values of type",type,"available\n"))
 }
 
 ####################################################################################
@@ -897,14 +907,22 @@ fitted.SaemixRes<-function (object, type = c("ipred", "ypred", "ppred", "icpred"
 #' @aliases vcov vcov.SaemixRes vcov.SaemixObject
 #' 
 #' @param object a fitted object from a call to saemix
-#' @param ...   further arguments to be passed to or from other methods
+#' @param ...	further arguments to be passed to or from other methods
 #' 
 #' @return A matrix of the estimated covariances between the parameter estimates in model. In saemix, this matrix is obtained as the inverse of the Fisher Information Matrix computed by linearisation
 #' 
 #' @export
 
 vcov.SaemixRes<-function(object, ...) {
-  try(solve(object@fim))
+  if(object@status!="empty" && min(dim(object@fim))>0)
+      try(solve(object@fim)) else NULL
+}
+
+#' @rdname vcov
+#' @export
+
+vcov.SaemixObject<-function(object, ...) {
+  vcov(object@results)
 }
 
 # setMethod("vcov","SaemixRes",
@@ -923,7 +941,7 @@ vcov.SaemixRes<-function(object, ...) {
 
 
 ####################################################################################
-####            SaemixRes class - method to plot            ####
+####			SaemixRes class - method to plot			####
 ####################################################################################
 
 

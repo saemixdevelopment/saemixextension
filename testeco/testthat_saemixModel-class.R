@@ -103,3 +103,4 @@ test_that("Successful creation of a SaemixModel object with all arguments", {
   expect_identical(sum(x@transform.par),3)
   expect_identical(sum(x@fixed.estim),3)
 })
+

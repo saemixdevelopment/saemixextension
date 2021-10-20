@@ -1,0 +1,186 @@
+\chapter{Introduction} \label{chapter_introduction}
+
+
+\section{The objectives}
+The objectives of \monolix~are to perform:
+\begin{enumerate}
+\item parameter estimation for nonlinear mixed effects models
+\begin{itemize}
+\item[-] computing the maximum likelihood estimator of the population parameters, without any approximation of the model (linearization, quadrature approximation, \ldots), using the Stochastic Approximation Expectation Maximization (SAEM) algorithm,
+\item[-] computing standard errors for the maximum likelihood estimator
+\item[-] computing the conditional modes, the conditional means and the conditional standard deviations of the individual parameters, using the Hastings-Metropolis algorithm
+\end{itemize}
+\item goodness of fit plots
+\item model selection
+\begin{itemize}
+\item[-] comparing several models using some information criteria (AIC, BIC)
+\item[-] testing hypotheses using the Likelihood Ratio Test
+\item[-] testing parameters using the Wald Test
+\end{itemize}
+\end{enumerate}
+The R package \monolix~is an implementation of the Stochastic Approximation Expectation Maximization (SAEM) algorithm in \R~\cite{R}, developed by K\"uhn and Lavielle, and implemented in the {\sc Monolix} software available in Matlab and as a standalone software for Windows and Linux~\cite{MonolixUserGuide}.
+
+The current version of the R version of \monolix~handles only analytical functions. The following features have not yet been implemented in the R package \monolix, but are available in the {\sc Monolix} software:
+\begin{itemize}
+\item categorical covariates with more than 2 categories
+\item models defined with differential equations
+\item multi-response model
+\item left censored data
+\item interoccasion variability
+\item prior distribution for the random effects
+\item complex variables, including discrete data or repeated time to events
+\item hidden Markov models
+\item mixture models
+\item autocorrelation of the residuals
+\end{itemize}
+
+Theoretical analysis of the algorithms used in this software can be found in \cite{Delyon, samson_jspi06, Kuhn01, Kuhn05}. Several application of SAEM in agronomy \cite{Makowski06}, animal breeding \cite{Jaffrezic06} and PKPD analysis \cite{Comets07, Lavielle07, samson_csda06, samson_sim06a, Bertrand09} have been published by several members of the {\sf Monolix} group. Several applications to PKPD analysis were also proposed during the last PAGE (Population Approach Group in Europe) meetings (\cite{page06b, page05a, page03, page04a, page06c, page05b} as well as a comparison of estimation algorithms \cite{page05c}, ({http://www.page-meeting.org}).
+
+The present document describes the nonlinear mixed effects models (section 1) and the algorithms used in this package (section 2). The final section shows some examples made available in the library.
+
+\section{The nonlinear mixed effects model}
+
+Detailed and complete presentations of the nonlinear mixed effects model can be found in \cite{Davidian95, davgil1, PinheiroBates00}. See also the many references therein.
+
+We consider the following general nonlinear mixed effects model for continuous outputs:
+\begin{equation}
+\label{nlme}
+y_{ij}=f(x_{ij},\psigi)+ g(x_{ij},\psigi,\xi)\varepsilon_{ij} \ \ , \ 1\leq i \leq N \ \ ,
+\ \ 1 \leq j \leq n_i
+\end{equation}
+Here,
+\begin{itemize}
+\item $y_{ij}\in \Rset$ is the $j$th observation of subject $i$,
+\item $N$ is the number of subjects,
+\item $n_i$ is the number of observations of subject $i$,
+\item the regression variables, or design variables, ($x_{ij}$) are assumed to be known, $x_{ij}\in
+\Rset^\nreg$,
+\item for subject $i$, the vector $\psigi=(\psigil \, ; \, 1\leq \ell \leq \npsi) \in \Rset^\npsi$ is a vector of $\npsi$ individual parameters:
+\begin{equation} \label{prior}
+\psigi=H(\fixed_effect,\covariate_i,\etagi)
+\end{equation}
+where
+\begin{itemize}
+\item $\covariate_i =(\covariate_{im} \, ; \, 1\leq m \leq \ncov)$ is a known vector of $\ncov$ covariates,
+\item $\fixed_effect$ is an unknown vector of fixed effects of size $\nbeta$,
+\item $\etagi$ is an unknown vector of normally distributed random effects of size $\neta$: 
+$$\etagi \sim_{i.i.d.} {\cal N}(0,\IIV)$$
+\end{itemize}
+\item the residual errors $(\varepsilon_{ij})$  are random variables with mean zero and variance 1,
+\item the residual error model is defined by the function $g$ and some parameters $\xi$.
+\end{itemize}
+
+Here, the parameters of the model are $\thetag=(\fixed_effect,\IIV,\xi)$. We will denote
+ $\ell(y;\theta)$ the likelihood of the observations $\yg =(y_{ij} \, ; \, 1  \leq i \leq n \ , 1
+\leq j \leq n_i)$ and $p(\yg,\psig;\theta) $ the likelihood of the complete data $(\yg,\psig)= (y_{ij}, \psi_i \, ; \, 1
+\leq i \leq n \ , 1 \leq j \leq n_i)$. Thus, $$\ell(y;\theta) = \int p(\yg,\psig;\theta)  \ d\psig .$$
+
+\subsection{The statistical model for the individual parameters} \label{section_model_indiv}
+We assume that $\psigi$ is a transformation of a Gaussian random vector $\phigi$:
+\begin{equation} \label{prior2}
+\psigi=h(\phigi)
+\end{equation}
+where, by rearranging the covariates $(\covariate_{im})$ into a matrix $\Covariate_i$, $\phigi$ can be written as:
+\begin{equation} \label{prior3}
+\phigi=\Covariate_i \fixed_effect + \etagi
+\end{equation}
+
+\subsubsection{Examples of transformations}
+Here, different transformations $(h_\ell)$ can be used for the different components of $\psigi=(\psigil)$ where $\psigil=h_\ell(\phigil)$ for $\ell=1, 2, \ldots , \ell$.
+\begin{itemize}
+\item $\psigil$ has a normal distribution if $h_\ell(u)=u$
+\item $\psigil$ has a log-normal distribution if $h_\ell(u)=e^u$
+\item assuming that $\psigil$ takes its values in $(0,1)$, we can use a logit transformation $h_\ell(u)=1/(1+e^{-u})$, or a probit transformation $h_\ell(u)=\Prob{{\cal N}(0,1)\leq u}$.
+%\item assuming that $\psigil$ takes its values in $(A,B)$, we can define $h_\ell(u)=A + (B-A)/(1+e^{-u})$, or  $h_\ell(u)=A + (B-A)\Prob{{\cal N}(0,1)\leq u}$.
+\end{itemize}
+
+In the following, we will use either the parameters $\psigi$ or the Gaussian transformed parameters $\phigi=h^{-1}(\psigi)$.
+
+The model can address continuous and/or binary covariates. % categorical: no for the moment
+
+\subsubsection{Example of continuous covariate model} \label{section_model_contcov}
+Consider a PK model that depends on volume and clearance and consider the following covariate model for these two parameters:
+\begin{eqnarray*}
+CL_i & = & CL_{\rm pop}\left(\frac{W_i}{W_{\rm pop}}\right)^{\beta_{CL,W}} \left(\frac{A_i}{A_{\rm pop}}\right)^{\beta_{CL,A}} e^{\eta_{i,1}} \\
+V_i & = & V_{\rm pop}\left(\frac{W_i}{W_{\rm pop}}\right)^{\beta_{V,W}}  e^{\eta_{i,2}}
+\end{eqnarray*}
+Where $W_i$ and $A_i$ are the weight and the age of subjet $i$ and where $W_{\rm pop}$ and $A_{\rm pop}$ are some ``typical'' values of these two covariates in the population. Here,
+$\psigi$ will denote the PK parameters (clearance and volume) of subject $i$ and
+$\phigi$ its log-clearance and log-volume.
+Let
+$$W^\star_i = \log\left(\frac{W_i}{W_{\rm pop}}\right) \quad ; \quad A^\star_i = \log\left(\frac{A_i}{A_{\rm pop}}\right) $$
+Then,
+\begin{eqnarray*}
+\phigi &= & \left( \begin{array}{c}  \log(CL_i) \\  \log(V_i) \\ \end{array} \right) \\
+&=& \left( \begin{array}{ccccc}  1 & 0 & W^\star_i & W^\star_i & 0 \\ 0 & 1 & 0 & 0 & W^\star_i \\ \end{array} \right)
+\left( \begin{array}{c}  \log(CL_{\rm pop}) \\  \log(V_{\rm pop}) \\ \beta_{CL,W} \\ \beta_{CL,A} \\ \beta_{V,W} ) \\ \end{array} \right)
++  \left( \begin{array}{c}  \eta_{i,1} \\  \eta_{i,2} \\ \end{array} \right) \\
+&=& \Covariate_i \fixed_effect + \etagi
+\end{eqnarray*}
+
+\subsubsection{Example of categorical covariate model} \label{section_model_catcov}
+Assume that some categorical covariate  $G_i$ takes the values 1, 2, \ldots, $K$.
+Assume that if patient $i$ belongs to group $k$, {\it i.e.} $G_i=k$, then
+\begin{eqnarray*}
+\log(CL_i) &=&  \log(CL_{{\rm pop},k}) + \eta_i
+\end{eqnarray*}
+where $CL_{{\rm pop},k}$ is the population clearance in group $k$.
+
+Let $k^\star$ be the reference group. Then, for any group $k$, we will decompose the population clearance $CL_{{\rm pop},k}$ as
+\begin{eqnarray*}
+\log(CL_{{\rm pop},k}) = \log(CL_{{\rm pop},k^\star}) + \beta_k
+\end{eqnarray*}
+where $\beta_{k^\star} = 0$.
+
+The variance of the random effects can also depend on this categorical covariate:
+$$ \etagi \sim \mathcal{N}(0, \IIV_k) \ \ \ {\rm if } \ \ G_i=k $$
+
+\noindent {\bf Remark:} It is assumed in \monolix~0.9 that the categorical covariate has only 2 categories (binary covariate). It is also assumed that the variance remains the same for both groups.
+%It is assumed in \monolix~0.9 that the correlation matrix of the random effect is the same for all the groups. In other words, only the variances of the random effects can  differ from one group to another.
+
+\subsection{The residual error model} \label{section_model_residual}
+The within-group errors ($\varepsilon_{ij}$)  are  supposed  to be  Gaussian random variables  with mean  zero and variance $1$.
+Furthermore, we suppose that the $\varepsilon_{ij}$ and the $\eta_{i}$ are mutually independent.
+
+Different error models can be used in \monolix~0.9:
+\begin{itemize}
+\item the constant error model assumes that $g=a$ and $\xi=a$,
+\item the proportional error model assumes that $g=b\,f$ and $\xi=b$,
+\item a combined error model assumes that $g=a+b\,f$ and $\xi=(a,b)$,
+%\item an alternative combined error model assumes that $g=\sqrt{a^2+b^2\,f^2}$ and $\xi=(a,b)$,
+%\item a combined error model with power assumes that $g=a+b\,f^c$ and $\xi=(a,b,c)$,
+%\item \ldots
+\end{itemize}
+
+Furthermore, all these error models can be applied to some transformation of the data:
+\begin{eqnarray}\label{def_t}
+t(y_{ij})=t(f(x_{ij},\psigi))+ g(x_{ij},\psigi,\xi)\varepsilon_{ij}
+\end{eqnarray}
+
+In the current version of \monolix, the exponential error model is also available: it assumes that $y>0$ and that:
+\begin{eqnarray*}
+t(y) &=& \log(y) \\
+y&=&f e^{g\varepsilon}
+\end{eqnarray*}
+
+\section{Citing \monolix}
+
+\hskip 18pt If you use this program in a scientific publication, we would like
+you to cite the following reference:
+\begin{quotation}
+\noindent 
+Comets E, Lavenu A, Lavielle M. SAEMIX, an R version of the SAEM algorithm. 20th meeting of the Population Approach Group in Europe, Athens, Greece (2011), Abstr 2173. http://www.page-meeting.org/default.asp?abstract=2173
+\end{quotation}
+
+A BibTeX entry for \LaTeX$\;$ users is:
+\begin{verbatim}
+@Article{,
+author	={E Comets and A Lavenu and M Lavielle},
+title	={{SAEMIX}, an {R} version of the {SAEM} algorithm},
+journal	={20$^{th}$ meeting of the {P}opulation {A}pproach {G}roup in {E}urope,
+Athens, Greece},
+type	={Poster},
+note	={Abstr 2173},
+url	={http://www.page-meeting.org/default.asp?abstract=2173},
+year	=2011	}
+\end{verbatim}

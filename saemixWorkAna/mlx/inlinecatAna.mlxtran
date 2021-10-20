@@ -1,0 +1,47 @@
+<DATAFILE>
+
+[FILEINFO]
+file = '../data/cat_data_test.csv'
+delimiter = comma
+header = {id, time, y}
+
+[CONTENT]
+id = {use=identifier}
+time = {use=time}
+y = {use=observation, name=y, type=discrete}
+
+<MODEL>
+
+[INDIVIDUAL]
+input = {a_pop, omega_a, b_pop, omega_b}
+
+DEFINITION:
+a = {distribution=normal, typical=a_pop, sd=omega_a}
+b = {distribution=normal, typical=b_pop, sd=omega_b}
+
+[LONGITUDINAL]
+file = '../model_inlineAna.txt'
+
+<FIT>
+data = y
+model = y
+
+<PARAMETER>
+a_pop = {value=15, method=MLE}
+b_pop = {value=1, method=MLE}
+omega_a = {value=1, method=MLE}
+omega_b = {value=1, method=MLE}
+
+<MONOLIX>
+
+[TASKS]
+populationParameters()
+individualParameters(method = {conditionalMean, conditionalMode })
+fim(method = StochasticApproximation)
+logLikelihood(method = ImportanceSampling)
+plotResult(method = {outputplot, indfits, obspred, residualsscatter, residualsdistribution, parameterdistribution, covariatemodeldiagnosis, randomeffects, covariancemodeldiagnosis, saemresults })
+
+[SETTINGS]
+GLOBAL:
+exportpath = 'inlinecatAna'
+

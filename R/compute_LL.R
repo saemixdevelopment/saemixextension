@@ -112,7 +112,11 @@ llis.saemix<-function(saemixObject) {
 	
 	c2<- log(det(Omega[i1.omega2,i1.omega2,drop=FALSE])) + nphi1*log(2*pi)
 	c1<-log(2*pi)
-	if(saemixObject["options"]$print.is) par(mfrow=c(1,1))
+	if(saemixObject["options"]$print.is) {
+	  oldpar <- par(no.readonly = TRUE)    # code line i
+	  on.exit(par(oldpar))            # code line i + 1 
+	  par(mfrow=c(1,1))
+	}
 	
 	tit<-"Estimation of the log-likelihood"
 	kmin<-min(10,ceiling(KM/4))
@@ -138,8 +142,8 @@ llis.saemix<-function(saemixObject) {
 #		if(saemix.model["error.model"]=="exponential")
 #			f<-log(cutoff(f))
 		if (saemixObject["model"]["modeltype"]=="structural"){
-			g<-error(f,pres,XM$ytype)
-			DYF[ind.ioM] <- -0.5*((yM-f)/g)**2 - log(g) - 0.5*c1
+		g<-error(f,pres,XM$ytype)
+		DYF[ind.ioM] <- -0.5*((yM-f)/g)**2 - log(g) - 0.5*c1
 		} else {
 			DYF[ind.ioM] <- f
 		}
@@ -155,12 +159,12 @@ llis.saemix<-function(saemixObject) {
 	
 	x1<-MM*c(kmin:KM)
 	y1<-(-2)*LL[kmin:KM]
-	if(sum(is.na(y1))) {
-		message("Likelihood cannot be computed by Importance Sampling.\n")
+	if(sum(is.na(y1))) { # Johannes
+	  message("Likelihood cannot be computed by Importance Sampling.\n")
 	} else {
-		if (saemixObject["options"]$print.is) {
-			try(plot(x1,y1,type="l",xlab="Size of the Monte-Carlo sample", ylab="'-2xLog-Likelihood",main=tit))
-		}
+	  if (saemixObject["options"]$print.is) {
+	    try(plot(x1,y1,type="l",xlab="Size of the Monte-Carlo sample", ylab="'-2xLog-Likelihood",main=tit))
+	  }
 	}
 	saemixObject["results"]["LL"]<-c(LL)
 	saemixObject["results"]["ll.is"]<-LL[KM]
@@ -281,11 +285,11 @@ llgq.saemix<-function(saemixObject) {
 		phi[,i1.omega2] <- a+b*matrix(rep(x[j,],saemix.data["N"]),ncol=nphi1,byrow=TRUE)
 		psi<-transphi(phi,saemixObject["model"]["transform.par"])
 		if(saemixObject["model"]["modeltype"]=="structural"){
-			f<-saemixObject["model"]["model"](psi, saemix.data["data"][,"index"], xind)
-			for(i in idx.exp) f[saemix.data["data"][,"ytype"]==i]<-log(cutoff(f[saemix.data["data"][,"ytype"]==i]))
-			g<-error(f,pres,saemix.data["data"][,"ytype"])
-			DYF[ind.io] <- -0.5*((yobs-f)/g)**2 - log(g)
-			ly<-colSums(DYF)
+		f<-saemixObject["model"]["model"](psi, saemix.data["data"][,"index"], xind)
+		for(i in idx.exp) f[saemix.data["data"][,"ytype"]==i]<-log(cutoff(f[saemix.data["data"][,"ytype"]==i]))
+		g<-error(f,pres,saemix.data["data"][,"ytype"])
+		DYF[ind.io] <- -0.5*((yobs-f)/g)**2 - log(g)
+		ly<-colSums(DYF)
 		} else {
 			f<-saemixObject["model"]["model"](psi, saemix.data["data"][,"index"], xind)
 			DYF[ind.io] <- f
@@ -316,7 +320,7 @@ gqg.mlx<-function(dim,nnodes.gq) {
 	#    w    = row vector of corresponding weights
 	#
 	if(nnodes.gq>25) {
-		cat("The number of nodes for Gaussian Quadrature should be less than 25.\n")
+		message("The number of nodes for Gaussian Quadrature should be less than 25.\n")
 		return(list(nodes=NULL,weights=c()))
 	}
 	if(nnodes.gq==1) {

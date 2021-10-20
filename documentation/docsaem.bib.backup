@@ -1,0 +1,404 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Books and manuals
+
+@Manual{R,
+    title = {R: A Language and Environment for Statistical Computing},
+    author = {{R Development Core Team}},
+    organization = {R Foundation for Statistical Computing},
+    address = {Vienna, Austria},
+    year = {2006},
+    note = {{ISBN} 3-900051-07-0},
+    url = {http://www.R-project.org},
+}
+
+@Manual{MonolixUserGuide,
+     title        = {MONOLIX (MOd\`eles NOn LIn\'eaires \`a effets miXtes)},
+     author       = {Marc Lavielle},
+     organization = {{MONOLIX} group},
+     address      = {Orsay, France},
+     year         = 2005,
+     url          = {http://www.monolix.org}
+}
+
+@manual{NONMEM,
+title   ={NONMEM Version 5.1},
+author  ={L Sheiner and S Beal},
+organization={University of California, NONMEM Project Group},
+address ={San Francisco},
+year    =1998   }
+
+@manual{Boeckman,
+title   ={{NONMEM} Users Guide: {P}art {V}},
+author  ={A Boeckmann and L Sheiner and S Beal},
+organization={University of California, NONMEM Project Group},
+address ={San Francisco},
+year    =1994   }
+
+@Book{Davidian95,
+title        = {Nonlinear models for repeated measurement data},
+author	= {M Davidian and D Giltinan},
+chapter = {section 5.5 and section 6.6},
+editor  = {},
+publisher = {Chapman \& Hall},
+address      = {London},
+year         = 1995,
+pages   ={145--176},
+}
+
+@Book {PinheiroBates00,
+    AUTHOR = {Pinheiro, J. C. and Bates, D. M.},
+     TITLE = {Mixed-Effects Models in S and S-PLUS},
+      NOTE = {},
+ PUBLISHER = {Springer},
+   ADDRESS = {New York},
+      YEAR = {2000},
+     PAGES = {xvi+528},
+      ISBN = {0-387-98957-9},
+   MRCLASS = {},
+  MRNUMBER = {},
+MRREVIEWER = {E.M.Psyadlo},
+}
+
+@Manual{nlme,
+    title = {nlme: Linear and Nonlinear Mixed Effects Models},
+    author = {Jose Pinheiro and Douglas Bates and Saikat DebRoy and Deepayan Sarkar and the R Core team},
+    year = {2009},
+    note = {R package version 3.1-96},
+  }
+
+@Manual{Genolini,
+    title = {Construire un Package - Classic et S4},
+    author = {C Genolini},
+    organization = {INSERM U669},
+    address = {Paris, France},
+    year = {2010},
+    url = {http://cran.r-project.org/doc/contrib/Genolini-ConstruireUnPackage.pdf},
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Articles
+
+@Article{Bertrand09,
+author	={Julie Bertrand and Emmanuelle Comets and C{\'e}line Laffont and Marylore
+Chenel and France Mentr{\'e}},
+title	={Pharmacogenetics and population pharmacokinetics: impact of the design
+on three tests using the {SAEM} algorithm},
+volume	={36},
+pages	={317--39},
+journal	={Journal of Pharmacokinetics and Pharmacodynamics},
+year	=2009	}
+
+@Article{BrendelPDE,
+author	={Karl Brendel and Emmanuelle Comets and C{\'e}line Laffont and
+Christian Laveille and France Mentr{\'e}},
+title	={Metrics for external model evaluation with an application to the
+population pharmacokinetics of gliclazide},
+volume	={23},
+pages	={2036--49},
+journal	={Pharmaceutical Research},
+year	=2006	}
+
+@article {Comets07,
+    AUTHOR = {Comets, E. and Verstuyft, C. and Lavielle, M. and Jaillon, P. and Becquemont, L and Mentre, F.},
+     TITLE = {Modelling the influence of {MDR1} polymorphism on digoxin pharmacokinetic parameters},
+   JOURNAL = {European Journal of Clinical Pharmacology},
+  YEAR        = 2007,
+  volume      = 63,
+  pages       = {437--449}
+}
+
+@Article{CometsCMPB08,
+author	={Emmanuelle Comets and Karl Brendel and France Mentr{\'e}},
+title	={Computing normalised prediction distribution errors to evaluate
+nonlinear mixed-effect models: the npde add-on package for {R}},
+volume	={90},
+pages	={154--66},
+journal	={Computer Methods and Programs in Biomedicine},
+year	=2008	}
+ 
+@article {davgil1,
+    AUTHOR = {Davidian, M. and Giltinan, D.},
+     TITLE = {Nonlinear models for repeated measurements: An overview and update},
+   JOURNAL = {JABES},
+    VOLUME = {8},
+      YEAR = {2003},
+    NUMBER = {},
+     PAGES = {387--419},
+}
+
+@Article{Delyon,
+author  ={B Delyon and M Lavielle and E Moulines},
+title   ={Convergence of a stochastic approximation version of the {EM}
+algorithm},
+volume  ={27},
+pages   ={94--128},
+journal ={Annals of Statistics},
+year    =1999	}
+
+@article {Dempster77,
+    AUTHOR = {Dempster, A. P. and Laird, N. M. and Rubin, D. B.},
+     TITLE = {Maximum likelihood from incomplete data via the {E}{M}
+              algorithm},
+      NOTE = {With discussion},
+   JOURNAL = {J. Roy. Statist. Soc. Ser. B},
+    VOLUME = {39},
+      YEAR = {1977},
+    NUMBER = {1},
+     PAGES = {1--38},
+   MRCLASS = {62F10},
+  MRNUMBER = {58 \#18858},
+MRREVIEWER = {Rolf Sundberg},
+}
+
+@article {Jaffrezic06,
+    AUTHOR = {Jaffr\'{e}zic, F. and Meza, C. and Foulley, J.L. and Lavielle, M.},
+     TITLE = {The {SAEM}  algorithm for the analysis of nonlinear traits in genetic studies},
+   JOURNAL = {Genetics Selection Evolution},
+    VOLUME = {38},
+      YEAR = {2006},
+    NUMBER = {},
+     PAGES = {583--600},
+}
+
+@article{Kuhn01,
+author="Kuhn , Estelle and Lavielle , Marc",
+title="{Coupling a stochastic approximation version of EM with a MCMC procedure}",
+language="",
+JOURNAL= "{ESAIM} {P\&S}",
+volume="8",
+number="",
+pages="115--131",
+year="2004",
+abstract="{}",
+classmath="{}",
+}
+
+@Article{Kuhn05,
+author  ={E Kuhn and M Lavielle},
+title   ={Maximum likelihood estimation in nonlinear mixed effects models},
+volume  ={49},
+pages   ={1020--1038},
+journal ={Computational Statistics and Data Analysis},
+year    =2005	}
+
+@article {Lavielle07,
+    AUTHOR = {Lavielle, M. and Mentr\'e, F.},
+     TITLE = {Estimation of population pharmacokinetic
+  parameters of saquinavir in {HIV} patients with the {MONOLIX} software},
+   JOURNAL     = {Journal of Pharmacokinetics and Pharmacodynamics},
+  YEAR        = 2007,
+   volume      = 34,
+     NUMBER      = {2},
+  pages       = {229--249}
+}
+
+@Article{Lavielle11,
+author  ={M Lavielle and K Bleakley},
+title   ={Automatic data binning for improved visual diagnosis of pharmacometric models},
+volume  ={38},
+pages   ={861--71},
+journal ={Journal of Pharmacokinetics and Pharmacodynamics},
+year    =2011	}
+
+@article {Louis82,
+    AUTHOR = {Louis, Thomas A.},
+     TITLE = {Finding the observed information matrix when using the {E}{M}
+              algorithm},
+   JOURNAL = {J. Roy. Statist. Soc. Ser. B},
+  FJOURNAL = {Journal of the Royal Statistical Society. Series B.
+              Methodological},
+    VOLUME = {44},
+      YEAR = {1982},
+    NUMBER = {2},
+     PAGES = {226--233},
+      ISSN = {0035-9246},
+     CODEN = {JSTBAJ},
+   MRCLASS = {62-07 (62F10)},
+  MRNUMBER = {83m:62004},
+}
+
+@article {Makowski06,
+    AUTHOR = {Makowski, D. and Lavielle, M.},
+     TITLE = {Using {SAEM}  to estimate parameters of models of response to applied fertilizer},
+   JOURNAL = {Jour. of Agr., Bio, and Env. Stat.},
+    VOLUME = {11},
+      YEAR = {2006},
+    NUMBER = {1},
+     PAGES = {45--60},
+}
+
+@Article{Pinheiro95,
+author  ={J Pinheiro and D Bates},
+title   ={Approximations to the log-likelihood function in the non-linear
+mixed-effect models},
+volume  ={4},
+pages   ={12--35},
+journal ={Journal of Computational and Graphical Statistics},
+year    =1995}
+
+@Article{Raftery95,
+author  ={AE Raftery},
+title   ={Bayesian model selection in social research (with discussion)},
+volume  ={},
+pages   ={111--95},
+journal ={Sociol Methodol},
+year    =1995	}
+
+@Article{SavicLavielle,
+author  ={RM Savic and M Lavielle},
+title   ={Performance in population models for count data, part II: A new SAEM algorithm},
+volume  ={36},
+pages   ={367--79},
+journal ={Journal of Pharmacokinetics and Pharmacodynamics},
+year    =2009}
+
+@article {samson_jspi06,
+    AUTHOR = {Donnet, S. and Samson, A.},
+     TITLE = {Estimation of parameters in incomplete data models defined by dynamical systems},
+   JOURNAL = {Journ. of Stat. and Plan. Infer.},
+  volume      = 50,
+  pages       = {2381--2398},
+      YEAR = 2007
+}
+
+@article {samson_csda06,
+    AUTHOR = {Samson, A. and Lavielle, M. and Mentr\'{e}, F.},
+     TITLE = {Extension of the {SAEM}
+  algorithm to left-censored data in nonlinear mixed-effects model: application
+  to {HIV} dynamics model},
+   JOURNAL = {Computational Statistics and Data Analysis},
+VOLUME= "51",
+PAGES= "1562--1574",
+YEAR= 2006
+}
+
+@article {samson_sim06a,
+    AUTHOR = {Samson, A. and Lavielle, M. and Mentr\'{e}, F.},
+     TITLE = {The {SAEM} algorithm for group comparison tests in longitudinal data analysis based on nonlinear mixed-effects model},
+   JOURNAL = {Stat. in Med.},
+    VOLUME = {26},
+      YEAR = {2007},
+     PAGES = {4860--4875},
+}
+
+@article {Wu83,
+    AUTHOR = {Wu, C.-F. Jeff},
+     TITLE = {On the convergence properties of the {E}{M} algorithm},
+   JOURNAL = {Ann. Statist.},
+  FJOURNAL = {The Annals of Statistics},
+    VOLUME = {11},
+      YEAR = {1983},
+    NUMBER = {1},
+     PAGES = {95--103},
+      ISSN = {0090-5364},
+     CODEN = {ASTSC7},
+   MRCLASS = {62F10},
+  MRNUMBER = {85e:62049},
+MRREVIEWER = {Huynh Huynh},
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Congrès
+
+@article {page03,
+    AUTHOR = {Lavielle, M. and Kuhn, E.},
+     TITLE = {Maximum likelihood estimation in nonlinear mixed effects models (oral communication)},
+   JOURNAL = {PAGE, Verona},
+    VOLUME = {},
+      YEAR = {2003},
+    NUMBER = {},
+     PAGES = {},
+}
+
+@article {page04a,
+    AUTHOR = {Samson, A. and Lavielle, M. and Mentr\'e, F.},
+     TITLE = {Approximation {EM} algorithm in nonlinear mixed effects models: an evaluation by simulation (oral communication)},
+   JOURNAL = {PAGE, Uppsala},
+    VOLUME = {},
+      YEAR = {2004},
+    NUMBER = {},
+     PAGES = {},
+}
+@article {page04b,
+    AUTHOR = {Lavielle, M. and Monolix, G.},
+     TITLE = {{SAEM} in {MATLAB}: an alternative to linearization (software presentation)},
+   JOURNAL = {PAGE, Uppsala},
+    VOLUME = {},
+      YEAR = {2004},
+    NUMBER = {},
+     PAGES = {},
+}
+
+@article {page05a,
+    AUTHOR = {Lavielle, M. and Mentr\'e, F.},
+     TITLE = {Estimation of population pharmacokinetic parameters of saquinavir in {HIV} patients and covariate analysis with {MONOLIX} (Poster)},
+   JOURNAL = {PAGE, Pamplona},
+    VOLUME = {},
+      YEAR = {2005},
+    NUMBER = {},
+     PAGES = {},
+}
+
+
+
+@article {page05b,
+    AUTHOR = {Samson, A. and Panhard, X. and Lavielle, M. and Mentr\'e, F.},
+     TITLE = {Generalisation of the {SAEM} algorithm to nonlinear mixed effects model defined by differential equations:
+application to {HIV} viral dynamic models (Poster)},
+   JOURNAL = {PAGE, Pamplona},
+    VOLUME = {},
+      YEAR = {2005},
+    NUMBER = {},
+     PAGES = {},
+}
+
+@article {page05c,
+    AUTHOR = {Girard, P. and Mentr\'e, F.},
+     TITLE = {A comparison of estimation methods in nonlinear mixed effects models using a blind analysis (oral presentation)},
+   JOURNAL = {PAGE, Pamplona},
+    VOLUME = {},
+      YEAR = {2005},
+    NUMBER = {},
+     PAGES = {},
+}
+
+@article {page06a,
+    AUTHOR = {Bertrand, J. and Comets, E. and Mentr\'e, F.},
+     TITLE = {Detecting a gene effect in pharmacokinetic models: comparison of different methods (Poster)},
+   JOURNAL = {PAGE, Brugge},
+    VOLUME = {},
+      YEAR = {2006},
+    NUMBER = {},
+     PAGES = {},
+}
+
+@article {page06b,
+    AUTHOR = {Panhard, X. and Samson, A.},
+     TITLE = {Extension of the {SAEM} algorithm for the estimation of Inter-Occasion Variability: application to the population pharmacokinetics of nelfinavir and its metabolite M8 (Poster)},
+   JOURNAL = {PAGE, Brugge},
+    VOLUME = {},
+      YEAR = {2006},
+    NUMBER = {},
+     PAGES = {},
+}
+
+@article {page06c,
+    AUTHOR = {Samson, A. and Lavielle, M. and Mentr\'e, F.},
+     TITLE = {The {SAEM} algorithm for non-linear mixed models with left-censored data and differential systems: application to the joint modeling of HIV viral load and CD4 dynamics under treatment (Oral presentation)},
+   JOURNAL = {PAGE, Brugge},
+    VOLUME = {},
+      YEAR = {2006},
+    NUMBER = {},
+     PAGES = {},
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Templates
+
+@Article{,
+author  ={},
+title   ={},
+volume  ={},
+pages   ={},
+journal ={},
+year    =20	}

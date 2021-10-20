@@ -11,12 +11,12 @@
 #' @param \dots Two or more objects returned by the \code{\link{saemix}} function
 #' @param method The method used for computing the likelihood : "is" (Importance Sampling),
 #' "lin" (Linearisation) or "gq" (Gaussian quadrature). The default is to use importance sampling "is".
-#' If the requested likelihood is not available in all model objects, the method stops with an error.
+#' If the requested likelihood is not available in all model objects, the method stops with a warning.
 #' @return A matrix of information criteria is returned, with at least two columns containing respectively
 #' AIC and BIC values for each of the compared models. When the models have in common the structural model
 #' and the covariance structure for the random effects, the matrix includes an additional column with BIC.cov
 #' values that are more appropriate when the comparison only concerns the covariates.
-#' @author Emmanuelle Comets <emmanuelle.comets@@inserm.fr>, Maud Delattre
+#' @author Maud Delattre
 #' @references Delattre, M., Lavielle, M. and Poursat, M.A. (2014) A note on BIC in mixed effects models.
 #' Electronic Journal of Statistics 8(1) p. 456-475
 #' @keywords model comparison, AIC, BIC
@@ -46,12 +46,12 @@
 #'   transform.par=c(1,1,1),covariate.model=matrix(c(0,0,1,0,0,0),ncol=3,byrow=TRUE))
 #' # Model with two covariates
 #' saemix.model2<-saemixModel(model=model1cpt,modeltype="structural",
-#'    description="One-compartment model, clearance dependent on weight and volume dependent on sex",
+#'    description="One-compartment model, clearance dependent on weight, volume dependent on sex",
 #'    psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))),
 #'    transform.par=c(1,1,1),covariate.model=matrix(c(0,0,1,0,1,0),ncol=3,byrow=TRUE))
 #' # Model with three covariates
 #' saemix.model3<-saemixModel(model=model1cpt,modeltype="structural",
-#'   description="One-compartment model, clearance and absorption dependent on weight, volume dependent on sex",
+#'   description="One-cpt model, clearance, absorption dependent on weight, volume dependent on sex",
 #'   psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))),
 #'   transform.par=c(1,1,1),covariate.model=matrix(c(1,0,1,0,1,0),ncol=3,byrow=TRUE))
 #'
@@ -65,22 +65,41 @@
 #'
 #' compare.saemix(saemix.fit1, saemix.fit2, saemix.fit3)
 #' compare.saemix(saemix.fit1, saemix.fit2, saemix.fit3, method = "lin")
-#' compare.saemix(saemix.fit1, saemix.fit2, saemix.fit3, method = "gq")
+#' # We would need to run llgq.saemix first to make this work
+#' # compare.saemix(saemix.fit1, saemix.fit2, saemix.fit3, method = "gq")
+#' 
 #'
 #' @export compare.saemix
+
+
 
 compare.saemix<-function(..., method = c("is", "lin", "gq")) {
 
   mod.list <- list(...)
   nb.mod <- length(mod.list)
+  if(nb.mod==1 & typeof(mod.list[[1]])=="list") { # Models given as a list, sorting them out
+    mod.list1<-list()
+    x<-mod.list[[1]]
+    i1<-1
+    for(i in 1:length(x)) {
+      if(is(x[[i]], "SaemixObject")) {
+        mod.list1[[i1]]<-x[[i]]
+        i1<-i1+1
+      }
+    }
+    mod.list<-mod.list1
+    nb.mod <- length(mod.list)
+  }
 
   if (nb.mod < 2){
-    stop("'compare.saemix' requires at least two models.")
+    warning("'compare.saemix' requires at least two models.")
+    return()
   }
 
   list.class <- sapply(mod.list, class)
   if (!all(list.class=="SaemixObject")) {
-    stop("All inputs should have class 'SaemixObject'.")
+    warning("All inputs should have class 'SaemixObject'.")
+    return()
   }
 
   method <- match.arg(method)
@@ -93,8 +112,10 @@ compare.saemix<-function(..., method = c("is", "lin", "gq")) {
   for (k in 1:nb.mod){
     x <- mod.list[[k]]
     if (!ll_available( x, method)) {
-      stop("The likelihood calculated by 'll", method, ".saemix' is not available for model ", k)
+      warning("The likelihood calculated by 'll", method, ".saemix' is not available for model ", k)
+      return()
     }
+    if(x@model@modeltype=="likelihood" & method=="lin") warning("Linearisation is not appropriate for computing likelihoods in discrete models.")
   }
 
   aic_slot <- paste0("aic.", method)
@@ -119,10 +140,11 @@ compare.saemix<-function(..., method = c("is", "lin", "gq")) {
   }
 
   if ("FALSE" %in% same.data){
-    stop('Compared models should be fitted on the same data.')
+    warning('Compared models should be fitted on the same data.')
+    return()
   }
 
-  # Comparison of the statistical models : BIC.covariate does only make sense if model type,
+  # Comparison of the statistical models : BIC.covariate only makes sense if model type,
   # structural model (and residual model if appropriate), and covariance structure for the random
   # effects are the same
 

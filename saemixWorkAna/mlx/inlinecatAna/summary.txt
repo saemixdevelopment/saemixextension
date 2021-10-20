@@ -1,0 +1,90 @@
+********************************************************************************
+*                        inlinecatAna.mlxtran                                  *
+*                        September 22, 2020 at 13:45:31                        *
+*                        Monolix version : 5.1.1                               *
+********************************************************************************
+
+
+POPULATION PARAMETERS ESTIMATION _______________________________________________
+
+Fixed Effects ----------------------------     se_sa    rse(%)
+a_pop                          :      15.2      1.74      11.4
+b_pop                          :      1.06     0.126      11.9
+
+Standard Deviation of the Random Effects -
+omega_a                        :      1.83     0.857      46.9
+omega_b                        :     0.292    0.0503      17.2
+
+Elapsed time (seconds) :     0.85
+CPU time     (seconds) :        1
+
+ _______________________________________________________________________________
+
+
+
+CORRELATION MATRIX OF THE ESTIMATES ____________________________________________
+
+
+Fisher by Stochastic Approximation ---------------------------------------------
+Correlation Matrix :
+  a_pop         1
+  b_pop   0.95177         1
+omega_a   0.68574   0.63813         1
+omega_b   0.76497   0.79671   0.40558         1
+                               min       max   max/min
+Eigen values           :     0.045       3.2        70
+
+Elapsed time (seconds) :   0.029
+CPU time     (seconds) :       0
+
+ -------------------------------------------------------------------------------
+
+ _______________________________________________________________________________
+
+
+
+INDIVIDUAL PARAMETERS ESTIMATION _______________________________________________
+
+
+Individual Parameters Estimation by Conditional Mean ---------------------------
+          min        Q1    median        Q3       max
+a :      13.4      15.1      15.2      15.5      16.5
+b :     0.392     0.894      1.13      1.16      1.45
+
+Elapsed time (seconds) :    0.42
+CPU time     (seconds) :       0
+
+ -------------------------------------------------------------------------------
+
+
+Individual Parameters Estimation by Conditional Mode ---------------------------
+          min        Q1    median        Q3       max
+a :      13.8      15.2      15.2      15.8        16
+b :      0.42     0.863      1.08      1.08      1.42
+
+Elapsed time (seconds) :   0.022
+CPU time     (seconds) :       0
+
+ -------------------------------------------------------------------------------
+
+ _______________________________________________________________________________
+
+
+
+LOG-LIKELIHOOD ESTIMATION ______________________________________________________
+                                                            (is)
+
+-2 x log-likelihood                             :         262.49
+Akaike Information Criteria               (AIC) :         270.49
+Corrected Bayesian Information Criteria  (BICc) :         284.13
+Bayesian Information Criteria             (BIC) :         280.91
+
+Elapsed time                          (seconds) :           3.59
+CPU time                              (seconds) :           6.00
+
+
+[Importance Sampling] Standard error        : 0.091
+                      Sampling distribution : T-distribution with 5 degrees of freedom
+
+ _______________________________________________________________________________
+

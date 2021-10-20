@@ -139,7 +139,7 @@ compute.sres<-function(saemixObject) {
   nsim<-saemixObject["options"]$nb.sim
   if(length(saemixObject["sim.data"]["N"])==0 || saemixObject["sim.data"]["nsim"]!=nsim) {
 	  cat("Simulating data using nsim =",nsim,"simulated datasets\n")
-	  saemixObject<-saemix.simul(saemixObject,nsim)
+	  saemixObject<-simulate.saemix(saemixObject,nsim)
   }
 # ECO TODO: maybe here be more clever and use simulations if available (adding some if not enough, truncating if too much ?)  
   ysim<-saemixObject["sim.data"]["datasim"]$ysim
@@ -238,7 +238,8 @@ error<-function(f,ab,etype) { # etype: error model
   return(g)
 }
 error.typ<-function(f,ab) {
-  g<-cutoff(ab[1]+ab[2]*abs(f))
+#  g<-cutoff(ab[1]+ab[2]*abs(f))
+  g<-cutoff(sqrt(ab[1]^2+ab[2]^2*f^2))  # Johannes 02/21
   return(g)
 }
 
@@ -328,10 +329,10 @@ compute.Uy<-function(b0,phiM,pres,args,Dargs,DYF) {
   phiM[,args$i0.omega2]<-do.call(rbind,rep(list(phi0),args$nchains))
   psiM<-transphi(phiM,Dargs$transform.par)
   if (Dargs$modeltype=="structural"){
-    fpred<-Dargs$structural.model(psiM,Dargs$IdM,Dargs$XM)
-    for(ityp in Dargs$etype.exp) fpred[Dargs$XM$ytype==ityp]<-log(cutoff(fpred[Dargs$XM$ytype==ityp]))
-    gpred<-error(fpred,pres,Dargs$XM$ytype)
-    DYF[args$ind.ioM]<-0.5*((Dargs$yM-fpred)/gpred)**2+log(gpred)
+  fpred<-Dargs$structural.model(psiM,Dargs$IdM,Dargs$XM)
+  for(ityp in Dargs$etype.exp) fpred[Dargs$XM$ytype==ityp]<-log(cutoff(fpred[Dargs$XM$ytype==ityp]))
+  gpred<-error(fpred,pres,Dargs$XM$ytype)
+  DYF[args$ind.ioM]<-0.5*((Dargs$yM-fpred)/gpred)**2+log(gpred)
   } else {
     fpred<-Dargs$structural.model(psiM,Dargs$IdM,Dargs$XM)
     for(ityp in Dargs$etype.exp) fpred[Dargs$XM$ytype==ityp]<-log(cutoff(fpred[Dargs$XM$ytype==ityp]))
@@ -362,20 +363,23 @@ conditional.distribution_c<-function(phi1,phii,idi,xi,yi,mphi,idx,iomega,trpar,m
   psii<-transphi(matrix(phii,nrow=1),trpar)
   if(is.null(dim(psii))) psii<-matrix(psii,nrow=1)
   fi<-model(psii,idi,xi)
-  if(err=="exponential")
-    fi<-log(cutoff(fi))
-  if (!(is.null(pres)) && pres[1] == pres) {
-    gi <- cutoff(pres[1])
-  } 
-  else{
-    gi<-error(fi,pres) #    cutoff((pres[1]+pres[2]*abs(fi)))
-  }
+#  if(err=="exponential") # Reverted this bit to the previous version to avoid a compiler error, not sure why it was changed...
+#    fi<-log(cutoff(fi))
+#  if (!(is.null(pres)) && pres[1] == pres) { # package compile throws an error when comparing a vector of length 2 (pres) to a vector of length 1
+  # gi <- cutoff(pres[1])
+  # } 
+  # else{
+  #   gi<-error(fi,pres) #    cutoff((pres[1]+pres[2]*abs(fi)))
+  # }
+  ind.exp<-which(err=="exponential")
+  for(ityp in ind.exp) 
+    fi[xi$ytype==ityp]<-log(cutoff(fi[xi$ytype==ityp]))
+  gi<-error(fi,pres,xi$ytype)      #    cutoff((pres[1]+pres[2]*abs(fi)))
   Uy<-sum(0.5*((yi-fi)/gi)**2+log(gi))
   dphi<-phi1-mphi
   Uphi<-0.5*sum(dphi*(dphi%*%iomega))
   return(Uy+Uphi)
 }
-
 
 conditional.distribution_d<-function(phi1,phii,idi,xi,yi,mphi,idx,iomega,trpar,model) {
   phii[idx]<-phi1

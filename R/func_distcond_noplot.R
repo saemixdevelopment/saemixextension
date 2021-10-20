@@ -45,39 +45,45 @@
 #' while the shaded area represents the acceptable variation.
 #' 
 #' The function adds or modifies the following elements in the results:
-#' \describe{ \item{cond.mean.phi}{Conditional mean of the individual
+#' \describe{ 
+#' \item{cond.mean.phi}{Conditional mean of the individual
 #' distribution of the parameters (obtained as the mean of the samples)}
 #' \item{cond.var.phi}{Conditional variance of the individual distribution of
-#' the parameters (obtained as the mean of the estimated variance of the
-#' samples)} \item{cond.shrinkage}{Estimate of the shrinkage for the
-#' conditional estimates} \item{cond.mean.eta}{Conditional mean of the
-#' individual distribution of the parameters (obtained as the mean of the
-#' samples)} \item{phi.samp}{An array with 3 dimensions, giving nsamp samples
+#' the parameters (obtained as the mean of the estimated variance of the samples)} 
+#' \item{cond.shrinkage}{Estimate of the shrinkage for the conditional estimates} 
+#' \item{cond.mean.eta}{Conditional mean of the individual distribution of the 
+#' parameters (obtained as the mean of the samples)} 
+#' \item{phi.samp}{An array with 3 dimensions, giving nsamp samples
 #' from the conditional distributions of the individual parameters}
 #' \item{phi.samp.var}{The estimated individual variances for the sampled
-#' parameters phi.samp} } A warning is output if the maximum number of
-#' iterations is reached without convergence (the maximum number of iterations
-#' is saemix.options$nbiter.saemix[2]).
+#' parameters phi.samp} 
+#' } 
+#' 
+#' @details A warning is output if the maximum number of iterations is reached 
+#' without convergence (the maximum number of iterations is the sum of the elements in
+#' saemix.options$nbiter.saemix).
 #' 
 #' @param saemixObject an object returned by the \code{\link{saemix}} function
 #' @param nsamp Number of samples to be drawn in the conditional distribution
 #' for each subject. Defaults to 1
 #' @param max.iter Maximum number of iterations for the computation of the
 #' conditional estimates. Defaults to twice the total number of iterations
-#' (sum(saemixObject["options"]$nbiter.saemix)*2)
+#' (see above)
 #' @param \dots optional arguments passed to the plots. Plots will appear if
 #' the option displayProgress in the saemixObject object is TRUE
+#' 
 #' @author Emmanuelle Comets <emmanuelle.comets@@inserm.fr>, Audrey Lavenu,
 #' Marc Lavielle.
 #' @seealso \code{\link{SaemixData}},\code{\link{SaemixModel}},
 #' \code{\link{SaemixObject}},\code{\link{saemixControl}},\code{\link{saemix}}
-#' @references Comets  E, Lavenu A, Lavielle M. Parameter estimation in nonlinear mixed effect models using saemix, an R implementation of the SAEM algorithm. Journal of Statistical Software 80, 3 (2017), 1-41.
+#' @references Comets  E, Lavenu A, Lavielle M. Parameter estimation in nonlinear mixed effect models 
+#' using saemix, an R implementation of the SAEM algorithm. Journal of Statistical Software 80, 3 (2017), 1-41.
 #' 
-#' Kuhn E, Lavielle M. Maximum likelihood estimation in nonlinear mixed effects models. Computational Statistics and Data Analysis 49, 4 (2005), 1020-1038.
+#' Kuhn E, Lavielle M. Maximum likelihood estimation in nonlinear mixed effects models. 
+#' Computational Statistics and Data Analysis 49, 4 (2005), 1020-1038.
 #' 
 #' Comets E, Lavenu A, Lavielle M. SAEMIX, an R version of the SAEM algorithm.
-#' 20th meeting of the Population Approach Group in Europe, Athens, Greece
-#' (2011), Abstr 2173.
+#' 20th meeting of the Population Approach Group in Europe, Athens, Greece (2011), Abstr 2173.
 #' @keywords model
 #' @examples
 #'  
@@ -123,7 +129,8 @@
 #' 
 #' 
 #' @export conddist.saemix
-conddist.saemix<-function(saemixObject,nsamp=1,max.iter=NULL,...) {
+
+conddist.saemix<-function(saemixObject, nsamp=1, max.iter=NULL,...) {
   # Estimate conditional means and estimates for the individual parameters PSI_i using the MCMC algorithm
   # nsamp= number of MCMC samples
   # kmax= max nb of iterations

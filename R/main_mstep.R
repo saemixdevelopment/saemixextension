@@ -91,6 +91,7 @@ mstep<-function(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, varList, 
 	varList$omega<-varList$omega-mydiag(mydiag(varList$omega))+mydiag(varList$diag.omega)
 	
 	# Residual error
+	# Modified to add SA to constant and exponential residual error models (Edouard Ollier 10/11/2016)
 	if(Dargs$modeltype=="structural") {
 		if(length(Uargs$ind.res)==1) { # necessarily only one error model
 		    if (Dargs$error.model[1] %in% c("constant","exponential")) {

@@ -1,0 +1,196 @@
+\begin{thebibliography}{10}
+
+\bibitem{Bertrand09}
+{\sc Bertrand, J., Comets, E., Laffont, C., Chenel, M., and Mentr{\'e}, F.}
+\newblock Pharmacogenetics and population pharmacokinetics: impact of the
+  design on three tests using the {SAEM} algorithm.
+\newblock {\em Journal of Pharmacokinetics and Pharmacodynamics 36\/} (2009),
+  317--39.
+
+\bibitem{CometsCMPB08}
+{\sc Comets, E., Brendel, K., and Mentr{\'e}, F.}
+\newblock Computing normalised prediction distribution errors to evaluate
+  nonlinear mixed-effect models: the npde add-on package for {R}.
+\newblock {\em Computer Methods and Programs in Biomedicine 90\/} (2008),
+  154--66.
+
+\bibitem{Comets07}
+{\sc Comets, E., Verstuyft, C., Lavielle, M., Jaillon, P., Becquemont, L., and
+  Mentre, F.}
+\newblock Modelling the influence of {MDR1} polymorphism on digoxin
+  pharmacokinetic parameters.
+\newblock {\em European Journal of Clinical Pharmacology 63\/} (2007),
+  437--449.
+
+\bibitem{Davidian95}
+{\sc Davidian, M., and Giltinan, D.}
+\newblock {\em Nonlinear models for repeated measurement data}.
+\newblock Chapman \& Hall, London, 1995.
+
+\bibitem{davgil1}
+{\sc Davidian, M., and Giltinan, D.}
+\newblock Nonlinear models for repeated measurements: An overview and update.
+\newblock {\em JABES 8\/} (2003), 387--419.
+
+\bibitem{Delyon}
+{\sc Delyon, B., Lavielle, M., and Moulines, E.}
+\newblock Convergence of a stochastic approximation version of the {EM}
+  algorithm.
+\newblock {\em Annals of Statistics 27\/} (1999), 94--128.
+
+\bibitem{Dempster77}
+{\sc Dempster, A.~P., Laird, N.~M., and Rubin, D.~B.}
+\newblock Maximum likelihood from incomplete data via the {E}{M} algorithm.
+\newblock {\em J. Roy. Statist. Soc. Ser. B 39}, 1 (1977), 1--38.
+\newblock With discussion.
+
+\bibitem{samson_jspi06}
+{\sc Donnet, S., and Samson, A.}
+\newblock Estimation of parameters in incomplete data models defined by
+  dynamical systems.
+\newblock {\em Journ. of Stat. and Plan. Infer. 50\/} (2007), 2381--2398.
+
+\bibitem{Genolini}
+{\sc Genolini, C.}
+\newblock {\em Construire un Package - Classic et S4}.
+\newblock INSERM U669, Paris, France, 2010.
+
+\bibitem{page05c}
+{\sc Girard, P., and Mentr\'e, F.}
+\newblock A comparison of estimation methods in nonlinear mixed effects models
+  using a blind analysis (oral presentation).
+\newblock {\em PAGE, Pamplona\/} (2005).
+
+\bibitem{Jaffrezic06}
+{\sc Jaffr\'{e}zic, F., Meza, C., Foulley, J., and Lavielle, M.}
+\newblock The {SAEM} algorithm for the analysis of nonlinear traits in genetic
+  studies.
+\newblock {\em Genetics Selection Evolution 38\/} (2006), 583--600.
+
+\bibitem{Kuhn01}
+{\sc Kuhn, E., and Lavielle, M.}
+\newblock {Coupling a stochastic approximation version of EM with a MCMC
+  procedure}.
+\newblock {\em {ESAIM} {P\&S} 8\/} (2004), 115--131.
+
+\bibitem{Kuhn05}
+{\sc Kuhn, E., and Lavielle, M.}
+\newblock Maximum likelihood estimation in nonlinear mixed effects models.
+\newblock {\em Computational Statistics and Data Analysis 49\/} (2005),
+  1020--1038.
+
+\bibitem{MonolixUserGuide}
+{\sc Lavielle, M.}
+\newblock {\em MONOLIX (MOd\`eles NOn LIn\'eaires \`a effets miXtes)}.
+\newblock {MONOLIX} group, Orsay, France, 2005.
+
+\bibitem{page03}
+{\sc Lavielle, M., and Kuhn, E.}
+\newblock Maximum likelihood estimation in nonlinear mixed effects models (oral
+  communication).
+\newblock {\em PAGE, Verona\/} (2003).
+
+\bibitem{page05a}
+{\sc Lavielle, M., and Mentr\'e, F.}
+\newblock Estimation of population pharmacokinetic parameters of saquinavir in
+  {HIV} patients and covariate analysis with {MONOLIX} (poster).
+\newblock {\em PAGE, Pamplona\/} (2005).
+
+\bibitem{Lavielle07}
+{\sc Lavielle, M., and Mentr\'e, F.}
+\newblock Estimation of population pharmacokinetic parameters of saquinavir in
+  {HIV} patients with the {MONOLIX} software.
+\newblock {\em Journal of Pharmacokinetics and Pharmacodynamics 34}, 2 (2007),
+  229--249.
+
+\bibitem{Louis82}
+{\sc Louis, T.~A.}
+\newblock Finding the observed information matrix when using the {E}{M}
+  algorithm.
+\newblock {\em J. Roy. Statist. Soc. Ser. B 44}, 2 (1982), 226--233.
+
+\bibitem{Makowski06}
+{\sc Makowski, D., and Lavielle, M.}
+\newblock Using {SAEM} to estimate parameters of models of response to applied
+  fertilizer.
+\newblock {\em Jour. of Agr., Bio, and Env. Stat. 11}, 1 (2006), 45--60.
+
+\bibitem{page06b}
+{\sc Panhard, X., and Samson, A.}
+\newblock Extension of the {SAEM} algorithm for the estimation of
+  inter-occasion variability: application to the population pharmacokinetics of
+  nelfinavir and its metabolite m8 (poster).
+\newblock {\em PAGE, Brugge\/} (2006).
+
+\bibitem{Pinheiro95}
+{\sc Pinheiro, J., and Bates, D.}
+\newblock Approximations to the log-likelihood function in the non-linear
+  mixed-effect models.
+\newblock {\em Journal of Computational and Graphical Statistics 4\/} (1995),
+  12--35.
+
+\bibitem{nlme}
+{\sc Pinheiro, J., Bates, D., DebRoy, S., Sarkar, D., and the R~Core~team}.
+\newblock {\em nlme: Linear and Nonlinear Mixed Effects Models}, 2009.
+\newblock R package version 3.1-96.
+
+\bibitem{PinheiroBates00}
+{\sc Pinheiro, J.~C., and Bates, D.~M.}
+\newblock {\em Mixed-Effects Models in S and S-PLUS}.
+\newblock Springer, New York, 2000.
+
+\bibitem{R}
+{\sc {R Development Core Team}}.
+\newblock {\em R: A Language and Environment for Statistical Computing}.
+\newblock R Foundation for Statistical Computing, Vienna, Austria, 2006.
+\newblock {ISBN} 3-900051-07-0.
+
+\bibitem{Raftery95}
+{\sc Raftery, A.}
+\newblock Bayesian model selection in social research (with discussion).
+\newblock {\em Sociol Methodol\/} (1995), 111--95.
+
+\bibitem{page04a}
+{\sc Samson, A., Lavielle, M., and Mentr\'e, F.}
+\newblock Approximation {EM} algorithm in nonlinear mixed effects models: an
+  evaluation by simulation (oral communication).
+\newblock {\em PAGE, Uppsala\/} (2004).
+
+\bibitem{samson_csda06}
+{\sc Samson, A., Lavielle, M., and Mentr\'{e}, F.}
+\newblock Extension of the {SAEM} algorithm to left-censored data in nonlinear
+  mixed-effects model: application to {HIV} dynamics model.
+\newblock {\em Computational Statistics and Data Analysis 51\/} (2006),
+  1562--1574.
+
+\bibitem{page06c}
+{\sc Samson, A., Lavielle, M., and Mentr\'e, F.}
+\newblock The {SAEM} algorithm for non-linear mixed models with left-censored
+  data and differential systems: application to the joint modeling of hiv viral
+  load and cd4 dynamics under treatment (oral presentation).
+\newblock {\em PAGE, Brugge\/} (2006).
+
+\bibitem{samson_sim06a}
+{\sc Samson, A., Lavielle, M., and Mentr\'{e}, F.}
+\newblock The {SAEM} algorithm for group comparison tests in longitudinal data
+  analysis based on nonlinear mixed-effects model.
+\newblock {\em Stat. in Med. 26\/} (2007), 4860--4875.
+
+\bibitem{page05b}
+{\sc Samson, A., Panhard, X., Lavielle, M., and Mentr\'e, F.}
+\newblock Generalisation of the {SAEM} algorithm to nonlinear mixed effects
+  model defined by differential equations: application to {HIV} viral dynamic
+  models (poster).
+\newblock {\em PAGE, Pamplona\/} (2005).
+
+\bibitem{NONMEM}
+{\sc Sheiner, L., and Beal, S.}
+\newblock {\em NONMEM Version 5.1}.
+\newblock University of California, NONMEM Project Group, San Francisco, 1998.
+
+\bibitem{Wu83}
+{\sc Wu, C.-F.~J.}
+\newblock On the convergence properties of the {E}{M} algorithm.
+\newblock {\em Ann. Statist. 11}, 1 (1983), 95--103.
+
+\end{thebibliography}

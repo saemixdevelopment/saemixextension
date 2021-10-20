@@ -10,7 +10,7 @@
 #' @param covariate.init A matrix specifying the initial covariate structure to be considered in the algorithm.
 #' @return An object of the SaemixObject class storing the covariate model and the covariance structure of 
 #' random effects of the final model.
-#' @author Emmanuelle Comets <emmanuelle.comets@@inserm.fr>, Maud Delattre
+#' @author Maud Delattre
 #' @references Delattre, M., Lavielle, M. and Poursat, M.A. (2014) A note on BIC in mixed effects models. 
 #' Electronic Journal of Statistics 8(1) p. 456-475
 #' Delattre, M. and Poursat, M.A. (2017) BIC strategies for model choice in a population approach. 

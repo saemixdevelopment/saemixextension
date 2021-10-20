@@ -2,17 +2,22 @@ context('Check compare.saemix method')
 
 
 test_that("Errors", {
-  saemix.fit<-theo.fit1
+  saemix.fit1<-theo.fit1
   saemix.fit2<-theo.fit2
-  expect_error(compare.saemix(saemix.fit),"'mod.list' must be a list.")
-  expect_error(compare.saemix(list(saemix.fit)),"'compare.saemix' requires at least two models.")
+#  expect_warning(compare.saemix(saemix.fit1, saemix.fit2),"'mod.list' must be a list.") # actually works if just given without list()
+#  expect_warning(compare.saemix(list(saemix.fit1, saemix.fit2)),"'compare.saemix' requires at least two models.") # modified to accept list or just several models
+  expect_warning(compare.saemix(saemix.fit1),"'compare.saemix' requires at least two models.")
+  expect_warning(compare.saemix(list(saemix.fit1)),"'compare.saemix' requires at least two models.")
   coplot(conc ~ Time | Subject, data = Theoph, show.given = FALSE)
   Theoph.4 <- subset(Theoph, Subject == 4)
   fm1 <- nls(conc ~ SSfol(Dose, Time, lKe, lKa, lCl),
              data = Theoph.4)  
-  expect_error(compare.saemix(list(saemix.fit,fm1)),"All inputs should have class 'SaemixObject'.")
-  expect_error(compare.saemix(list(saemix.fit,binary.fit)),"Compared models should be fitted on the same data.")
-  expect_warning(compare.saemix(list(binary.fit,binary.fit2),method="lin"),"Linearisation is not appropriate for computing likelihoods in discrete models.")
+#  expect_warning(compare.saemix(list(saemix.fit1,fm1)),"All inputs should have class 'SaemixObject'.")
+  expect_warning(compare.saemix(saemix.fit1,fm1),"All inputs should have class 'SaemixObject'.")
+  #  expect_warning(compare.saemix(list(saemix.fit1,binary.fit)),"Compared models should be fitted on the same data.")
+  expect_warning(compare.saemix(saemix.fit1,binary.fit),"Compared models should be fitted on the same data.")
+#  expect_warning(compare.saemix(list(binary.fit,binary.fit2),method="lin"),"Linearisation is not appropriate for computing likelihoods in discrete models.")
+  expect_warning(compare.saemix(binary.fit,binary.fit2,method="lin"),"Linearisation is not appropriate for computing likelihoods in discrete models.")
 })
 
 test_that("Appropriate use of BIC.covariate",{
