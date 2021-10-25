@@ -1,8 +1,9 @@
-\chapter{S4 classes} \label{chapter_classS4}
+
+\section{Classes in the saemix package} \label{sec:techystuff}
+
+\subsection{A very short introduction to S4 classes} \label{sec:introS4}
 
 This section is in progress. More information on S4 classes and \R packages can be found in tutorials on the Web. I used extensively the following manual~\cite{Genolini}.
-
-\section{A very short introduction to S4 classes} \label{sec:introS4}
 
 \monolix~has been programmed using the S4 classes in \R. S4 classes implement Object oriented programming (OOP) in \R, allowing to construct modular pieces of code which can be used as black boxes for large systems. Most packages in the base library and many contributed packages use the former class system, called S3. However, S4 classes are a more traditional and complete object oriented system including type checking and multiple dispatching. S4 is implemented in the methods package in base \R.
 
@@ -20,9 +21,7 @@ obj["slot"]<-3
 \end{verbatim}
 would in this case produce an error.
 
-\section{S4 classes used in \monolix} \label{sec:saemixS4}
-
-\subsection{S4 objects}
+\subsection{S4 classes used in \monolix} \label{sec:saemixS4}
 
 \subsubsection{Visible S4 objects}
 

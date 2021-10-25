@@ -252,7 +252,7 @@ setMethod(
 #' @param nb.sim number of simulations to perform to produce the VPC plots or
 #' compute npde. Defaults to 1000
 #' @param nb.simpred number of simulations used to compute mean predictions
-#' (ppred element), taken as a random sample within the nb.sim simulations used
+#' (ypred element), taken as a random sample within the nb.sim simulations used
 #' for npde
 #' @param ipar.lmcmc number of iterations required to assume convergence for
 #' the conditional estimates. Defaults to 50
@@ -704,7 +704,7 @@ setMethod("showall","SaemixObject",
 #' 
 #' @param object an SaemixObject
 #' @param newdata an optional dataframe for which predictions are desired
-#' @param type the type of predictions (ipred= individual, ppred= mean of the population predictions, ypred=population predictions obtained with the population estimates, icpred=conditional predictions). With newdata, individual parameters can be estimated if the new data contains observations; otherwise, predictions correspond to the population predictions ypred, and type is ignored.
+#' @param type the type of predictions (ipred= individual, ppred=population predictions obtained with the population estimates, ypred=mean of the population predictions, icpred=conditional predictions). With newdata, individual parameters can be estimated if the new data contains observations; otherwise, predictions correspond to the population predictions ppred, and type is ignored.
 #' @param se.fit whether the SE are to be taken into account in the model predictions
 #' @param ... additional arguments passed on to fitted()
 #' 
@@ -740,7 +740,7 @@ setMethod(f="predict",
               if(type %in% c("ipred","icpred")) {
                 if(length(grep(saemix.data["name.response"],colnames(newdata)))==0) {
                   if(object["options"]$warnings) cat("Observed",saemix.data["name.response"],"in the new subjects are required to estimate individual parameters. The population predictions will be computed instead.\n")
-                  type<-"ypred"
+                  type<-"ppred"
                 }
               }
               has.y<-grep(saemix.data["name.response"],colnames(newdata))
@@ -792,11 +792,11 @@ saemix.predict<-function(object) {
   saemix.res["icwres"]<-icwres
   # Population predictions using the population parameters [ f(mu) ]
   psiM<-transphi(saemix.res["mean.phi"],object["model"]["transform.par"])
-  ypred<-object["model"]["model"](psiM,index,xind)
-  saemix.res["ypred"]<-unname(ypred)
+  ppred<-object["model"]["model"](psiM,index,xind)
+  saemix.res["ppred"]<-unname(ppred)
   if(length(saemix.res["predictions"])==0) 
-    saemix.res["predictions"]<-data.frame(ypred=ypred,ipred=ipred,icpred=icond.pred,ires=ires,iwres=iwres,icwres=icwres) else {
-      saemix.res["predictions"]$ypred<-ypred
+    saemix.res["predictions"]<-data.frame(ppred=ppred,ipred=ipred,icpred=icond.pred,ires=ires,iwres=iwres,icwres=icwres) else {
+      saemix.res["predictions"]$ppred<-ppred
       saemix.res["predictions"]$ipred<-ipred
       saemix.res["predictions"]$icpred<-icond.pred
       saemix.res["predictions"]$ires<-ires
@@ -1011,7 +1011,7 @@ setMethod(f="plot",
     id.map<-match(plot.type,c("randeff.vs.covariates","parameters.vs.covariates"))
     id.sim<-match(plot.type, c("vpc"))
     id.res<-match(plot.type, c("npde","residuals.scatter", "residuals.distribution"))
-    if(x@prefs$which.poppred=="ypred") id.sim<-c(id.sim,match(plot.type, c("population.fit", "both.fit")))
+    if(x@prefs$which.poppred=="ppred") id.sim<-c(id.sim,match(plot.type, c("population.fit", "both.fit")))
     id.pred<-id.pred[!is.na(id.pred)]
     id.sim<-id.sim[!is.na(id.sim)]
     id.map<-id.map[!is.na(id.map)]

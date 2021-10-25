@@ -184,7 +184,7 @@ llis.saemix<-function(saemixObject) {
 #' The likelihood of the observations is estimated using Gaussian Quadrature
 #' (see documentation).
 #' 
-#' @aliases llqg.saemix ggq.mlx
+#' @aliases llqg.saemix gqg.mlx
 #' @param saemixObject an object returned by the \code{\link{saemix}} function
 #' @return the log-likelihood estimated by Gaussian Quadrature
 #' @author Emmanuelle Comets <emmanuelle.comets@@inserm.fr>, Audrey Lavenu,

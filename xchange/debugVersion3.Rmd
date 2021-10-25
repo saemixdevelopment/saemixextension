@@ -187,6 +187,8 @@ if(is(xmod, "try-error")) cat("Problem in",namtest)
   - added some messages for empty objects or not available types
 - **TODO**
   - resid() or fitted() don't work, I need to use resid.SaemixRes, but I should be able to dispatch based on argument type like vcov
+- **BUGFIX**
+  - clarified the definitions of ypred and ppred (some mix-up had occurred): ppred=f(E(psi)) (predictions using the population parameters) and ypred=E(f(psi)) (expectancy of the individual predictions)
 
 ```{r SaemixResClass, warnings=FALSE}
 xres<-new(Class="SaemixRes")

@@ -10,6 +10,7 @@ saemixControl(
   ll.is = TRUE,
   ll.gq = FALSE,
   nbiter.saemix = c(300, 100),
+  nbiter.sa = NA,
   nb.chains = 1,
   fix.seed = TRUE,
   seed = 23456,
@@ -19,7 +20,7 @@ saemixControl(
   nbdisplay = 100,
   displayProgress = TRUE,
   nbiter.burn = 5,
-  nbiter.mcmc = c(2, 2, 2),
+  nbiter.mcmc = c(2, 2, 2, 0),
   proba.mcmc = 0.4,
   stepsize.rw = 0.4,
   rw.init = 0.5,
@@ -49,10 +50,15 @@ for the parameters. Defaults to TRUE. The linearised approximation to the log-li
 \item{ll.gq}{a boolean specifying whether to estimate the log-likelihood by Gaussian quadrature. Defaults to FALSE}
 
 \item{nbiter.saemix}{nb of iterations in each step (a vector containing 2
-elements)}
+elements, nbiter.saemix\link{1} for the exploration phase of the algorithm (K1) and nbiter.saemix\link{2}
+for the smoothing phase (K2))}
 
-\item{nb.chains}{nb of chains to be run in parallel in the MCMC algorithm.
-Defaults to 1.}
+\item{nbiter.sa}{nb of iterations subject to simulated annealing (defaults to nbiter.saemix\link{1}/2,
+will be cut down to K1=nbiter.saemix\link{1} if greater than that value). We recommend to stop
+simulated annealing before the end of the exploration phase (nbiter.saemix\link{1}).}
+
+\item{nb.chains}{nb of chains to be run in parallel in the MCMC algorithm
+(defaults to 1)}
 
 \item{fix.seed}{TRUE (default) to use a fixed seed for the random number
 generator. When FALSE, the random number generator is initialised using a
@@ -86,12 +92,12 @@ silently. Defaults to TRUE}
 
 \item{proba.mcmc}{probability of acceptance}
 
-\item{stepsize.rw}{stepsize for kernels q2 and q3. Defaults to 0.4}
+\item{stepsize.rw}{stepsize for kernels q2 and q3 (defaults to 0.4)}
 
-\item{rw.init}{initial variance parameters for kernels. Defaults to 0.5}
+\item{rw.init}{initial variance parameters for kernels (defaults to 0.5)}
 
 \item{alpha.sa}{parameter controlling cooling in the Simulated Annealing
-algorithm. Defaults to 0.97}
+algorithm (defaults to 0.97)}
 
 \item{nnodes.gq}{number of nodes to use for the Gaussian quadrature when
 computing the likelihood with this method (defaults to 12)}
@@ -146,7 +152,6 @@ These elements are used in subsequent functions and are not meant to be used
 directly.
 }
 \examples{
-
 
 # All default options
 saemix.options<-saemixControl()

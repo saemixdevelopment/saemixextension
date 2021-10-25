@@ -9,6 +9,8 @@
 \method{vcov}{SaemixRes}(object, ...)
 
 \method{vcov}{SaemixObject}(object, ...)
+
+\method{vcov}{SaemixObject}(object, ...)
 }
 \arguments{
 \item{object}{a fitted object from a call to saemix}

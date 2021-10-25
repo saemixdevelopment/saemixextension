@@ -11,7 +11,7 @@ compare.saemix(..., method = c("is", "lin", "gq"))
 
 \item{method}{The method used for computing the likelihood : "is" (Importance Sampling),
 "lin" (Linearisation) or "gq" (Gaussian quadrature). The default is to use importance sampling "is".
-If the requested likelihood is not available in all model objects, the method stops with an error.}
+If the requested likelihood is not available in all model objects, the method stops with a warning.}
 }
 \value{
 A matrix of information criteria is returned, with at least two columns containing respectively
@@ -72,7 +72,9 @@ saemix.fit3<-saemix(saemix.model3,saemix.data,saemix.options)
 
 compare.saemix(saemix.fit1, saemix.fit2, saemix.fit3)
 compare.saemix(saemix.fit1, saemix.fit2, saemix.fit3, method = "lin")
-compare.saemix(saemix.fit1, saemix.fit2, saemix.fit3, method = "gq")
+# We would need to run llgq.saemix first to make this work
+# compare.saemix(saemix.fit1, saemix.fit2, saemix.fit3, method = "gq")
+
 
 }
 \references{
@@ -80,7 +82,7 @@ Delattre, M., Lavielle, M. and Poursat, M.A. (2014) A note on BIC in mixed effec
 Electronic Journal of Statistics 8(1) p. 456-475
 }
 \author{
-Emmanuelle Comets \href{mailto:emmanuelle.comets@inserm.fr}{emmanuelle.comets@inserm.fr}, Maud Delattre
+Maud Delattre
 }
 \keyword{AIC,}
 \keyword{BIC}

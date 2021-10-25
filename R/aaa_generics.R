@@ -117,7 +117,7 @@ setGeneric(name="showall",
 #' @seealso \code{\link{SaemixData}},\code{\link{SaemixModel}},
 #' \code{\link{SaemixObject}}, \code{\link{saemixControl}},
 #' \code{\link{plot.saemix}}
-#' @references Comets  E, Lavenu A, Lavielle M. Parameter estimation in nonlinear mixed effect models using saemix, an R implementation of the SAEM algorithm. Journal of Statistical Software 80, 3 (2017), 1-41.
+#' @references Comets E, Lavenu A, Lavielle M. Parameter estimation in nonlinear mixed effect models using saemix, an R implementation of the SAEM algorithm. Journal of Statistical Software 80, 3 (2017), 1-41.
 #' 
 #' Kuhn E, Lavielle M. Maximum likelihood estimation in nonlinear mixed effects models. Computational Statistics and Data Analysis 49, 4 (2005), 1020-1038.
 #' 
@@ -366,7 +366,7 @@ NULL
 #' These are not to be called by the user.
 #' 
 #' @name saemix.internal
-#' @aliases .First.lib ssq error.typ
+#' @aliases .First.lib
 #' @keywords internal
 NULL
 
@@ -405,15 +405,15 @@ NULL
 #' \item{Weight}{ weight of the subject (kg).  } 
 #' \item{Sex}{ gender (simulated, 0=male, 1=female} }
 #' 
-#' @source Boeckmann, A. J., Sheiner, L. B. and Beal, S. L. (1994),
+#' @source Boeckmann AJ, Sheiner LB, Beal SL (1994),
 #' \emph{NONMEM Users Guide: Part V}, NONMEM Project Group, University of
 #' California, San Francisco.
 #'
-#' @references Davidian, M. and Giltinan, D. M. (1995) \emph{Nonlinear Models for Repeated
+#' @references Davidian M, Giltinan DM (1995) \emph{Nonlinear Models for Repeated
 #' Measurement Data}, Chapman & Hall (section 5.5, p. 145 and section 6.6, p.
 #' 176)
 #'
-#' Pinheiro, J. C. and Bates, D. M. (2000) \emph{Mixed-effects Models in S and
+#' Pinheiro JC, Bates DM (2000) \emph{Mixed-effects Models in S and
 #' S-PLUS}, Springer (Appendix A.29)
 #' 
 #' @examples
@@ -500,7 +500,7 @@ NULL
 #' @details PD1.saemix contains the data simulated with a gender effect, beta=0.3.
 #' PD2.saemix contains the data simulated without a gender effect, beta=0.
 #' 
-#' @references Girard P., Mentre F. Comparison of Algorithms Using Simulated Data Sets and Blind Analysis workshop, Lyon, France, September 2004. 
+#' @references Girard P, Mentre F (2004). Comparison of Algorithms Using Simulated Data Sets and Blind Analysis workshop, Lyon, France. 
 #' 
 #' @examples
 #' data(PD1.saemix)
@@ -572,7 +572,7 @@ NULL
 #'  We use an linear model for this data:
 #'  y_ij = Base_i + slope_i x_ij +epsilon_ij 
 #' 
-#' @references Pinheiro, J. C. and Bates, D. M. (2000), \emph{Mixed-Effects Models in S and S-PLUS}, Springer, New York.  (Appendix A.19)
+#' @references Pinheiro JC, Bates DM (2000) \emph{Mixed-effects Models in S and S-PLUS}, Springer, New York (Appendix A.19)
 #' 
 #' @examples
 #' data(oxboys.saemix)
@@ -627,7 +627,7 @@ NULL
 #' @details An exponential model was assumed to describe the weight gain with time:
 #'  y_ij = A_i (1- B_i exp( - K_i t_ij)) +epsilon_ij 
 #' 
-#' @references Pinheiro, J. C. and Bates, D. M. (2000), \emph{Mixed-Effects Models in S and S-PLUS}, Springer, New York.  (Appendix A.19)
+#' @references Pinheiro JC, Bates DM (2000) \emph{Mixed-effects Models in S and S-PLUS}, Springer, New York (Appendix A.19)
 #' 
 #' @examples
 #' data(cow.saemix)
@@ -754,4 +754,132 @@ NULL
 #' }
 #' #' @keywords datasets
 NULL
+
+#' Toenail data
+#'
+#' The \code{toenail.saemix} data are from a multicenter study comparing two oral treatments for toe-nail infection, including information for 294 patients measured at 7 weeks, comprising a total of 1908 measurements. The outcome binary variable "onycholysis" indicates the degree of separation of the nail plate from the nail-bed (none or mild versus moderate or severe). Patients were evaluated at baseline (week 0) and at weeks 4, 8, 12, 24, 36, and 48 thereafter.
+#' @docType data
+#' @name toenail.saemix
+#' 
+#' @usage toenail.saemix
+#' 
+#' @format This data frame contains the following columns: 
+#' \describe{
+#' \item{id}{subject index in file}
+#' \item{time}{time of measurement (in months)} 
+#' \item{y}{degree of onycholysis (0 if none or mild, 1 if moderate or severe)} 
+#' \item{treatment}{treatment indicator (1=Treatment A, 0= Treatment B)}
+#' \item{visit}{visit number (visit numbers 1-7 correspond to scheduled visits at 0, 4, 8, 12, 24, 36, and 48 weeks)}
+#' }
+#' #'   
+#' @details The data in the \code{toenail.saemix} was copied from the Toenail dataset provided by the prLogistic package. Different models
+#' and analyses have been performed to describe this dataset in Molenberg and Verbeke (2000).
+#' 
+#' @source prLogistic package in R
+#' 
+#' @references De Backer M, De Vroey C, Lesaffre E, Scheys I, De Keyser P (1998). 
+#' Twelve weeks of continuous oral therapy for toenail onychomycosis caused by dermatophytes: 
+#' A double-blind comparative trial of terbinafine 250 mg/day versus itraconazole 200 mg/day. 
+#' Journal of the American Academy of Dermatology, 38, 57-63.
+#' 
+#' Lesaffre E, Spiessens B (2001). On the effect of the number of quadrature points in a logistic random-effects model: An example. 
+#' Journal of the Royal Statistical Society, Series C, 50, 325-335.
+#'
+#' Verbeke G, Molenberghs G (2000). Linear mixed models for longitudinal data, Springer, New York.
+#' 
+#' Rabe-Hesketh S, Skrondal A (2008). Multilevel and Longitudinal Modeling Using Stata. Mahwah, NJ: Lawrence Erlbaum Associates. Second Edition.
+#' 
+#' #' @examples
+#' data(toenail.saemix)
+#' 
+#' #' @keywords datasets
+NULL
+
+
+#' NCCTG Lung Cancer Data, in SAEM format
+#'
+#' The \code{lung.saemix} contains survival data in patients with advanced lung cancer from the North Central Cancer Treatment Group. 
+#' Performance scores rate how well the patient can perform usual daily activities. This data is available in the survival library for R
+#' and has been reformatted here for use in saemix (see details).
+#' 
+#' @docType data
+#' @name lung.saemix
+#' 
+#' @usage lung.saemix
+#' 
+#' @format This data frame contains the following columns: 
+#' \describe{
+#' \item{id}{subject index in file}
+#' \item{inst}{institution code} 
+#' \item{time}{observation time since the beginning of follow-up} 
+#' \item{status}{0=alive, 1=dead} 
+#' \item{cens}{0=observed, 1=censored}
+#' \item{sex}{patient gender (0=male, 1=female)} 
+#' \item{age}{age in years} 
+#' \item{ph.ecog}{ECOG performance score as rated by the physician. 0=asymptomatic, 
+#' 1= symptomatic but completely ambulatory, 2= in bed <50% of the day, 3= in bed > 50% of the day but not bedbound, 
+#' 4 = bedbound} 
+#' \item{ph.karno}{Karnofsky performance score (bad=0-good=100) rated by physician (%)} 
+#' \item{pat.karno}{Karnofsky performance score (bad=0-good=100) rated by patient (%)} 
+#' \item{meal.cal}{calories consumed at meals (cal)} 
+#' \item{wt.loss}{weight loss in last six months (pounds)} 
+#' }
+#'   
+#' @details The data in the \code{lung.saemix} was reformatted from the lung cancer dataset (see data(cancer, package="survival")). 
+#' Patients with missing age, sex, institution or physician assessments were removed from the dataset. Status was recoded as 1 for death and 0 for
+#' censored event, and a censoring column was added to denote whether the patient was dead or alive at the time of the last observation.
+#' For saemix, a line at time=0 was added for all subjects. Finally, subjects were numbered consecutively from 0 to 1.
+#' 
+#' @source Terry Therneau from the survival package in R
+#' 
+#' @references Loprinzi CL, Laurie JA, Wieand HS, Krook JE, Novotny PJ, Kugler JW, et al. (1994).
+#' Prospective evaluation of prognostic variables from patient-completed questionnaires. 
+#' North Central Cancer Treatment Group. Journal of Clinical Oncology. 12(3):601-7.
+#' 
+#' @examples
+#' data(lung.saemix)
+#' 
+#' saemix.data<-saemixData(name.data=lung.saemix,header=TRUE,name.group=c("id"),
+#' name.predictors=c("time","status","cens"),name.response=c("status"),
+#' name.covariates=c("age", "sex", "ph.ecog", "ph.karno", "pat.karno", "wt.loss","meal.cal"),
+#' units=list(x="days",y="",covariates=c("yr","","-","%","%","cal","pounds")))
+#' weibulltte.model<-function(psi,id,xidep) {
+#'   T<-xidep[,1]
+#'   y<-xidep[,2] # events (1=event, 0=no event)
+#'   cens<-which(xidep[,3]==1) # censoring times (subject specific)
+#'   init <- which(T==0)
+#'   lambda <- psi[id,1] # Parameters of the Weibull model
+#'   beta <- psi[id,2]
+#'   Nj <- length(T)
+#'   ind <- setdiff(1:Nj, append(init,cens)) # indices of events
+#'   hazard <- (beta/lambda)*(T/lambda)^(beta-1) # H'
+#'   H <- (T/lambda)^beta # H
+#'   logpdf <- rep(0,Nj) # ln(l(T=0))=0
+#'   logpdf[cens] <- -H[cens] + H[cens-1] # ln(l(T=censoring time))
+#'   logpdf[ind] <- -H[ind] + H[ind-1] + log(hazard[ind]) # ln(l(T=event time))
+#'   return(logpdf)
+#' }
+#' saemix.model<-saemixModel(model=weibulltte.model,description="time model",modeltype="likelihood",
+#'                 psi0=matrix(c(1,2),ncol=2,byrow=TRUE,dimnames=list(NULL,  c("lambda","beta"))),
+#'                 transform.par=c(1,1),covariance.model=matrix(c(1,0,0,0),ncol=2, byrow=TRUE))
+#' saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
+#' \donttest{
+#' tte.fit<-saemix(saemix.model,saemix.data,saemix.options)
+#' }
+#' # The fit from saemix using the above Weibull model may be compared to the non-parametric KM estimate
+#' \dontrun{
+#' library(survival)
+#'   lung.surv<-lung.saemix[lung.saemix$time>0,]
+#'   lung.surv$status<-lung.surv$status+1
+#'   Surv(lung.surv$time, lung.surv$status) # 1=censored, 2=dead
+#'   f1 <- survfit(Surv(time, status) ~ 1, data = lung.surv)
+#'   xtim<-seq(0,max(lung.saemix$time), length.out=200)
+#'   estpar<-tte.fit@results@fixed.effects
+#'   ypred<-exp(-(xtim/estpar[1])^(estpar[2]))
+#'   plot(f1, xlab = "Days", ylab = "Overall survival probability")
+#'   lines(xtim,ypred, col="red",lwd=2)
+#' }
+#' #' @keywords datasets
+NULL
+
 

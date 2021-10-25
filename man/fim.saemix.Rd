@@ -49,14 +49,14 @@ saemix.data<-saemixData(name.data=theo.saemix,header=TRUE,sep=" ",na=NA,
   units=list(x="hr",y="mg/L",covariates=c("kg","-")), name.X="Time")
 
 model1cpt<-function(psi,id,xidep) { 
-   dose<-xidep[,1]
-   tim<-xidep[,2]  
-   ka<-psi[id,1]
-   V<-psi[id,2]
-   CL<-psi[id,3]
-   k<-CL/V
-   ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
-   return(ypred)
+	  dose<-xidep[,1]
+	  tim<-xidep[,2]  
+	  ka<-psi[id,1]
+	  V<-psi[id,2]
+	  CL<-psi[id,3]
+	  k<-CL/V
+	  ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
+	  return(ypred)
 }
 
 saemix.model<-saemixModel(model=model1cpt,

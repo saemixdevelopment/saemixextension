@@ -9,9 +9,9 @@
 replaceData.saemixObject(saemixObject, newdata)
 }
 \arguments{
-\item{newdata}{a dataframe containing data}
+\item{saemixObject}{an SaemixObject object}
 
-\item{object}{an saemixObject object}
+\item{newdata}{a dataframe containing data}
 }
 \value{
 an object of class \code{"\linkS4class{SaemixObject}"}. The population parameters are retained but all the predictions, individual parameters and statistical criteria are removed. The function attempts to extract the elements entering the statistical model (subject id, predictors, covariates and response).

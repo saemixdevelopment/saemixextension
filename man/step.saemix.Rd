@@ -77,7 +77,7 @@ Delattre, M. and Poursat, M.A. (2017) BIC strategies for model choice in a popul
 (arXiv:1612.02405)
 }
 \author{
-Emmanuelle Comets \href{mailto:emmanuelle.comets@inserm.fr}{emmanuelle.comets@inserm.fr}, Maud Delattre
+Maud Delattre
 }
 \keyword{BIC.covariate}
 \keyword{and}

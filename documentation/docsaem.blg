@@ -1,45 +1,46 @@
-This is BibTeX, Version 0.99c (TeX Live 2009/Debian)
+This is BibTeX, Version 0.99d (TeX Live 2017/Debian)
+Capacity: max_strings=100000, hash_size=100000, hash_prime=85009
 The top-level auxiliary file: docsaem.aux
 The style file: acm.bst
 Database file #1: docsaem.bib
-You've used 32 entries,
+You've used 38 entries,
             2253 wiz_defined-function locations,
-            723 strings with 9178 characters,
-and the built_in function-call counts, 9649 in all, are:
-= -- 954
-> -- 459
+            764 strings with 10540 characters,
+and the built_in function-call counts, 11735 in all, are:
+= -- 1166
+> -- 551
 < -- 0
-+ -- 194
-- -- 158
-* -- 768
-:= -- 1634
-add.period$ -- 98
-call.type$ -- 32
-change.case$ -- 168
++ -- 236
+- -- 190
+* -- 952
+:= -- 1972
+add.period$ -- 116
+call.type$ -- 38
+change.case$ -- 202
 chr.to.int$ -- 0
-cite$ -- 32
-duplicate$ -- 301
-empty$ -- 757
-format.name$ -- 158
-if$ -- 1941
+cite$ -- 38
+duplicate$ -- 355
+empty$ -- 922
+format.name$ -- 190
+if$ -- 2363
 int.to.chr$ -- 0
-int.to.str$ -- 32
-missing$ -- 29
-newline$ -- 165
-num.names$ -- 64
-pop$ -- 136
+int.to.str$ -- 38
+missing$ -- 35
+newline$ -- 195
+num.names$ -- 76
+pop$ -- 158
 preamble$ -- 1
-purify$ -- 143
+purify$ -- 171
 quote$ -- 0
-skip$ -- 171
+skip$ -- 202
 stack$ -- 0
-substring$ -- 602
-swap$ -- 69
+substring$ -- 791
+swap$ -- 81
 text.length$ -- 0
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 124
+type$ -- 148
 warning$ -- 0
-while$ -- 100
-width$ -- 34
-write$ -- 325
+while$ -- 123
+width$ -- 40
+write$ -- 385

@@ -726,6 +726,12 @@ predict.SaemixModel<-function(object, predictors, psi=NA, id=NA) {
   ypred<-object["model"](psi, id, xidep)
   return(list(param=cbind(id=1:dim(psi)[1],psi), predictions=data.frame(id=idkeep, xidep, pred=unname(ypred))))
 }
+
+
+####################################################################################
+####			SaemixModel & SaemixData class - method to plot	predictions from a model for the data in a dataset		####
+####################################################################################
+
 #' Plot model predictions for a new dataset
 #' 
 #' @param smx.model an SaemixModel object
@@ -750,10 +756,6 @@ predict.SaemixModel<-function(object, predictors, psi=NA, id=NA) {
 #' @examples 
 #' # TODO
 #' @export
-
-####################################################################################
-####			SaemixModel & SaemixData class - method to plot	predictions from a model for the data in a dataset		####
-####################################################################################
 
 plot.saemixModel <- function(smx.model, smx.data, psi=NA) {
   if(smx.model@modeltype!="likelihood") {
@@ -795,7 +797,7 @@ plot.saemixModel <- function(smx.model, smx.data, psi=NA) {
   colnames(gdat)[colnames(gdat)==smx.data@name.response]<-"y"
   colnames(gdat)[colnames(gdat)==smx.data@name.group]<-"id"
   
-  g1<-ggplot(data=gdat, aes(x=x, y=y, group=id)) + geom_point() + geom_line(data=gpred,aes(x=x, y=y)) + facet_wrap(.~id, nrow=3, ncol=4) + 
+  g1<-ggplot(data=gdat, aes(x=.data$x, y=.data$y, group=.data$id)) + geom_point() + geom_line(data=gpred,aes(x=.data$x, y=.data$y)) + facet_wrap(.~id, nrow=3, ncol=4) + 
     labs(x=smx.data@name.X, y=smx.data@name.response) + theme_bw()
   return(g1)
 } 

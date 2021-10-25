@@ -88,7 +88,7 @@ theo.fit3<-saemix.fit3
 
 ## Binomial data and model
 
-saemix.data.bin<-saemixData(name.data=file.path(datDir,"simulatedBinary.txt"),
+saemix.data.bin<-saemixData(name.data=file.path(datDir2,"simulatedBinary.txt"),
                         name.group=c("id"),name.predictors=c("time","y"), 
                         name.covariates=c("risk"),name.X=c("time"))
 

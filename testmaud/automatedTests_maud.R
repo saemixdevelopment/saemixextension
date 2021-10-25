@@ -8,6 +8,7 @@ saemixDir<-"/Users/mdelattre/Documents/Boulot/Recherche/Travaux packages R/NewSa
 
 progDir<-file.path(saemixDir,"R")
 datDir<-file.path(saemixDir,"data")
+datDir2<-file.path(saemixDir,"testbelhal")
 
 setwd(progDir)
 repo.files <- list.files()

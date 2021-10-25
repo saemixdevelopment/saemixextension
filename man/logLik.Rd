@@ -6,46 +6,54 @@
 \alias{logLik.SaemixObject}
 \alias{AIC.SaemixObject}
 \alias{BIC.SaemixObject}
-\title{Extract likelihood from an SaemixObject resulting from a call to saemix}
+\alias{BIC.covariate}
+\title{Extract likelihood from a saemixObject resulting from a call to saemix}
 \usage{
 \method{logLik}{SaemixObject}(object, method = c("is", "lin", "gq"), ...)
 
 \method{AIC}{SaemixObject}(object, method = c("is", "lin", "gq"), ..., k = 2)
 
 \method{BIC}{SaemixObject}(object, method = c("is", "lin", "gq"), ...)
+
+\method{BIC}{covariate}(object, method = c("is", "lin", "gq"), ...)
 }
 \arguments{
 \item{object}{name of an SaemixObject object}
 
-\item{method}{character string, one of c("is","lin","gq"), to select one of the available approximations to the log-likelihood (is: Importance Sampling; lin: linearisation and gq: Gaussian Quadrature).}
+\item{method}{character string, one of c("is","lin","gq"), to select one of the available approximations to the log-likelihood (is: Importance Sampling; lin: linearisation and gq: Gaussian Quadrature). See documentation for details}
 
 \item{...}{additional arguments}
 
 \item{k}{numeric, the penalty per parameter to be used; the default k = 2 is the classical AIC}
 }
 \value{
-Returns the selected statistical criterion (log-likelihood, AIC, BIC) extracted from the SaemixObject, computed with the 'method' argument if given.
+Returns the selected statistical criterion (log-likelihood, AIC, BIC) extracted from the SaemixObject, computed with the 'method' argument if given (defaults to IS).
 }
 \description{
-The likelihood in saemix can be computed by one of three methods: linearisation (linearisation of the model), importance sampling (stochastic integration) and gaussian quadrature (numerical integration). The linearised likelihood is obtained as a byproduct of the computation of the Fisher Information Matrix (fim=TRUE in the control options given to the saemix function).
-If no method argument is given, this function will attempt to extract the likelihood computed by importance sampling (method="is").
-If the requested likelihood is not present in the object, an error message is given.
+The likelihood in saemix can be computed by one of three methods: linearisation (linearisation of the model), importance sampling (stochastic integration) and gaussian quadrature (numerical integration). The linearised likelihood is obtained as a byproduct of the computation of the Fisher Information Matrix (argument FIM=TRUE in the options given to the saemix function).
+If no method argument is given, this function will attempt to extract the likelihood computed by importance sampling (method="is"), unless the object contains the likelihood computed by linearisation, in which case the function will extract this component instead.
+If the requested likelihood is not present in the object, it will be computed and aded to the object before returning.
+}
+\details{
+BIC.covariate implements the computation of the BIC from Delattre et al. 2014.
 }
 \references{
 Comets  E, Lavenu A, Lavielle M. Parameter estimation in nonlinear mixed effect models using saemix, an R implementation of the SAEM algorithm. Journal of Statistical Software 80, 3 (2017), 1-41.
 
 Kuhn E, Lavielle M. Maximum likelihood estimation in nonlinear mixed effects models. Computational Statistics and Data Analysis 49, 4 (2005), 1020-1038.
 
-Comets E, Lavenu A, Lavielle M. SAEMIX, an R version of the SAEM algorithm. 20th meeting of the Population Approach Group in Europe, Athens, Greece (2011), Abstr 2173.
+Delattre M. Lavielle M. Poursat MA. A note on BIC in mixed-effects models. Electronic Journal of Statistics (2014) 8, 456-475.
 }
 \seealso{
-\link{AIC}, \link{BIC}, \link{saemixControl}, \link{saemix}, \link{llis.saemix}], \link{llgq.saemix}, \link{fim.saemix}
+\code{\link{AIC}},\code{\link{BIC}}, \code{\link{saemixControl}}, \code{\link{saemix}}
 }
 \author{
 Emmanuelle Comets \email{emmanuelle.comets@inserm.fr}
 
 Audrey Lavenu
 
-Marc Lavielle.
+Marc Lavielle
+
+Maud Delattre
 }
 \keyword{methods}

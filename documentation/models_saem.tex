@@ -1,0 +1,212 @@
+\section{The non-linear mixed effects model} \label{sec:models}
+
+\subsection{Model for the observations} \label{sec:longitudinal}
+
+\subsubsection{Longitudinal outcome} \label{sec:longitudinalCont}
+
+Detailed and complete presentations of the non-linear mixed effects model can be found in \cite{Davidian95, davgil1, PinheiroBates00}. See also the many references therein.
+
+We consider the following general non-linear mixed effects model for continuous outputs:
+\begin{equation}
+\label{nlme}
+y_{ij}=f(x_{ij},\psigi)+ g(x_{ij},\psigi,\xi)\varepsilon_{ij} \ \ , \ 1\leq i \leq N \ \ ,
+\ \ 1 \leq j \leq n_i
+\end{equation}
+Here,
+\begin{itemize}
+\item $y_{ij}\in \Rset$ is the $j$th observation of subject $i$,
+\item $N$ is the number of subjects,
+\item $n_i$ is the number of observations of subject $i$,
+\item the regression variables, or design variables, ($x_{ij}$) are assumed to be known, $x_{ij}\in
+\Rset^\nreg$,
+\item for subject $i$, the vector $\psigi=(\psigil \, ; \, 1\leq \ell \leq \npsi) \in \Rset^\npsi$ is a vector of $\npsi$ individual parameters:
+\begin{equation} \label{prior}
+\psigi=H(\fixed_effect,\covariate_i,\etagi)
+\end{equation}
+where
+\begin{itemize}
+\item $\covariate_i =(\covariate_{im} \, ; \, 1\leq m \leq \ncov)$ is a known vector of $\ncov$ covariates,
+\item $\fixed_effect$ is an unknown vector of fixed effects of size $\nbeta$,
+\item $\etagi$ is an unknown vector of normally distributed random effects of size $\neta$: 
+$$\etagi \sim_{i.i.d.} {\cal N}(0,\IIV)$$
+\end{itemize}
+\item the residual errors $(\varepsilon_{ij})$  are random variables with mean zero and variance 1,
+\item the residual error model is defined by the function $g$ and some parameters $\xi$.
+\end{itemize}
+
+\subsubsection*{The residual error model} % \label{sec:residualErrorModel}
+The within-group errors ($\varepsilon_{ij}$)  are  supposed  to be  Gaussian random variables  with mean  zero and variance $1$.
+Furthermore, we suppose that the $\varepsilon_{ij}$ and the $\eta_{i}$ are mutually independent.
+
+Different error models can be used in \monolix~3.0:
+\begin{itemize}
+\item the constant error model assumes that $g=a$ and $\xi=a$,
+\item the proportional error model assumes that $g=b\,f$ and $\xi=b$,
+\item a combined error model assumes that $g=a+b\,f$ and $\xi=(a,b)$,
+%\item an alternative combined error model assumes that $g=\sqrt{a^2+b^2\,f^2}$ and $\xi=(a,b)$,
+%\item a combined error model with power assumes that $g=a+b\,f^c$ and $\xi=(a,b,c)$,
+%\item \ldots
+\end{itemize}
+
+Furthermore, all these error models can be applied to some transformation of the data:
+\begin{eqnarray}\label{def_t}
+t(y_{ij})=t(f(x_{ij},\psigi))+ g(x_{ij},\psigi,\xi)\varepsilon_{ij}
+\end{eqnarray}
+
+In the current version of \monolix, the exponential error model is also available: it assumes that $y>0$ and that:
+\begin{eqnarray*}
+t(y) &=& \log(y) \\
+y&=&f e^{g\varepsilon}
+\end{eqnarray*}
+
+\subsubsection{Discrete outcome}
+
+Categorical responses can take a finite number of possibly values, and we define the distribution $\mathcal{D}_y$ as the set of probabilities for each value, summing up to 1, so that the j$^{\rm th}$ observation $y_{ij}$ in subject $i$ follows $\mathcal{D}_y\left(x_{ij}; \psi_i, \xi \right)$. 
+
+\paragraph{Binary data:} An example is binary response, where we model the probability of the response being 1, for exemple through the logistic model:
+$$ p(y_{ij} | \psi_i) = \dfrac{e^{f(x_{ij}, \psi_i)}}{1+e^{f(x_{ij}, \psi_i)}} $$
+where $f(x_{ij}, \psi_i)$ is a function of the individual parameters and the design variables. $f$ is most often a linear function, and the model is equivalently written through the logit of p, where $logit(p) = \ln \frac{p}{1-p}$, for example:
+$$ logit(p(y_{ij} | \psi_i)) = \alpha_i + \beta_i x_{ij} $$
+
+% Extending to $K$ ordered categories: $c_1 \preceq c_2 \preceq  ... \preceq c_K$, we can use models such as the continuous odds ratio to increment the cumulative probabilities:
+% 
+% $$\begin{cases} logit(\mathbb{P}(y_{it} \preceq c_1)) = \alpha_{i1} + \beta_i t \\
+% logit(\mathbb{P}(y_{it} \preceq c_2)) = \alpha_{i1} + \alpha_{i2} + \beta_i t \\
+% \vdots \\
+% logit(\mathbb{P}(y_{it} \preceq c_{K-1})) = \alpha_{i1} + ... + \alpha_{iK-1} + \beta_i t \\
+% \end{cases}
+% \quad \text{and} \quad \begin{cases} \mathbb{P}(y_{it} = c_1) = \mathbb{P}(y_{it} \preceq c_1) \\
+% \mathbb{P}(y_{it} = c_2) = \mathbb{P}(y_{it} \preceq c_2) - \mathbb{P}(y_{it} \preceq c_1) \\
+% \vdots \\
+% \mathbb{P}(y_{it} = c_K) = 1 - \mathbb{P}(y_{it} \preceq c_{K-1})\\
+% \end{cases}
+% $$
+
+\paragraph{Categorical data:} Assume now that the observed data takes its values in a fixed and finite set of nominal categories $\{c_1, c_2,\ldots , c_K\}$. Considering the observations $(y_{ij},\, 1 \leq j \leq n_i)$ for any individual i as a sequence of conditionally independent random variables, the model is completely defined by the probability mass functions $\mathbb{P}(y_{ij}=c_k | \psi_i)$ for $k=1,\ldots, K$ and $1 \leq j \leq n_i$. For a given $(i,j)$, the sum of the K probabilities is $1$, so in fact only $K-1$ of them need to be defined. In the most general way possible, any model can be considered so long as it defines a probability distribution, i.e., for each k, $\mathbb{P}(y_{ij}=c_k | \psi_i) \in [0,1]$, and $\sum_{k=1}^{K} \mathbb{P}(y_{ij}=c_k | \psi_i) =1$. Ordinal data further assume that the categories are ordered, i.e., there exists an order $\prec$ such that
+
+$$c_1 \prec c_2,\prec \ldots \prec c_K $$.
+
+We can think, for instance, of levels of pain $(low \prec moderate \prec severe)$ or scores on a discrete scale, e.g., from 1 to 10. Instead of defining the probabilities of each category, it may be convenient to define the cumulative probabilities $\mathbb{P}(y_{ij} \preceq c_k | \psi_i)$ for $k=1,\ldots ,K-1$, or in the other direction: $\mathbb{P}(y_{ij} \succeq c_k | \psi_i)$ for $k=2,\ldots, K$. Any model is possible as long as it defines a probability distribution, i.e., it satisfies
+
+$$0\leq\prob(y_{ij}\prec c_1|\psi_i)\leq\prob(y_{ij}\prec c_2|\psi_i)\leq \cdots \leq\prob(y_{ij}\prec c_K|\psi_i)=1$$
+
+
+{\bf Note:} It is possible to introduce dependence between observations from the same individual by assuming that $(y_{ij},\,j=1,2,\ldots,n_i)$ forms a Markov chain. For instance, a Markov chain with memory 1 assumes that all that is required from the past to determine the distribution of $y_{ij}$ is the value of the previous observation $y_{i,j-1}$., i.e., for all $k=1,2,\ldots ,K$,
+
+$$\prob(y_{ij}=c_k|y_{i,j-1},y_{i,j-2},y_{i,j-3},…,\psi_i)=\prob(y_{ij}=c_k|y_{i,j-1},\psi_i)$$
+
+Such a model is currently not within the scope of \monolix.
+
+\paragraph{Count data:} Count data can take a number of possible values, possibly infinite, and again we model the probability of each count. A common model is the Poisson model with parameter $\lambda$, where for subject $i$ at time $x_{ij}$ the probability of observing a count equal to $k$ is given by:
+
+$$p(y_{ij} = k | \lambda_i) = \dfrac{e^{-\lambda_i(x_{ij})}}{k!}\lambda_i(x_{ij})^k $$
+
+\subsubsection{Time-to-event outcome}
+
+Although technically a continuous outcome, time-to-event data are modelled like discrete outcomes by considering their likelihood. In a time-to-event data model, the observations are the times at which events occur. An event may be one-off (e.g., death, hardware failure) or repeated (e.g., epileptic seizures, mechanical incidents).
+To begin with, we consider a model for a one-off event. The survival function $S(t)$ gives the probability that the event happens after time $t$:
+\begin{equation}\label{survival}
+S(t)  \triangleq \mathbb{P}(T >t) = \exp\left\{-\int_{0}^{t}h(u)\textrm{d}u\right\}\eqs,
+\end{equation}
+where $h$ is called the hazard function. 
+In a population approach, we consider a parametric and individual hazard function $h(\cdot,\psi_i)$.
+
+The random variable representing the time-to-event for individual $i$ is typically written $T_i$ and may possibly be right-censored. Then, the observation $y_i$ for individual $i$ is
+\begin{equation}
+    y_i = \left\{
+    \begin{array}{ll}
+        T_i & \mbox{if } T_i \leq \tau_c \\
+        "T_i > \tau_c" & \mbox{otherwise}\eqs,
+    \end{array}
+\right.
+\end{equation}
+where $\tau_c$ is the censoring time and $"T_i > \tau_c"$ is the information that the event occurred after the censoring time. 
+
+For repeated event models, times when events occur for individual $i$ are random times $(T_{ij}, 1\leq j \leq n_i)$  for which conditional survival functions can be defined:
+\begin{equation}
+\mathbb{P}(T_{ij} > t|T_{i(j-1)}=t_{i(j-1)}) = \exp\left\{-\int_{t_{i(j-1)}}^{t}h(u, \psi_i)\textrm{d}u\right\}\eqs.
+\end{equation}
+Here, $t_{ij}$ is the observed value of the random time $T_{ij}$.
+If the last event is right censored, then the last observation $y_{i,n_i}$ for individual $i$ is the information that the censoring time has been reached $"T_{i,n_i} > \tau_c"$. The conditional pdf of $y_i = (y_{ij},1\leq n_i)$ reads (see \cite{Lavielle14} for more details)
+\begin{equation} \label{pdf_tte}
+\dens(y_i |\psi_i) = \exp\left\{-\int_{0}^{\tau_c}h(u, \psi_i)\textrm{d}u \right\} \prod_{j=1}^{n_i-1} h(t_{ij},\psi_i)\eqs.
+\end{equation}
+
+\subsection{The statistical model for the individual parameters} \label{section_model_indiv}
+
+We assume that $\psigi$ is a transformation of a Gaussian random vector $\phigi$:
+\begin{equation} \label{prior2}
+\psigi=h(\phigi)
+\end{equation}
+where, by rearranging the covariates $(\covariate_{im})$ into a matrix $\Covariate_i$, $\phigi$ can be written as:
+\begin{equation} \label{prior3}
+\phigi=\Covariate_i \fixed_effect + \etagi
+\end{equation}
+
+\subsubsection{Examples of transformations}
+Here, different transformations $(h_\ell)$ can be used for the different components of $\psigi=(\psigil)$ where $\psigil=h_\ell(\phigil)$ for $\ell=1, 2, \ldots , \ell$.
+\begin{itemize}
+\item $\psigil$ has a normal distribution if $h_\ell(u)=u$
+\item $\psigil$ has a log-normal distribution if $h_\ell(u)=e^u$
+\item assuming that $\psigil$ takes its values in $(0,1)$, we can use a logit transformation $h_\ell(u)=1/(1+e^{-u})$, or a probit transformation $h_\ell(u)=\Prob{{\cal N}(0,1)\leq u}$.
+%\item assuming that $\psigil$ takes its values in $(A,B)$, we can define $h_\ell(u)=A + (B-A)/(1+e^{-u})$, or  $h_\ell(u)=A + (B-A)\Prob{{\cal N}(0,1)\leq u}$.
+\end{itemize}
+
+In the following, we will use either the parameters $\psigi$ or the Gaussian transformed parameters $\phigi=h^{-1}(\psigi)$.
+
+The model can address continuous and/or binary covariates. % categorical: no for the moment
+
+\subsubsection{Example of continuous covariate model} \label{section_model_contcov}
+Consider a PK model that depends on volume and clearance and consider the following covariate model for these two parameters:
+\begin{eqnarray*}
+CL_i & = & CL_{\rm pop}\left(\frac{W_i}{W_{\rm pop}}\right)^{\beta_{CL,W}} \left(\frac{A_i}{A_{\rm pop}}\right)^{\beta_{CL,A}} e^{\eta_{i,1}} \\
+V_i & = & V_{\rm pop}\left(\frac{W_i}{W_{\rm pop}}\right)^{\beta_{V,W}}  e^{\eta_{i,2}}
+\end{eqnarray*}
+Where $W_i$ and $A_i$ are the weight and the age of subjet $i$ and where $W_{\rm pop}$ and $A_{\rm pop}$ are some ``typical'' values of these two covariates in the population. Here,
+$\psigi$ will denote the PK parameters (clearance and volume) of subject $i$ and
+$\phigi$ its log-clearance and log-volume.
+Let
+$$W^\star_i = \log\left(\frac{W_i}{W_{\rm pop}}\right) \quad ; \quad A^\star_i = \log\left(\frac{A_i}{A_{\rm pop}}\right) $$
+Then,
+\begin{eqnarray*}
+\phigi &= & \left( \begin{array}{c}  \log(CL_i) \\  \log(V_i) \\ \end{array} \right) \\
+&=& \left( \begin{array}{ccccc}  1 & 0 & W^\star_i & W^\star_i & 0 \\ 0 & 1 & 0 & 0 & W^\star_i \\ \end{array} \right)
+\left( \begin{array}{c}  \log(CL_{\rm pop}) \\  \log(V_{\rm pop}) \\ \beta_{CL,W} \\ \beta_{CL,A} \\ \beta_{V,W} ) \\ \end{array} \right)
++  \left( \begin{array}{c}  \eta_{i,1} \\  \eta_{i,2} \\ \end{array} \right) \\
+&=& \Covariate_i \fixed_effect + \etagi
+\end{eqnarray*}
+
+\subsubsection{Example of categorical covariate model} \label{section_model_catcov}
+Assume that some categorical covariate  $G_i$ takes the values 1, 2, \ldots, $K$.
+Assume that if patient $i$ belongs to group $k$, {\it i.e.} $G_i=k$, then
+\begin{eqnarray*}
+\log(CL_i) &=&  \log(CL_{{\rm pop},k}) + \eta_i
+\end{eqnarray*}
+where $CL_{{\rm pop},k}$ is the population clearance in group $k$.
+
+Let $k^\star$ be the reference group. Then, for any group $k$, we will decompose the population clearance $CL_{{\rm pop},k}$ as
+\begin{eqnarray*}
+\log(CL_{{\rm pop},k}) = \log(CL_{{\rm pop},k^\star}) + \beta_k
+\end{eqnarray*}
+where $\beta_{k^\star} = 0$.
+
+The variance of the random effects can also depend on this categorical covariate:
+$$ \etagi \sim \mathcal{N}(0, \IIV_k) \ \ \ {\rm if } \ \ G_i=k $$
+
+\noindent {\bf Remark:} It is assumed in \monolix~3.0 that the categorical covariate has only 2 categories (binary covariate). It is also assumed that the variance remains the same for both groups. Covariates with more than 2 categories can always be recoded into (N-1) binary covariates using dummy variables.
+%It is assumed in \monolix that the correlation matrix of the random effect is the same for all the groups. In other words, only the variances of the random effects can  differ from one group to another.
+
+\subsection{General form of the model}
+
+A general form of the non-linear mixed effect model regrouping the different types of responses is to define the model fully in terms of the probabilities:
+
+$$\begin{cases} 
+ y_{ij}  \sim \mathcal{D}_y\left(x_{ij}; \psi_i, \xi \right) \\ 
+ \psi_i \sim \mathcal{D}_\psi \left( c_i; \fixed_effect,\IIV \right)
+\end{cases}$$
+
+The parameters of the model are $\thetag=(\fixed_effect,\IIV,\xi)$, with $\xi$ denoting the additional parameters of the residual error model for continuous response models.
+
+We will denote $\ell(y;\theta)$ the likelihood of the observations $\yg =(y_{ij} \, ; \, 1  \leq i \leq n \ , 1
+\leq j \leq n_i)$ and $p(\yg,\psig;\theta) $ the likelihood of the complete data $(\yg,\psig)= (y_{ij}, \psi_i \, ; \, 1
+\leq i \leq n \ , 1 \leq j \leq n_i)$. Thus, $$\ell(y;\theta) = \int p(\yg,\psig;\theta)  \ d\psig .$$

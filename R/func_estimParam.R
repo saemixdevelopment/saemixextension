@@ -2,7 +2,7 @@
 #' 
 #' @param saemixObject an SaemixObject from a fitted run
 #' @param saemix.newdata a dataframe containing the new data. The dataframe must contain the same information as the original dataset (colunm names, etc...) 
-#' @param type one or several of "ipred" (individual predictions using the MAP estimates), "ypred" (population predictions obtained using the population parameters f(E(theta))), "ppred" (mean of the population predictions (E(f(theta)))), "icpred"  (individual predictions using the conditional mean estimates)
+#' @param type one or several of "ipred" (individual predictions using the MAP estimates), "ppred" (population predictions obtained using the population parameters f(E(theta))), "ypred" (mean of the population predictions (E(f(theta)))), "icpred"  (individual predictions using the conditional mean estimates). Defaults to "ppred".
 #' @param nsamp an integer, ignored for other types than icpred; if icpred, returns both the mean of the conditional distribution and nsamp samples, with the corresponding predictions. Defaults to 1.
 #' 
 #' @details The function uses estimateMeanParameters.newdata() to set the population estimates for the individual parameters
@@ -35,12 +35,12 @@ saemixpredict.newdata<-function(saemixObject, saemix.newdata, type=c("ipred", "y
   #   }
   #   type<-type[type!="ipred" & type!="icpred"]
   # }
-  if(length(type)==0) type<-"ypred"
+  if(length(type)==0) type<-"ppred"
   
   # Estimate population parameters (Ci*mu) for the new subjects
   saemixObject<-estimateMeanParameters.newdata(saemixObject)
   
-  # Predictions using the mean parameters ypred=f(E(theta,x))
+  # Predictions using the mean parameters ppred=f(E(theta,x))
   newdata<-saemixObject["data"]
   chdat<-saemixObject["rep.data"]
   NM<-chdat["NM"]
@@ -51,32 +51,32 @@ saemixpredict.newdata<-function(saemixObject, saemix.newdata, type=c("ipred", "y
   psiM<-transphi(mean.phi,saemixObject["model"]["transform.par"])
   fpred<-saemixObject["model"]["model"](psiM, IdM, XM)
   colnames(psiM)<-saemixObject["model"]["name.modpar"]
-  predictions<-data.frame(IdM,XM,ypred=fpred)
+  predictions<-data.frame(IdM,XM,ppred=fpred)
   colnames(predictions)[1]<-newdata["name.group"]
   parameters<-list(id=unique(newdata["data"][,newdata["name.group"]]), population=psiM)
   
-  # Mean predictions over the population ppred=E(f(theta,x))
-  # Technically... we can obtain ppred as E(f()) by simulating etas in their distribution
-  if(length(grep(c("ppred"),type))>0) {
+  # Mean predictions over the population ypred=E(f(theta,x))
+  # Technically... we can obtain ypred as E(f()) by simulating etas in their distribution
+  if(length(grep(c("ypred"),type))>0) {
     ind.eta<-saemixObject["model"]["indx.omega"]
     nb.etas<-length(ind.eta)
     omega<-saemixObject["results"]["omega"]
     chol.omega<-try(chol(omega[ind.eta,ind.eta]),silent=TRUE)
     
     etaM<-matrix(data=0,nrow=NM,ncol=nb.etas)
-    ppred<-matrix(data=0,nrow=dim(XM)[1],ncol=saemixObject["options"]$nb.sim)
+    ypred<-matrix(data=0,nrow=dim(XM)[1],ncol=saemixObject["options"]$nb.sim)
     mean.phiM<-do.call(rbind,rep(list(mean.phi),1))
     phiMc<-mean.phiM
-    if(length(grep(c("ppred"),type))==1) {
+    if(length(grep(c("ypred"),type))==1) {
       for(isim in 1:saemixObject["options"]$nb.sim) {
         etaMc<-0.5*matrix(rnorm(NM*nb.etas),ncol=nb.etas)%*%chol.omega
         phiMc[,ind.eta]<-mean.phiM[,ind.eta]+etaMc
         psiMc<-transphi(phiMc,saemixObject["model"]["transform.par"])
         fpred<-saemixObject["model"]["model"](psiMc, IdM, XM)
-        ppred[,isim]<-fpred
+        ypred[,isim]<-fpred
       }
-      ppred<-rowMeans(ppred)
-      predictions$ppred<-ppred
+      ypred<-rowMeans(ypred)
+      predictions$ypred<-ypred
     }
   }
   if(sum(!is.na(match(c("icpred","ipred"),type)))==0) { # only population predictions
@@ -253,12 +253,12 @@ predict.newdata<-function(saemixObject, saemix.newdata, type=c("ipred", "ypred",
     }
     type<-type[type!="ipred" & type!="icpred"]
   }
-  if(length(type)==0) type<-"ypred"
+  if(length(type)==0) type<-"ppred"
   
   # Estimate population parameters (Ci*mu) for the new subjects
   saemixObject<-estimateMeanParameters.newdata(saemixObject)
   
-  # Predictions using the mean parameters ypred=f(E(theta,x))
+  # Predictions using the mean parameters ppred=f(E(theta,x))
   newdata<-saemixObject["data"]
   chdat<-saemixObject["rep.data"]
   NM<-chdat["NM"]
@@ -269,32 +269,32 @@ predict.newdata<-function(saemixObject, saemix.newdata, type=c("ipred", "ypred",
   psiM<-transphi(mean.phi,saemixObject["model"]["transform.par"])
   fpred<-saemixObject["model"]["model"](psiM, IdM, XM)
   colnames(psiM)<-saemixObject["model"]["name.modpar"]
-  predictions<-data.frame(IdM,XM,ypred=fpred)
+  predictions<-data.frame(IdM,XM,ppred=fpred)
   colnames(predictions)[1]<-newdata["name.group"]
   parameters<-list(id=unique(newdata["data"][,newdata["name.group"]]), population=psiM)
   
-  # Mean predictions over the population ppred=E(f(theta,x))
-  # Technically... we can obtain ppred as E(f()) by simulating etas in their distribution
-  if(length(grep(c("ppred"),type))>0) {
+  # Mean predictions over the population ypred=E(f(theta,x))
+  # Technically... we can obtain ypred as E(f()) by simulating etas in their distribution
+  if(length(grep(c("ypred"),type))>0) {
     ind.eta<-saemixObject["model"]["indx.omega"]
     nb.etas<-length(ind.eta)
     omega<-saemixObject["results"]["omega"]
     chol.omega<-try(chol(omega[ind.eta,ind.eta]),silent=TRUE)
     
     etaM<-matrix(data=0,nrow=NM,ncol=nb.etas)
-    ppred<-matrix(data=0,nrow=dim(XM)[1],ncol=saemixObject["options"]$nb.sim)
+    ypred<-matrix(data=0,nrow=dim(XM)[1],ncol=saemixObject["options"]$nb.sim)
     mean.phiM<-do.call(rbind,rep(list(mean.phi),1))
     phiMc<-mean.phiM
-    if(length(grep(c("ppred"),type))==1) {
+    if(length(grep(c("ypred"),type))==1) {
       for(isim in 1:saemixObject["options"]$nb.sim) {
         etaMc<-0.5*matrix(rnorm(NM*nb.etas),ncol=nb.etas)%*%chol.omega
         phiMc[,ind.eta]<-mean.phiM[,ind.eta]+etaMc
         psiMc<-transphi(phiMc,saemixObject["model"]["transform.par"])
         fpred<-saemixObject["model"]["model"](psiMc, IdM, XM)
-        ppred[,isim]<-fpred
+        ypred[,isim]<-fpred
       }
-      ppred<-rowMeans(ppred)
-      predictions$ppred<-ppred
+      ypred<-rowMeans(ypred)
+      predictions$ypred<-ypred
     }
   }
   if(sum(!is.na(match(c("icpred","ipred"),type)))==0) { # only population predictions

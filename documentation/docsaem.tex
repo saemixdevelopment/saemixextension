@@ -94,6 +94,12 @@
 \def\true{{\sf TRUE}}
 \def\false{{\sf FALSE}}
 
+% Belhal
+\newcommand{\dens}{\texttt{p}}
+\def\eqs{\;}
+\newcommand{\prob}{\mathbb{P}}
+
+
 % raccourcis de traitement de texte
 \newcommand{\h}{\hspace{0.5cm}}
 \newcommand{\Prob}[1]{ \mathbb{P}\!\left(#1\right)}
@@ -214,21 +220,36 @@ $\phantom{  }$
 {\small \tableofcontents }
 \parskip 0.4cm
 
+% Introduction, installation, models
+
 \newpage
 
 \input{intro_saem.tex}
 
 \newpage
 
+\input{models_saem.tex}
+
+% Methods
+
+\newpage
+
 \input{methodo_saem.tex}
 
+% Package
+\newpage
+
+\input{library_saemix.tex}
+
+%\newpage
+
+\input{classS4.tex}
+
+% Examples
 \newpage
 
 \input{examples_saem.tex}
 
-\newpage
-
-\input{classS4.tex}
 
 \newpage
 \addcontentsline{toc}{chapter}{{\bf Bibliography}}

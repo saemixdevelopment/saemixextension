@@ -32,6 +32,14 @@
 \newblock Nonlinear models for repeated measurements: An overview and update.
 \newblock {\em JABES 8\/} (2003), 387--419.
 
+\bibitem{debacker_toenail}
+{\sc De~Backer, M., De~Vroey, C., Lesaffre, E., Scheys, I., and De~Keyser, P.}
+\newblock Twelve weeks of continuous oral therapy for toenail onychomycosis
+  caused by dermatophytes: a double-blind comparative trial of terbinafine 250
+  mg/day versus itraconazole 200 mg/day.
+\newblock {\em Journal of the American Academy of Dermatology 38}, 5 (1998),
+  S57--S63.
+
 \bibitem{Delyon}
 {\sc Delyon, B., Lavielle, M., and Moulines, E.}
 \newblock Convergence of a stochastic approximation version of the {EM}
@@ -60,6 +68,11 @@
 \newblock A comparison of estimation methods in nonlinear mixed effects models
   using a blind analysis (oral presentation).
 \newblock {\em PAGE, Pamplona\/} (2005).
+
+\bibitem{hedeker1994random}
+{\sc Hedeker, D., and Gibbons, R.~D.}
+\newblock A random-effects ordinal regression model for multilevel analysis.
+\newblock {\em Biometrics\/} (1994), 933--944.
 
 \bibitem{Jaffrezic06}
 {\sc Jaffr\'{e}zic, F., Meza, C., Foulley, J., and Lavielle, M.}
@@ -102,6 +115,20 @@
   {HIV} patients with the {MONOLIX} software.
 \newblock {\em Journal of Pharmacokinetics and Pharmacodynamics 34}, 2 (2007),
   229--249.
+
+\bibitem{lesaffre2001effect}
+{\sc Lesaffre, E., and Spiessens, B.}
+\newblock On the effect of the number of quadrature points in a logistic random
+  effects model: an example.
+\newblock {\em Journal of the Royal Statistical Society: Series C (Applied
+  Statistics) 50}, 3 (2001), 325--335.
+
+\bibitem{lin2011goodness}
+{\sc Lin, K.-C., and Chen, Y.-J.}
+\newblock A goodness-of-fit test for logistic-normal models using nonparametric
+  smoothing method.
+\newblock {\em Journal of statistical planning and inference 141}, 2 (2011),
+  1069--1076.
 
 \bibitem{Louis82}
 {\sc Louis, T.~A.}
@@ -150,6 +177,12 @@
 \newblock Bayesian model selection in social research (with discussion).
 \newblock {\em Sociol Methodol\/} (1995), 111--95.
 
+\bibitem{Riviere16}
+{\sc Rivi{\'e}re, M., Ueckert, S., and Mentr\'{e}, F.}
+\newblock An {MCMC} method for the evaluation of the {F}isher information
+  matrix for non-linear mixed effect models.
+\newblock {\em Biostatistics 17\/} (2016), 737--50.
+
 \bibitem{page04a}
 {\sc Samson, A., Lavielle, M., and Mentr\'e, F.}
 \newblock Approximation {EM} algorithm in nonlinear mixed effects models: an
@@ -187,6 +220,14 @@
 {\sc Sheiner, L., and Beal, S.}
 \newblock {\em NONMEM Version 5.1}.
 \newblock University of California, NONMEM Project Group, San Francisco, 1998.
+
+\bibitem{Ueckert16}
+{\sc Ueckert, S., and Mentr\'{e}, F.}
+\newblock A new method for evaluation of the {F}isher information matrix for
+  discrete mixed effect models using {M}onte {C}arlo sampling and adaptive
+  {G}aussian quadrature.
+\newblock {\em Computational Statistics \& Data Analysis 111\/} (2016),
+  203–--19.
 
 \bibitem{Wu83}
 {\sc Wu, C.-F.~J.}

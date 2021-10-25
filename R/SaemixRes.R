@@ -71,8 +71,8 @@
 #' @slot bic.gq Bayesian Information Criterion computed by Gaussian Quadrature
 #' @slot bic.covariate.gq Specific Bayesian Information Criterion for covariate selection computed by Gaussian Quadrature
 #' @slot predictions a data frame containing all the predictions and residuals in a table format
-#' @slot ypred a vector giving the population predictions obtained with the MAP estimates
-#' @slot ppred a vector giving the mean population predictions
+#' @slot ppred a vector giving the population predictions obtained with the MAP estimates
+#' @slot ypred a vector giving the mean population predictions
 #' @slot ipred a vector giving the individual predictions obtained with the MAP estimates
 #' @slot icpred a vector giving the individual predictions obtained with the conditional estimates
 #' @slot ires a vector giving the individual residuals obtained with the MAP estimates
@@ -171,8 +171,8 @@ setClass(
     bic.covariate.gq="numeric",
 # Model predictions and residuals
 		predictions="data.frame", # data frame containing all the predictions and residuals below
-    ppred="numeric",        # vector of mean population predictions
-    ypred="numeric",        # vector of population predictions with MAP
+    ypred="numeric",        # vector of mean population predictions
+    ppred="numeric",        # vector of population predictions with MAP
     ipred="numeric",		# vector of individual predictions with MAP
     icpred="numeric",		# vector of individual predictions with conditional estimates
     ires="numeric",		  # vector of individual residuals with MAP (ipred-x)
@@ -880,7 +880,7 @@ resid.SaemixRes<-function (object, type = c("ires", "wres", "npde", "pd", "iwres
 #' @aliases fitted fitted.SaemixRes
 #' 
 #' @param object an object of type SaemixRes or SaemixObject
-#' @param type string determining which predictions are extracted. Possible values are: "ipred" (individual predictions obtained using the mode of the individual distribution for each subject, default), "ypred" (population predictions obtained using the population parameters f(E(theta))), "ppred" (mean of the population predictions (E(f(theta)))) and "icpred" (individual predictions obtained using the conditional mean of the individual distribution). See user guide for details.
+#' @param type string determining which predictions are extracted. Possible values are: "ipred" (individual predictions obtained using the mode of the individual distribution for each subject, default), "ppred" (population predictions obtained using the population parameters f(E(theta))), "ypred" (mean of the population predictions (E(f(theta)))) and "icpred" (individual predictions obtained using the conditional mean of the individual distribution). See user guide for details.
 #' @param ... further arguments to be passed to or from other methods
 #' 
 #' @return Model predictions
@@ -1083,7 +1083,7 @@ setMethod("summary","SaemixRes",
             res<-list(modeltype=object@modeltype,fixed.effects=tab.fix,sigma=sigma,random.effects=tab.random, correlation.matrix=tab.corr,logLik=tab.ll,coefficients=coef)
             if(length(object@fim)>0) res$FIM<-object@fim
             if(length(object@ypred)>0 | length(object@ipred)>0  | length(object@ppred)>0 | length(object@icpred)>0) {
-              res$fitted<-list(population=list(pop.param=object@ppred, pop.mean=object@ypred),individual=list(map.ipred=object@ipred, cond.ipred=object@icpred))
+              res$fitted<-list(population=list(pop.param=object@ppred, pop.mean=object@ppred),individual=list(map.ipred=object@ipred, cond.ipred=object@icpred))
             }
             if(length(object@wres)>0 | length(object@iwres)>0  | length(object@icwres)>0 | length(object@pd)>0) {
               res$residuals<-list(population=list(wres=object@wres), individual=list(map.iwres=object@iwres,cond.iwres=object@icwres, pd=object@pd, npde=object@npde))

@@ -1276,6 +1276,7 @@ setMethod("plot","SaemixSimData",
 #' @param name.X name of the column containing the regression variable to be used on the X axis in the plots (defaults to the first predictor)
 #' @param units list with up to three elements, x, y and optionally covariates, containing the units for the X and Y variables respectively, as well as the units for the different covariates (defaults to empty)
 #' @param verbose a boolean indicating whether messages should be printed out during the creation of the object
+#' @param automatic a boolean indicating whether to attempt automatic name recognition when some colum names are missing or wrong (defaults to TRUE)
 #' @details This function is the user-friendly constructor for the SaemixData object class. The read is a helper function, used to read the dataset, and is not intended to be called directly.
 #' @return A SaemixData object (see \code{\link{saemixData}}).
 #' @references Comets  E, Lavenu A, Lavielle M. Parameter estimation in nonlinear mixed effect models using saemix, an R implementation of the SAEM algorithm. Journal of Statistical Software 80, 3 (2017), 1-41.

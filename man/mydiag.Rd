@@ -9,9 +9,9 @@ mydiag(x = 1, nrow, ncol)
 \arguments{
 \item{x}{a matrix, vector or 1D array, or missing.}
 
-\item{nrow, }{ncol Optional dimensions for the result when x is not a matrix.}
+\item{nrow}{Optional number of rows for the result when x is not a matrix.}
 
-\item{value}{either a single value or a vector of length equal to that of the current diagonal. Should be of a mode which can be coerced to that of x.}
+\item{ncol}{Optional number of columns for the result when x is not a matrix.}
 }
 \value{
 If x is a matrix then diag(x) returns the diagonal of x. The resulting vector will have names if the matrix x has matching column and rownames.

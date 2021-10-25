@@ -218,6 +218,17 @@ compute.sres<-function(saemixObject) {
 
 ###########################	Computational fcts	#############################
 
+#' @rdname saemix.internal
+#' 
+#' @aliases cutoff cutoff.eps cutoff.max cutoff.res
+#' @aliases normcdf norminv
+#' @aliases error error.typ ssq
+#' @aliases transpsi transphi derivphi dtransphi
+#' @aliases compute.Uy compute.LLy conditional.distribution trnd.mlx gammarnd.mlx tpdf.mlx
+#' @aliases conditional.distribution_c conditional.distribution_d
+#' 
+#' @keywords internal
+
 cutoff<-function(x,seuil=.Machine$double.xmin) {x[x<seuil]<-seuil; return(x)}
 cutoff.max<-function(x) max(x,.Machine$double.xmin)
 cutoff.eps<-function(x) max(x,.Machine$double.eps)

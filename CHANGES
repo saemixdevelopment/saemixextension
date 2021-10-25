@@ -2,7 +2,11 @@ Version 3.0 -  November 2021
 
 o Extension to noncontinuous data models
    * New argument in saemixModel to differentiate between continuous (type = structural) and noncontinuous (type = likelihood)
+   * New examples have been included in the package to showcase discrete response models (see the online documentation for more information on lung.saemix, toenail.saemix, knee.saemix)
 
+o Updated user guide (PDF)
+   * available from https://github.com/saemixdevelopment/saemixextension/blob/master/documentation/userguide_saemix3.pdf
+   
 o Covariate model building
    * new statistical criterion taking into account the fixed or random nature of estimated parameters in the weighting of the BIC (element BIC.covariate in the results component of a fitted object) [Delattre et al. 2014]
    * compare.saemix function to compare several saemix fitted objects
@@ -10,10 +14,13 @@ o Covariate model building
 
 o Bugfixes
    * the number of iterations with simulated annealing set by default has been corrected. It should have been equal to K1/2 where K1 is the first element of the vector nb.saemix in the list of options, but in the previous version it was incorrectly set to K1. This has now been corrected.
+   * the definition of ypred/ppred had been mixed up in 2.4, in 3.0 we clarified the two types of population predictions as ppred=f(E(psi)), ie the predictions obtained for the population parameters (taking into account individual covariates) and ypred=E(f(psi)), ie the expectation of the predictions over the population. Both types of population predictions should be close in most applications but please update your codes depending on which definition you prefer (note: WRES are still computed using ypred in saemix for consistency with the use of the empirical variance-covariance matrix in their definition)
 
 o Changes
    * function simul.saemix has been renamed simulate.saemix
 
+o Dependencies
+   * saemix now depends on ggplot2, grid and gridExtra
    
 Version 2.4 -  February 2021
 

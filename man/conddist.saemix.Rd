@@ -22,6 +22,24 @@ conditional estimates. Defaults to twice the total number of iterations
 \item{\dots}{optional arguments passed to the plots. Plots will appear if
 the option displayProgress in the saemixObject object is TRUE}
 }
+\value{
+The function adds or modifies the following elements in the results slot of saemixObject:
+\describe{
+\item{cond.mean.phi}{Conditional mean of the individual
+distribution of the parameters (obtained as the mean of the samples)}
+\item{cond.var.phi}{Conditional variance of the individual distribution of
+the parameters (obtained as the mean of the estimated variance of the samples)}
+\item{cond.shrinkage}{Estimate of the shrinkage for the
+conditional estimates}
+\item{cond.mean.eta}{Conditional mean of the
+individual distribution of the parameters (obtained as the mean of the samples)}
+\item{phi.samp}{An array with 3 dimensions, giving nsamp samples
+from the conditional distributions of the individual parameters}
+\item{phi.samp.var}{The estimated individual variances for the sampled
+parameters phi.samp} } A warning is output if the maximum number of
+iterations is reached without convergence (the maximum number of iterations
+is saemix.options$nbiter.saemix\link{2}).
+}
 \description{
 When the parameters of the model have been estimated, we can estimate the
 individual parameters (psi_i).
@@ -67,21 +85,6 @@ They can be used assess whether the mean of the individual estimates (on the sca
 and the mean of the SD of the random effects have stabilised over the ipar.lmcmc (defaults to 50) iterations.
 The evolution of these variables for each parameter is shown as a continuous line
 while the shaded area represents the acceptable variation.
-
-The function adds or modifies the following elements in the results:
-\describe{ \item{cond.mean.phi}{Conditional mean of the individual
-distribution of the parameters (obtained as the mean of the samples)}
-\item{cond.var.phi}{Conditional variance of the individual distribution of
-the parameters (obtained as the mean of the estimated variance of the
-samples)} \item{cond.shrinkage}{Estimate of the shrinkage for the
-conditional estimates} \item{cond.mean.eta}{Conditional mean of the
-individual distribution of the parameters (obtained as the mean of the
-samples)} \item{phi.samp}{An array with 3 dimensions, giving nsamp samples
-from the conditional distributions of the individual parameters}
-\item{phi.samp.var}{The estimated individual variances for the sampled
-parameters phi.samp} } A warning is output if the maximum number of
-iterations is reached without convergence (the maximum number of iterations
-is saemix.options$nbiter.saemix\link{2}).
 
 Let hattheta be the estimated value of theta computed with the SAEM
 algorithm and let p(phi_i |y_i; hattheta) be the conditional distribution of

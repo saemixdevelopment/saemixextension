@@ -14,6 +14,7 @@ output:
   - combined 2 versus combined 1
 - **TODO** bugfixes
   - **DONE** simulated annealing
+  - **DONE** ypred/ppred (changed in documentation, online help, and definitions in code)
 - **TODO** testthat functions
   - SaemixData class
     - **DONE** class structure, reading data

@@ -114,7 +114,7 @@ saemix.plot.setoptions<-function(saemixObject) {
     which.cov="all",			# which covariates to plot 
     which.resplot=c("res.vs.x","res.vs.pred","dist.qqplot","dist.hist"), # which type of residual plots
     which.pres=c("wres","npde"),	# which population weighted residuals
-    which.poppred=c("ypred"),		# which population predictions to use (ppred=E(f(theta_i)), ypred=f(population parameters))
+    which.poppred=c("ppred"),		# which population predictions to use (ypred=E(f(theta_i)), ppred=f(population parameters))
     indiv.histo=FALSE,			# whether to include an histogram of estimated individual parameters
     cov.value=rep(NA,length(saemixObject["model"]["name.cov"])),
 # General graphical options

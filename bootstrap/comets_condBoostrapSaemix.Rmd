@@ -9,7 +9,7 @@ output:
 
 ## Contents
 
-The present document is an R markdown notebook designed to showcase the different bootstrap methods in the paper **Conditional non-parametric bootstrap for non-linear mixed effect models** submitted by E. Comets et al (currently submitted to **Biostatistics**, September 2020). This notebook uses code from the development version of the *saemix* package, available on github: <https://github.com/saemixdevelopment/saemixextension>. An easy way to ensure all the functions are available is to clone the project using Rstudio, and follow updates by pull requests. Folders are relative to the installation folder, assuming the same architecture as on the github repository.
+The present document is an R markdown notebook designed to showcase the different bootstrap methods in the paper **Conditional non-parametric bootstrap for non-linear mixed effect models** submitted by E. Comets et al (currently in revision for **Pharmaceutical Research**, initial submission February 2021). This notebook uses code from the development version of the *saemix* package, available on github: <https://github.com/saemixdevelopment/saemixextension>. An easy way to ensure all the functions are available is to clone the project using Rstudio, and follow updates by pull requests. Folders are relative to the installation folder, assuming the same architecture as on the github repository.
 
 In addition, several libraries need to be installed to run the present code:
 
