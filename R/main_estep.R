@@ -100,20 +100,14 @@ estep<-function(kiter, Uargs, Dargs, opt, structural.model, mean.phi, varList, D
 		etaMc<-etaM
 		propc <- U.eta
 		prop <- U.eta
-		saemix.options<-saemixObject["options"]
-	  	saemix.model<-saemixObject["model"]
-	  	saemix.data<-saemixObject["data"]
-	  	saemix.options$map <- TRUE
-	  	saemixObject["results"]["omega"] <- omega.eta
-	  	saemixObject["results"]["mean.phi"] <- mean.phi
-	  	saemixObject["results"]["phi"] <- phiM
+		phi.map<-mean.phi
 	  	i1.omega2<-varList$ind.eta
-	    iomega.phi1<-solve(saemixObject["results"]["omega"][i1.omega2,i1.omega2])
+	    iomega.phi1<-solve(omega.eta[i1.omega2,i1.omega2])
+
 	  	id<-saemixObject["data"]["data"][,saemixObject["data"]["name.group"]]
 	  	xind<-saemixObject["data"]["data"][,saemixObject["data"]["name.predictors"], drop=FALSE]
 	  	yobs<-saemixObject["data"]["data"][,saemixObject["data"]["name.response"]]
 	  	id.list<-unique(id)
-	  	phi.map<-saemixObject["results"]["mean.phi"]
 
 	  	if(Dargs$type=="structural"){
 	  		for(i in 1:saemixObject["data"]["N"]) {
@@ -122,7 +116,7 @@ estep<-function(kiter, Uargs, Dargs, opt, structural.model, mean.phi, varList, D
 			    yi<-yobs[id==isuj]
 			    idi<-rep(1,length(yi))
 			    mean.phi1<-mean.phiM[i,i1.omega2]
-			    phii<-saemixObject["results"]["phi"][i,]
+			    phii<-phiM[i,]
 			    phi1<-phii[i1.omega2]
 			    phi1.opti<-optim(par=phi1, fn=conditional.distribution_c, phii=phii,idi=idi,xi=xi,yi=yi,mphi=mean.phi1,idx=i1.omega2,iomega=iomega.phi1, trpar=saemixObject["model"]["transform.par"], model=saemixObject["model"]["model"], pres=varList$pres, err=saemixObject["model"]["error.model"])
 			    phi.map[i,i1.omega2]<-phi1.opti$par
@@ -140,6 +134,7 @@ estep<-function(kiter, Uargs, Dargs, opt, structural.model, mean.phi, varList, D
 			fpred1<-structural.model(psi_map, Dargs$IdM, Dargs$XM)
 			gradf <- matrix(0L, nrow = length(fpred1), ncol = nb.etas) 
 
+			## Compute gradient of structural model (gradf)
 			for (j in 1:nb.etas) {
 				psi_map2 <- psi_map
 				psi_map2[,j] <- psi_map[,j]+psi_map[,j]/1000
@@ -152,6 +147,7 @@ estep<-function(kiter, Uargs, Dargs, opt, structural.model, mean.phi, varList, D
 			}
 
 
+			## Compute gradient of mapping (psi to phi) function (gradh)
 			gradh <- list(omega.eta,omega.eta)
 			for (i in 1:Dargs$NM){
 				gradh[[i]] <- gradh[[1]]
@@ -165,7 +161,7 @@ estep<-function(kiter, Uargs, Dargs, opt, structural.model, mean.phi, varList, D
 				}
 			}
 			
-			#calculation of the covariance matrix of the proposal
+			## Calculation of the covariance matrix of the proposal
 			Gamma <- chol.Gamma <- inv.chol.Gamma <- inv.Gamma <- list(omega.eta,omega.eta)
 			for (i in 1:(Dargs$NM)){
 				r = which(Dargs$IdM==i)
@@ -185,7 +181,7 @@ estep<-function(kiter, Uargs, Dargs, opt, structural.model, mean.phi, varList, D
 			    yi<-yobs[id==isuj]
 			    idi<-rep(1,length(yi))
 			    mean.phi1<-mean.phiM[i,i1.omega2]
-			    phii<-saemixObject["results"]["phi"][i,]
+			    phii<-phiM[i,]
 			    phi1<-phii[i1.omega2]
 			    phi1.opti<-optim(par=phi1, fn=conditional.distribution_d, phii=phii,idi=idi,xi=xi,yi=yi,mphi=mean.phi1,idx=i1.omega2,iomega=iomega.phi1, trpar=saemixObject["model"]["transform.par"], model=saemixObject["model"]["model"])
 			    phi.map[i,i1.omega2]<-phi1.opti$par
@@ -240,11 +236,11 @@ estep<-function(kiter, Uargs, Dargs, opt, structural.model, mean.phi, varList, D
 	  	U.y<-compute.LLy(phiM,Uargs,Dargs,DYF,varList$pres)
 
 	  	for (u in 1:opt$nbiter.mcmc[4]) {
-			#generate candidate eta
+			
+			#generate candidate eta with new proposal
 			for (i in 1:(Dargs$NM)){
 				Mi <- rnorm(nb.etas)%*%chol.Gamma[[i]]
 				etaMc[i,varList$ind.eta]<- eta_map[i,varList$ind.eta] + Mi
-				# etaMc[i,varList$ind.eta]<- eta_map[i,varList$ind.eta] + rt(nb.etas,df)%*%chol.Gamma[[i]]
 			}
 
 			phiMc[,varList$ind.eta]<-mean.phiM[,varList$ind.eta]+etaMc[,varList$ind.eta]
@@ -259,7 +255,7 @@ estep<-function(kiter, Uargs, Dargs, opt, structural.model, mean.phi, varList, D
 			deltu<-Uc.y-U.y+Uc.eta-U.eta + prop - propc
 			ind<-which(deltu<(-1)*log(runif(Dargs$NM)))
 			etaM[ind,varList$ind.eta]<-etaMc[ind,varList$ind.eta]
-			U.y[ind]<-Uc.y[ind] # Warning: Uc.y, Uc.eta = vecteurs
+			U.y[ind]<-Uc.y[ind]
 			U.eta[ind]<-Uc.eta[ind]
 
   		}
