@@ -138,7 +138,16 @@ initialiseMainAlgo<-function(saemix.data,saemix.model,saemix.options) {
 		if(length(jcov)<=1) mean.phi[,j]<-aj*lambdaj else mean.phi[,j]<-aj%*%lambdaj
 		pfix[j]<-length(lambdaj)
 	}
-	indx.betaI<-cumsum(c(0,pfix[1:(nb.parameters-1)]))+1
+	
+
+	if(nb.parameters>1){
+		indx.betaI<-cumsum(c(0,pfix[1:(nb.parameters-1)]))+1	
+	} else{
+		indx.betaI<-1
+	}
+	
+
+	
 	idx<-1:nb.betas
 	indx.betaC<-idx[is.na(match(idx,indx.betaI))]
 	saemix.model["indx.fix"]<-indx.betaI

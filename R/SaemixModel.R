@@ -101,10 +101,12 @@ setClass(
       message("[ SaemixModel : Error ] The number of parameters should be the same in the following elements: psi0 (initial conditions), transform.par, fixed.estim, covariate.model, and the matrices covariance.model and omega.init should be square matrices of size equal to the number of parameters. Please check the input.")
       return("Size mismatch")
     }
-    if(npar<2) {
-      message("[ SaemixModel : Error ] SAEM needs at least two parameters to work on.")
-      return("Psi0 has size 1")
-    }
+    
+    # if(npar<2) {
+    #   message("[ SaemixModel : Error ] SAEM needs at least two parameters to work on.")
+    #   return("Psi0 has size 1")
+    # }
+
 		if(sum(object@fixed.estim*mydiag(object@covariance.model))==0) {
 			message("[ SaemixModel : Error ] ")
 			if(sum(mydiag(object@covariance.model))==0) message("At least one parameter with IIV must be included in the model.") else message("At least one parameter with IIV must be estimated and not fixed in the model.")
