@@ -1,0 +1,96 @@
+********************************************************************************
+*                         categorical3_project.mlxtran                         *
+*                         April 03, 2020 at 12:28:25                           *
+*                         Monolix version : 5.1.1                              *
+********************************************************************************
+
+
+POPULATION PARAMETERS ESTIMATION _______________________________________________
+
+Fixed Effects ----------------------------     se_sa    rse(%)
+th1_pop                        :        12     0.537      4.47
+th2_pop                        :      1.35     0.106      7.85
+th3_pop                        :      2.59     0.184      7.09
+th4_pop                        :     -5.08     0.217      4.27
+
+Standard Deviation of the Random Effects -
+omega_th1                      :       6.2     0.389      6.27
+
+Elapsed time (seconds) :       21
+CPU time     (seconds) :       52
+
+ _______________________________________________________________________________
+
+
+
+CORRELATION MATRIX OF THE ESTIMATES ____________________________________________
+
+
+Fisher by Stochastic Approximation ---------------------------------------------
+Correlation Matrix :
+  th1_pop         1
+  th2_pop   0.22719         1
+  th3_pop   0.25033 -0.057437         1
+  th4_pop  -0.51831  -0.30045  -0.34213         1
+omega_th1   0.79527   0.21422     0.214  -0.25545         1
+                               min       max   max/min
+Eigen values           :      0.15       2.3        16
+
+Elapsed time (seconds) :    0.79
+CPU time     (seconds) :       2
+
+ -------------------------------------------------------------------------------
+
+ _______________________________________________________________________________
+
+
+
+INDIVIDUAL PARAMETERS ESTIMATION _______________________________________________
+
+
+Individual Parameters Estimation by Conditional Mean ---------------------------
+            min        Q1    median        Q3       max
+th1 :     -5.95      13.2      13.9      14.4        16
+th2 :      1.35      1.35      1.35      1.35      1.35
+th3 :      2.59      2.59      2.59      2.59      2.59
+th4 :     -5.08     -5.08     -5.08     -5.08     -5.08
+
+Elapsed time (seconds) :    0.73
+CPU time     (seconds) :       1
+
+ -------------------------------------------------------------------------------
+
+
+Individual Parameters Estimation by Conditional Mode ---------------------------
+            min        Q1    median        Q3       max
+th1 :     -4.31      12.1      12.1      12.1      12.1
+th2 :      1.35      1.35      1.35      1.35      1.35
+th3 :      2.59      2.59      2.59      2.59      2.59
+th4 :     -5.08     -5.08     -5.08     -5.08     -5.08
+
+Elapsed time (seconds) :   0.047
+CPU time     (seconds) :       0
+
+ -------------------------------------------------------------------------------
+
+ _______________________________________________________________________________
+
+
+
+LOG-LIKELIHOOD ESTIMATION ______________________________________________________
+                                                            (is)
+
+-2 x log-likelihood                             :        2566.45
+Akaike Information Criteria               (AIC) :        2576.45
+Corrected Bayesian Information Criteria  (BICc) :        2606.54
+Bayesian Information Criteria             (BIC) :        2600.99
+
+Elapsed time                          (seconds) :          23.54
+CPU time                              (seconds) :          43.00
+
+
+[Importance Sampling] Standard error        : 0.252
+                      Sampling distribution : T-distribution with 5 degrees of freedom
+
+ _______________________________________________________________________________
+

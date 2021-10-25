@@ -1,0 +1,2 @@
+lambda_pop,1,-0.12994
+omega_lambda,-0.12994,1

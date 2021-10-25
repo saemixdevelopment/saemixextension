@@ -1,0 +1,84 @@
+********************************************************************************
+*                          tte1_project.mlxtran                                *
+*                          April 03, 2020 at 12:28:58                          *
+*                          Monolix version : 5.1.1                             *
+********************************************************************************
+
+
+POPULATION PARAMETERS ESTIMATION _______________________________________________
+
+Fixed Effects ----------------------------     se_sa    rse(%)
+Te_pop                         :      42.1      4.48      10.7
+
+Standard Deviation of the Random Effects -
+omega_Te                       :     0.242      0.16      66.1
+
+Elapsed time (seconds) :      1.4
+CPU time     (seconds) :        6
+
+ _______________________________________________________________________________
+
+
+
+CORRELATION MATRIX OF THE ESTIMATES ____________________________________________
+
+
+Fisher by Stochastic Approximation ---------------------------------------------
+Correlation Matrix :
+  Te_pop         1
+omega_Te   -0.3994         1
+                               min       max   max/min
+Eigen values           :       0.6       1.4       2.3
+
+Elapsed time (seconds) :   0.016
+CPU time     (seconds) :       0
+
+ -------------------------------------------------------------------------------
+
+ _______________________________________________________________________________
+
+
+
+INDIVIDUAL PARAMETERS ESTIMATION _______________________________________________
+
+
+Individual Parameters Estimation by Conditional Mean ---------------------------
+           min        Q1    median        Q3       max
+Te :        38      41.5      42.8      44.7      50.8
+
+Elapsed time (seconds) :    0.41
+CPU time     (seconds) :       1
+
+ -------------------------------------------------------------------------------
+
+
+Individual Parameters Estimation by Conditional Mode ---------------------------
+           min        Q1    median        Q3       max
+Te :      39.7      40.6      41.4      42.6      46.5
+
+Elapsed time (seconds) :   0.022
+CPU time     (seconds) :       0
+
+ -------------------------------------------------------------------------------
+
+ _______________________________________________________________________________
+
+
+
+LOG-LIKELIHOOD ESTIMATION ______________________________________________________
+                                                            (is)
+
+-2 x log-likelihood                             :         805.37
+Akaike Information Criteria               (AIC) :         809.37
+Corrected Bayesian Information Criteria  (BICc) :         815.28
+Bayesian Information Criteria             (BIC) :         814.58
+
+Elapsed time                          (seconds) :           8.50
+CPU time                              (seconds) :          38.00
+
+
+[Importance Sampling] Standard error        : 0.026
+                      Sampling distribution : T-distribution with 5 degrees of freedom
+
+ _______________________________________________________________________________
+

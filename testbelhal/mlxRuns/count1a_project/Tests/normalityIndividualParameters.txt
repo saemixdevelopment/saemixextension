@@ -1,0 +1,2 @@
+parameter,statistics,p-value,test
+lambda,0.986073,0.49206,Shapiro-Wilk

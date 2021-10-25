@@ -1,0 +1,44 @@
+<DATAFILE>
+
+[FILEINFO]
+file = '../../../../../../../monolix/MonolixSuite2019R2/resources/demos/monolix/3.models_for_noncontinuous_outcomes/3.3.time_to_event_data_model/data/tte1_data.txt'
+delimiter = space
+header = {ID, TIME, Y}
+
+[CONTENT]
+ID = {use=identifier}
+TIME = {use=time}
+Y = {use=observation, name=Y, type=event}
+
+<MODEL>
+
+[INDIVIDUAL]
+input = {Te_pop, omega_Te}
+
+DEFINITION:
+Te = {distribution=logNormal, typical=Te_pop, sd=omega_Te}
+
+[LONGITUDINAL]
+file = 'lib:exponential_model_singleEvent.txt'
+<FIT>
+data = Y
+model = Event
+
+<PARAMETER>
+Te_pop = {value=35, method=MLE}
+omega_Te = {value=1, method=MLE}
+
+<MONOLIX>
+
+[TASKS]
+populationParameters()
+individualParameters(method = {conditionalMean, conditionalMode })
+fim(method = StochasticApproximation)
+logLikelihood(run = false,method = ImportanceSampling)
+plotResult(method = {outputplot, indfits, obspred, parameterdistribution, covariatemodeldiagnosis, randomeffects, covariancemodeldiagnosis, saemresults })
+
+[SETTINGS]
+GLOBAL:
+seed = 12345
+exportpath = '../'
+

@@ -1,0 +1,1 @@
+eta1,eta2,coeff,statistics,p-value

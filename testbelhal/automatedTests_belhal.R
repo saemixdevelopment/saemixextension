@@ -15,7 +15,7 @@ setwd(saemixDir)
 
 #####################################################
 # Loading library files and defining data directory
-datDir<-file.path(saemixDir,"data")
+datDir<-file.path(saemixDir,"testbelhal")
 source(file.path(saemixDir,"testbelhal","helper-source.R"))
 
 #####################################################

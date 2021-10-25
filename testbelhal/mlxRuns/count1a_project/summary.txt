@@ -1,0 +1,84 @@
+********************************************************************************
+*                          count1a_project.mlxtran                             *
+*                          April 03, 2020 at 12:28:42                          *
+*                          Monolix version : 5.1.1                             *
+********************************************************************************
+
+
+POPULATION PARAMETERS ESTIMATION _______________________________________________
+
+Fixed Effects ----------------------------     se_sa    rse(%)
+lambda_pop                     :     0.472    0.0528      11.2
+
+Standard Deviation of the Random Effects -
+omega_lambda                   :      1.06    0.0871      8.21
+
+Elapsed time (seconds) :     0.83
+CPU time     (seconds) :        3
+
+ _______________________________________________________________________________
+
+
+
+CORRELATION MATRIX OF THE ESTIMATES ____________________________________________
+
+
+Fisher by Stochastic Approximation ---------------------------------------------
+Correlation Matrix :
+  lambda_pop         1
+omega_lambda  -0.12994         1
+                               min       max   max/min
+Eigen values           :      0.87       1.1       1.3
+
+Elapsed time (seconds) :   0.011
+CPU time     (seconds) :       0
+
+ -------------------------------------------------------------------------------
+
+ _______________________________________________________________________________
+
+
+
+INDIVIDUAL PARAMETERS ESTIMATION _______________________________________________
+
+
+Individual Parameters Estimation by Conditional Mean ---------------------------
+               min        Q1    median        Q3       max
+lambda :    0.0561     0.244     0.467      1.04      8.19
+
+Elapsed time (seconds) :    0.31
+CPU time     (seconds) :       0
+
+ -------------------------------------------------------------------------------
+
+
+Individual Parameters Estimation by Conditional Mode ---------------------------
+               min        Q1    median        Q3       max
+lambda :    0.0607     0.252     0.451      1.04      7.92
+
+Elapsed time (seconds) :   0.017
+CPU time     (seconds) :       0
+
+ -------------------------------------------------------------------------------
+
+ _______________________________________________________________________________
+
+
+
+LOG-LIKELIHOOD ESTIMATION ______________________________________________________
+                                                            (is)
+
+-2 x log-likelihood                             :        7679.76
+Akaike Information Criteria               (AIC) :        7683.76
+Corrected Bayesian Information Criteria  (BICc) :        7692.38
+Bayesian Information Criteria             (BIC) :        7688.97
+
+Elapsed time                          (seconds) :           6.43
+CPU time                              (seconds) :          22.00
+
+
+[Importance Sampling] Standard error        : 0.081
+                      Sampling distribution : T-distribution with 5 degrees of freedom
+
+ _______________________________________________________________________________
+

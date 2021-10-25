@@ -1,0 +1,46 @@
+********************************************************************************
+*                          tte1_project.mlxtran                                *
+*                          March 31, 2020 at 18:17:40                          *
+*                          Monolix version : 5.1.1                             *
+********************************************************************************
+
+
+POPULATION PARAMETERS ESTIMATION _______________________________________________
+
+Fixed Effects ----------------------------
+Te_pop                         :      42.1
+
+Standard Deviation of the Random Effects -
+omega_Te                       :     0.242
+
+Elapsed time (seconds) :      3.5
+CPU time     (seconds) :        7
+
+ _______________________________________________________________________________
+
+
+
+INDIVIDUAL PARAMETERS ESTIMATION _______________________________________________
+
+
+Individual Parameters Estimation by Conditional Mean ---------------------------
+           min        Q1    median        Q3       max
+Te :        38      41.5      42.8      44.7      50.8
+
+Elapsed time (seconds) :    0.56
+CPU time     (seconds) :       1
+
+ -------------------------------------------------------------------------------
+
+
+Individual Parameters Estimation by Conditional Mode ---------------------------
+           min        Q1    median        Q3       max
+Te :      39.7      40.6      41.4      42.6      46.5
+
+Elapsed time (seconds) :   0.026
+CPU time     (seconds) :       0
+
+ -------------------------------------------------------------------------------
+
+ _______________________________________________________________________________
+

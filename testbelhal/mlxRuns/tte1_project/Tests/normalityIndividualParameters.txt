@@ -1,0 +1,2 @@
+parameter,statistics,p-value,test
+Te,0.987877,0.662961,Shapiro-Wilk

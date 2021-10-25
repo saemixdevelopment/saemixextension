@@ -1,0 +1,44 @@
+<DATAFILE>
+
+[FILEINFO]
+file = '../../../../../../../monolix/MonolixSuite2019R2/resources/demos/monolix/3.models_for_noncontinuous_outcomes/3.2.count_data_model/data/count1_data.txt'
+delimiter = tab
+header = {ID, TIME, Y}
+
+[CONTENT]
+ID = {use=identifier}
+TIME = {use=time}
+Y = {use=observation, name=Y, type=discrete}
+
+<MODEL>
+
+[INDIVIDUAL]
+input = {lambda_pop, omega_lambda}
+
+DEFINITION:
+lambda = {distribution=logNormal, typical=lambda_pop, sd=omega_lambda}
+
+[LONGITUDINAL]
+file = '../../../../../../../monolix/MonolixSuite2019R2/resources/demos/monolix/3.models_for_noncontinuous_outcomes/3.2.count_data_model/model/poisson_model.txt'
+<FIT>
+data = Y
+model = Y
+
+<PARAMETER>
+lambda_pop = {value=1, method=MLE}
+omega_lambda = {value=1, method=MLE}
+
+<MONOLIX>
+
+[TASKS]
+populationParameters()
+individualParameters(method = {conditionalMean, conditionalMode })
+fim(method = StochasticApproximation)
+logLikelihood(run = false,method = ImportanceSampling)
+plotResult(method = {outputplot, indfits, obspred, vpc, npc, residualsscatter, residualsdistribution, parameterdistribution, covariatemodeldiagnosis, randomeffects, covariancemodeldiagnosis, blq, predictiondistribution, likelihoodcontribution, categorizedoutput, saemresults, condmeanresults, fisher, likelihoodresults })
+
+[SETTINGS]
+GLOBAL:
+seed = 12345
+exportpath = '../'
+

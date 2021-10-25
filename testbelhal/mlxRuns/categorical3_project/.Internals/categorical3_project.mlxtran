@@ -1,0 +1,51 @@
+<DATAFILE>
+
+[FILEINFO]
+file = '../../../../../../../monolix/MonolixSuite2019R2/resources/demos/monolix/3.models_for_noncontinuous_outcomes/3.1.categorical_data_model/data/categorical2_data.txt'
+delimiter = tab
+header = {ID, TIME, Y, PERIOD, DOSE}
+
+[CONTENT]
+ID = {use=identifier}
+TIME = {use=time}
+Y = {use=observation, name=Y, type=discrete}
+PERIOD = {use=regressor}
+
+<MODEL>
+
+[INDIVIDUAL]
+input = {th1_pop, omega_th1, th2_pop, th3_pop, th4_pop}
+
+DEFINITION:
+th1 = {distribution=normal, typical=th1_pop, sd=omega_th1}
+th2 = {distribution=logNormal, typical=th2_pop, no-variability}
+th3 = {distribution=logNormal, typical=th3_pop, no-variability}
+th4 = {distribution=normal, typical=th4_pop, no-variability}
+
+[LONGITUDINAL]
+file = '../../../../../../../monolix/MonolixSuite2019R2/resources/demos/monolix/3.models_for_noncontinuous_outcomes/3.1.categorical_data_model/model/categorical3_model.txt'
+<FIT>
+data = Y
+model = level
+
+<PARAMETER>
+omega_th1 = {value=10, method=MLE}
+th1_pop = {value=10, method=MLE}
+th2_pop = {value=1, method=MLE}
+th3_pop = {value=1, method=MLE}
+th4_pop = {value=-5, method=MLE}
+
+<MONOLIX>
+
+[TASKS]
+populationParameters()
+individualParameters(method = {conditionalMean, conditionalMode })
+fim(method = StochasticApproximation)
+logLikelihood(run = false,method = ImportanceSampling)
+plotResult(method = {outputplot, indfits, obspred, parameterdistribution, covariatemodeldiagnosis, randomeffects, covariancemodeldiagnosis, saemresults })
+
+[SETTINGS]
+GLOBAL:
+seed = 12345
+exportpath = '../'
+
