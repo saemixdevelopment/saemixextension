@@ -1095,7 +1095,7 @@ replace.data.options<-function(plot.opt,...) {
 #' 
 #' This function will plot a longitudinal dataframe contained in an SaemixData object. By default it produces a spaghetti plot, but arguments can be passed on to modify this behaviour. 
 #' 
-#' @name plot-SaemixData
+## #' @name plot-SaemixData
 #' 
 #' @param x an SaemixData object or an SaemixSimData object
 #' @param y unused, present for compatibility with base plot function
@@ -1103,11 +1103,14 @@ replace.data.options<-function(plot.opt,...) {
 #' 
 #' @aliases plot,SaemixData-methods 
 #' @aliases plot-SaemixData
-#' @aliases plot,SaemixData
+#' @aliases plot,SaemixData plot,SaemixData,ANY-method
 #' @keywords plot
 ### #' @docType methods
 #' @exportMethod plot
 #' @rdname plot-SaemixData
+#' 
+#' @import ggplot2 grid gridExtra
+#' 
 
 # Plot the data, either as points or as lines grouped by x@name.group
 setMethod("plot","SaemixData",

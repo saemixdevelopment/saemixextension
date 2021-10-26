@@ -104,9 +104,7 @@ estep<-function(kiter, Uargs, Dargs, opt, mean.phi, varList, DYF, phiM) {
 	  	i1.omega2<-varList$ind.eta
 	    iomega.phi1<-solve(omega.eta[i1.omega2,i1.omega2])
 
-	  	# id<-saemixObject["data"]["data"][,saemixObject["data"]["name.group"]]
-	  	# xind<-saemixObject["data"]["data"][,saemixObject["data"]["name.predictors"], drop=FALSE]
-	  	# yobs<-saemixObject["data"]["data"][,saemixObject["data"]["name.response"]]
+	 	# Setup for MAP calculation (MAP is identical no matter the chain)
 	  	id<-Dargs$IdM[1:Dargs$nobs]
 	  	xind<-Dargs$XM[1:Dargs$nobs, drop=FALSE]
 	  	yobs<-Dargs$yM[1:Dargs$nobs]
@@ -115,7 +113,7 @@ estep<-function(kiter, Uargs, Dargs, opt, mean.phi, varList, DYF, phiM) {
 	  	if(Dargs$type=="structural"){
 #	  		for(i in 1:saemixObject["data"]["N"]) {
 	  		for(i in 1:length(id.list)) {
-  	  	  isuj<-id.list[i]
+  	  	  		isuj<-id.list[i]
 			    xi<-xind[id==isuj,,drop=FALSE]
 			    yi<-yobs[id==isuj]
 			    idi<-rep(1,length(yi))
@@ -125,10 +123,11 @@ estep<-function(kiter, Uargs, Dargs, opt, mean.phi, varList, DYF, phiM) {
 			    phi1.opti<-optim(par=phi1, fn=conditional.distribution_c, phii=phii,idi=idi,xi=xi,yi=yi,mphi=mean.phi1,idx=i1.omega2,iomega=iomega.phi1, trpar=Dargs$transform.par, model=Dargs$structural.model, pres=varList$pres, err=Dargs$error.model)
 			    phi.map[i,i1.omega2]<-phi1.opti$par
 			}
-			#rep the map nchains time
+			
+			# Repeat the map nchains time
 			phi.map <- phi.map[rep(seq_len(nrow(phi.map)),Uargs$nchains ), ]
 
-		  map.psi<-transphi(phi.map,Dargs$transform.par)
+		 	map.psi<-transphi(phi.map,Dargs$transform.par)
 			map.psi<-data.frame(id=id.list,map.psi)
 			map.phi<-data.frame(id=id.list,phi.map)
 			psi_map <- as.matrix(map.psi[,-c(1)])
@@ -181,7 +180,6 @@ estep<-function(kiter, Uargs, Dargs, opt, mean.phi, varList, DYF, phiM) {
 #			for(i in 1:saemixObject["data"]["N"]) {
 			    isuj<-id.list[i]
 			    xi<-xind[id==isuj,,drop=FALSE]
-			#    if(is.null(dim(xi))) xi<-matrix(xi,ncol=1)
 			    yi<-yobs[id==isuj]
 			    idi<-rep(1,length(yi))
 			    mean.phi1<-mean.phiM[i,i1.omega2]

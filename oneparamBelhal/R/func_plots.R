@@ -392,7 +392,7 @@ saemix.plot.select<-function(saemixObject,data=FALSE,convergence=FALSE, likeliho
     if(!cok %in% c("y","Y","yes","")) boolpred<-FALSE 
   }
   if(boolsim & !boolres) {
-    saemixObject<-simulate.saemix(saemixObject)
+    saemixObject<-simulate(saemixObject)
     assign(namObj,saemixObject,envir=parent.frame())
   }
   if(boolpred) {
@@ -1255,7 +1255,7 @@ saemix.plot.npde<-function(saemixObject,...) {
 
 saemix.plot.vpc<-function(saemixObject,npc=FALSE,...) {
   if(length(saemixObject["sim.data"]["nsim"])==0) {
-    message("Please simulate data first, using the simulate.saemix function.\n") 
+    message("Please simulate data first, using the simulate function.\n") 
     return("No simulated data")
   }
   oldpar <- par(no.readonly = TRUE)    # code line i

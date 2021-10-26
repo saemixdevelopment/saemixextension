@@ -192,6 +192,7 @@ setClass(
 # initialize
 
 #' @rdname initialize-methods
+#' @param status string indicating whether a model has been run successfully; set to "empty" at initialisation, used to pass on error messages or fit status
 #' @param modeltype a character string  giving the model used for analysis
 #' @param name.fixed a character string  giving the name of the fixed parameters
 #' @param name.random a character string  giving the name of the random parameters
