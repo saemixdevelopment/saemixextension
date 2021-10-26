@@ -41,7 +41,7 @@ model1cpt<-function(psi,id,xidep) {
 #   transform.par=c(1,1),omega.init=matrix(c(1,0,0,1),ncol=2,byrow=TRUE),
 #   covariance.model=matrix(c(1,0,0,1),ncol=2,byrow=TRUE))
 
-saemix.model_warfa<-saemixModel(model=model1cpt,description="warfarin",
+saemix.model_warfa<-saemixModel(model=model1cpt,description="warfarin",modeltype="structural",
   psi0=matrix(c(1),ncol=1,byrow=TRUE, dimnames=list(NULL, c("ka"))),
   transform.par=c(1),omega.init=matrix(c(1),ncol=1,byrow=TRUE),
   covariance.model=matrix(c(1),ncol=1,byrow=TRUE))
