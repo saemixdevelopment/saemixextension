@@ -5,9 +5,9 @@ library(testthat)
 # Testing where we are :-)
 saemixDir<-"/home/eco/work/saemix/saemixextension/"
 if(is.na(file.info(saemixDir)[1])) {
-  saemixDir<-"/Users/karimimohammedbelhal/Desktop/R_package/oldsaemixextension/"
-  rootDir<-"/Users/karimimohammedbelhal/Desktop/R_package/oldsaemixextension/testbelhal"
-  datDir<-"/Users/karimimohammedbelhal/Desktop/R_package/oldsaemixextension/data"
+  saemixDir<-"/Users/karimimohammedbelhal/Desktop/ML_Research/Saemix - R_Packages/saemix/saemixextension/"
+  rootDir<-"/Users/karimimohammedbelhal/Desktop/ML_Research/Saemix - R_Packages/saemix/saemixextension/testbelhal"
+  datDir<-"/Users/karimimohammedbelhal/Desktop/ML_Research/Saemix - R_Packages/saemix/saemixextension/data"
 }
 
 setwd(saemixDir)
@@ -38,10 +38,17 @@ test_file(file.path(saemixDir,"testbelhal","testthat_functions.R"))
 ###########################################################
 ################### Running models with continuous data
 ###########################################################
-# Running TTE model
+# Running Model1cpt model
 source(file.path(saemixDir,"testbelhal","test_setup_cont.R"))
 test_file(file.path(saemixDir,"testbelhal","testthat_predict_cont.R"))
 
+
+###########################################################
+################### Running models with continuous data and new kernel
+###########################################################
+# Running Model1cpt model with 4th kernel
+source(file.path(saemixDir,"testbelhal","test_setup_cont_kernel.R"))
+test_file(file.path(saemixDir,"testbelhal","testthat_predict_cont_kernel.R"))
 
 
 ###########################################################
