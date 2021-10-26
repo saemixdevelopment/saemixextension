@@ -79,6 +79,142 @@ if(FALSE) {
 
 # homi <- read.table("http://www.stat.ufl.edu/~aa/glm/data/Homicides.dat",  header = TRUE)
 
+## Salamander data from glmmTMB
+library(glmmTMB)
+data(Salamanders)
+summary(Salamanders)
+
+barplot(Salamanders$DOY, Salamanders$count)
+
+table(Salamanders$spp, Salamanders$count)
+
+ecl<-Salamanders[Salamanders$spp=="EC-L",]
+twospecies<-Salamanders[Salamanders$spp %in% c("EC-L","DF"),]
+twospecies$spp <- as.character(twospecies$spp)
+
+saemix.data<-saemixData(name.data=ecl, name.group=c("site"),
+                        name.predictors=c("DOY","count"),name.response=c("count"),
+                        name.covariates=c("mined","cover", "DOP", "Wtemp"),
+                        units=list(x="day (scaled)",y="",covariates=c("","","","")))
+
+countmodel.poisson<-function(psi,id,xidep) { 
+  y<-xidep[,2]
+  lambda<-psi[id,1]
+  logp <- -lambda + y*log(lambda) - log(factorial(y))
+  return(logp)
+}
+
+saemix.model<-saemixModel(model=countmodel.poisson,description="count model Poisson",modeltype="likelihood",   
+                          psi0=matrix(c(0.5),ncol=1,byrow=TRUE,dimnames=list(NULL, c("lambda"))), 
+                          transform.par=c(1)) #omega.init=matrix(c(0.5,0,0,0.3),ncol=2,byrow=TRUE))
+
+saemix.model.cov<-saemixModel(model=countmodel.poisson,description="count model Poisson",modeltype="likelihood",   
+                          psi0=matrix(c(0.5),ncol=1,byrow=TRUE,dimnames=list(NULL, c("lambda"))), 
+                          covariate.model = matrix(c(1,rep(0,3)), ncol=1, byrow=T),
+                          transform.par=c(1)) #omega.init=matrix(c(0.5,0,0,0.3),ncol=2,byrow=TRUE))
+
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
+poisson.fit<-saemix(saemix.model,saemix.data,saemix.options)
+poisson.fit.cov<-saemix(saemix.model.cov,saemix.data,saemix.options)
+plot(poisson.fit, plot.type="convergence")
+
+## ZIP Poisson model
+countmodel.zip<-function(psi,id,xidep) {
+  y<-xidep[,2]
+  lambda<-psi[id,1]
+  p0<-psi[id,2]
+  logp <- log(1-p0) -lambda + y*log(lambda) - log(factorial(y))
+  logp0 <- log(p0+(1-p0)*exp(-lambda))
+  logp[y==0]<-logp0[y==0]
+  return(logp)
+}
+
+saemix.model.zip<-saemixModel(model=countmodel.zip,description="count model ZIP",modeltype="likelihood",   
+                          psi0=matrix(c(0.5,0.2),ncol=2,byrow=TRUE,dimnames=list(NULL, c("lambda","p0"))), 
+                          transform.par=c(1,3), #omega.init=matrix(c(0.5,0,0,0.3),ncol=2,byrow=TRUE),
+                          covariance.model=matrix(c(1,0,0,0),ncol=2,byrow=TRUE))
+saemix.model.zipcov<-saemixModel(model=countmodel.zip,description="count model ZIP",modeltype="likelihood",   
+                              psi0=matrix(c(0.5,0.2),ncol=2,byrow=TRUE,dimnames=list(NULL, c("lambda","p0"))), 
+                              transform.par=c(1,3), #omega.init=matrix(c(0.5,0,0,0.3),ncol=2,byrow=TRUE),
+                              covariate.model = matrix(c(1,rep(0,7)), ncol=2, byrow=T),
+                              covariance.model=matrix(c(1,0,0,0),ncol=2,byrow=TRUE))
+zippoisson.fit<-saemix(saemix.model.zip,saemix.data,saemix.options)
+zippoisson.fitcov<-saemix(saemix.model.zipcov,saemix.data,saemix.options)
+plot(zippoisson.fit, plot.type="convergence")
+
+BIC(poisson.fit)
+BIC(zippoisson.fit)
+
+if(FALSE) {
+  salamander.saemix<-ecl
+  salamander.saemix$mined<-as.integer(salamander.saemix$mined=="yes")
+  write.table(salamander.saemix, file.path(saemixDir, "testbelhal", "salamander.saemix.tab"), quote=F, row.names=F)
+  
+  salamander.saemix<-Salamanders
+  species<-as.character(unique(Salamanders$spp))
+  for(isp in species) {
+    xcov<-as.integer(salamander.saemix$spp==isp)
+    salamander.saemix<-cbind(salamander.saemix, sp=xcov)
+    colnames(salamander.saemix)[dim(salamander.saemix)[2]]<-isp
+  }
+  salamander.saemix$mined<-as.integer(salamander.saemix$mined=="yes")
+  salamander.saemix$spp<-NULL
+  salamander.saemix<-salamander.saemix[,c("site","DOY","count","mined","cover","DOP","Wtemp","sample",colnames(salamander.saemix)[9:15])]
+  write.table(salamander.saemix, file.path(saemixDir, "testbelhal", "sal.saemix.tab"), quote=F, row.names=F)
+  
+  saemix.data<-saemixData(name.data=salamander.saemix, name.group=c("site"),
+                          name.predictors=c("DOY","count"),name.response=c("count"),
+                          name.covariates=c("mined","PR","DM","EC-A","EC-L","DES-L","DF"), # reference class will be GP
+                          units=list(x="day (scaled)",y=""))
+  saemix.model.zipcov<-saemixModel(model=countmodel.zip,description="count model ZIP",modeltype="likelihood",   
+                                   psi0=matrix(c(0.5,0.2),ncol=2,byrow=TRUE,dimnames=list(NULL, c("lambda","p0"))), 
+                                   transform.par=c(1,3), #omega.init=matrix(c(0.5,0,0,0.3),ncol=2,byrow=TRUE),
+                                   covariate.model = matrix(c(rep(1,2*length(saemix.data@name.covariates))), ncol=2, byrow=T),
+                                   covariance.model=matrix(c(1,0,0,0),ncol=2,byrow=TRUE))
+  zippoisson.fitcov<-try(saemix(saemix.model.zipcov,saemix.data,saemix.options)) # fails with Lapack problem => really need to debug this...
+  
+}
+
+# Same, with the 2 most frequent species, using spp as a covariate - fails
+
+saemix.data<-saemixData(name.data=twospecies, name.group=c("site"),
+                        name.predictors=c("DOY","count"),name.response=c("count"),
+                        name.covariates=c("spp","mined","cover", "DOP", "Wtemp"),
+                        units=list(x="day (scaled)",y="",covariates=c("","","","","")))
+
+countmodel.poisson<-function(psi,id,xidep) { 
+  y<-xidep[,2]
+  lambda<-psi[id,1]
+  logp <- -lambda + y*log(lambda) - log(factorial(y))
+  return(logp)
+}
+
+saemix.model<-saemixModel(model=countmodel.poisson,description="count model Poisson",modeltype="likelihood",   
+                          psi0=matrix(c(1),ncol=1,byrow=TRUE,dimnames=list(NULL, c("lambda"))), 
+                          covariate.model = matrix(c(1,rep(0,4)),ncol=1, byrow=T),
+                          transform.par=c(1)) #omega.init=matrix(c(0.5,0,0,0.3),ncol=2,byrow=TRUE))
+
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, fim=FALSE)
+poisson.fit<-try(saemix(saemix.model,saemix.data,saemix.options)) # fails, pb with solving Lapack
+
+saemix.model.zip<-saemixModel(model=countmodel.zip,description="count model ZIP",modeltype="likelihood",   
+                              psi0=matrix(c(0.5,0.2),ncol=2,byrow=TRUE,dimnames=list(NULL, c("lambda","p0"))), 
+                              transform.par=c(1,3), #omega.init=matrix(c(0.5,0,0,0.3),ncol=2,byrow=TRUE),
+                              covariate.model = matrix(c(1,rep(0,9)),ncol=2, byrow=T),
+                              covariance.model=matrix(c(1,0,0,0),ncol=2,byrow=TRUE))
+zippoisson.fit<-try(saemix(saemix.model.zip,saemix.data,saemix.options))
+
+## Fit with glmmTMB
+zipm1 = glmmTMB(count~spp + mined + (1|site), Salamanders, family="poisson")
+summary(zipm1)
+zipm2 = glmmTMB(count~spp * mined + (1|site), Salamanders, family="poisson")
+summary(zipm2)
+
+zipm3 = glmmTMB(count~spp * mined + (1|site), zi=~spp * mined, Salamanders, family="poisson")
+summary(zipm3)
+
+### 
+
 ## nest data from glmmTMB
 
 library(glmmTMB)
@@ -239,8 +375,6 @@ kneePQL2 <- glmmPQL(RD ~ as.factor(Th) + Age2, data=knee2,
                    random = ~ 1|N, family=binomial())
 summary(kneePQL2)
 
-
-
 ########################################################################
 # TTE - Lung cancer
 
@@ -342,3 +476,120 @@ if(FALSE)
 ## drugD-penicil  0.1438     0.1721  0.84    0.40
 ## sexfemale      0.4816     0.2217  2.17    0.03
 ## age           -0.0420     0.0084 -5.00 5.7e-07
+
+########################################################################
+# RTTE - Gaucher ? (few events...)
+
+########################################################################
+# RTTE - Simulated data
+
+# For repeated time-to-events, a simulation algorithm is to simulate TTE repeatedly in an individual until the time to censoring has been reached (Penichou et al. 2014). Here the simulation for each successive event is perfomed by simulating a random variable in $\mathcal{U}[0,1]$ and using the inverse of the cumulative density function to generate the corresponding time to event.
+
+simul.rtte.unif<-function(psi) { # xidep, id not important, we only use psi
+  censoringtime <- 3
+  maxevents <- 30
+  lambda <- psi[,1]
+  beta <- psi[,2]
+  simdat<-NULL
+  N<-nrow(psi)
+  for(i in 1:N) {
+    eventTimes<-c(0)
+    T<-0
+    Vj<-runif(1)
+    #    T <- (-log(Vj)*lambda[i])^(beta[i])
+    T<-lambda[i]*(-log(Vj))^(1/beta[i])
+    nev<-0
+    while (T < censoringtime & nev<maxevents){
+      eventTimes <- c(eventTimes, T)  
+      nev<-nev+1
+      Vj<-runif(1)
+      #      T <- T+(-log(Vj)*lambda[i])^(beta[i])
+      #      T<-(-log(Vj)*lambda[i] + T^(1/beta[i]))^(beta[i])
+      T<-lambda[i]*(-log(Vj) + (T/lambda[i])^(beta[i]))^(1/beta[i])
+    }
+    if(nev==maxevents) {
+      message("Reached maximum number of events\n")
+    }
+    eventTimes<-c(eventTimes, censoringtime)
+    cens<-rep(1,length(eventTimes))
+    cens[1]<-cens[length(cens)]<-0
+    simdat<-rbind(simdat,
+                  data.frame(id=i, T=eventTimes, status=cens))
+  }
+  return(simdat)
+}
+
+# Subjects
+set.seed(12345)
+param<-c(2, 1.5, 0.5)
+# param<-c(4, 1.2, 0.3)
+omega<-c(0.25,0.25)
+nsuj<-200
+risk<-rep(0,nsuj)
+risk[(nsuj/2+1):nsuj]<-1
+psiM<-data.frame(lambda=param[1]*exp(rnorm(nsuj,sd=omega[1])), beta=param[2]*exp(param[3]*risk+rnorm(nsuj,sd=omega[2])))
+simdat <- simul.rtte.unif(psiM)
+simdat$risk<-as.integer(simdat$id>(nsuj/2))
+
+if(FALSE) { # Check simulated parameters
+  summary(psiM)
+  apply(log(psiM),2,sd)
+}
+
+if(FALSE) {
+  xtim<-seq(0:20)
+  rtte.data<-data.frame(id=rep(1:nsuj,each=length(xtim)),time=rep(xtim,nsuj))
+  preds <- simul.rtte.rweib(psiM, rtte.data$id, rtte.data[,c("time")])
+  
+  par(mfrow=c(1,2))
+  hist(preds)
+  hist(simdat$T[simdat$T>0])
+  
+  rtte.data$tlat<-preds
+  rtte.data$status<-as.integer(rtte.data$tlat<3)
+  
+  # Remove duplicated censored times
+  dat1<-NULL
+  for(i in 1:nsuj) {
+    idat<-rtte.data[rtte.data$id==i,]
+    idat<-idat[!duplicated(idat$tlat),,drop=FALSE]
+    dat1<-rbind(dat1, c(i,0,0), idat[,-c(2)])
+  }
+  rtte.data<-dat1
+  table(tapply(rtte.data$id, rtte.data$id, length))
+}
+
+if(FALSE)
+  write.table(simdat,file.path(ecoDir,"simulatedRTTE.csv"), quote=F, row.names=F)
+saemix.data<-saemixData(name.data=simdat, name.group=c("id"), name.predictors=c("T"), name.response="status", name.covariates="risk")
+
+### Fit RTTE
+rtte.model<-function(psi,id,xidep) {
+  T<-xidep[,1]
+  N <- nrow(psi) # nb of subjects
+  Nj <- length(T) # nb of events (including 0 and censoring times)
+  # censoringtime = 6
+  censoringtime = max(T) # same censoring for everyone
+  lambda <- psi[id,1]
+  beta <- psi[id,2]
+  tinit <- which(T==0) # indices of beginning of observation period
+  tcens <- which(T==censoringtime) # indices of censored events 
+  tevent <- setdiff(1:Nj, append(tinit,tcens)) # indices of non-censored event times
+  hazard <- (beta/lambda)*(T/lambda)^(beta-1)
+  H <- (T/lambda)^beta
+  logpdf <- rep(0,Nj)
+  logpdf[tcens] <- -H[tcens] + H[tcens-1]
+  logpdf[tevent] <- -H[tevent] + H[tevent-1] + log(hazard[tevent])
+  return(logpdf)
+}
+
+saemix.model.base<-saemixModel(model=rtte.model,description="Repeated TTE model",modeltype="likelihood",
+                               psi0=matrix(c(1,2),ncol=2,byrow=TRUE,dimnames=list(NULL,  c("lambda","beta"))),
+                               transform.par=c(1,1),covariance.model=matrix(c(1,0,0,1),ncol=2, byrow=TRUE))
+saemix.model<-saemixModel(model=rtte.model,description="Repeated TTE model",modeltype="likelihood",
+                          psi0=matrix(c(1,2),ncol=2,byrow=TRUE,dimnames=list(NULL,  c("lambda","beta"))),
+                          transform.par=c(1,1),covariate.model=matrix(c(0,1),ncol=2),
+                          covariance.model=matrix(c(1,0,0,1),ncol=2, byrow=TRUE))
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, fim=FALSE, displayProgress=FALSE)
+rtte.fit<-saemix(saemix.model,saemix.data,saemix.options)
+plot(rtte.fit, plot.type="convergence")

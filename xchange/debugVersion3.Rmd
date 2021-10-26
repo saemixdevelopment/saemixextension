@@ -56,16 +56,16 @@ if(!testMode) {
 
 ## notes from Belhal (notes.txt in testbelhal)
 
-1) for ORD data model, the response is a predictor. Test with new data without individual observations is non applicable.
-
-2) For ORD data: problem in estimating parameters with new data (map and pop params) NEED TO DEBUG. Could be in map.saemix???
-
-3) COUNT data model: WHEN ONLY ONE PARAM TO ESTIMATE (fixed.estim=c(1,0)) OBTAIN: 
-
- Error in cbind(blocA, t(blocC)) : 
-le nombre de lignes des matrices doit correspondre (voir argument 2)
-
-
+- **1) for ORD data model, the response is a predictor. Test with new data without individual observations is non applicable.**
+  - more of a comment than a question ?
+- **2) For ORD data: problem in estimating parameters with new data (map and pop params) NEED TO DEBUG. Could be in map.saemix???**
+  - **Eco** check on an example
+  - Lucie's simulations seem to validate the estimation of the population parameters
+  - Sofia's and my simulations show that individual parameters are poorly estimated in most models (but also true for Monolix)
+- **3) COUNT data model: WHEN ONLY ONE PARAM TO ESTIMATE (fixed.estim=c(1,0)) OBTAIN:**
+  - *Error in cbind(blocA, t(blocC)) :*
+  - *le nombre de lignes des matrices doit correspondre (voir argument 2)*
+  - => solved by Belhal on October 25
 
 # Classes
 
@@ -143,6 +143,7 @@ Testing simple models
 - plot function to get predictions for a dataset based on a model and parameters (either from the model or a different set)
   - only works for continuous responses
   - uses ggplot so will need to add this as a dependency
+- Belhal fixed the problem of the model needing at least 2 parameters to work with
 - **TODO**
   - print function for empty models returns NULL, would rather it returned nothing
   - testthat function for the original plot function + documentation
@@ -953,7 +954,13 @@ if(FALSE) {
 }
 ```
 
-### Running saemix with only one IIV
+### Running saemix with only one IIV or parameter
+
+- only one IIV
+  - works
+- only one parameter
+  - old workaround: use a dummy parameter fixed
+  - Belhal fixed the issue
 
 ```{r oneIIV}
 # One IIV
@@ -991,14 +998,55 @@ saemix.modelonepar<-saemixModel(model=model1cpt.onepar,modeltype="structural",
                           transform.par=c(1))
 saemix.onepar<-saemix(saemix.modelonepar,saemix.data,saemix.options)
 
-saemix.modeldummypar<-saemixModel(model=model1cpt.onepar,modeltype="structural", 
-                          description="One-compartment model with first-order absorption, only CL",
-                          psi0=matrix(c(0.5,0,0,0),ncol=2,byrow=TRUE, dimnames=list(NULL, c("CL","dummy"))), 
-                          transform.par=c(1,0), covariance.model=matrix(c(1,0,0,0),ncol=2), fixed.estim=c(1,0))
-saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, warnings=FALSE)
-saemix.dummypar<-saemix(saemix.modeldummypar,saemix.data,saemix.options)
+# Old workaround - not needed anymore
+if(FALSE) {
+  saemix.modeldummypar<-saemixModel(model=model1cpt.onepar,modeltype="structural", 
+                                    description="One-compartment model with first-order absorption, only CL",
+                                    psi0=matrix(c(0.5,0,0,0),ncol=2,byrow=TRUE, dimnames=list(NULL, c("CL","dummy"))), 
+                                    transform.par=c(1,0), covariance.model=matrix(c(1,0,0,0),ncol=2), fixed.estim=c(1,0))
+  saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, warnings=FALSE)
+  saemix.dummypar<-saemix(saemix.modeldummypar,saemix.data,saemix.options)
+}
 
 
 ```
 
+## BUG
+
+- bug when running the count example with species as a covariate on a parameter (also with a ZIP model with 2 parameters so unrelated to previous problem)
+
+Error in solve.default(comega[Uargs$ind.fix1, Uargs$ind.fix1], rowSums(temp)) : 
+  routine Lapack dgesv : le système est exactement singulier : U[2,2] = 0
+
+- **TODO** secure code when mismatch between the number of covariates in the model and the number of covariates in the dataset
+
+```{r countBug}
+library(glmmTMB)
+data(Salamanders)
+summary(Salamanders)
+
+twospecies<-Salamanders[Salamanders$spp %in% c("EC-L","DF"),]
+twospecies$spp <- as.character(twospecies$spp)
+
+saemix.data<-saemixData(name.data=twospecies, name.group=c("site"),
+                        name.predictors=c("DOY","count"),name.response=c("count"),
+                        name.covariates=c("spp","mined","cover", "DOP", "Wtemp"),
+                        units=list(x="day (scaled)",y="",covariates=c("","","","","")))
+
+countmodel.poisson<-function(psi,id,xidep) { 
+  y<-xidep[,2]
+  lambda<-psi[id,1]
+  logp <- -lambda + y*log(lambda) - log(factorial(y))
+  return(logp)
+}
+
+saemix.model<-saemixModel(model=countmodel.poisson,description="count model Poisson",modeltype="likelihood",   
+                          psi0=matrix(c(1),ncol=1,byrow=TRUE,dimnames=list(NULL, c("lambda"))), 
+                          covariate.model = matrix(c(1,rep(0,4)),ncol=1, byrow=T),
+                          transform.par=c(1)) #omega.init=matrix(c(0.5,0,0,0.3),ncol=2,byrow=TRUE))
+
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, fim=FALSE)
+poisson.fit<-try(saemix(saemix.model,saemix.data,saemix.options)) # fails, pb with solving Lapack
+
+```
 

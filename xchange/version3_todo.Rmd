@@ -22,7 +22,7 @@ output:
     - covariates
   - SaemixModel class
     - **DONE** class structure, defining model
-    - validate covariance model
+    - **DONE** validate covariance model
   - SaemixObject class
       - **DONE** class structure
       - computation of BIC, AIC (Maud)
@@ -33,6 +33,12 @@ output:
     - displayProgress=FALSE by default ?
     - verbose=FALSE ?
     - or indicate how to suppress all messages ? (maybe not a good idea)
+- examples
+  - **DONE** continuous response models
+  - **DONE** binary data
+  - **DONE** categorical data, TTE data
+    - **TODO** add a section example of use with donttest to the online page
+  - **TODO** RTTE data, count data (maybe count data=salamander data)
 - documentation
   - error models
   - new models from Belhal for responses defined by their likelihood

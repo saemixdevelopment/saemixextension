@@ -151,6 +151,7 @@ setMethod(
     opt<-saemixControl()
     if(length(options)>0) {
     for(i in names(options)) opt[i]<-options[i]
+    while(length(options["nbiter.mcmc"][[1]])<4) options["nbiter.mcmc"][[1]]<-c(options["nbiter.mcmc"][[1]],0) # nb of kernels now 4, complete if shorter
       if(!opt$fix.seed) {
       rm(.Random.seed)
       runif(1)

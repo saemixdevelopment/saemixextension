@@ -1,0 +1,60 @@
+#######################################################################
+* checking S3 generic/method consistency ... WARNING
+
+transform:
+  function(_data, ...)
+transform.numeric:
+  function(x, transformation, centering, verbose)
+
+transform:
+  function(_data, ...)
+transform.numeric:
+  function(x, transformation, centering, verbose)
+
+plot:
+  function(x, ...)
+plot.saemixModel:
+  function(smx.model, smx.data, psi)
+
+predict:
+  function(object, ...)
+predict.SaemixModel:
+  function(object, predictors, psi, id)
+
+predict:
+  function(object, ...)
+predict.newdata:
+  function(saemixObject, saemix.newdata, type, nsamp)
+
+simulate:
+  function(object, nsim, seed, ...)
+simulate.saemix:
+  function(saemixObject, nsim, predictions, res.var, uncertainty)
+
+See section ‘Generic functions and methods’ in the ‘Writing R
+Extensions’ manual.
+
+Found the following apparent S3 methods exported but not registered:
+  plot.saemixModel predict.SaemixModel predict.newdata simulate.saemix
+
+
+#######################################################################
+* checking for missing documentation entries ... WARNING
+Undocumented code objects:
+  ‘predict.newdata’
+All user-level objects in a package should have documentation entries.
+See chapter ‘Writing R documentation files’ in the ‘Writing R
+
+#######################################################################
+* checking Rd \usage sections ... NOTE
+S3 methods shown with full name in documentation object 'plot.saemixModel':
+  ‘plot.saemixModel’
+
+S3 methods shown with full name in documentation object 'predict.SaemixModel':
+  ‘predict.SaemixModel’
+
+The \usage entries for S3 methods should use the \method markup and not
+their full name.
+See chapter ‘Writing R documentation files’ in the ‘Writing R
+
+#######################################################################

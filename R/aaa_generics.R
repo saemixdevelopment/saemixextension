@@ -796,6 +796,46 @@ NULL
 NULL
 
 
+#' Knee pain data
+#' 
+#' The \code{knee.saemix} data represents pain scores recorded in a clinical study 
+#' in 127 patients with sport related injuries treated with two different therapies. 
+#' After 3,7 and 10 days of treatment the pain occuring during knee movement was observed.
+#' 
+#' @docType data
+#' @name knee.saemix
+#' 
+#' @usage knee.saemix
+#' 
+#' @format This data frame contains the following columns: 
+#' \describe{
+#' \item{id}{subject index in file}
+#' \item{time}{time of measurement (in days)} 
+#' \item{y}{knee pain (0=none to 4=severe)} 
+#' \item{Age}{patient age (scaled and centered)} 
+#' \item{Sex}{patient gender (0=male, 1=female)}
+#' \item{RD}{moderate knee pain (defined as pain score 2 or more)} 
+#' \item{treatment}{treatment indicator (0=placebo, 1=treatment)}
+#' \item{Age2}{patient age, squared (Age^2)} 
+#' }
+#' #'   
+#' @details The data in the \code{knee.saemix} was reformatted from the knee dataset provided by the
+#' catdata package (see data(knee, package="catdata")). A time column was added representing the day 
+#' of the measurement (with 0 being the baseline value) and each observation corresponds to a different
+#' line in the dataset. Treatment was recoded as 0/1 (placebo/treatment), gender as 0/1 (male/female)
+#' and Age2 represents the squared of centered Age.
+#' 
+#' @source catdata package in R
+#' 
+#' @references Tutz G (2012), Regression for Categorical Data, Cambridge University Press.
+#' 
+#' #' @examples
+#' data(knee.saemix)
+#' 
+#' #' @keywords datasets
+NULL
+
+
 #' NCCTG Lung Cancer Data, in SAEM format
 #'
 #' The \code{lung.saemix} contains survival data in patients with advanced lung cancer from the North Central Cancer Treatment Group. 
@@ -866,20 +906,7 @@ NULL
 #' \donttest{
 #' tte.fit<-saemix(saemix.model,saemix.data,saemix.options)
 #' }
-#' # The fit from saemix using the above Weibull model may be compared to the non-parametric KM estimate
-#' \dontrun{
-#' library(survival)
-#'   lung.surv<-lung.saemix[lung.saemix$time>0,]
-#'   lung.surv$status<-lung.surv$status+1
-#'   Surv(lung.surv$time, lung.surv$status) # 1=censored, 2=dead
-#'   f1 <- survfit(Surv(time, status) ~ 1, data = lung.surv)
-#'   xtim<-seq(0,max(lung.saemix$time), length.out=200)
-#'   estpar<-tte.fit@results@fixed.effects
-#'   ypred<-exp(-(xtim/estpar[1])^(estpar[2]))
-#'   plot(f1, xlab = "Days", ylab = "Overall survival probability")
-#'   lines(xtim,ypred, col="red",lwd=2)
-#' }
-#' #' @keywords datasets
+#' @keywords datasets
 NULL
 
 

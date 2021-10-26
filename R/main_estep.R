@@ -1,8 +1,8 @@
 ############################### Simulation - MCMC kernels (E-step) #############################
 
-estep<-function(kiter, Uargs, Dargs, opt, structural.model, mean.phi, varList, DYF, phiM) {
+estep<-function(kiter, Uargs, Dargs, opt, mean.phi, varList, DYF, phiM) {
 	# E-step - simulate unknown parameters
-	# Input: kiter, Uargs, structural.model, mean.phi (unchanged)
+	# Input: kiter, Uargs, mean.phi (unchanged)
 	# Output: varList, DYF, phiM (changed)
 	
 	# Function to perform MCMC simulation
@@ -104,42 +104,46 @@ estep<-function(kiter, Uargs, Dargs, opt, structural.model, mean.phi, varList, D
 	  	i1.omega2<-varList$ind.eta
 	    iomega.phi1<-solve(omega.eta[i1.omega2,i1.omega2])
 
-	  	id<-saemixObject["data"]["data"][,saemixObject["data"]["name.group"]]
-	  	xind<-saemixObject["data"]["data"][,saemixObject["data"]["name.predictors"], drop=FALSE]
-	  	yobs<-saemixObject["data"]["data"][,saemixObject["data"]["name.response"]]
+	  	# id<-saemixObject["data"]["data"][,saemixObject["data"]["name.group"]]
+	  	# xind<-saemixObject["data"]["data"][,saemixObject["data"]["name.predictors"], drop=FALSE]
+	  	# yobs<-saemixObject["data"]["data"][,saemixObject["data"]["name.response"]]
+	  	id<-Dargs$IdM[1:Dargs$nobs]
+	  	xind<-Dargs$XM[1:Dargs$nobs, drop=FALSE]
+	  	yobs<-Dargs$yM[1:Dargs$nobs]
 	  	id.list<-unique(id)
 
 	  	if(Dargs$type=="structural"){
-	  		for(i in 1:saemixObject["data"]["N"]) {
-			    isuj<-id.list[i]
+#	  		for(i in 1:saemixObject["data"]["N"]) {
+	  		for(i in 1:length(id.list)) {
+  	  	  isuj<-id.list[i]
 			    xi<-xind[id==isuj,,drop=FALSE]
 			    yi<-yobs[id==isuj]
 			    idi<-rep(1,length(yi))
 			    mean.phi1<-mean.phiM[i,i1.omega2]
 			    phii<-phiM[i,]
 			    phi1<-phii[i1.omega2]
-			    phi1.opti<-optim(par=phi1, fn=conditional.distribution_c, phii=phii,idi=idi,xi=xi,yi=yi,mphi=mean.phi1,idx=i1.omega2,iomega=iomega.phi1, trpar=saemixObject["model"]["transform.par"], model=saemixObject["model"]["model"], pres=varList$pres, err=saemixObject["model"]["error.model"])
+			    phi1.opti<-optim(par=phi1, fn=conditional.distribution_c, phii=phii,idi=idi,xi=xi,yi=yi,mphi=mean.phi1,idx=i1.omega2,iomega=iomega.phi1, trpar=Dargs$transform.par, model=Dargs$structural.model, pres=varList$pres, err=Dargs$error.model)
 			    phi.map[i,i1.omega2]<-phi1.opti$par
 			}
 			#rep the map nchains time
 			phi.map <- phi.map[rep(seq_len(nrow(phi.map)),Uargs$nchains ), ]
 
-		  	map.psi<-transphi(phi.map,saemixObject["model"]["transform.par"])
+		  map.psi<-transphi(phi.map,Dargs$transform.par)
 			map.psi<-data.frame(id=id.list,map.psi)
 			map.phi<-data.frame(id=id.list,phi.map)
 			psi_map <- as.matrix(map.psi[,-c(1)])
 			phi_map <- as.matrix(map.phi[,-c(1)])
 			eta_map <- phi_map - mean.phiM
 
-			fpred1<-structural.model(psi_map, Dargs$IdM, Dargs$XM)
+			fpred1<-Dargs$structural.model(psi_map, Dargs$IdM, Dargs$XM)
 			gradf <- matrix(0L, nrow = length(fpred1), ncol = nb.etas) 
 
 			## Compute gradient of structural model (gradf)
 			for (j in 1:nb.etas) {
 				psi_map2 <- psi_map
 				psi_map2[,j] <- psi_map[,j]+psi_map[,j]/1000
-				fpred1<-structural.model(psi_map, Dargs$IdM, Dargs$XM)
-				fpred2<-structural.model(psi_map2, Dargs$IdM, Dargs$XM)
+				fpred1<-Dargs$structural.model(psi_map, Dargs$IdM, Dargs$XM)
+				fpred2<-Dargs$structural.model(psi_map2, Dargs$IdM, Dargs$XM)
 				for (i in 1:(Dargs$NM)){
 					r = which(Dargs$IdM==i)
 					gradf[r,j] <- (fpred2[r] - fpred1[r])/(psi_map[i,j]/1000)
@@ -155,7 +159,7 @@ estep<-function(kiter, Uargs, Dargs, opt, structural.model, mean.phi, varList, D
 			for (j in 1:nb.etas) {
 				phi_map2 <- phi_map
 				phi_map2[,j] <- phi_map[,j]+phi_map[,j]/1000
-				psi_map2 <- transphi(phi_map2,saemixObject["model"]["transform.par"]) 
+				psi_map2 <- transphi(phi_map2,Dargs$transform.par) 
 				for (i in 1:(Dargs$NM)){
 					gradh[[i]][,j] <- (psi_map2[i,] - psi_map[i,])/(phi_map[i,]/1000)
 				}
@@ -173,8 +177,8 @@ estep<-function(kiter, Uargs, Dargs, opt, structural.model, mean.phi, varList, D
 			}
 
 		} else {
-
-			for(i in 1:saemixObject["data"]["N"]) {
+		  for(i in 1:length(id.list)) {
+#			for(i in 1:saemixObject["data"]["N"]) {
 			    isuj<-id.list[i]
 			    xi<-xind[id==isuj,,drop=FALSE]
 			#    if(is.null(dim(xi))) xi<-matrix(xi,ncol=1)
@@ -183,12 +187,12 @@ estep<-function(kiter, Uargs, Dargs, opt, structural.model, mean.phi, varList, D
 			    mean.phi1<-mean.phiM[i,i1.omega2]
 			    phii<-phiM[i,]
 			    phi1<-phii[i1.omega2]
-			    phi1.opti<-optim(par=phi1, fn=conditional.distribution_d, phii=phii,idi=idi,xi=xi,yi=yi,mphi=mean.phi1,idx=i1.omega2,iomega=iomega.phi1, trpar=saemixObject["model"]["transform.par"], model=saemixObject["model"]["model"])
+			    phi1.opti<-optim(par=phi1, fn=conditional.distribution_d, phii=phii,idi=idi,xi=xi,yi=yi,mphi=mean.phi1,idx=i1.omega2,iomega=iomega.phi1, trpar=Dargs$transform.par, model=Dargs$structural.model)
 			    phi.map[i,i1.omega2]<-phi1.opti$par
 			}
 			#rep the map nchains time
 			phi.map <- phi.map[rep(seq_len(nrow(phi.map)),Uargs$nchains ), ] 
-		  	map.psi<-transphi(phi.map,saemixObject["model"]["transform.par"])
+		  	map.psi<-transphi(phi.map,Dargs$transform.par)
 			map.psi<-data.frame(id=id.list,map.psi)
 			map.phi<-data.frame(id=id.list,phi.map)
 
@@ -202,11 +206,11 @@ estep<-function(kiter, Uargs, Dargs, opt, structural.model, mean.phi, varList, D
 			for (j in 1:nb.etas) {
 				phi_map2 <- phi_map
 				phi_map2[,j] <- phi_map[,j]+phi_map[,j]/100;
-				psi_map2 <- transphi(phi_map2,saemixObject["model"]["transform.par"]) 
-				fpred1<-structural.model(psi_map, Dargs$IdM, Dargs$XM)
+				psi_map2 <- transphi(phi_map2,Dargs$transform.par) 
+				fpred1<-Dargs$structural.model(psi_map, Dargs$IdM, Dargs$XM)
 				DYF[Uargs$ind.ioM]<- fpred1
 				l1<-colSums(DYF)
-				fpred2<-structural.model(psi_map2, Dargs$IdM, Dargs$XM)
+				fpred2<-Dargs$structural.model(psi_map2, Dargs$IdM, Dargs$XM)
 				DYF[Uargs$ind.ioM]<- fpred2
 				l2<-colSums(DYF)
 
@@ -216,7 +220,7 @@ estep<-function(kiter, Uargs, Dargs, opt, structural.model, mean.phi, varList, D
 			}
 
 			#calculation of the covariance matrix of the proposal
-			fpred<-structural.model(psi_map, Dargs$IdM, Dargs$XM)
+			fpred<-Dargs$structural.model(psi_map, Dargs$IdM, Dargs$XM)
 			DYF[Uargs$ind.ioM]<- fpred
 			denom <- colSums(DYF)
 			

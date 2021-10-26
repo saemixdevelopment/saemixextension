@@ -431,11 +431,166 @@ compare.saemix(ord.fit.cov1,ord.fit.cov2, ord.fit.cov3)
 
 ### Count data model
 
-Vraies données **TODO** ??? (difficile à trouver :-/)
+- Vraies données **TODO** ??? (difficile à trouver :-/)
+  - contacté David Atkins (tutorial in 2013 on analysing count data with GLMM and GEE): dataset on gender differences in drinking patterns that would be great to use as an example in saemix
+  - Salamanders data from the glmmTMB package
+    - fit successful when using only the data for one species
+    - but error when using more than one species with a recurrent error message (solve.default...) **TODO** investigate
+    - note: error in the previous version of Poisson model (factorial(y) instead of log(factorial(y))) ?
+  
+- Meantimes, simulated data
+
+```{r countCreate}
+# Settings  
+param <- c(39.1, 0.0388, 0.1 )
+omega<-c(0.5, 0.5) # SD=50%
+paramSimul<-c(param, omega)
+parnam<-c("alpha","beta","risk","omega.alpha","omega.beta")
+
+nsuj<-40
+xtim<-c(0.0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100)
+
+partab<-as.data.frame(matrix(data=0,nrow=nsuj,ncol=2,dimnames=list(NULL,parnam[1:2])))
+for(i in 1:2) partab[,i]<-rnorm(nsuj,mean=log(param[i]),sd=omega[i])
+partab[(1+nsuj/2):nsuj,2]<-partab[(1+nsuj/2):nsuj,2]+param[3]
+for(i in 1:2) partab[,i]<-exp(partab[,i])
+
+psim<-data.frame()
+for(itim in xtim) {
+  lambda<-partab[,1]*exp(-partab[,2]*itim)
+  psim<-rbind(psim,lambda)
+}
+datsim<-data.frame(id=rep(1:nsuj,each=length(xtim)),time=rep(xtim,nsuj),lambda=unlist(psim))
+rownames(datsim)<-NULL
+ysim<-rpois(dim(datsim)[1], lambda=datsim$lambda)
+#  summary(datsim)
+datsim$y<-ysim
+datsim$risk<-ifelse(datsim$id>(nsuj/2),1,0)
+```
+
+```{r countFit}
+saemix.data<-saemixData(name.data=datsim,name.group=c("id"),name.predictors=c("time","y"), name.covariates=c("risk"),name.X=c("time"))
+
+# Model
+countData.model<-function(psi,id,xidep) {
+  tim <- xidep[,1]
+  y <- xidep[,2] 
+  alpha <- psi[id,1]
+  beta <- psi[id,2]
+  lambda <- alpha*exp(-beta*tim)
+  
+  logpdf <- rep(0,length(tim))
+  logpdf <- -lambda + y*( (log(alpha) - beta*tim )) - log(factorial(y))
+  return(logpdf) 
+}
+saemix.model.true<-saemixModel(model=countData.model,description="Count data model", modeltype="likelihood",
+                               psi0=matrix(c(param[1:2],0,param[3]),ncol=2,byrow=TRUE,dimnames=list(NULL,parnam[1:2])),
+                               covariate.model=matrix(c(0,1),ncol=2), omega.init = diag(c(0.5,0.5)),
+                               transform.par=c(1,1),covariance.model=matrix(c(1,0,0,1),ncol=2))
+# Running saemix
+
+saemix.options<-list(seed=123456,save=FALSE,save.graphs=FALSE, fim=FALSE, displayProgress=FALSE)
+count.fit<-try(saemix(saemix.model.true,saemix.data,saemix.options))
+
+```
 
 ##  Time-to-event
 
-### TTE model
+### TTE model - simulated data
+
+
+TTE data simulated according to a Weibull model, hazard defined by shape ($\beta$) and scale ($\lambda$) as:
+$$ h(t) = \frac{\beta}{\lambda} \left( \frac{t}{\lambda} \right) ^{\beta-1}$$
+
+```{r TTEsimul}
+# Simulating TTE data
+set.seed(12345)
+
+nsuj<-50
+xtim<-c(0)
+tte.data<-data.frame(id=rep(1:nsuj,each=length(xtim)),time=rep(xtim,nsuj))
+psiM<-data.frame(lambda=seq(1.6,2,length.out=length(unique(tte.data$id))),beta = 2)
+
+simul.tte<-function(psi,id,xidep) {
+  T<-xidep
+  N <- nrow(psi)
+  Nj <- length(T)
+  censoringtime = 3
+  lambda <- psi[id,1]
+  beta <- psi[id,2]
+  obs <-rep(0,length(T))
+  for (i in (1:N)){
+    obs[id==i] <- rweibull(n=length(id[id==i]), shape=beta[i], scale=lambda[i])
+  } 
+  obs[obs>censoringtime]<-censoringtime
+  return(obs)
+}
+
+preds <- simul.tte(psiM, tte.data$id, tte.data[,c("time")])
+tte.data$y<-0
+tte.data$tlat<-preds
+dat1<-tte.data[,c("id","time","y")]
+dat2<-tte.data[,c("id","tlat","y")]
+dat2$y<-as.integer(dat2$tlat>0 & dat2$tlat<3)
+colnames(dat2)[2]<-"time"
+tte.data<-rbind(dat1,dat2)
+tte.data<-tte.data[order(tte.data$id, tte.data$time),]
+tte.psiM<-psiM
+
+# Simulate T from Weibull (check)
+if(FALSE) { 
+  lambda<-2
+  beta<-2
+  nsim<-5000
+  # By hand
+  q1<-runif(nsim)
+  #  tevent<-lambda*exp(log(q1)/beta)
+  tevent<-lambda*exp(log(-log(q1))/beta)
+  tevent<-sort(tevent)
+#  plot(tevent, exp(-(tevent/lambda)^beta))
+  tevent2<-sort(rweibull(nsim, shape=beta, scale=lambda))
+  plot(tevent, tevent2)
+  abline(0,1)
+   
+}
+```
+
+
+```{r fitTTE}
+saemix.data<-saemixData(name.data=tte.data, name.group=c("id"),
+  name.predictors=c("time"), name.response="y")
+
+tte.model<-function(psi,id,xidep) {
+  T<-xidep[,1]
+  N <- nrow(psi)
+  Nj <- length(T)
+  # censoringtime = 6
+  censoringtime = max(T)
+  lambda <- psi[id,1]
+  beta <- psi[id,2]
+  init <- which(T==0)
+  cens <- which(T==censoringtime)
+  ind <- setdiff(1:Nj, append(init,cens))
+  hazard <- (beta/lambda)*(T/lambda)^(beta-1)
+  H <- (T/lambda)^beta
+  logpdf <- rep(0,Nj)
+  logpdf[cens] <- -H[cens] + H[cens-1]
+  logpdf[ind] <- -H[ind] + H[ind-1] + log(hazard[ind])
+  return(logpdf)
+}
+
+saemix.model<-saemixModel(model=tte.model,description="time model",modeltype="likelihood",
+  psi0=matrix(c(1,2),ncol=2,byrow=TRUE,dimnames=list(NULL,  c("lambda","beta"))),
+  transform.par=c(1,1),covariance.model=matrix(c(1,0,0,1),ncol=2, byrow=TRUE))
+saemix.model<-saemixModel(model=tte.model,description="time model",modeltype="likelihood",
+  psi0=matrix(c(1,2),ncol=2,byrow=TRUE,dimnames=list(NULL,  c("lambda","beta"))),
+  transform.par=c(1,1),covariance.model=matrix(c(1,0,0,0),ncol=2, byrow=TRUE))
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
+tte.fit<-saemix(saemix.model,saemix.data,saemix.options)
+plot(tte.fit, plot.type="convergence")
+```
+
+### TTE model - lung cancer
 
 - create dataset for saemix (once) using the lung data from the survival package
 - changes
@@ -567,4 +722,99 @@ if(FALSE) {
 
 ### RTTE model
 
-Exemple simulé de Belhal **TODO**
+- again difficult to find real data
+- simulated data
+  - Exemple simulé de Belhal **TODO**
+  - data from the Monolix documentation: absolutely no indication where the data comes from (weibull_data.txt for the weibullRTTE.mlxtran project in the demo)
+- search for real data
+  - asked Ulrika Simonsson for the RTTE data on post-operative pain (Pain Medicine 2015)
+  - data on events in Gaucher disease used for the ENSAI workshops (but few events)
+  - discretised PCA events during warfarin treatment ? (from the warfarin PK/PD) (but threshold ?)
+
+```{r RTTEsimul}
+# Simulating TTE data
+set.seed(12345)
+
+nsuj<-50
+xtim<-c(0)
+tte.data<-data.frame(id=rep(1:nsuj,each=length(xtim)),time=rep(xtim,nsuj))
+psiM<-data.frame(lambda=seq(1.6,2,length.out=length(unique(tte.data$id))),beta = 2)
+
+simul.tte<-function(psi,id,xidep) {
+  T<-xidep
+  N <- nrow(psi)
+  Nj <- length(T)
+  censoringtime = 3
+  lambda <- psi[id,1]
+  beta <- psi[id,2]
+  obs <-rep(0,length(T))
+  for (i in (1:N)){
+    obs[id==i] <- rweibull(n=length(id[id==i]), shape=beta[i], scale=lambda[i])
+  } 
+  obs[obs>censoringtime]<-censoringtime
+  return(obs)
+}
+
+preds <- simul.tte(psiM, tte.data$id, tte.data[,c("time")])
+tte.data$y<-0
+tte.data$tlat<-preds
+dat1<-tte.data[,c("id","time","y")]
+dat2<-tte.data[,c("id","tlat","y")]
+dat2$y<-as.integer(dat2$tlat>0 & dat2$tlat<3)
+colnames(dat2)[2]<-"time"
+tte.data<-rbind(dat1,dat2)
+tte.data<-tte.data[order(tte.data$id, tte.data$time),]
+tte.psiM<-psiM
+
+# Simulate T from Weibull (check)
+if(FALSE) { 
+  lambda<-2
+  beta<-2
+  nsim<-5000
+  # By hand
+  q1<-runif(nsim)
+  #  tevent<-lambda*exp(log(q1)/beta)
+  tevent<-lambda*exp(log(-log(q1))/beta)
+  tevent<-sort(tevent)
+#  plot(tevent, exp(-(tevent/lambda)^beta))
+  tevent2<-sort(rweibull(nsim, shape=beta, scale=lambda))
+  plot(tevent, tevent2)
+  abline(0,1)
+   
+}
+```
+
+```{r fitRTTE}
+saemix.data<-saemixData(name.data=tte.data, name.group=c("id"),
+  name.predictors=c("time"), name.response="y")
+
+tte.model<-function(psi,id,xidep) {
+  T<-xidep[,1]
+  N <- nrow(psi)
+  Nj <- length(T)
+  # censoringtime = 6
+  censoringtime = max(T)
+  lambda <- psi[id,1]
+  beta <- psi[id,2]
+  init <- which(T==0)
+  cens <- which(T==censoringtime)
+  ind <- setdiff(1:Nj, append(init,cens))
+  hazard <- (beta/lambda)*(T/lambda)^(beta-1)
+  H <- (T/lambda)^beta
+  logpdf <- rep(0,Nj)
+  logpdf[cens] <- -H[cens] + H[cens-1]
+  logpdf[ind] <- -H[ind] + H[ind-1] + log(hazard[ind])
+  return(logpdf)
+}
+
+saemix.model<-saemixModel(model=tte.model,description="time model",modeltype="likelihood",
+  psi0=matrix(c(1,2),ncol=2,byrow=TRUE,dimnames=list(NULL,  c("lambda","beta"))),
+  transform.par=c(1,1),covariance.model=matrix(c(1,0,0,1),ncol=2, byrow=TRUE))
+saemix.model<-saemixModel(model=tte.model,description="time model",modeltype="likelihood",
+  psi0=matrix(c(1,2),ncol=2,byrow=TRUE,dimnames=list(NULL,  c("lambda","beta"))),
+  transform.par=c(1,1),covariance.model=matrix(c(1,0,0,0),ncol=2, byrow=TRUE))
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
+tte.fit<-saemix(saemix.model,saemix.data,saemix.options)
+plot(tte.fit, plot.type="convergence")
+```
+
