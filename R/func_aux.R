@@ -139,7 +139,7 @@ compute.sres<-function(saemixObject) {
   nsim<-saemixObject["options"]$nb.sim
   if(length(saemixObject["sim.data"]["N"])==0 || saemixObject["sim.data"]["nsim"]!=nsim) {
 	  cat("Simulating data using nsim =",nsim,"simulated datasets\n")
-	  saemixObject<-simulate.saemix(saemixObject,nsim)
+	  saemixObject<-simulate(saemixObject,nsim)
   }
 # ECO TODO: maybe here be more clever and use simulations if available (adding some if not enough, truncating if too much ?)  
   ysim<-saemixObject["sim.data"]["datasim"]$ysim

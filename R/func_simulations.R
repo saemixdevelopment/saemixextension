@@ -14,12 +14,13 @@
 #' @param saemixObject an object returned by the \code{\link{saemix}} function
 #' @param nsim Number of simulations to perform. Defaults to the nb.simpred
 #' element in options
+#' @param seed unused (included for compatibility with the generic)
 #' @param predictions Whether the simulated parameters should be used to
 #' compute predictions. Defaults to TRUE
 #' @param res.var Whether residual variability should be added to the
 #' predictions. Defaults to TRUE
-#' @param uncertainty Uses uncertainty (currently not implemented). Defaults to
-#' FALSE
+#' @param uncertainty Uses uncertainty (currently not implemented). Defaults to FALSE
+#' @param \dots additional arguments, unused (included for compatibility with the generic)
 #' @author Emmanuelle Comets <emmanuelle.comets@@inserm.fr>, Audrey Lavenu,
 #' Marc Lavielle.
 #' @seealso \code{\link{SaemixObject}},\code{\link{saemix}},
@@ -37,10 +38,11 @@
 #' (Rorschach) plots (Abstract 738), in: 14th Meeting of the Population
 #' Approach Group in Europe, Pamplona, Spain, 2005.
 #' @keywords model
-#' @export simulate.saemix
+#' 
+#' @importFrom stats simulate
+#' @export 
 
-
-simulate.saemix<-function(saemixObject,nsim=saemixObject["options"]$nb.sim, predictions=TRUE,res.var=TRUE,uncertainty=FALSE) {
+simulate.SaemixObject<-function(saemixObject,nsim=saemixObject["options"]$nb.sim, seed=NULL, predictions=TRUE,res.var=TRUE,uncertainty=FALSE,...) {
   # Simulate individual parameters from the population distribution
   # predictions: if TRUE, use the parameters to predict observations
   # res.var: if TRUE, add residual error to the predictions to obtain simulated data

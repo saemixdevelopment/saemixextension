@@ -906,6 +906,20 @@ NULL
 #' \donttest{
 #' tte.fit<-saemix(saemix.model,saemix.data,saemix.options)
 #' }
+#' # The fit from saemix using the above Weibull model may be compared 
+#' # to the non-parametric KM estimate
+#' \dontrun{
+#' library(survival)
+#'   lung.surv<-lung.saemix[lung.saemix$time>0,]
+#'   lung.surv$status<-lung.surv$status+1
+#'   Surv(lung.surv$time, lung.surv$status) # 1=censored, 2=dead
+#'   f1 <- survfit(Surv(time, status) ~ 1, data = lung.surv)
+#'   xtim<-seq(0,max(lung.saemix$time), length.out=200)
+#'   estpar<-tte.fit@results@fixed.effects
+#'   ypred<-exp(-(xtim/estpar[1])^(estpar[2]))
+#'   plot(f1, xlab = "Days", ylab = "Overall survival probability")
+#'   lines(xtim,ypred, col="red",lwd=2)
+#' }
 #' @keywords datasets
 NULL
 

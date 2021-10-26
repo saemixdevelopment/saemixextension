@@ -119,8 +119,9 @@ See **changes2.4to3.0.ods** for side-by-side comparison of functions tracing the
 
 #### SaemixRes
 
-- check definition of ypred and ppred
+- $\text{\rlap{$\checkmark$}}\square$ check definition of ypred and ppred
   - ypred should be f(theta_MAP) and ppred should be E(f(theta))
+  - checked and corrected
 
 #### SaemixObject
 

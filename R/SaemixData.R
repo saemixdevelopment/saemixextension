@@ -1103,13 +1103,14 @@ replace.data.options<-function(plot.opt,...) {
 #' 
 #' @aliases plot,SaemixData-methods 
 #' @aliases plot-SaemixData
-#' @aliases plot,SaemixData
+#' @aliases plot,SaemixData plot,SaemixData,ANY-method
 #' @keywords plot
 ### #' @docType methods
 #' @exportMethod plot
 #' @rdname plot-SaemixData
 #' 
 #' @import ggplot2 grid gridExtra
+#' 
 
 # Plot the data, either as points or as lines grouped by x@name.group
 setMethod("plot","SaemixData",
