@@ -13,6 +13,8 @@ saemix.predict(object)
 an updated SaemixObject object
 }
 \description{
-In nonlinear mixed effect models, different types of predictions may be obtained, including individual predictions and population predictions
+In nonlinear mixed effect models, different types of predictions may be obtained, including individual predictions and population predictions.
+This function takes an SaemixObject and adds any missing predictions for maximum a posteriori and conditional mean estimations of the individual
+parameters, and for the different types of individual and population predictions for the response variable.
 }
 \keyword{methods}
