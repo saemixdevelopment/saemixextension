@@ -1203,7 +1203,7 @@ setMethod("plot","SaemixData",
 #' 
 #' @param irep number of replicate datasets to use in the mirror plot
 #' 
-#' @aliases plot,SaemixSimData-method plot,SaemixSimData
+#' @aliases plot,SaemixSimData-method plot,SaemixSimData plot,SaemixSimData,ANY-method
 ### #' @docType methods
 #' @exportMethod plot
 #' @rdname plot-SaemixData

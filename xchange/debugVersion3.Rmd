@@ -185,6 +185,7 @@ if(is(xmod, "try-error")) cat("Problem in",namtest)
 ```{r plotModelData}
 theo.saemix<-read.table(file.path(datDir,"theo.saemix.tab"),header=T,na=".")
 smx.data<-try(saemixData(name.data=theo.saemix,header=TRUE,sep=" ",na=NA, name.group=c("Id"),name.predictors=c("Dose","Time"),name.response=c("Concentration"),name.covariates=c("Weight","Sex"),units=list(x="hr",y="mg/L", covariates=c("kg","-")), name.X="Time"))
+xpred<-theo.saemix[,c("Dose","Time")]
 
 model1cpt<-function(psi,id,xidep) { 
     dose<-xidep[,1]
@@ -200,13 +201,15 @@ xmod<-saemixModel(model=model1cpt, psi0=matrix(c(1.,20,0.5), ncol=3,byrow=TRUE, 
 
 # With psi taken from the model
 plot(xmod, smx.data)
+head(predict(xmod, xpred)$predictions)
 
 # Psi given by user
 plot(xmod, smx.data, psi=c(2, 40, 0.5))
+head(predict(xmod, xpred, psi=c(2, 40, 0.5))$predictions)
 
 # Individual psi (same size as data, here N=12)
 indpsi<-data.frame(ka=2, V=seq(25,47,2), CL=seq(2.5,4.7, 0.2))
-plot(xmod, smx.data, psi=indpsi)
+head(predict(xmod, xpred, psi=indpsi)$predictions)
 
 ```
 

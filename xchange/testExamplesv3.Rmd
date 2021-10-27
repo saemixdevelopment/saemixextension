@@ -170,7 +170,7 @@ model2<-saemixModel(model=modelemax,description="Emax growth model",
 
 # SE not computed as not needed for the test
 saemix.options<-list(algorithms=c(0,1,1),nb.chains=3,seed=765754, 
-       nbiter.saemix=c(500,300),save=FALSE,save.graphs=FALSE)
+       nbiter.saemix=c(500,300),save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
 
 fit1<-saemix(model1,saemix.data,saemix.options)
 fit2<-saemix(model2,saemix.data,saemix.options)
@@ -208,7 +208,7 @@ saemix.model<-saemixModel(model=growth.linear,description="Linear model",
       error.model="constant")
 
 saemix.options<-list(algorithms=c(1,1,1),nb.chains=1,seed=201004,
-      save=FALSE,save.graphs=FALSE)
+      save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
 saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
 ```
 
@@ -241,7 +241,7 @@ saemix.model<-saemixModel(model=growthcow,
       omega.init=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE),error.model="constant")
 
 saemix.options<-list(algorithms=c(1,1,1),nb.chains=1,nbiter.saemix=c(200,100), 
-             seed=4526,save=FALSE,save.graphs=FALSE)
+             seed=4526,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
 
 # Plotting the data
 plot(saemix.data,xlab="Time (day)",ylab="Weight of the cow (kg)")
@@ -277,7 +277,7 @@ saemix.model<-saemixModel(model=yield.LP,description="Linear plus plateau model"
             byrow=TRUE),error.model="constant")
 
 saemix.options<-list(algorithms=c(1,1,1),nb.chains=1,seed=666, 
-       save=FALSE,save.graphs=FALSE)
+       save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
 
 # Plotting the data
 plot(saemix.data,xlab="Fertiliser dose (kg/ha)", ylab="Wheat yield (t/ha)")
@@ -347,7 +347,7 @@ saemix.model<-saemixModel(model=binary.model,description="Binary model",
                           psi0=matrix(c(0,-.5,0,0.5),ncol=2,byrow=TRUE,dimnames=list(NULL,c("theta1","theta2"))),
                           transform.par=c(0,0), covariate.model=c(0,1),covariance.model=matrix(c(1,0,0,1),ncol=2))
 
-saemix.options<-list(seed=1234567,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, nb.chains=10, fim=FALSE)
+saemix.options<-list(seed=1234567,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, nb.chains=10, fim=FALSE, displayProgress=FALSE)
 
 binary.fit<-saemix(saemix.model,saemix.data,saemix.options)
 ```
@@ -416,7 +416,7 @@ saemix.model.cov3<-saemixModel(model=ordinal.model,description="Ordinal categori
                                transform.par=c(0,1,1,1,1),omega.init=diag(rep(1,5)), covariance.model = diag(c(1,0,0,0,1)),
                                covariate.model = covmodel3)
 
-saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, nb.chains=5)
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, nb.chains=5, displayProgress=FALSE)
 
 ord.fit<-saemix(saemix.model,saemix.data,saemix.options)
 ord.fit.cov1<-saemix(saemix.model.cov1,saemix.data,saemix.options)
@@ -437,7 +437,65 @@ compare.saemix(ord.fit.cov1,ord.fit.cov2, ord.fit.cov3)
     - fit successful when using only the data for one species
     - but error when using more than one species with a recurrent error message (solve.default...) **TODO** investigate
     - note: error in the previous version of Poisson model (factorial(y) instead of log(factorial(y))) ?
-  
+
+```{r countEpilepsy}
+epilepsy<-MASS::epil
+saemix.data<-saemixData(name.data=epilepsy, name.group=c("subject"),
+                        name.predictors=c("period","y"),name.response=c("y"),
+                        name.covariates=c("trt","base", "age"),
+                        units=list(x="2-week",y="",covariates=c("","","yr")))
+
+## Poisson model with one parameter
+countmodel.poisson<-function(psi,id,xidep) { 
+  y<-xidep[,2]
+  lambda<-psi[id,1]
+  logp <- -lambda + y*log(lambda) - log(factorial(y))
+  return(logp)
+}
+
+## Generalised Poisson model
+countmodel.genpoisson<-function(psi,id,xidep) {
+  y<-xidep[,1]
+  delta<-psi[id,1]
+  lambda<-psi[id,2]
+  logp <- -lambda
+  pos.ind <- which(y>0)
+  logp[pos.ind] <- log(lambda) + (y-1)*log(lambda+y*delta) - (lambda+y*delta) - log(factorial(y))
+  return(logp)
+}
+
+## Poisson model wtih Zero-Inflation
+countmodel.zip<-function(psi,id,xidep) {
+  y<-xidep[,2]
+  lambda<-psi[id,1]
+  p0<-psi[id,2]
+  logp <- log(1-p0) -lambda + y*log(lambda) - log(factorial(y))
+  logp0 <- log(p0+(1-p0)*exp(-lambda))
+  logp[y==0]<-logp0[y==0]
+  return(logp)
+}
+
+saemix.model.poi<-saemixModel(model=countmodel.poisson,description="count model Poisson",modeltype="likelihood",   
+                          psi0=matrix(c(0.5),ncol=1,byrow=TRUE,dimnames=list(NULL, c("lambda"))), 
+                          transform.par=c(1))
+
+saemix.model.zip<-saemixModel(model=countmodel.zip,description="count model ZIP",modeltype="likelihood",   
+                              psi0=matrix(c(0.5,0.2),ncol=2,byrow=TRUE,dimnames=list(NULL, c("lambda","p0"))), 
+                              transform.par=c(1,3), #omega.init=matrix(c(0.5,0,0,0.3),ncol=2,byrow=TRUE),
+                              covariance.model=matrix(c(1,0,0,0),ncol=2,byrow=TRUE))
+
+saemix.model.gp<-saemixModel(model=countmodel.zip,description="Generalised Poisson model",modeltype="likelihood",   
+                              psi0=matrix(c(0.5,0.2),ncol=2,byrow=TRUE,dimnames=list(NULL, c("delta","lambda"))), 
+                              transform.par=c(1,1), #omega.init=matrix(c(0.5,0,0,0.3),ncol=2,byrow=TRUE),
+                              covariance.model=matrix(c(1,0,0,0),ncol=2,byrow=TRUE))
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
+
+poisson.fit<-saemix(saemix.model.poi,saemix.data,saemix.options)
+genpoisson.fit<-saemix(saemix.model.gp,saemix.data,saemix.options)
+zippoisson.fit<-saemix(saemix.model.zip,saemix.data,saemix.options)
+
+```
+
 - Meantimes, simulated data
 
 ```{r countCreate}

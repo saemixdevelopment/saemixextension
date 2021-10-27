@@ -924,3 +924,37 @@ NULL
 NULL
 
 
+#' Epilepsy count data
+#' 
+#' In this example we use 
+#' 
+#' @docType data
+#' @name epilepsy.saemix
+#' 
+#' @source MASS package in R
+#' 
+#' @references Thall P, Vail S (1990). Some covariance models for longitudinal count data with overdispersion. Biometrics 46(3):657-71.
+#' 
+#' @examples
+#' epilepsy<-MASS::epil
+#' saemix.data<-saemixData(name.data=epilepsy, name.group=c("subject"),
+#'    name.predictors=c("period","y"),name.response=c("y"),
+#'    name.covariates=c("trt","base", "age"), units=list(x="2-week",y="",covariates=c("","","yr")))
+#' ## Poisson model with one parameter
+#' countmodel.poisson<-function(psi,id,xidep) { 
+#'   y<-xidep[,2]
+#'   lambda<-psi[id,1]
+#'   logp <- -lambda + y*log(lambda) - log(factorial(y))
+#'   return(logp)
+#'   }
+#' saemix.model.poi<-saemixModel(model=countmodel.poisson,description="count model Poisson",
+#'     modeltype="likelihood", psi0=matrix(c(0.5),ncol=1,byrow=TRUE,dimnames=list(NULL, c("lambda"))), 
+#'     transform.par=c(1))
+#' \donttest{
+#' saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
+#' poisson.fit<-saemix(saemix.model.poi,saemix.data,saemix.options)
+#' }
+#' 
+#' @keywords datasets
+NULL
+

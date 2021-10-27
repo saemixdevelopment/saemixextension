@@ -1,4 +1,3 @@
-library(catdata)
 
 ########################################################################
 # Binary data - Toenail 
@@ -63,6 +62,87 @@ saemix.data2<-saemixData(name.data=toe2,name.group=c("patientID"),name.predictor
 binary.fit2<-saemix(saemix.model,saemix.data2,saemix.options)
 
 ########################################################################
+# Count data - Epilepsy
+library(MASS)
+data(epil)
+
+saemix.data<-saemixData(name.data=epil, name.group=c("subject"),
+                        name.predictors=c("period","y"),name.response=c("y"),
+                        name.covariates=c("trt","base", "age"),
+                        units=list(x="day (scaled)",y="",covariates=c("","","yr")))
+
+countmodel.poisson<-function(psi,id,xidep) { 
+  y<-xidep[,2]
+  lambda<-psi[id,1]
+  logp <- -lambda + y*log(lambda) - log(factorial(y))
+  return(logp)
+}
+
+saemix.model<-saemixModel(model=countmodel.poisson,description="count model Poisson",modeltype="likelihood",   
+                          psi0=matrix(c(0.5),ncol=1,byrow=TRUE,dimnames=list(NULL, c("lambda"))), 
+                          transform.par=c(1)) #omega.init=matrix(c(0.5,0,0,0.3),ncol=2,byrow=TRUE))
+
+saemix.model.cov<-saemixModel(model=countmodel.poisson,description="count model Poisson",modeltype="likelihood",   
+                              psi0=matrix(c(0.5),ncol=1,byrow=TRUE,dimnames=list(NULL, c("lambda"))), 
+                              covariate.model = matrix(c(1,rep(1,2)), ncol=1, byrow=T),
+                              transform.par=c(1)) #omega.init=matrix(c(0.5,0,0,0.3),ncol=2,byrow=TRUE))
+
+saemix.model.cov2<-saemixModel(model=countmodel.poisson,description="count model Poisson",modeltype="likelihood",   
+                              psi0=matrix(c(0.5),ncol=1,byrow=TRUE,dimnames=list(NULL, c("lambda"))), 
+                              covariate.model = matrix(c(0,1,0), ncol=1, byrow=T),
+                              transform.par=c(1)) #omega.init=matrix(c(0.5,0,0,0.3),ncol=2,byrow=TRUE))
+
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
+poisson.fit<-saemix(saemix.model,saemix.data,saemix.options)
+poisson.fit.cov<-saemix(saemix.model.cov,saemix.data,saemix.options)
+poisson.fit.cov2<-saemix(saemix.model.cov2,saemix.data,saemix.options)
+plot(poisson.fit, plot.type="convergence")
+
+## ZIP Poisson model
+countmodel.zip<-function(psi,id,xidep) {
+  y<-xidep[,2]
+  lambda<-psi[id,1]
+  p0<-psi[id,2]
+  logp <- log(1-p0) -lambda + y*log(lambda) - log(factorial(y))
+  logp0 <- log(p0+(1-p0)*exp(-lambda))
+  logp[y==0]<-logp0[y==0]
+  return(logp)
+}
+
+saemix.model.zip<-saemixModel(model=countmodel.zip,description="count model ZIP",modeltype="likelihood",   
+                              psi0=matrix(c(0.5,0.2),ncol=2,byrow=TRUE,dimnames=list(NULL, c("lambda","p0"))), 
+                              transform.par=c(1,3), #omega.init=matrix(c(0.5,0,0,0.3),ncol=2,byrow=TRUE),
+                              covariance.model=matrix(c(1,0,0,0),ncol=2,byrow=TRUE))
+saemix.model.zipcov<-saemixModel(model=countmodel.zip,description="count model ZIP",modeltype="likelihood",   
+                                 psi0=matrix(c(0.5,0.2),ncol=2,byrow=TRUE,dimnames=list(NULL, c("lambda","p0"))), 
+                                 transform.par=c(1,3), #omega.init=matrix(c(0.5,0,0,0.3),ncol=2,byrow=TRUE),
+                                 covariate.model = matrix(c(1,rep(1,5)), ncol=2, byrow=T),
+                                 covariance.model=matrix(c(1,0,0,0),ncol=2,byrow=TRUE))
+zippoisson.fit<-saemix(saemix.model.zip,saemix.data,saemix.options)
+zippoisson.fitcov<-saemix(saemix.model.zipcov,saemix.data,saemix.options)
+plot(zippoisson.fit, plot.type="convergence")
+
+BIC(poisson.fit)
+BIC(zippoisson.fit)
+
+##Generalized Poisson model
+countmodel.genpoisson<-function(psi,id,xidep) {
+  y<-xidep[,1]
+  delta<-psi[id,1]
+  lambda<-psi[id,2]
+  logp <- -lambda
+  pos.ind <- which(y>0)
+  logp[pos.ind] <- log(lambda) + (y-1)*log(lambda+y*delta) - (lambda+y*delta) - log(factorial(y))
+  return(logp)
+}
+
+saemix.model.gp<-saemixModel(model=countmodel.zip,description="Generalised Poisson model",modeltype="likelihood",   
+                              psi0=matrix(c(0.5,0.2),ncol=2,byrow=TRUE,dimnames=list(NULL, c("delta","lambda"))), 
+                              transform.par=c(1,1), #omega.init=matrix(c(0.5,0,0,0.3),ncol=2,byrow=TRUE),
+                              covariance.model=matrix(c(1,0,0,0),ncol=2,byrow=TRUE))
+genpoisson.fit<-saemix(saemix.model.gp,saemix.data,saemix.options)
+
+####################################### Other
 # Count data - Encephalitis
 if(FALSE) {
   data(encephalitis)
@@ -272,6 +352,7 @@ full_mod1  <- glmer(form, family="poisson",data=grouseticks)
 
 ########################################################################
 # Categorical data - Knee
+library(catdata)
 data(knee)
 
 # Transformation to long format and dichotomisation of response

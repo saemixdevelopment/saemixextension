@@ -201,7 +201,9 @@ fim.saemix<-function(saemixObject) {
       myidx.track[ij,3]<-track.var[track.var[,2]==myidx.track[ij,3],1]
     }
   }
-  namallpar<-c(saemixObject@results@name.fixed,name.rand1, saemixObject@results@name.sigma[saemixObject@results@indx.res], name.rand2)
+  if(saemixObject@model@modeltype=="structural")
+    namallpar<-c(saemixObject@results@name.fixed,name.rand1, saemixObject@results@name.sigma[saemixObject@results@indx.res], name.rand2) else
+      namallpar<-c(saemixObject@results@name.fixed,name.rand1, name.rand2)
   
   # hw=waitbar(1,'Estimating the population parameters (SAEM). Wait...')
   
@@ -373,8 +375,10 @@ fim.saemix<-function(saemixObject) {
     estSE<-c(estSE,se1,se.res[saemixObject@results@indx.res],se2)
   } else {
     diag(se.cov)<-se.omega
-    estpar<-c(estpar,diag(omega)[saemixObject@results@indx.omega],saemixObject@results@respar[saemixObject@results@indx.res], sqrt(diag(omega)[saemixObject@results@indx.omega]))
-    estSE<-c(estSE,se.omega[saemixObject@results@indx.omega],se.res[saemixObject@results@indx.res],se.omega[saemixObject@results@indx.omega]/2/sqrt(diag(omega)[saemixObject@results@indx.omega]))
+    if(saemixObject@model@modeltype=="structural")
+      estpar<-c(estpar,diag(omega)[saemixObject@results@indx.omega],saemixObject@results@respar[saemixObject@results@indx.res], sqrt(diag(omega)[saemixObject@results@indx.omega])) else estpar<-c(estpar,diag(omega)[saemixObject@results@indx.omega], sqrt(diag(omega)[saemixObject@results@indx.omega])) 
+    if(saemixObject@model@modeltype=="structural")
+      estSE<-c(estSE,se.omega[saemixObject@results@indx.omega],se.res[saemixObject@results@indx.res],se.omega[saemixObject@results@indx.omega]/2/sqrt(diag(omega)[saemixObject@results@indx.omega])) else estSE<-c(estSE,se.omega[saemixObject@results@indx.omega],se.omega[saemixObject@results@indx.omega]/2/sqrt(diag(omega)[saemixObject@results@indx.omega]))
   }
   conf.int<-data.frame(name=namallpar, estimate=estpar, se=estSE)
   conf.int$cv<-100*conf.int$se/conf.int$estimate
