@@ -1380,17 +1380,19 @@ transform.SaemixData<-function(`_data`, ...) {
 #' @name transform
 #' @aliases transform.numeric
 #' 
-#' @param x a vector with values of type numeric
+#' @param _data a vector with values of type numeric
 #' @param transformation transformation function. Defaults to no transformation
 #' @param centering string, giving the value used to center the covariate; can be "mean" or "median", in which case this value will be computed from the data, 'none' or 0 for no centering, or a value given by the user. Defaults to the median value over the dataset.
 #' @param verbose a boolean, prints messages during the execution of the function if TRUE. Defaults to FALSE.
+#' @param \dots unused, for consistency with the generic method
 #' @examples 
 #' # TODO
 #' @return a vector
 #' @keywords data
 #' @export
 
-transform.numeric<-function(x,transformation=function(x) x, centering="median",verbose=FALSE) {
+transform.numeric<-function(`_data`,transformation=function(x) x, centering="median",verbose=FALSE, ...) {
+  x <- `_data`
   if(!(centering %in% c('mean','median')) & is.na(as.double(centering))) {
     if(verbose) cat("Need a proper value to center. Please specify mean, median or a numerical value\n")
     return(x)

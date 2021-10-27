@@ -6,20 +6,23 @@
 \title{Transform covariates}
 \usage{
 \method{transform}{numeric}(
-  x,
+  `_data`,
   transformation = function(x) x,
   centering = "median",
-  verbose = FALSE
+  verbose = FALSE,
+  ...
 )
 }
 \arguments{
-\item{x}{a vector with values of type numeric}
+\item{_data}{a vector with values of type numeric}
 
 \item{transformation}{transformation function. Defaults to no transformation}
 
 \item{centering}{string, giving the value used to center the covariate; can be "mean" or "median", in which case this value will be computed from the data, 'none' or 0 for no centering, or a value given by the user. Defaults to the median value over the dataset.}
 
 \item{verbose}{a boolean, prints messages during the execution of the function if TRUE. Defaults to FALSE.}
+
+\item{\dots}{unused, for consistency with the generic method}
 }
 \value{
 a vector
