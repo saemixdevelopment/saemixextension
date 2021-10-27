@@ -95,7 +95,8 @@ estep<-function(kiter, Uargs, Dargs, opt, mean.phi, varList, DYF, phiM) {
 		varList$domega2[,nrs2]<-varList$domega2[,nrs2]*(1+opt$stepsize.rw* (nbc2/nt2-opt$proba.mcmc))
 	}
 
-	if(opt$nbiter.mcmc[4]>0 & kiter<5) {
+
+	if(opt$nbiter.mcmc[4]>0 & kiter<opt$nbiter.map) {
 		etaMc<-etaM
 		propc <- U.eta
 		prop <- U.eta
@@ -110,7 +111,6 @@ estep<-function(kiter, Uargs, Dargs, opt, mean.phi, varList, DYF, phiM) {
 	  	id.list<-unique(id)
 
 	  	if(Dargs$modeltype=="structural"){
-#	  		for(i in 1:saemixObject["data"]["N"]) {
 	  		for(i in 1:length(id.list)) {
   	  	  		isuj<-id.list[i]
 			    xi<-xind[id==isuj,,drop=FALSE]
@@ -176,7 +176,6 @@ estep<-function(kiter, Uargs, Dargs, opt, mean.phi, varList, DYF, phiM) {
 
 		} else {
 		  for(i in 1:length(id.list)) {
-#			for(i in 1:saemixObject["data"]["N"]) {
 			    isuj<-id.list[i]
 			    xi<-xind[id==isuj,,drop=FALSE]
 			    yi<-yobs[id==isuj]
