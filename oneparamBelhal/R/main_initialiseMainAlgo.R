@@ -26,7 +26,7 @@ initialiseMainAlgo<-function(saemix.data,saemix.model,saemix.options) {
 #                 domega2=do.call(cbind,rep(list((sqrt(mydiag(omega.eta)))*saemix.options$rw.ini),nb.etas)),diag.omega=mydiag(omega))
 #   opt<-list(stepsize.rw=saemix.options$stepsize.rw,stepsize=stepsize,
 #             proba.mcmc=saemix.options$proba.mcmc,nbiter.mcmc=saemix.options$nbiter.mcmc,
-#             nbiter.sa=saemix.options$nbiter.sa,alpha1.sa=saemix.options$alpha.sa,
+#             nbiter.sa=saemix.options$nbiter.sa,nbiter.map=saemix.options$nbiter.map,alpha1.sa=saemix.options$alpha.sa,
 #             alpha0.sa=10^(-3/saemix.options$nbiter.sa),nbiter.saemix=saemix.options$nbiter.saemix,
 #             maxim.maxiter=saemix.options$maxim.maxiter,flag.fmin=flag.fmin)
   
@@ -284,7 +284,7 @@ initialiseMainAlgo<-function(saemix.data,saemix.model,saemix.options) {
 	stepsize[1:saemix.options$nbiter.burn]<-0
 	opt<-list(stepsize.rw=saemix.options$stepsize.rw,stepsize=stepsize,
 						proba.mcmc=saemix.options$proba.mcmc,nbiter.mcmc=saemix.options$nbiter.mcmc,
-						nbiter.sa=saemix.options$nbiter.sa,alpha1.sa=saemix.options$alpha.sa,
+						nbiter.sa=saemix.options$nbiter.sa,nbiter.map=saemix.options$nbiter.map,alpha1.sa=saemix.options$alpha.sa,
 						alpha0.sa=10^(-3/saemix.options$nbiter.sa),nbiter.saemix=saemix.options$nbiter.saemix,
 						maxim.maxiter=saemix.options$maxim.maxiter,flag.fmin=flag.fmin)
 	

@@ -70,5 +70,5 @@ end = K1+K2
 #Warfarin
 options_warfa<-list(seed=39546,map=F,fim=F,ll.is=F,
   nbiter.mcmc = c(2,2,2,2), nbiter.saemix = c(K1,K2),nbiter.sa=0,
-  displayProgress=TRUE,save.graphs=FALSE,nbiter.burn =0)
+  displayProgress=TRUE,save.graphs=FALSE,nbiter.burn =0, nbiter.map=4)
 warfa<-saemix(saemix.model_warfa,saemix.data_warfa,options_warfa)

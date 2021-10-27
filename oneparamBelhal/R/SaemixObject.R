@@ -216,6 +216,7 @@ setMethod(
 #' @param nb.chains nb of chains to be run in parallel in the MCMC algorithm
 #' (defaults to 1)
 #' @param nbiter.burn nb of iterations for burning
+#' @param nbiter.map nb of iterations for the fourth kernel (using the MAP)
 #' @param nbiter.mcmc nb of iterations in each kernel during the MCMC step
 #' @param nbiter.sa nb of iterations subject to simulated annealing (defaults to nbiter.saemix\[1\]/2, 
 #' will be cut down to K1=nbiter.saemix\[1\] if greater than that value). We recommend to stop 
@@ -294,7 +295,7 @@ setMethod(
 #' 
 #' @export saemixControl
 
-saemixControl<-function(map=TRUE,fim=TRUE,ll.is=TRUE,ll.gq=FALSE,nbiter.saemix=c(300,100), nbiter.sa=NA, nb.chains=1,fix.seed=TRUE,seed=23456,nmc.is=5000,nu.is=4, print.is=FALSE,nbdisplay=100,displayProgress=TRUE,nbiter.burn=5, nbiter.mcmc=c(2,2,2,0),proba.mcmc=0.4,stepsize.rw=0.4,rw.init=0.5,alpha.sa=0.97,  nnodes.gq=12,nsd.gq=4,maxim.maxiter=100,nb.sim=1000,nb.simpred=100, ipar.lmcmc=50,ipar.rmcmc=0.05, print=TRUE, save=TRUE, save.graphs=TRUE,directory="newdir",warnings=FALSE) {
+saemixControl<-function(map=TRUE,fim=TRUE,ll.is=TRUE,ll.gq=FALSE,nbiter.saemix=c(300,100), nbiter.sa=NA, nb.chains=1,fix.seed=TRUE,seed=23456,nmc.is=5000,nu.is=4, print.is=FALSE,nbdisplay=100,displayProgress=TRUE,nbiter.burn=5,nbiter.map=5, nbiter.mcmc=c(2,2,2,0),proba.mcmc=0.4,stepsize.rw=0.4,rw.init=0.5,alpha.sa=0.97,  nnodes.gq=12,nsd.gq=4,maxim.maxiter=100,nb.sim=1000,nb.simpred=100, ipar.lmcmc=50,ipar.rmcmc=0.05, print=TRUE, save=TRUE, save.graphs=TRUE,directory="newdir",warnings=FALSE) {
   if(fix.seed) seed<-seed else {
     rm(.Random.seed)
     runif(1)
@@ -309,7 +310,7 @@ saemixControl<-function(map=TRUE,fim=TRUE,ll.is=TRUE,ll.gq=FALSE,nbiter.saemix=c
     if(warnings) message("The number of iterations for the simulated annealing should be lower or equal to K1, setting it to nbiter.saemix[1]. We advise setting it to nbiter.saemix[1]/2.\n")
     nbiber.sa<-nbiter.saemix[1]
   }
-  list(map=map,fim=fim,ll.is=ll.is,ll.gq=ll.gq,nbiter.saemix=nbiter.saemix, nbiter.sa=nbiter.sa, nbiter.burn=nbiter.burn,nb.chains=nb.chains,
+  list(map=map,fim=fim,ll.is=ll.is,ll.gq=ll.gq,nbiter.saemix=nbiter.saemix, nbiter.sa=nbiter.sa, nbiter.burn=nbiter.burn, nbiter.map=nbiter.map,nb.chains=nb.chains,
        fix.seed=fix.seed,seed=seed, nmc.is=nmc.is,nu.is=nu.is,print.is=print.is, nbdisplay=nbdisplay,displayProgress=displayProgress,
        print=print,save=save, save.graphs=save.graphs,directory=directory,warnings=warnings, nbiter.mcmc=nbiter.mcmc,proba.mcmc=proba.mcmc,
        stepsize.rw=stepsize.rw, rw.init=rw.init,alpha.sa=alpha.sa,nnodes.gq=nnodes.gq,nsd.gq=nsd.gq, maxim.maxiter=maxim.maxiter,
@@ -652,6 +653,7 @@ setMethod("showall","SaemixObject",
     cat("    Number of iterations: ",st1,"\n")
     cat("        nb of iterations for SA: ",object@options$nbiter.sa,"\n")
     cat("        nb of burning iterations: ",object@options$nbiter.burn,"\n")
+    cat("        nb of map kernel iterations: ",object@options$nbiter.map,"\n")
     cat("    Seed:\n")
     cat("        setting a random seed: ",!object@options$fix.seed,"\n")
     cat("        seed for the random number generator: ",object@options$seed,"\n")

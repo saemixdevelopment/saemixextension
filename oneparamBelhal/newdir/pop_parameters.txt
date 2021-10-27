@@ -38,7 +38,7 @@ function(psi,id,xidep) {
   ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
   return(ypred)
 }
-<bytecode: 0x7fb90f8e0358>
+<bytecode: 0x7fd3225d9470>
   Nb of parameters: 3 
       parameter names:  ka V k 
       distribution:
