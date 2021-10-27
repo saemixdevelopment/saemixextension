@@ -14,14 +14,16 @@ The function returns an updated version of the object saemix.fit in
 which the following elements have been added: \describe{
 \item{se.fixed:}{standard error of fixed effects, obtained as part of the
 diagonal of the inverse of the Fisher Information Matrix (only when
-fim.saemix has been run, or when the saemix.options$algorithms\link{2} is 1)}
+fim.saemix has been run, or when saemix.options$algorithms[2] is 1)}
 \item{se.omega:}{standard error of the variance of random effects, obtained
 as part of the diagonal of the inverse of the Fisher Information Matrix
-(only when fim.saemix has been run, or when the saemix.options$algorithms\link{2}
-is 1)} \item{se.res:}{standard error of the parameters of the residual error
+(only when fim.saemix has been run, or when the saemix.options$algorithms[2]
+is 1)}
+\item{se.res:}{standard error of the parameters of the residual error
 model, obtained as part of the diagonal of the inverse of the Fisher
 Information Matrix (only when fim.saemix has been run, or when the
-saemix.options$algorithms\link{2} is 1)} \item{fim:}{Fisher Information Matrix}
+saemix.options$algorithms[2] is 1)}
+\item{fim:}{Fisher Information Matrix}
 \item{ll.lin:}{ likelihood calculated by linearisation} }
 }
 \description{

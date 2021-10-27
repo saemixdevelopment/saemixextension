@@ -56,6 +56,8 @@ saemixData(
 \item{units}{list with up to three elements, x, y and optionally covariates, containing the units for the X and Y variables respectively, as well as the units for the different covariates (defaults to empty)}
 
 \item{verbose}{a boolean indicating whether messages should be printed out during the creation of the object}
+
+\item{automatic}{a boolean indicating whether to attempt automatic name recognition when some colum names are missing or wrong (defaults to TRUE)}
 }
 \value{
 A SaemixData object (see \code{\link{saemixData}}).

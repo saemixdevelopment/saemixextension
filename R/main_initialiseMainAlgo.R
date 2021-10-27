@@ -38,7 +38,7 @@ initialiseMainAlgo<-function(saemix.data,saemix.model,saemix.options) {
 	# error models :
 	#   constant            y = f + a*e
 	#   proportional        y = f + b*f*e
-	#   combined            y = f + (a+b*f)*e
+	#   combined            y = f + sqrt(a^2+b^2*f^2)*e
 	#   exponential         y = f*exp(a*e)    ( <=>  log(y) = log(f) + a*e )
 	# error models are a + bf described by [a b], [1]=constant coefficient, [2]= proportional coefficient
 	if(saemix.model["modeltype"]=="structural"){

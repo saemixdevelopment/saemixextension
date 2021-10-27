@@ -4,7 +4,6 @@
 \name{SaemixRes-class}
 \alias{SaemixRes-class}
 \alias{SaemixRes}
-\alias{[<-,SaemixRes-method}
 \alias{plot,SaemixRes}
 \alias{print,SaemixRes}
 \alias{showall,SaemixRes}
@@ -126,9 +125,9 @@ An object of the SaemixRes class, representing the results of a fit through the 
 
 \item{\code{predictions}}{a data frame containing all the predictions and residuals in a table format}
 
-\item{\code{ypred}}{a vector giving the population predictions obtained with the MAP estimates}
+\item{\code{ppred}}{a vector giving the population predictions obtained with the MAP estimates}
 
-\item{\code{ppred}}{a vector giving the mean population predictions}
+\item{\code{ypred}}{a vector giving the mean population predictions}
 
 \item{\code{ipred}}{a vector giving the individual predictions obtained with the MAP estimates}
 

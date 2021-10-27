@@ -17,28 +17,10 @@ for each subject. Defaults to 1}
 
 \item{max.iter}{Maximum number of iterations for the computation of the
 conditional estimates. Defaults to twice the total number of iterations
-(sum(saemixObject\link{"options"}$nbiter.saemix)*2)}
+(see above)}
 
 \item{\dots}{optional arguments passed to the plots. Plots will appear if
 the option displayProgress in the saemixObject object is TRUE}
-}
-\value{
-The function adds or modifies the following elements in the results slot of saemixObject:
-\describe{
-\item{cond.mean.phi}{Conditional mean of the individual
-distribution of the parameters (obtained as the mean of the samples)}
-\item{cond.var.phi}{Conditional variance of the individual distribution of
-the parameters (obtained as the mean of the estimated variance of the samples)}
-\item{cond.shrinkage}{Estimate of the shrinkage for the
-conditional estimates}
-\item{cond.mean.eta}{Conditional mean of the
-individual distribution of the parameters (obtained as the mean of the samples)}
-\item{phi.samp}{An array with 3 dimensions, giving nsamp samples
-from the conditional distributions of the individual parameters}
-\item{phi.samp.var}{The estimated individual variances for the sampled
-parameters phi.samp} } A warning is output if the maximum number of
-iterations is reached without convergence (the maximum number of iterations
-is saemix.options$nbiter.saemix\link{2}).
 }
 \description{
 When the parameters of the model have been estimated, we can estimate the
@@ -86,6 +68,25 @@ and the mean of the SD of the random effects have stabilised over the ipar.lmcmc
 The evolution of these variables for each parameter is shown as a continuous line
 while the shaded area represents the acceptable variation.
 
+The function adds or modifies the following elements in the results:
+\describe{
+\item{cond.mean.phi}{Conditional mean of the individual
+distribution of the parameters (obtained as the mean of the samples)}
+\item{cond.var.phi}{Conditional variance of the individual distribution of
+the parameters (obtained as the mean of the estimated variance of the samples)}
+\item{cond.shrinkage}{Estimate of the shrinkage for the conditional estimates}
+\item{cond.mean.eta}{Conditional mean of the individual distribution of the
+parameters (obtained as the mean of the samples)}
+\item{phi.samp}{An array with 3 dimensions, giving nsamp samples
+from the conditional distributions of the individual parameters}
+\item{phi.samp.var}{The estimated individual variances for the sampled
+parameters phi.samp}
+}
+
+A warning is output if the maximum number of iterations is reached
+without convergence (the maximum number of iterations is the sum of the elements in
+saemix.options$nbiter.saemix).
+
 Let hattheta be the estimated value of theta computed with the SAEM
 algorithm and let p(phi_i |y_i; hattheta) be the conditional distribution of
 phi_i for 1<=i<=N . We use the MCMC procedure used in the SAEM algorithm to
@@ -125,19 +126,23 @@ The evolution of these variables for each parameter is shown as a continuous lin
 while the shaded area represents the acceptable variation.
 
 The function adds or modifies the following elements in the results:
-\describe{ \item{cond.mean.phi}{Conditional mean of the individual
+\describe{
+\item{cond.mean.phi}{Conditional mean of the individual
 distribution of the parameters (obtained as the mean of the samples)}
 \item{cond.var.phi}{Conditional variance of the individual distribution of
-the parameters (obtained as the mean of the estimated variance of the
-samples)} \item{cond.shrinkage}{Estimate of the shrinkage for the
-conditional estimates} \item{cond.mean.eta}{Conditional mean of the
-individual distribution of the parameters (obtained as the mean of the
-samples)} \item{phi.samp}{An array with 3 dimensions, giving nsamp samples
+the parameters (obtained as the mean of the estimated variance of the samples)}
+\item{cond.shrinkage}{Estimate of the shrinkage for the conditional estimates}
+\item{cond.mean.eta}{Conditional mean of the individual distribution of the
+parameters (obtained as the mean of the samples)}
+\item{phi.samp}{An array with 3 dimensions, giving nsamp samples
 from the conditional distributions of the individual parameters}
 \item{phi.samp.var}{The estimated individual variances for the sampled
-parameters phi.samp} } A warning is output if the maximum number of
-iterations is reached without convergence (the maximum number of iterations
-is saemix.options$nbiter.saemix\link{2}).
+parameters phi.samp}
+}
+
+A warning is output if the maximum number of iterations is reached
+without convergence (the maximum number of iterations is the sum of the elements in
+saemix.options$nbiter.saemix).
 }
 \examples{
  
@@ -226,21 +231,23 @@ saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE)
 
 }
 \references{
-Comets  E, Lavenu A, Lavielle M. Parameter estimation in nonlinear mixed effect models using saemix, an R implementation of the SAEM algorithm. Journal of Statistical Software 80, 3 (2017), 1-41.
+Comets  E, Lavenu A, Lavielle M. Parameter estimation in nonlinear mixed effect models
+using saemix, an R implementation of the SAEM algorithm. Journal of Statistical Software 80, 3 (2017), 1-41.
 
-Kuhn E, Lavielle M. Maximum likelihood estimation in nonlinear mixed effects models. Computational Statistics and Data Analysis 49, 4 (2005), 1020-1038.
-
-Comets E, Lavenu A, Lavielle M. SAEMIX, an R version of the SAEM algorithm.
-20th meeting of the Population Approach Group in Europe, Athens, Greece
-(2011), Abstr 2173.
-
-Comets  E, Lavenu A, Lavielle M. Parameter estimation in nonlinear mixed effect models using saemix, an R implementation of the SAEM algorithm. Journal of Statistical Software 80, 3 (2017), 1-41.
-
-Kuhn E, Lavielle M. Maximum likelihood estimation in nonlinear mixed effects models. Computational Statistics and Data Analysis 49, 4 (2005), 1020-1038.
+Kuhn E, Lavielle M. Maximum likelihood estimation in nonlinear mixed effects models.
+Computational Statistics and Data Analysis 49, 4 (2005), 1020-1038.
 
 Comets E, Lavenu A, Lavielle M. SAEMIX, an R version of the SAEM algorithm.
-20th meeting of the Population Approach Group in Europe, Athens, Greece
-(2011), Abstr 2173.
+20th meeting of the Population Approach Group in Europe, Athens, Greece (2011), Abstr 2173.
+
+Comets  E, Lavenu A, Lavielle M. Parameter estimation in nonlinear mixed effect models
+using saemix, an R implementation of the SAEM algorithm. Journal of Statistical Software 80, 3 (2017), 1-41.
+
+Kuhn E, Lavielle M. Maximum likelihood estimation in nonlinear mixed effects models.
+Computational Statistics and Data Analysis 49, 4 (2005), 1020-1038.
+
+Comets E, Lavenu A, Lavielle M. SAEMIX, an R version of the SAEM algorithm.
+20th meeting of the Population Approach Group in Europe, Athens, Greece (2011), Abstr 2173.
 }
 \seealso{
 \code{\link{SaemixData}},\code{\link{SaemixModel}},

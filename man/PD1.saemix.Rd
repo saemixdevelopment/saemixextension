@@ -84,6 +84,6 @@ cat("LRT test for covariate effect on EC50: p-value=",1-pchisq(wstat,1),"\n")
 }
 }
 \references{
-Girard P., Mentre F. Comparison of Algorithms Using Simulated Data Sets and Blind Analysis workshop, Lyon, France, September 2004.
+Girard P, Mentre F (2004). Comparison of Algorithms Using Simulated Data Sets and Blind Analysis workshop, Lyon, France.
 }
 \keyword{datasets}

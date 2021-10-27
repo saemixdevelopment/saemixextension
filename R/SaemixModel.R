@@ -18,7 +18,7 @@
 #'     \item{\code{psi0}:}{Object of class \code{"matrix"}: a matrix with named columns containing the initial estimates for the parameters in the model (first line) and for the covariate effects (second and subsequent lines, optional). The number of columns should be equal to the number of parameters in the model.}
 #'     \item{\code{transform.par}:}{Object of class \code{"numeric"}: vector giving the distribution for each model parameter (0: normal, 1: log-normal, 2: logit, 3: probit). Its length should be equal to the number of parameters in the model.}
 #'     \item{\code{fixed.estim}:}{Object of class \code{"numeric"}: for each parameter, 0 if the parameter is fixed and 1 if it should be estimated. Defaults to a vector of 1 (all parameters are estimated). Its length should be equal to the number of parameters in the model.}
-#'     \item{\code{error.model}:}{Object of class \code{"character"}: name of the error model. Valid choices are "constant" (default), "proportional" and "combined" (see equations in User Guide)}
+#'     \item{\code{error.model}:}{Object of class \code{"character"}: name of the error model. Valid choices are "constant" (default), "proportional" and "combined" (see equations in User Guide, except for combined which was changed to y = f + sqrt(a^2+b^2*f^2)*e )}
 #'     \item{\code{covariate.model}:}{Object of class \code{"matrix"}: a matrix of 0's and 1's, with a 1 indicating that a parameter-covariate relationship is included in the model (and an associated fixed effect will be estimated). The nmuber of columns should be equal to the number of parameters in the model and the number of rows to the number of covariates.}
 #'     \item{\code{covariance.model}:}{Object of class \code{"matrix"}: a matrix f 0's and 1's giving the structure of the variance-covariance matrix. Defaults to the Identity matrix (diagonal IIV, no correlations between parameters)}
 #'     \item{\code{omega.init}:}{Object of class \code{"matrix"}: a matrix giving the initial estimate for the variance-covariance matrix}
@@ -278,7 +278,7 @@ setMethod(
 # error models :
 #   constant            y = f + a*e
 #   proportional        y = f + b*f*e
-#   combined            y = f + (a+b*f)*e
+#   combined            y = f + sqrt(a^2+b^2*f^2)*e
 #   exponential         y = f*exp(a*e)    ( <=>  log(y) = log(f) + a*e )
     if(missing(error.init) || length(error.init)!=2*length(.Object@error.model)) {
       error.init<-c()
@@ -683,6 +683,7 @@ setMethod("plot","SaemixModel",
 #' corresponding line in psi, ie the parameters for this predictors (defaults to empty). If id is given, the unique values in id must be equal
 #' to the number of lines in psi, otherwise id will be set to 1. If id is given and its values do not take the consecutive values 1:N, the
 #' indices will be matched to 1:N to follow the lines in psi.
+#' @param \dots unused argument, for consistency with the generic
 #' 
 #' @details The function uses the model slot of the SaemixModel object to obtain predictions, using the predictors object. The
 #' user is responsible for giving all the predictors needed by the model function.
@@ -729,10 +730,11 @@ setMethod("plot","SaemixModel",
 #' head(predict(saemix.model, xpred, psi=indpsi)$predictions)
 #' 
 #' @importFrom stats predict
+#' @method predict SaemixModel
 #' @export 
 #' 
 
-predict.SaemixModel<-function(object, predictors, psi=c(), id=c()) {
+predict.SaemixModel<-function(object, predictors, psi=c(), id=c(), ...) {
   xidep<-predictors
   if(length(id)==0 || length(id)!=dim(predictors)[1]) 
     id<-rep(1,dim(xidep)[1]) 

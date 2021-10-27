@@ -56,9 +56,10 @@ model1cpt<-function(psi,id,xidep) {
 }
 
 saemix.model1<-saemixModel(model=model1cpt,modeltype="structural", 
-                          description="One-compartment model with first-order absorption",
-                          psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))), 
-                          transform.par=c(1,1,1),covariate.model=matrix(c(0,0,1,0,0,0),ncol=3,byrow=TRUE))
+     description="One-compartment model with first-order absorption",
+     psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3,byrow=TRUE, 
+     dimnames=list(NULL, c("ka","V","CL"))), transform.par=c(1,1,1),
+     covariate.model=matrix(c(0,0,1,0,0,0),ncol=3,byrow=TRUE))
                           
 saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE)
 saemix.fit1<-saemix(saemix.model1,saemix.data,saemix.options)     
