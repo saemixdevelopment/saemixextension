@@ -24,28 +24,40 @@ warfa_data <- read.table("data/warfarin_data.txt", header=T)
 saemix.data_warfa<-saemixData(name.data=warfa_data,header=TRUE,sep=" ",na=NA, name.group=c("id"),
   name.predictors=c("amount","time"),name.response=c("y1"), name.X="time")
 
+# model1cpt<-function(psi,id,xidep) {
+#   dose<-xidep[,1]
+#   tim<-xidep[,2]
+#   ka<-psi[id,1]
+#   V<-2
+#   # V<-psi[id,2]
+#   k<-0.5
+#   CL<-k*V
+#   ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
+#   return(ypred)
+# }
+
+
+# saemix.model_warfa<-saemixModel(model=model1cpt,description="warfarin",modeltype="structural",
+#   psi0=matrix(c(1),ncol=1,byrow=TRUE, dimnames=list(NULL, c("ka"))),
+#   transform.par=c(1),omega.init=matrix(c(1),ncol=1,byrow=TRUE),
+#   covariance.model=matrix(c(1),ncol=1,byrow=TRUE))
+
+
 model1cpt<-function(psi,id,xidep) {
   dose<-xidep[,1]
   tim<-xidep[,2]
   ka<-psi[id,1]
-  V<-2
-  # V<-psi[id,2]
-  k<-0.5
+  V<-psi[id,2]
+  k<-psi[id,3]
   CL<-k*V
   ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
   return(ypred)
 }
 
-# saemix.model_warfa<-saemixModel(model=model1cpt,description="warfarin",type="structural"
-#   ,psi0=matrix(c(1,7),ncol=2,byrow=TRUE, dimnames=list(NULL, c("ka","V"))),
-#   transform.par=c(1,1),omega.init=matrix(c(1,0,0,1),ncol=2,byrow=TRUE),
-#   covariance.model=matrix(c(1,0,0,1),ncol=2,byrow=TRUE))
-
-saemix.model_warfa<-saemixModel(model=model1cpt,description="warfarin",modeltype="structural",
-  psi0=matrix(c(1),ncol=1,byrow=TRUE, dimnames=list(NULL, c("ka"))),
-  transform.par=c(1),omega.init=matrix(c(1),ncol=1,byrow=TRUE),
-  covariance.model=matrix(c(1),ncol=1,byrow=TRUE))
-
+saemix.model_warfa<-saemixModel(model=model1cpt,description="warfarin",modeltype="structural"
+  ,psi0=matrix(c(1,7,1),ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V", "k"))),
+  transform.par=c(1,1,1),omega.init=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE),
+  covariance.model=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE))
 
 
 

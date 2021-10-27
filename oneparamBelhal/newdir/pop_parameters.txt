@@ -32,27 +32,30 @@ function(psi,id,xidep) {
   dose<-xidep[,1]
   tim<-xidep[,2]
   ka<-psi[id,1]
-  V<-2
-  # V<-psi[id,2]
-  k<-0.5
+  V<-psi[id,2]
+  k<-psi[id,3]
   CL<-k*V
   ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
   return(ypred)
 }
-<bytecode: 0x7fd2dcd5b540>
-  Nb of parameters: 1 
-      parameter names:  ka 
+<bytecode: 0x7fb90f8e0358>
+  Nb of parameters: 3 
+      parameter names:  ka V k 
       distribution:
      Parameter Distribution Estimated
 [1,] ka        log-normal   Estimated
+[2,] V         log-normal   Estimated
+[3,] k         log-normal   Estimated
   Variance-covariance matrix:
-   ka
-ka  1
+   ka V k
+ka  1 0 0
+V   0 1 0
+k   0 0 1
   Error model: constant , initial values: a.1=1 
     No covariate in the model.
     Initial values
-             ka
-Pop.CondInit  1
+             ka V k
+Pop.CondInit  1 7 1
 -----------------------------------
 ----    Key algorithm options  ----
 -----------------------------------
@@ -73,15 +76,21 @@ Pop.CondInit  1
 -----------------  Fixed effects  ------------------
 ----------------------------------------------------
      Parameter Estimate
-[1,] ka        0.11    
-[2,] a.1       5.42    
+[1,] ka        0.605   
+[2,] V         7.620   
+[3,] k         0.017   
+[4,] a.1       0.993   
 ----------------------------------------------------
 -----------  Variance of random effects  -----------
 ----------------------------------------------------
    Parameter Estimate
-ka omega2.ka 0.0029  
+ka omega2.ka 0.398   
+V  omega2.V  0.044   
+k  omega2.k  0.053   
 ----------------------------------------------------
 ------  Correlation matrix of random effects  ------
 ----------------------------------------------------
-          omega2.ka
-omega2.ka 1        
+          omega2.ka omega2.V omega2.k
+omega2.ka 1         0        0       
+omega2.V  0         1        0       
+omega2.k  0         0        1       

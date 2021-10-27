@@ -95,8 +95,7 @@ estep<-function(kiter, Uargs, Dargs, opt, mean.phi, varList, DYF, phiM) {
 		varList$domega2[,nrs2]<-varList$domega2[,nrs2]*(1+opt$stepsize.rw* (nbc2/nt2-opt$proba.mcmc))
 	}
 
-	if(opt$nbiter.mcmc[4]>0) {
-
+	if(opt$nbiter.mcmc[4]>0 & kiter<5) {
 		etaMc<-etaM
 		propc <- U.eta
 		prop <- U.eta
@@ -105,13 +104,12 @@ estep<-function(kiter, Uargs, Dargs, opt, mean.phi, varList, DYF, phiM) {
 	    iomega.phi1<-solve(omega.eta[i1.omega2,i1.omega2])
 
 	 	# Setup for MAP calculation (MAP is identical no matter the chain)
-
 	  	id<-Dargs$IdM[1:Dargs$nobs]
-	  	xind<-Dargs$XM[1:Dargs$nobs, drop=FALSE]
+	  	xind<-Dargs$XM[1:Dargs$nobs,]
 	  	yobs<-Dargs$yM[1:Dargs$nobs]
 	  	id.list<-unique(id)
 
-	  	if(Dargs$type=="structural"){
+	  	if(Dargs$modeltype=="structural"){
 #	  		for(i in 1:saemixObject["data"]["N"]) {
 	  		for(i in 1:length(id.list)) {
   	  	  		isuj<-id.list[i]
