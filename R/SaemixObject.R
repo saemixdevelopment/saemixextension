@@ -760,7 +760,9 @@ setMethod(f="predict",
 
 #' Compute model predictions after an saemix fit
 #' 
-#' In nonlinear mixed effect models, different types of predictions may be obtained, including individual predictions and population predictions
+#' In nonlinear mixed effect models, different types of predictions may be obtained, including individual predictions and population predictions.
+#' This function takes an SaemixObject and adds any missing predictions for maximum a posteriori and conditional mean estimations of the individual
+#' parameters, and for the different types of individual and population predictions for the response variable.
 #' @param object an SaemixObject object
 #' @return an updated SaemixObject object
 #' @keywords methods
@@ -780,7 +782,7 @@ saemix.predict<-function(object) {
   index<-object["data"]["data"][,"index"]
   # Individual predictions
   ipred<-object["model"]["model"](saemix.res["map.psi"],index,xind)
-  ires<-object["data"]["data"][,object["data"]["name.response"]]-ipred
+  ires<-yobs-ipred
   psiM<-transphi(saemix.res["cond.mean.phi"],object["model"]["transform.par"])
   icond.pred<-object["model"]["model"](psiM,index,xind)
   saemix.res["ipred"]<-ipred
@@ -788,9 +790,9 @@ saemix.predict<-function(object) {
   # Individual weighted residuals
   pres<-saemix.res["respar"]
   gpred<-error(ipred,pres,xind$ytype)
-  iwres<-(ipred-yobs)/gpred
+  iwres<-(yobs-ipred)/gpred
   gpred<-error(icond.pred,pres,xind$ytype)
-  icwres<-(icond.pred-yobs)/gpred
+  icwres<-(yobs-icond.pred)/gpred
   saemix.res["iwres"]<-iwres
   saemix.res["icwres"]<-icwres
   # Population predictions using the population parameters [ f(mu) ]
