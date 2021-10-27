@@ -4,7 +4,7 @@
 \alias{predict.SaemixModel}
 \title{Predictions for a new dataset}
 \usage{
-predict.SaemixModel(object, predictors, psi = c(), id = c())
+\method{predict}{SaemixModel}(object, predictors, psi = c(), id = c(), ...)
 }
 \arguments{
 \item{object}{an SaemixModel object}
@@ -22,6 +22,8 @@ indicated by the id argument; if id is not given, only the first line of psi wil
 corresponding line in psi, ie the parameters for this predictors (defaults to empty). If id is given, the unique values in id must be equal
 to the number of lines in psi, otherwise id will be set to 1. If id is given and its values do not take the consecutive values 1:N, the
 indices will be matched to 1:N to follow the lines in psi.}
+
+\item{\dots}{unused argument, for consistency with the generic}
 }
 \value{
 a list with two components

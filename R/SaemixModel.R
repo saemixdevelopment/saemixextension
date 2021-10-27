@@ -683,6 +683,7 @@ setMethod("plot","SaemixModel",
 #' corresponding line in psi, ie the parameters for this predictors (defaults to empty). If id is given, the unique values in id must be equal
 #' to the number of lines in psi, otherwise id will be set to 1. If id is given and its values do not take the consecutive values 1:N, the
 #' indices will be matched to 1:N to follow the lines in psi.
+#' @param \dots unused argument, for consistency with the generic
 #' 
 #' @details The function uses the model slot of the SaemixModel object to obtain predictions, using the predictors object. The
 #' user is responsible for giving all the predictors needed by the model function.
@@ -729,10 +730,11 @@ setMethod("plot","SaemixModel",
 #' head(predict(saemix.model, xpred, psi=indpsi)$predictions)
 #' 
 #' @importFrom stats predict
+#' @method predict SaemixModel
 #' @export 
 #' 
 
-predict.SaemixModel<-function(object, predictors, psi=c(), id=c()) {
+predict.SaemixModel<-function(object, predictors, psi=c(), id=c(), ...) {
   xidep<-predictors
   if(length(id)==0 || length(id)!=dim(predictors)[1]) 
     id<-rep(1,dim(xidep)[1]) 
