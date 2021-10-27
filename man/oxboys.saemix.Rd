@@ -54,6 +54,6 @@ saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
 
 }
 \references{
-Pinheiro, J. C. and Bates, D. M. (2000), \emph{Mixed-Effects Models in S and S-PLUS}, Springer, New York.  (Appendix A.19)
+Pinheiro JC, Bates DM (2000) \emph{Mixed-effects Models in S and S-PLUS}, Springer, New York (Appendix A.19)
 }
 \keyword{datasets}

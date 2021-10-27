@@ -169,6 +169,8 @@ the error model. Defaults to 1 for each estimated parameter in the error model}
 \item{name.modpar}{names of the model parameters, if they are not given as
 the column names (or names) of psi0}
 
+\item{status}{string indicating whether a model has been run successfully; set to "empty" at initialisation, used to pass on error messages or fit status}
+
 \item{name.fixed}{a character string  giving the name of the fixed parameters}
 
 \item{name.random}{a character string  giving the name of the random parameters}

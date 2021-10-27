@@ -3,7 +3,7 @@
 \name{llgq.saemix}
 \alias{llgq.saemix}
 \alias{llqg.saemix}
-\alias{ggq.mlx}
+\alias{gqg.mlx}
 \title{Log-likelihood using Gaussian Quadrature}
 \usage{
 llgq.saemix(saemixObject)

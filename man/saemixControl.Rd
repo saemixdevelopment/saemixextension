@@ -50,12 +50,12 @@ for the parameters. Defaults to TRUE. The linearised approximation to the log-li
 \item{ll.gq}{a boolean specifying whether to estimate the log-likelihood by Gaussian quadrature. Defaults to FALSE}
 
 \item{nbiter.saemix}{nb of iterations in each step (a vector containing 2
-elements, nbiter.saemix\link{1} for the exploration phase of the algorithm (K1) and nbiter.saemix\link{2}
+elements, nbiter.saemix[1] for the exploration phase of the algorithm (K1) and nbiter.saemix[2]
 for the smoothing phase (K2))}
 
-\item{nbiter.sa}{nb of iterations subject to simulated annealing (defaults to nbiter.saemix\link{1}/2,
-will be cut down to K1=nbiter.saemix\link{1} if greater than that value). We recommend to stop
-simulated annealing before the end of the exploration phase (nbiter.saemix\link{1}).}
+\item{nbiter.sa}{nb of iterations subject to simulated annealing (defaults to nbiter.saemix[1]/2,
+will be cut down to K1=nbiter.saemix[1] if greater than that value). We recommend to stop
+simulated annealing before the end of the exploration phase (nbiter.saemix[1]).}
 
 \item{nb.chains}{nb of chains to be run in parallel in the MCMC algorithm
 (defaults to 1)}
@@ -112,7 +112,7 @@ fixed effects in the algorithm. Defaults to 100}
 compute npde. Defaults to 1000}
 
 \item{nb.simpred}{number of simulations used to compute mean predictions
-(ppred element), taken as a random sample within the nb.sim simulations used
+(ypred element), taken as a random sample within the nb.sim simulations used
 for npde}
 
 \item{ipar.lmcmc}{number of iterations required to assume convergence for

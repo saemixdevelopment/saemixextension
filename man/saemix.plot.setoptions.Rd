@@ -49,12 +49,12 @@ can be stored in an object and its elements modified to provide suitable graphs.
 \item par.name Name of the parameter to be used in the plots. Defaults to the first parameter in the model
 \item pch Symbol type. Defaults to 20, corresponding to small dots
 \item pcol Main symbol color (default: black)
-\item range Range (expressed in number of SD) over which to plot the marginal distribution. Defaults to 4, so that the random effects for the marginal distribution is taken over the range \link{-4 SD; 4 SD}
+\item range Range (expressed in number of SD) over which to plot the marginal distribution. Defaults to 4, so that the random effects for the marginal distribution is taken over the range [-4 SD; 4 SD]
 \item res.plot Type of residual plot ("res.vs.x": scatterplot versus X, "res.vs.pred": scatterplot versus predictions, "hist": histogram, "qqplot": QQ-plot) (default: "res.vs.x")
 \item smooth When TRUE, smoothed lines are added in the plots of predictions versus observations (default: FALSE)
 \item tit Title of the graph (default: none)
 \item type Type of the plot (as in the \emph{R} plot function. Defaults to "b", so that both lines and symbols are shown
-\item units Name of the predictor used in the plots (X). Defaults to the name of the first predictor in the model (saemix.data$names$predictors\link{1})
+\item units Name of the predictor used in the plots (X). Defaults to the name of the first predictor in the model (saemix.data$names$predictors[1])
 \item vpc.bin Number of binning intervals when plotting the VPC (the (vpc.bin-1) breakpoints are taken as the empirical quantiles of the X data). Defaults to 10
 \item vpc.interval Size of the prediction intervals.Defaults to 0.95 for the 95\\% prediction interval
 \item vpc.obs Should the observations be overlayed on the VPC plot. Defaults to TRUE

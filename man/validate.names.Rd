@@ -10,7 +10,9 @@
 
 \item{recognisednames}{vector of strings, values for automatic recognition}
 
-\item{verbose}{automatic, whether to attempt automatic recognition}
+\item{verbose}{logical, whether to print warning messages}
+
+\item{automatic}{a boolean indicating whether to attempt automatic name recognition when some colum names are missing or wrong (defaults to TRUE)}
 }
 \value{
 a vector with valid names

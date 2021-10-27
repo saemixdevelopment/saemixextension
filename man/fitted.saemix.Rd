@@ -15,7 +15,7 @@
 \arguments{
 \item{object}{an object of type SaemixRes or SaemixObject}
 
-\item{type}{string determining which predictions are extracted. Possible values are: "ipred" (individual predictions obtained using the mode of the individual distribution for each subject, default), "ypred" (population predictions obtained using the population parameters f(E(theta))), "ppred" (mean of the population predictions (E(f(theta)))) and "icpred" (individual predictions obtained using the conditional mean of the individual distribution). See user guide for details.}
+\item{type}{string determining which predictions are extracted. Possible values are: "ipred" (individual predictions obtained using the mode of the individual distribution for each subject, default), "ppred" (population predictions obtained using the population parameters f(E(theta))), "ypred" (mean of the population predictions (E(f(theta)))) and "icpred" (individual predictions obtained using the conditional mean of the individual distribution). See user guide for details.}
 
 \item{...}{further arguments to be passed to or from other methods}
 }

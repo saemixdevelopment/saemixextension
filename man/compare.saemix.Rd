@@ -53,12 +53,12 @@ saemix.model1<-saemixModel(model=model1cpt,modeltype="structural",
   transform.par=c(1,1,1),covariate.model=matrix(c(0,0,1,0,0,0),ncol=3,byrow=TRUE))
 # Model with two covariates
 saemix.model2<-saemixModel(model=model1cpt,modeltype="structural",
-   description="One-compartment model, clearance dependent on weight and volume dependent on sex",
+   description="One-compartment model, clearance dependent on weight, volume dependent on sex",
    psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))),
    transform.par=c(1,1,1),covariate.model=matrix(c(0,0,1,0,1,0),ncol=3,byrow=TRUE))
 # Model with three covariates
 saemix.model3<-saemixModel(model=model1cpt,modeltype="structural",
-  description="One-compartment model, clearance and absorption dependent on weight, volume dependent on sex",
+  description="One-cpt model, clearance, absorption dependent on weight, volume dependent on sex",
   psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))),
   transform.par=c(1,1,1),covariate.model=matrix(c(1,0,1,0,1,0),ncol=3,byrow=TRUE))
 

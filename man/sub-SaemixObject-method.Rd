@@ -16,6 +16,6 @@
 \item{drop}{whether to drop unused dimensions}
 }
 \description{
-Access slots of a SaemixObject object using the object\link{"slot"} format
+Access slots of a SaemixObject object using the object["slot"] format
 }
 \keyword{methods}

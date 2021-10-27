@@ -35,7 +35,8 @@ eta(object, type = c("mode", "mean"))
 \arguments{
 \item{object}{an SaemixObject object returned by the \code{\link{saemix}} function}
 
-\item{type}{a string specifying whether to use the MAP (type="mode") or the mean (type="mean") of the conditional distribution of the individual parameters. Defaults to mode}
+\item{type}{a string specifying whether to use the MAP (type="mode") or the mean (type="mean")
+of the conditional distribution of the individual parameters. Defaults to mode}
 }
 \value{
 a matrix with the individual parameters (psi/phi) or the random effects (eta).
@@ -62,7 +63,8 @@ More details can be found in the PDF documentation.
 \section{Methods}{
  \describe{
 \item{list("signature(object = \"SaemixObject\")")}{ please refer to the PDF
-documentation for the models} }
+documentation for the models}
+}
 }
 
 \examples{
@@ -103,7 +105,7 @@ saemix.options<-list(algorithm=c(1,0,0),seed=632545,save=FALSE,save.graphs=FALSE
 # eta(saemix.fit,type="mean")
 }
 \references{
-Comets  E, Lavenu A, Lavielle M. Parameter estimation in nonlinear mixed effect models using saemix, an R implementation of the SAEM algorithm. Journal of Statistical Software 80, 3 (2017), 1-41.
+Comets E, Lavenu A, Lavielle M. Parameter estimation in nonlinear mixed effect models using saemix, an R implementation of the SAEM algorithm. Journal of Statistical Software 80, 3 (2017), 1-41.
 
 Kuhn E, Lavielle M. Maximum likelihood estimation in nonlinear mixed effects models. Computational Statistics and Data Analysis 49, 4 (2005), 1020-1038.
 

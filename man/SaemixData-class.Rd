@@ -4,12 +4,9 @@
 \name{SaemixData-class}
 \alias{SaemixData-class}
 \alias{SaemixData}
-\alias{[<-,SaemixData-method}
 \alias{print,SaemixData}
 \alias{showall,SaemixData}
 \alias{show,SaemixData}
-\alias{read}
-\alias{read,SaemixData-method}
 \alias{SaemixRepData-class}
 \alias{SaemixRepData}
 \alias{SaemixSimData-class}
