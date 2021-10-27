@@ -23,7 +23,7 @@ saemix.model<-saemixModel(model=model1cpt,modeltype="structural",
                           psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))),
                           transform.par=c(1,1,1))
 
-saemix.options<-list(seed=632545,nbiter.mcmc=c(2,2,2,2),save=FALSE,save.graphs=FALSE)
+saemix.options<-list(seed=632545,nbiter.mcmc=c(2,2,2,2),nbiter.map=4,save=FALSE,save.graphs=FALSE)
 saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
 
 # Model with 2 covariates
@@ -32,7 +32,7 @@ saemix.model2<-saemixModel(model=model1cpt,modeltype="structural",
                            psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))),
                            transform.par=c(1,1,1),covariate.model=matrix(c(0,0,0,0,0,0,0,0,0),ncol=3,byrow=TRUE))
 
-saemix.options<-list(seed=632545,nbiter.mcmc=c(2,2,2,2),save=FALSE,save.graphs=FALSE)
+saemix.options<-list(seed=632545,nbiter.mcmc=c(2,2,2,2),nbiter.map=4,save=FALSE,save.graphs=FALSE)
 saemix.fit2<-saemix(saemix.model2,saemix.data,saemix.options)
 
 theo.fit1<-saemix.fit
