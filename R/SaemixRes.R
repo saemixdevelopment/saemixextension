@@ -892,7 +892,7 @@ resid.SaemixRes<-function (object, type = c("ires", "wres", "npde", "pd", "iwres
 
 fitted.SaemixRes<-function (object, type = c("ipred", "ypred", "ppred", "icpred"), ...) {
   type <- match.arg(type)
-  pred <- switch(type, ipred=object@ipred, ypred=object@ypred, ppred=object@ppred, ipred=object@ipred, icpred=object@icpred)
+  pred <- switch(type, ipred=object@ipred, ypred=object@ypred, ppred=object@ppred, icpred=object@icpred)
   if(length(pred)>0) return(pred) else message(paste("No fitted values of type",type,"available\n"))
 }
 

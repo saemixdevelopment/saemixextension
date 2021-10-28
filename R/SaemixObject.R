@@ -733,7 +733,7 @@ setMethod(f="predict",
             saemix.data<-object["data"]
             saemix.model<-object["model"]
             #    se.fit<-match.arg(se.fit) # doesn't work with logical type, change
-            #    if(se.fit) cat("Currently predict() does not handle argument se.fit=TRUE.\n")
+            #    if(se.fit & object@options$warnings) message("Currently predict() does not handle argument se.fit=TRUE.\n")
             if(missing(newdata)) { # Return predictions from fitted object
               xpred<-fitted(object,type,...)
               if(length(xpred)==0) {
@@ -769,52 +769,71 @@ setMethod(f="predict",
 #' In nonlinear mixed effect models, different types of predictions may be obtained, including individual predictions and population predictions.
 #' This function takes an SaemixObject and adds any missing predictions for maximum a posteriori and conditional mean estimations of the individual
 #' parameters, and for the different types of individual and population predictions for the response variable.
+#' 
 #' @param object an SaemixObject object
+#' @param type the type of predictions (ipred= individual, ppred=population predictions obtained with the population estimates, 
+#' ypred=mean of the population predictions, icpred=conditional predictions). 
+#' By default, computes all the predictions and residuals, along with the corresponding parameter estimates
+#' 
 #' @return an updated SaemixObject object
+#' 
+#' @details This function is used internally by saemix to automatically compute a number of elements needed for diagnostic plots.
+#' It is normally executed directly during a call to saemix() but can be called to add residuals
+#' 
 #' @keywords methods
 #' @export saemix.predict
 
-saemix.predict<-function(object) {
-  if(length(object["results"]["map.psi"])==0)
+saemix.predict<-function(object, type=c("ipred", "ypred", "ppred", "icpred")) {
+  type<-intersect(type, c("ipred", "ypred", "ppred", "icpred"))
+  # Estimate individual parameters
+  if(length(object["results"]["map.psi"])==0 & ("ipred" %in% type))
     object<-map.saemix(object)
   # en principe n'arrive jamais car on les calcule pdt le fit...
-  if(length(object["results"]["cond.mean.phi"])==0)
+  if(length(object["results"]["cond.mean.phi"])==0 & ("icpred" %in% type))
     object<-conddist.saemix(object)
   saemix.res<-object["results"]
+  
+  # Population predictions using the population parameters [ f(mu) ] - always computed
   xind<-object["data"]["data"][,c(object["data"]["name.predictors"],object["data"]["name.cens"],object["data"]["name.mdv"],object["data"]["name.ytype"]),drop=FALSE]
   # If exponential model, this is the transformed data
   yobs<-object["data"]["data"][,object["data"]["name.response"]]
-
   index<-object["data"]["data"][,"index"]
-  # Individual predictions
-  ipred<-object["model"]["model"](saemix.res["map.psi"],index,xind)
-  ires<-yobs-ipred
-  psiM<-transphi(saemix.res["cond.mean.phi"],object["model"]["transform.par"])
-  icond.pred<-object["model"]["model"](psiM,index,xind)
-  saemix.res["ipred"]<-ipred
-  saemix.res["icpred"]<-icond.pred
-  # Individual weighted residuals
-  pres<-saemix.res["respar"]
-  gpred<-error(ipred,pres,xind$ytype)
-  iwres<-(yobs-ipred)/gpred
-  gpred<-error(icond.pred,pres,xind$ytype)
-  icwres<-(yobs-icond.pred)/gpred
-  saemix.res["iwres"]<-iwres
-  saemix.res["icwres"]<-icwres
-  # Population predictions using the population parameters [ f(mu) ]
   psiM<-transphi(saemix.res["mean.phi"],object["model"]["transform.par"])
   ppred<-object["model"]["model"](psiM,index,xind)
   saemix.res["ppred"]<-unname(ppred)
-  if(length(saemix.res["predictions"])==0) 
-    saemix.res["predictions"]<-data.frame(ppred=ppred,ipred=ipred,icpred=icond.pred,ires=ires,iwres=iwres,icwres=icwres) else {
-      saemix.res["predictions"]$ppred<-ppred
+  if(length(saemix.res["predictions"])==0)
+    saemix.res["predictions"]<-data.frame(ppred=ppred) # create dataframe for predictions if not yet available
+  
+  # Compute predictions and residuals
+  if(length(intersect(c("ipred","icpred"),type))>0) {
+    # Individual predictions
+    pres<-saemix.res["respar"]
+    if("ipred" %in% type) {
+      ipred<-object["model"]["model"](saemix.res["map.psi"],index,xind) # Predictions with MAP
+      ires<-yobs-ipred
+      # Individual weighted residuals
+      gpred<-error(ipred,pres,xind$ytype)
+      iwres<-(yobs-ipred)/gpred
+      saemix.res["ipred"]<-ipred
+      saemix.res["ires"]<-ires
+      saemix.res["iwres"]<-iwres
       saemix.res["predictions"]$ipred<-ipred
-      saemix.res["predictions"]$icpred<-icond.pred
       saemix.res["predictions"]$ires<-ires
       saemix.res["predictions"]$iwres<-iwres
+    } 
+    if("icpred" %in% type) {
+      psiM<-transphi(saemix.res["cond.mean.phi"],object["model"]["transform.par"])
+      icond.pred<-object["model"]["model"](psiM,index,xind) # Predictions with Conditional mean
+      gpred<-error(icond.pred,pres,xind$ytype)
+      icwres<-(yobs-icond.pred)/gpred
+      saemix.res["icpred"]<-icond.pred
+      saemix.res["icwres"]<-icwres
+      saemix.res["predictions"]$icpred<-icond.pred
       saemix.res["predictions"]$icwres<-icwres
     }
-  # Population weighted residuals: needs the individual variance-covariance matrix => use compute.sres to estimate these by simulations
+  } 
+  
+  # Population weighted residuals, npde: needs the individual variance-covariance matrix => use compute.sres to estimate these by simulations
   object["results"]<-saemix.res
   return(object)
 }

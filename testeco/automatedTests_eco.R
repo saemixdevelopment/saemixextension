@@ -24,7 +24,9 @@ test_file(file.path(saemixDir,"testeco","testthat_saemixData-class.R"))
 
 test_file(file.path(saemixDir,"testeco","testthat_saemixData-read.R"))
 
-# Problème d'environnement - obligée de définir les data frame passés à saemixData dans l'environnement global et de nettoyer après
+test_file(file.path(saemixDir,"testeco","testthat_saemixData.R"))
+
+# Problème d'environnement - obligée de définir les data frame passés à saemixData dans l'environnement global et de nettoyer après, pas très clean !!!
 rm(theo.saemix)
 rm(PD1.saemix)
 rm(PD2.saemix)
@@ -39,7 +41,9 @@ rm(pkpddat)
 rm(cow.saemix)
 
 # Model
-test_file(file.path(saemixDir,"testeco","testthat_saemixModel.R"))
+test_file(file.path(saemixDir,"testeco","testthat_saemixModel-class.R"))
+
+test_file(file.path(saemixDir,"testeco","testthat_saemixModel-function.R"))
 
 #####################################################
 ###### Testing auxiliary functions

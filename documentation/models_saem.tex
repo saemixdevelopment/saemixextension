@@ -193,10 +193,10 @@ where $\beta_{k^\star} = 0$.
 The variance of the random effects can also depend on this categorical covariate:
 $$ \etagi \sim \mathcal{N}(0, \IIV_k) \ \ \ {\rm if } \ \ G_i=k $$
 
-\noindent {\bf Remark:} It is assumed in \monolix~3.0 that the categorical covariate has only 2 categories (binary covariate). It is also assumed that the variance remains the same for both groups. Covariates with more than 2 categories can always be recoded into (N-1) binary covariates using dummy variables.
+\noindent {\bf Remark:} It is assumed in \monolix~3.0 that the categorical covariate has only 2 categories (binary covariate). It is also assumed that the variance remains the same for both groups. Covariates with more than 2 categories can always be recoded into (N-1) binary covariates using dummy variables but this is for the moment up to the user.
 %It is assumed in \monolix that the correlation matrix of the random effect is the same for all the groups. In other words, only the variances of the random effects can  differ from one group to another.
 
-\subsection{General form of the model}
+\subsection{General form of the non-linear mixed effect model (NLMEM)}
 
 A general form of the non-linear mixed effect model regrouping the different types of responses is to define the model fully in terms of the probabilities:
 

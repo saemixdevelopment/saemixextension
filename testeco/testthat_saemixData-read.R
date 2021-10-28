@@ -208,7 +208,8 @@ test_that("Successful creation of a SaemixData object, no units for x", {
 })
 
 test_that("Successful creation of a SaemixData object, no units for x", {
-  expect_warning(x<-saemixData(name.data=file.path(datDir,"PD1.saemix.tab"),header=T,na=".",  name.response="gender",verbose=F))
+#  expect_warning(x<-saemixData(name.data=file.path(datDir,"PD1.saemix.tab"),header=T,na=".",  name.response="gender",verbose=F))
+  x<-saemixData(name.data=file.path(datDir,"PD1.saemix.tab"),header=T,na=".",  name.response="gender",verbose=F)
   expect_is(x, "SaemixData") # tests for particular class
   expect_equal(x@name.predictors,c("dose"))
   expect_equal(x@name.group,c("subject"))

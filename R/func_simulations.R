@@ -1,6 +1,6 @@
 #######################	Model simulations ########################
 
-#' Perform simulations under the model
+#' Perform simulations under the model for an saemixObject object
 #' 
 #' This function is used to simulate from the model. It can be called with the
 #' estimated parameters (the default), the initial parameters, or with a set of
@@ -14,21 +14,24 @@
 #' @param object an saemixObject object returned by the \code{\link{saemix}} function
 #' @param nsim Number of simulations to perform. Defaults to the nb.simpred
 #' element in options
-#' @param seed if non-null, seed used to initiate the random number generators (defaults to NULL)
+#' @param seed if non-null, seed used to initiate the random number generator (defaults to NULL)
 #' @param predictions Whether the simulated parameters should be used to
 #' compute predictions. Defaults to TRUE
 #' @param res.var Whether residual variability should be added to the
 #' predictions. Defaults to TRUE
 #' @param uncertainty Uses uncertainty (currently not implemented). Defaults to FALSE
 #' @param \dots additional arguments, unused (included for compatibility with the generic)
+#' 
 #' @author Emmanuelle Comets <emmanuelle.comets@@inserm.fr>, Audrey Lavenu,
 #' Marc Lavielle.
+#' 
 #' @seealso \code{\link{SaemixObject}},\code{\link{saemix}},
 #' \code{\link{saemix.plot.data}}, \code{\link{saemix.plot.convergence}},
 #' \code{\link{saemix.plot.llis}}, \code{\link{saemix.plot.randeff}},
 #' \code{\link{saemix.plot.obsvspred}}, \code{\link{saemix.plot.fits}},
 #' \code{\link{saemix.plot.parcov}}, \code{\link{saemix.plot.distpsi}},
 #' \code{\link{saemix.plot.scatterresiduals}}, \code{\link{saemix.plot.vpc}}
+#' 
 #' @references Brendel, K, Comets, E, Laffont, C, Laveille, C, Mentre, F.
 #' Metrics for external model evaluation with an application to the population
 #' pharmacokinetics of gliclazide, Pharmaceutical Research 23 (2006),

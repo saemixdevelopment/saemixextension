@@ -47,7 +47,7 @@ test_that("Predictions given an SaemixModel object, using the psi0 slot", {
   
   xidep<-data.frame(dose=100, tim=seq(0,24,2))
   xtim<-xidep[,2]
-  ypred1<-predict.saemixmodel(x, xidep)
+  ypred1<-predict(x, xidep)
   ycomp1<-xidep[1,1]*1/(20*(1-0.5/20))*(exp(-0.5/20*xtim)-exp(-1*xtim))
   expect_null(rownames(ypred1$param))
   expect_equal(colnames(ypred1$param)[-c(1)], colnames(x@psi0))
@@ -70,7 +70,7 @@ test_that("Predictions given an SaemixModel object for a different set of parame
   xidep<-data.frame(dose=100, tim=seq(0,24,2))
   xtim<-xidep[,2]
   
-  ypred2<-predict.saemixmodel(x, xidep, psi=c(2, 25, 0.5))
+  ypred2<-predict(x, xidep, psi=c(2, 25, 0.5))
   ycomp2<-xidep[1,1]*2/(25*(2-0.5/25))*(exp(-0.5/25*xtim)-exp(-2*xtim))
   expect_identical(ypred2$predictions$pred,ycomp2)
 })
@@ -91,7 +91,7 @@ test_that("Wrong number of parameters", {
   xidep<-data.frame(dose=100, tim=seq(0,24,2))
   xtim<-xidep[,2]
   
-  ypred2<-predict.saemixmodel(x, xidep, psi=c(2, 25))
+  ypred2<-predict(x, xidep, psi=c(2, 25))
   expect_null(ypred2)
 })
 
@@ -115,7 +115,7 @@ test_that("Predictions given an SaemixModel object for several subjects", {
   xidep<-do.call(rbind,rep(list(xidep),3))
   psi1<-do.call(rbind,list(c(2, 25, 0.5), c(1,20,0.5),c(1.5, 20, 1)))
   
-  ypred2<-predict.saemixmodel(x, xidep, psi=psi1, id=id)
+  ypred2<-predict(x, xidep, psi=psi1, id=id)
   ycomp2<-c(xidep[1,1]*2/(25*(2-0.5/25))*(exp(-0.5/25*xtim)-exp(-2*xtim)),
             xidep[1,1]*1/(20*(1-0.5/20))*(exp(-0.5/20*xtim)-exp(-1*xtim)),
             xidep[1,1]*1.5/(20*(1.5-1/20))*(exp(-1/20*xtim)-exp(-1.5*xtim)))

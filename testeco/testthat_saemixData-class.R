@@ -2,18 +2,33 @@ context("Testing saemixData \n")
 
 test_that("Using saemixData with dataframe", {
   theo.saemix<-read.table(file.path(datDir,"theo.saemix.tab"),header=T,na=".")
-  expect_error(x<-saemixData(name.data=theo.saemix,header=TRUE,sep=" ",na=NA, name.group=c("Id"),name.predictors=c("Dose","Time"),name.response=c("Concentration"),name.covariates=c("Weight","Sex"),units=list(x="hr",y="mg/L", covariates=c("kg","-")), name.X="Time"))
+  x<-saemixData(name.data=theo.saemix,header=TRUE,sep=" ",na=NA, name.group=c("Id"),name.predictors=c("Dose","Time"),name.response=c("Concentration"),name.covariates=c("Weight","Sex"),units=list(x="hr",y="mg/L", covariates=c("kg","-")), name.X="Time")
+  expect_equal(x@name.group,'Id')
+  expect_equal(x@name.predictors,c('Dose','Time'))
+  expect_equal(x@name.response,'Concentration')
+  expect_equal(x@N,12)
+  expect_equal(length(x@name.covariates),2)
+  expect_equal(x@ntot.obs,120)
+  expect_true(validObject(x))
 })
 
 test_that("Using saemixData with file on disk", {
   x<-try(saemixData(name.data=file.path(datDir,"PD1.saemix.tab"),header=T,na=".", name.group="subject",name.predictors="dose",name.response="response", name.covariates="gender",units=list(x="mg",y="-",covariates="-"),verbose=TRUE))
+  expect_equal(x@name.group,'subject')
+  expect_equal(x@name.predictors,'dose')
+  expect_equal(x@name.response,'response')
+  expect_equal(x@N,100)
+  expect_equal(length(x@name.covariates),1)
+  expect_equal(x@ntot.obs,300)
+  expect_true(validObject(x))
 })
 
 context("Environment issue")
 
 test_that("Environment problem with saemixData... looks for a dataframe in the global environment", {
   theo.saemix<-read.table(file.path(datDir,"theo.saemix.tab"),header=T,na=".")
-  expect_error(x<-saemixData(name.data=theo.saemix,header=TRUE,sep=" ",na=NA, name.group=c("Id"),name.predictors=c("Dose","Time"),name.response=c("Concentration"),name.covariates=c("Weight","Sex"),units=list(x="hr",y="mg/L", covariates=c("kg","-")), name.X="Time"))
+#  expect_error(x<-saemixData(name.data=theo.saemix,header=TRUE,sep=" ",na=NA, name.group=c("Id"),name.predictors=c("Dose","Time"),name.response=c("Concentration"),name.covariates=c("Weight","Sex"),units=list(x="hr",y="mg/L", covariates=c("kg","-")), name.X="Time"))
+  x<-saemixData(name.data=theo.saemix,header=TRUE,sep=" ",na=NA, name.group=c("Id"),name.predictors=c("Dose","Time"),name.response=c("Concentration"),name.covariates=c("Weight","Sex"),units=list(x="hr",y="mg/L", covariates=c("kg","-")), name.X="Time")
 })
 
 context("Testing creating a new element of class")

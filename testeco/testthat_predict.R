@@ -1,11 +1,11 @@
 ###################################################################################
 # Individual and population predictions for a new dataset
 
-context("Testing predict.newdata for a structural model \n")
+context("Testing saemixPredictNewdata for a structural model \n")
 
 test_that("Comparing parameters", {
   test.newdata<-theo.newdata
-  mylist<-predict.newdata(saemix.fit, theo.newdata, type=c("ipred", "ypred", "ppred", "icpred"))
+  mylist<-saemixPredictNewdata(saemix.fit, theo.newdata, type=c("ipred", "ypred", "ppred", "icpred"))
   expect_is(mylist, "list") # tests for particular class
   param<-mylist$param$map.psi
   par(mfrow=c(2,2))
@@ -17,10 +17,8 @@ test_that("Comparing parameters", {
 #  expect_gte(cor(theo.psiM[,2],param[,2]),0.9)
 })
 
-context("Testing predict.newdata for a structural model \n")
-
 test_that("Computing individual and population predictions for a new dataset with a valid structure and individual observations", {
-  mylist<-predict.newdata(saemix.fit, theo.newdata, type=c("ipred", "ypred", "ppred", "icpred"))
+  mylist<-saemixPredictNewdata(saemix.fit, theo.newdata, type=c("ipred", "ypred", "ppred", "icpred"))
   expect_is(mylist, "list") # tests for particular class
   apred<-mylist$predictions
   par(mfrow=c(2,2))
@@ -41,7 +39,7 @@ test_that("Computing individual and population predictions for a new dataset wit
 })
 
 test_that("Computing MAP and population predictions for a new dataset with a valid structure and individual observations", {
-  mylist<-predict.newdata(saemix.fit, theo.newdata, type=c("ipred", "ypred"))
+  mylist<-saemixPredictNewdata(saemix.fit, theo.newdata, type=c("ipred", "ypred"))
   expect_is(mylist, "list") # tests for particular class
   apred<-mylist$predictions
   par(mfrow=c(1,1))
@@ -53,7 +51,7 @@ test_that("Computing MAP and population predictions for a new dataset with a val
 })
 
 test_that("Computing individual conditional and population predictions for a new dataset with a valid structure and individual observations", {
-  mylist<-predict.newdata(saemix.fit, theo.newdata, type=c("icpred", "ypred"))
+  mylist<-saemixPredictNewdata(saemix.fit, theo.newdata, type=c("icpred", "ypred"))
   expect_is(mylist, "list") # tests for particular class
   apred<-mylist$predictions
   par(mfrow=c(1,1))
@@ -66,7 +64,7 @@ test_that("Computing individual conditional and population predictions for a new
 
 test_that("Computing individual and population predictions for a new dataset with a valid structure, no individual observations", {
   theo2<-theo.newdata[,1:5]
-  mylist<-predict.newdata(saemix.fit, theo2, type=c("ipred", "ypred", "ppred", "icpred"))
+  mylist<-saemixPredictNewdata(saemix.fit, theo2, type=c("ipred", "ypred", "ppred", "icpred"))
   expect_is(mylist, "list") # tests for particular class
   apred<-mylist$predictions
   par(mfrow=c(1,2))
@@ -83,7 +81,7 @@ test_that("Computing individual and population predictions for a new dataset wit
 
 test_that("Computing individual and population predictions for a new dataset with missing covariates", {
   theo2<-theo.newdata[,-c(4)]
-  mylist<-predict.newdata(saemix.fit, theo2, type=c("ipred", "ypred", "ppred", "icpred"))
+  mylist<-saemixPredictNewdata(saemix.fit, theo2, type=c("ipred", "ypred", "ppred", "icpred"))
   expect_is(mylist, "list") # tests for particular class
   apred<-mylist$predictions
   par(mfrow=c(1,2))
@@ -99,7 +97,7 @@ test_that("Computing individual and population predictions for a new dataset wit
 ###################################################################################
 # Using predict to return a vector of predictions
 
-context("Testing predict.newdata for a structural model \n")
+context("Testing predict for a structural model \n")
 
 test_that("Computing population predictions for a new dataset with a valid structure and individual observations using predict()", {
   fit.pred<-saemix.predict(saemix.fit)
@@ -107,8 +105,8 @@ test_that("Computing population predictions for a new dataset with a valid struc
   expect_equal(vec,fit.pred@results@predictions$ipred)
   expect_length(vec,saemix.fit@data@ntot.obs)
   expect_gte(cor(vec,saemix.fit@data@data[,saemix.fit@data@name.response]),0.8)
-  vec<-predict(saemix.fit,type="ypred")
-  expect_equal(vec,fit.pred@results@predictions$ypred)
+  vec<-predict(saemix.fit,type="ppred")
+  expect_equal(vec,fit.pred@results@predictions$ppred)
   vec<-predict(saemix.fit,type="icpred")
   expect_equal(vec,fit.pred@results@predictions$icpred)
   vec<-predict(saemix.fit,type="ipred")
@@ -118,14 +116,14 @@ test_that("Computing population predictions for a new dataset with a valid struc
 test_that("Computing default (individual) predictions for a new dataset with a valid structure and individual observations using predict()", {
   vec<-predict(saemix.fit,theo.newdata)
   expect_gte(cor(vec,theo.newdata$Concentration),0.95)
-  vec<-predict(saemix.fit,theo.newdata,type="ypred")
+  vec<-predict(saemix.fit,theo.newdata,type="ppred")
   expect_gte(cor(vec,theo.newdata$Concentration),0.95)
   vec<-predict(saemix.fit,theo.newdata,type="icpred")
   expect_gte(cor(vec,theo.newdata$Concentration),0.95)
 })
 
 test_that("Computing population predictions for a new dataset with a valid structure but no individual observations using predict()", {
-  vec0<-predict(saemix.fit,theo.newdata,type="ypred")
+  vec0<-predict(saemix.fit,theo.newdata,type="ppred")
   theo2<-theo.newdata[,1:5]
   vec<-predict(saemix.fit,theo2)
   expect_gte(cor(vec,theo.newdata$Concentration),0.95)
@@ -159,12 +157,12 @@ test_that("Estimating individual parameters using final estimates", {
   expect_equal(x@results@status,"initial")
   expect_equal(x@results@name.fixed,x@model@name.fixed)
   xpred<-saemix.predict(theo.fit2)
-  x1<-predict(theo.fit2,type="ypred")
-  expect_identical(x1,xpred@results@predictions$ypred)
-  x2<-predict.newdata(x,smx.data@data)
+  x1<-predict(theo.fit2,type="ppred")
+  expect_identical(x1,xpred@results@predictions$ppred)
+  x2<-saemixPredictNewdata(x,smx.data@data)
   expect_identical(saemixObject["results"]["fixed.effects"],theo.fit2@results@fixed.effects)
   expect_identical(theo.fit2@results@omega,theo.fit2@results@omega)
-  expect_identical(x2$predictions$ypred,xpred@results@predictions$ypred)
+  expect_identical(x2$predictions$ppred,xpred@results@predictions$ppred)
   expect_gt(cor(x2$predictions$ipred,xpred@results@predictions$ipred),0.99)
   expect_gt(cor(x2$predictions$icpred,xpred@results@predictions$icpred),0.99)
 })
@@ -191,8 +189,8 @@ test_that("Estimating individual parameters using initial estimates", {
   expect_equal(x@results@status,"initial")
   expect_equal(x@results@name.fixed,x@model@name.fixed)
   xpred<-saemix.predict(theo.fit2)
-  x2<-predict.newdata(x,smx.data@data)
-  expect_gt(cor(x2$predictions$ypred,xpred@results@predictions$ypred),0.7)
+  x2<-saemixPredictNewdata(x,smx.data@data)
+  expect_gt(cor(x2$predictions$ppred,xpred@results@predictions$ppred),0.7)
   expect_gt(cor(x2$predictions$ipred,xpred@results@predictions$ipred),0.95)
   expect_gt(cor(x2$predictions$icpred,xpred@results@predictions$icpred),0.95)
 })

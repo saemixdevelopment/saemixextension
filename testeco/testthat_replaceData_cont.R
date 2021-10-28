@@ -14,7 +14,8 @@ test_that("Newdata object with the same structure as the original data - 1 covar
   fpred<-saemixObject["model"]["model"](psiM, theo.newdat$Id, theo.newdat[,c("Dose","Time")])
   theo.newdat$Concentration<-fpred+rnorm(length(fpred),sd=0.5)
   
-  expect_warning(newObj<-replaceData.saemixObject(saemixObject,theo.newdat))
+#  expect_warning(newObj<-replaceData.saemixObject(saemixObject,theo.newdat))
+  newObj<-replaceData.saemixObject(saemixObject,theo.newdat)
   expect_is(newObj, "SaemixObject") # tests for particular class
   expect_length(newObj@results@cond.mean.phi ,0)
   expect_length(newObj@results@phi.samp ,0)
@@ -33,7 +34,7 @@ test_that("Newdata object with the same structure as the original data - 2 covar
   fpred<-saemixObject["model"]["model"](psiM, theo.newdat$Id, theo.newdat[,c("Dose","Time")])
   theo.newdat$Concentration<-fpred+rnorm(length(fpred),sd=0.5)
   
-  expect_warning(newObj<-replaceData.saemixObject(saemixObject,theo.newdat))
+  newObj<-replaceData.saemixObject(saemixObject,theo.newdat)
   expect_is(newObj, "SaemixObject") # tests for particular class
   expect_length(newObj@results@cond.mean.phi ,0)
   expect_length(newObj@results@phi.samp ,0)
@@ -77,7 +78,7 @@ test_that("Newdata object without a response", {
   xsex<-rep(c("F","M"),length.out=nsuj)
   xdose<-seq(280,320,length.out=nsuj)
   theo.newdat<-data.frame(Id=rep(1:nsuj,each=length(xtim)),Time=rep(xtim,nsuj),Dose=rep(xdose,each=length(xtim)), Weight=rep(xwei,each=length(xtim)),Sex=rep(xsex,each=length(xtim)))
-  expect_warning(newObj<-replaceData.saemixObject(saemixObject,theo.newdat))
+  newObj<-replaceData.saemixObject(saemixObject,theo.newdat)
   expect_is(newObj, "SaemixObject") # tests for particular class
   expect_length(newObj@results@cond.mean.phi ,0)
   expect_length(newObj@results@phi.samp ,0)
@@ -94,7 +95,7 @@ test_that("Newdata object without Weight", {
   xdose<-seq(280,320,length.out=nsuj)
   theo.newdat<-data.frame(Id=rep(1:nsuj,each=length(xtim)),Time=rep(xtim,nsuj),Dose=rep(xdose,each=length(xtim)), Sex=rep(xsex,each=length(xtim)))
 
-  expect_warning(newObj<-replaceData.saemixObject(saemixObject,theo.newdat))
+  newObj<-replaceData.saemixObject(saemixObject,theo.newdat)
   expect_is(newObj, "SaemixObject") # tests for particular class
   expect_length(newObj@results@cond.mean.phi ,0)
   expect_length(newObj@results@phi.samp ,0)
@@ -112,7 +113,7 @@ test_that("Newdata object without covariates or response", {
   xdose<-seq(280,320,length.out=nsuj)
   theo.newdat<-data.frame(Id=rep(1:nsuj,each=length(xtim)),Time=rep(xtim,nsuj),Dose=rep(xdose,each=length(xtim)))
 
-  expect_warning(newObj<-replaceData.saemixObject(saemixObject,theo.newdat))
+  newObj<-replaceData.saemixObject(saemixObject,theo.newdat)
   expect_is(newObj, "SaemixObject") # tests for particular class
   expect_length(newObj@results@cond.mean.phi ,0)
   expect_length(newObj@results@phi.samp ,0)

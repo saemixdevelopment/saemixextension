@@ -44,12 +44,19 @@ test_that("Successful creation of a SaemixData object with covariates", {
   expect_equal(x@N,12)
   expect_equal(x@ntot.obs,120)
   expect_equal(sort(unique(x@data$Sex)),c(0,1))
-  expect_equal(sort(unique(x@ocov$Sex)),c("F","M"))
+#  expect_equal(sort(unique(x@ocov$Sex)),c("F","M"))
 })
 
 theo.saemix$Weight[theo.saemix$Id==3]<<-NA
+theo.saemix$Sex<<-ifelse(theo.saemix$Sex==1,"M","F")
+
 test_that("Successful creation of a SaemixData object with covariates and one missing covariate", {
-  x<-saemixData(name.data=theo.saemix,header=TRUE,sep=" ",na=NA, name.group=c("Id"),name.predictors=c("Dose","Time"),name.response=c("Concentration"),name.covariates=c("Weight","Sex"),units=list(x="hr",y="mg/L",covariates=c("kg","-")), name.X="Time")
+  theo.saemix<-read.table(file.path(datDir,"theo.saemix.tab"),header=T,na=".")
+  theo.saemix$Weight[theo.saemix$Id==3]<-NA
+  theo.saemix$Sex<-ifelse(theo.saemix$Sex==1,"M","F")
+  
+  x<-saemixData(name.data=theo.saemix, name.group=c("Id"),name.predictors=c("Dose","Time"),name.response=c("Concentration"),
+                name.covariates=c("Weight","Sex"),units=list(x="hr",y="mg/L",covariates=c("kg","-")), name.X="Time")
   
   expect_is(x, "SaemixData") # tests for particular class
   expect_equal(x@name.predictors,c("Dose","Time"))

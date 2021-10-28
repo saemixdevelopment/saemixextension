@@ -19,13 +19,11 @@ datDir<-file.path(saemixDir,"data")
   source(file.path(progDir,"func_simulations.R"))
   source(file.path(progDir,"compute_LL.R"))
   source(file.path(progDir,"func_estimParam.R"))
+  
+  source(file.path(progDir,"backward.R"))
+  source(file.path(progDir,"forward.R"))
+  source(file.path(progDir,"stepwise.R"))
+  source(file.path(progDir,"func_stepwise.R"))
+  source(file.path(progDir,"func_compare.R"))
 }
-
-# Files not yet transferred and validated
-if(FALSE) {
-  newCodeDir<-file.path(saemixDir,"newCode")
-  source(file.path(newCodeDir,"SaemixObject-predict2.R"))
-  source(file.path(newCodeDir,"estimateParameters.R"))
-}
-
 
