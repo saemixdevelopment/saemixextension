@@ -216,7 +216,9 @@ setMethod(
 #' @param nb.chains nb of chains to be run in parallel in the MCMC algorithm
 #' (defaults to 1)
 #' @param nbiter.burn nb of iterations for burning
-#' @param nbiter.map nb of iterations for the fourth kernel (using the MAP)
+#' @param nbiter.map nb of iterations of the MAP kernel (4th kernel) to run at the beginning 
+#' of the estimation process (defaults to nbiter.saemix\[1\]/10 if nbiter.mcmc\[4\] is more than 0) 
+#' (EXPERIMENTAL, see Karimi et al. 2019 for details)
 #' @param nbiter.mcmc nb of iterations in each kernel during the MCMC step
 #' @param nbiter.sa nb of iterations subject to simulated annealing (defaults to nbiter.saemix\[1\]/2, 
 #' will be cut down to K1=nbiter.saemix\[1\] if greater than that value). We recommend to stop 
@@ -276,13 +278,16 @@ setMethod(
 #' @seealso \code{\link{SaemixData}},\code{\link{SaemixModel}},
 #' \code{\link{SaemixObject}}, \code{\link{saemix}}
 #' 
-#' @references Comets  E, Lavenu A, Lavielle M. Parameter estimation in nonlinear mixed effect models using saemix, an R implementation of the SAEM algorithm. Journal of Statistical Software 80, 3 (2017), 1-41.
+#' @references Comets  E, Lavenu A, Lavielle M  (2017). Parameter estimation in nonlinear mixed effect models using saemix, an R implementation of the SAEM algorithm. Journal of Statistical Software, 3:1-41.
 #' 
 #' Kuhn E, Lavielle M. Maximum likelihood estimation in nonlinear mixed effects models. Computational Statistics and Data Analysis 49, 4 (2005), 1020-1038.
 #' 
-#' Comets E, Lavenu A, Lavielle M. SAEMIX, an R version of the SAEM algorithm.
-#' 20th meeting of the Population Approach Group in Europe, Athens, Greece
-#' (2011), Abstr 2173.
+#' Comets E, Lavenu A, Lavielle M. SAEMIX, an R version of the SAEM algorithm. 20th meeting of the Population Approach Group in 
+#' Europe, Athens, Greece (2011), Abstr 2173.
+#' 
+#' Karimi B, Lavielle M, Moulines E  (2019). f-SAEM: A fast Stochastic Approximation of the EM algorithm for nonlinear mixed effects models.
+#' Computational Statistics & Data Analysis, 141:123-38
+#' 
 #' @keywords models
 #' @examples
 #' 
@@ -291,7 +296,6 @@ setMethod(
 #' 
 #' # All default options, changing seed
 #' saemix.options<-saemixControl(seed=632545)
-#' 
 #' 
 #' @export saemixControl
 
@@ -706,10 +710,12 @@ setMethod("showall","SaemixObject",
 #' @rdname predict-methods
 #' 
 #' @param object an SaemixObject
-#' @param newdata an optional dataframe for which predictions are desired
+#' @param newdata an optional dataframe for which predictions are desired. If newdata is given, it must contain the predictors needed for the model in object
 #' @param type the type of predictions (ipred= individual, ppred=population predictions obtained with the population estimates, ypred=mean of the population predictions, icpred=conditional predictions). With newdata, individual parameters can be estimated if the new data contains observations; otherwise, predictions correspond to the population predictions ppred, and type is ignored.
 #' @param se.fit whether the SE are to be taken into account in the model predictions
 #' @param ... additional arguments passed on to fitted()
+#' 
+#' @return a vector or a dataframe (if more than one type) with the corresponding predictions for each observation in the dataframe
 #' 
 #' @exportMethod predict
 
@@ -751,7 +757,7 @@ setMethod(f="predict",
                 if(object["options"]$warnings) cat("Please provide values of the response to obtain predictions for a model defined by loglikelihood\n")
                 return()
               }
-              listpred<-predict.newdata(object,newdata,type=type)
+              listpred<-saemixPredictNewdata(object,newdata,type=type)
               xpred<-listpred$predictions[,type]
             }
             return(xpred)

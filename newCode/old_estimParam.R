@@ -216,3 +216,123 @@ predict.newdata<-function(saemixObject, saemix.newdata, type=c("ipred", "ypred",
   return(rlist)
 }
 
+#' Predictions for a new dataset
+#' 
+#' @param saemixObject an SaemixObject from a fitted run
+#' @param saemix.newdata a dataframe containing the new data. The dataframe must contain the same information as the original dataset (colunm names, etc...) 
+#' @param type one or several of "ipred" (individual predictions using the MAP estimates), "ppred" (population predictions obtained using the population parameters f(E(theta))), "ypred" (mean of the population predictions (E(f(theta)))), "icpred"  (individual predictions using the conditional mean estimates). Defaults to "ppred".
+#' @param nsamp an integer, ignored for other types than icpred; if icpred, returns both the mean of the conditional distribution and nsamp samples, with the corresponding predictions. Defaults to 1.
+#' 
+#' @details The function uses estimateMeanParameters.newdata() to set the population estimates for the individual parameters
+#' taking into account the individual covariates and doses, and estimateIndividualParameters.newdata() to derive individual estimates 
+#' by computing the mean of the conditional distributions (type="icpred") or the MAP estimate (type="ipred")
+#' 
+#' @details Warning: this function is currently under development and the output may change in future versions of the package 
+#' to conform to the usual predict functions.
+#' 
+#' @return a list with two components
+#' \describe{
+#' \item{param}{a dataframe with the estimated parameters. The columns in the dataframe depend on which type of predictions were requested (argument type)}
+#' \item{predictions}{a dataframe with the predictions. The columns in the dataframe depend on which type of predictions were requested (argument type)}
+#' }
+#' 
+#' @aliases estimateMeanParameters.newdata estimateIndividualParameters.newdata
+#' 
+#' @examples 
+#' # TODO
+#' @export
+
+saemixpredict.newdata<-function(saemixObject, saemix.newdata, type=c("ipred", "ypred", "ppred", "icpred"),nsamp=1) {
+  # nsamp ignored for other types than icpred; if icpred, returns both the mean of the conditional distribution and samples, with the corresponding predictions
+  # Replace the data object in saemixObject with the newdata, and wipe out the parameter and likelihood estimates associated with the initial run
+  saemixObject<-replaceData.saemixObject(saemixObject,saemix.newdata)
+  # if(sum(is.na(saemixObject["data"]["data"][,saemixObject["data"]["name.response"]]))>0) {
+  #   if(saemixObject["model"]["modeltype"]=="likelihood") {
+  #     if(saemixObject["options"]$warnings) message("Please provide values of the response to obtain predictions for a model defined by loglikelihood\n")
+  #     return(NULL)
+  #   }
+  #   type<-type[type!="ipred" & type!="icpred"]
+  # }
+  if(length(type)==0) type<-"ppred"
+  
+  # Estimate population parameters (Ci*mu) for the new subjects
+  saemixObject<-estimateMeanParameters.newdata(saemixObject)
+  
+  # Predictions using the mean parameters ppred=f(E(theta,x))
+  newdata<-saemixObject["data"]
+  chdat<-saemixObject["rep.data"]
+  NM<-chdat["NM"]
+  IdM<-chdat["dataM"]$IdM
+  yM<-chdat["dataM"]$yM
+  XM<-chdat["dataM"][,c(newdata["name.predictors"],newdata["name.cens"],newdata["name.mdv"],newdata["name.ytype"]),drop=FALSE]
+  mean.phi<-saemixObject["results"]["mean.phi"]
+  psiM<-transphi(mean.phi,saemixObject["model"]["transform.par"])
+  fpred<-saemixObject["model"]["model"](psiM, IdM, XM)
+  colnames(psiM)<-saemixObject["model"]["name.modpar"]
+  predictions<-data.frame(IdM,XM,ppred=fpred)
+  colnames(predictions)[1]<-newdata["name.group"]
+  parameters<-list(id=unique(newdata["data"][,newdata["name.group"]]), population=psiM)
+  
+  # Mean predictions over the population ypred=E(f(theta,x))
+  # Technically... we can obtain ypred as E(f()) by simulating etas in their distribution
+  if(length(grep(c("ypred"),type))>0) {
+    ind.eta<-saemixObject["model"]["indx.omega"]
+    nb.etas<-length(ind.eta)
+    omega<-saemixObject["results"]["omega"]
+    chol.omega<-try(chol(omega[ind.eta,ind.eta]),silent=TRUE)
+    
+    etaM<-matrix(data=0,nrow=NM,ncol=nb.etas)
+    ypred<-matrix(data=0,nrow=dim(XM)[1],ncol=saemixObject["options"]$nb.sim)
+    mean.phiM<-do.call(rbind,rep(list(mean.phi),1))
+    phiMc<-mean.phiM
+    if(length(grep(c("ypred"),type))==1) {
+      for(isim in 1:saemixObject["options"]$nb.sim) {
+        etaMc<-0.5*matrix(rnorm(NM*nb.etas),ncol=nb.etas)%*%chol.omega
+        phiMc[,ind.eta]<-mean.phiM[,ind.eta]+etaMc
+        psiMc<-transphi(phiMc,saemixObject["model"]["transform.par"])
+        fpred<-saemixObject["model"]["model"](psiMc, IdM, XM)
+        ypred[,isim]<-fpred
+      }
+      ypred<-rowMeans(ypred)
+      predictions$ypred<-ypred
+    }
+  }
+  if(sum(!is.na(match(c("icpred","ipred"),type)))==0) { # only population predictions
+    return(list(param=parameters,predictions=predictions))
+  }
+  # Estimate individual parameters, if type contains ipred and/or icpred
+  # Call predict instead ? (but will compute both map and cond.mean)
+  ctype<-c()
+  if(length(grep("ipred",type))==1) ctype<-c(ctype,"mode")
+  if(length(grep("icpred",type))==1) ctype<-c(ctype,"mean")
+  saemixObject<-estimateIndividualParameters.newdata(saemixObject,type=ctype,nsamp=nsamp)
+  
+  if(length(grep("icpred",type))==1) {
+    psiM<-parameters$cond.mean.psi<-saemixObject["results"]["cond.mean.psi"]
+    parameters$cond.var.phi<-saemixObject["results"]["cond.var.phi"]
+    parameters$cond.mean.phi<-saemixObject["results"]["cond.mean.phi"]
+    fpred<-saemixObject["model"]["model"](psiM, IdM, XM)
+    predictions<-cbind(predictions,icpred=fpred)
+    if(nsamp>1) {
+      samp.pred<-array(dim=c(length(fpred),nsamp))
+      samp.par<-array(dim=c(dim(psiM),nsamp))
+      for(isamp in 1:nsamp) {
+        phiM<-saemixObject["results"]["phi.samp"][,,isamp]
+        psiM<-samp.par[,,isamp]<-transphi(phiM,saemixObject["model"]["transform.par"])
+        fpred<-saemixObject["model"]["model"](psiM, IdM, XM)
+        samp.pred[,isamp]<-fpred
+      }
+    }
+  }
+  if(length(grep("ipred",type))==1) {
+    psiM<-parameters$map.psi<-saemixObject["results"]["map.psi"]
+    fpred<-saemixObject["model"]["model"](psiM, IdM, XM)
+    predictions<-cbind(predictions,ipred=fpred)
+  }
+  #  saemixObject["results"]["predictions"]<-predictions
+  rlist<-list(param=parameters,predictions=predictions)
+  # TODO: decide on structure of the list returned, we can't return a list with variable number of elements, maybe name them ? eg rlist$icpred, etc...
+  #  if(length(grep("icpred",type))==1 & nsamp>1) rlist<-list(param=parameters,predictions=predictions, object=saemixObject, parSample=samp.par, predSample=samp.pred)
+  
+  return(rlist)
+}
