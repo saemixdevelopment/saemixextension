@@ -7,6 +7,7 @@
 \alias{plot,SaemixData}
 \alias{plot,SaemixSimData-method}
 \alias{plot,SaemixSimData}
+\alias{plot,SaemixSimData,ANY-method}
 \title{Plot of longitudinal data}
 \usage{
 \S4method{plot}{SaemixData,ANY}(x, y, ...)
