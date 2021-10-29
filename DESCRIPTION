@@ -9,7 +9,8 @@ Authors@R: c(
     person("Belhal", "Karimi", role = "aut"),
     person("Maud", "Delattre", role = "ctb"),
     person("Marilou", "Chanel", role = "ctb"),
-    person("Johannes", "Ranke", role = "ctb"),
+    person("Johannes", "Ranke", role = "ctb",
+      comment = c(ORCID = "0000-0003-4371-6538")),
     person("Sofia", "Kaisaridi", role = "ctb"),
     person("Lucie", "Fayette", role = "ctb"))
 Description: The SAEMIX package implements the Stochastic Approximation EM algorithm for parameter estimation in (non)linear mixed effects models. The SAEM algorithm: - computes the maximum likelihood estimator of the population parameters, without any approximation of the model (linearisation, quadrature approximation,...), using the Stochastic Approximation Expectation Maximization (SAEM) algorithm, - provides standard errors for the maximum likelihood estimator - estimates the conditional modes, the conditional means and the conditional standard deviations of the individual parameters, using the Hastings-Metropolis algorithm as described by Comets et al. (2017) <doi:10.18637/jss.v080.i03>. Several applications of SAEM in agronomy, animal breeding and PKPD analysis have been published by members of the Monolix group (<http://group.monolix.org/>).
