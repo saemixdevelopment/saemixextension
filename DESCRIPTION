@@ -19,7 +19,7 @@ LazyLoad: yes
 LazyData: yes
 Imports: graphics, stats, methods
 Suggests: testthat, MASS
-Depends: gridExtra, ggplot2, grid
+Depends: gridExtra, ggplot2, grid, rlang
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.1.2

@@ -845,7 +845,7 @@ saemix.predict<-function(object, type=c("ipred", "ypred", "ppred", "icpred")) {
 #' 
 #' Several plots (selectable by the type argument) are currently available:
 #' convergence plot, individual plots, predictions versus observations,
-#' distribution plots, VPC, residual plots.
+#' distribution plots, VPC, residual plots, mirror.
 #' 
 #' This is the generic plot function for an SaemixObject object, which
 #' implements different graphs related to the algorithm (convergence plots,
@@ -879,6 +879,7 @@ saemix.predict<-function(object, type=c("ipred", "ypred", "ppred", "icpred")) {
 #' \item{both.fit:}{Individual fits, superposing fits obtained using the population 
 #' parameters with the individual covariates (red) and using the individual parameters 
 #' with the individual covariates (green)} 
+#' \item{mirror:}{Mirror plots assessing the compatibility of simulated data compared to the original}
 #' \item{marginal.distribution:}{Distribution of
 #' the parameters (conditional on covariates when some are included in the
 #' model). A histogram of individual parameter estimates can be overlayed on
@@ -1027,10 +1028,10 @@ setMethod(f="plot",
     if(plot.type[1]=="reduced") plot.type<-c("data","convergence","likelihood", "observations.vs.predictions")
     if(plot.type[1]=="full") plot.type<-c("data","convergence","likelihood", "observations.vs.predictions","residuals.scatter","residuals.distribution","vpc")
     
-    pltyp<-c("data","convergence","likelihood","individual.fit", "population.fit", "both.fit","observations.vs.predictions","residuals.scatter", "residuals.distribution","vpc","npde","random.effects","marginal.distribution", "correlations","parameters.vs.covariates","randeff.vs.covariates")
+    pltyp<-c("data","convergence","likelihood","individual.fit", "population.fit", "both.fit","observations.vs.predictions","residuals.scatter", "residuals.distribution","vpc","npde","random.effects","marginal.distribution", "correlations","parameters.vs.covariates","randeff.vs.covariates", "mirror")
     ifnd<-pmatch(plot.type,pltyp)
     if(sum(is.na(ifnd))>0) {
-      cat("The following plot types were not found or are ambiguous:", plot.type[is.na(ifnd)],"\n")
+      if(x@options$warnings) message("The following plot types were not found or are ambiguous:", plot.type[is.na(ifnd)],"\n")
     }
     ifnd<-ifnd[!is.na(ifnd)]
     if(length(ifnd)==0) return()
@@ -1039,7 +1040,7 @@ setMethod(f="plot",
     id.pred<-match(plot.type,c("observations.vs.predictions","individual.fit", "residuals.scatter","residuals.distribution"))
     if(x@prefs$which.poppred=="ppred") id.pred<-c(id.pred,match(plot.type, c("population.fit", "both.fit")))
     id.map<-match(plot.type,c("randeff.vs.covariates","parameters.vs.covariates"))
-    id.sim<-match(plot.type, c("vpc"))
+    id.sim<-match(plot.type, c("vpc","mirror"))
     id.res<-match(plot.type, c("npde","residuals.scatter", "residuals.distribution"))
     if(x@prefs$which.poppred=="ppred") id.sim<-c(id.sim,match(plot.type, c("population.fit", "both.fit")))
     id.pred<-id.pred[!is.na(id.pred)]
@@ -1068,7 +1069,7 @@ setMethod(f="plot",
         cok<-readline(prompt="Simulations will be performed. This might take a while, proceed ? (y/Y) [default=yes] ")
         if(!cok %in% c("y","Y","yes","")) return()
         } else {
-        	cat("Performing simulations under the model.\n")
+        	if(x@options$warnings) message("Performing simulations under the model.\n")
         }
         if(boolpred) {
           x<-simulate(x)
@@ -1091,7 +1092,7 @@ setMethod(f="plot",
     }
     if(length(id.map)>0) {
       if(length(x["results"]["map.eta"])==0) {
-        cat("Computing ETA estimates and adding them to fitted object.\n")
+        if(x@options$warnings) message("Computing ETA estimates and adding them to fitted object.\n")
 	x<-compute.eta.map(x)
         assign(namObj,x,envir=parent.frame())
       }
@@ -1099,39 +1100,43 @@ setMethod(f="plot",
     for(ipl in plot.type) {
       switch (EXPR=ipl,
     "data"={
-       cat("Plotting the data\n")
+       if(x@options$warnings) message("Plotting the data\n")
        saemix.plot.data(x,...)
     },
     "convergence"={
-       cat("Plotting convergence plots\n")
+       if(x@options$warnings) message("Plotting convergence plots\n")
        saemix.plot.convergence(x,...)
     },
     "likelihood"={  
-       cat("Plotting the likelihood\n")
+       if(x@options$warnings) message("Plotting the likelihood\n")
        saemix.plot.llis(x,...)
     },
     "observations.vs.predictions"={
-       cat("Plotting observations versus predictions\n")      
+       if(x@options$warnings) message("Plotting observations versus predictions\n")      
        saemix.plot.obsvspred(x,...)
     },
     "individual.fit"={
-      cat("Plotting individual fits\n")
+      if(x@options$warnings) message("Plotting individual fits\n")
       saemix.plot.fits(x,...)
     },
     "population.fit"={
-      cat("Plotting fits obtained with population predictions\n")
+      if(x@options$warnings) message("Plotting fits obtained with population predictions\n")
       saemix.plot.fits(x,level=0,...)
     },
     "both.fit"={
-      cat("Plotting the fits overlaying individual and population predictions\n")
+      if(x@options$warnings) message("Plotting the fits overlaying individual and population predictions\n")
       saemix.plot.fits(x,level=c(0,1),...)
     },
+    "individual.fit"={
+      if(x@options$warnings) message("Mirror plots\n")
+      saemix.plot.mirror(x,...)
+    },
     "residuals.scatter"={
-      cat("Plotting scatterplots of residuals\n")
+      if(x@options$warnings) message("Plotting scatterplots of residuals\n")
       saemix.plot.scatterresiduals(x,...)
     },
     "residuals.distribution"={
-      cat("Plotting the distribution of residuals\n")
+      if(x@options$warnings) message("Plotting the distribution of residuals\n")
       saemix.plot.distribresiduals(x,...)
     },
     "random.effects"={
@@ -1142,13 +1147,13 @@ setMethod(f="plot",
     },
     "parameters.vs.covariates"={
       if(length(x@data@name.covariates)==0) {
-        cat("No covariates in the dataset\n")
+        if(x@options$warnings) message("No covariates in the dataset\n")
         return()
       } else saemix.plot.parcov(x,...)
     },
     "randeff.vs.covariates"={
       if(length(x@data@name.covariates)==0) {
-        cat("No covariates in the dataset\n")
+        if(x@options$warnings) message("No covariates in the dataset\n")
         return()
       } else saemix.plot.randeffcov(x,...)
     },
@@ -1156,11 +1161,11 @@ setMethod(f="plot",
       saemix.plot.distpsi(x,...)
     },
     "vpc"={
-      cat("Plotting VPC\n")
+      if(x@options$warnings) message("Plotting VPC\n")
       saemix.plot.vpc(x,...)
     },
     "npde"={
-      cat("Plotting npde\n")
+      if(x@options$warnings) message("Plotting npde\n")
       saemix.plot.npde(x,...)
     },
     cat("Plot ",ipl," not implemented yet\n")
