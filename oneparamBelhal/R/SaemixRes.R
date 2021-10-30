@@ -71,7 +71,7 @@
 #' @slot bic.gq Bayesian Information Criterion computed by Gaussian Quadrature
 #' @slot bic.covariate.gq Specific Bayesian Information Criterion for covariate selection computed by Gaussian Quadrature
 #' @slot predictions a data frame containing all the predictions and residuals in a table format
-#' @slot ppred a vector giving the population predictions obtained with the MAP estimates
+#' @slot ppred a vector giving the population predictions obtained with the population estimates
 #' @slot ypred a vector giving the mean population predictions
 #' @slot ipred a vector giving the individual predictions obtained with the MAP estimates
 #' @slot icpred a vector giving the individual predictions obtained with the conditional estimates
@@ -172,7 +172,7 @@ setClass(
 # Model predictions and residuals
 		predictions="data.frame", # data frame containing all the predictions and residuals below
     ypred="numeric",        # vector of mean population predictions
-    ppred="numeric",        # vector of population predictions with MAP
+    ppred="numeric",        # vector of population predictions with the population parameters
     ipred="numeric",		# vector of individual predictions with MAP
     icpred="numeric",		# vector of individual predictions with conditional estimates
     ires="numeric",		  # vector of individual residuals with MAP (ipred-x)
@@ -674,7 +674,7 @@ setMethod("show","SaemixRes",
     rownames(tab)<-rep("",dim(tab)[1])
     print(tab,quote=FALSE)
     mat1<-object@omega
-    if(sum(abs(mat1-diag(diag(mat1))))>0) {
+    if(sum(abs(mat1-mydiag(mydiag(mat1))))>0) {
     cat("\nCorrelation matrix of random effects\n")
     tab<-cov2cor(object@omega[object@indx.omega,object@indx.omega,drop=FALSE])
     for(i in 1:dim(tab)[2]) 
@@ -892,7 +892,7 @@ resid.SaemixRes<-function (object, type = c("ires", "wres", "npde", "pd", "iwres
 
 fitted.SaemixRes<-function (object, type = c("ipred", "ypred", "ppred", "icpred"), ...) {
   type <- match.arg(type)
-  pred <- switch(type, ipred=object@ipred, ypred=object@ypred, ppred=object@ppred, ipred=object@ipred, icpred=object@icpred)
+  pred <- switch(type, ipred=object@ipred, ypred=object@ypred, ppred=object@ppred, icpred=object@icpred)
   if(length(pred)>0) return(pred) else message(paste("No fitted values of type",type,"available\n"))
 }
 

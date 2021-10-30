@@ -1,6 +1,6 @@
 #######################	Model simulations ########################
 
-#' Perform simulations under the model
+#' Perform simulations under the model for an saemixObject object
 #' 
 #' This function is used to simulate from the model. It can be called with the
 #' estimated parameters (the default), the initial parameters, or with a set of
@@ -11,24 +11,27 @@
 #' This function is used to produce Visual Predictive Check graphs, as well as
 #' to compute the normalised prediction distribution errors (npde).
 #' 
-#' @param saemixObject an object returned by the \code{\link{saemix}} function
+#' @param object an saemixObject object returned by the \code{\link{saemix}} function
 #' @param nsim Number of simulations to perform. Defaults to the nb.simpred
 #' element in options
-#' @param seed unused (included for compatibility with the generic)
+#' @param seed if non-null, seed used to initiate the random number generator (defaults to NULL)
 #' @param predictions Whether the simulated parameters should be used to
 #' compute predictions. Defaults to TRUE
 #' @param res.var Whether residual variability should be added to the
 #' predictions. Defaults to TRUE
 #' @param uncertainty Uses uncertainty (currently not implemented). Defaults to FALSE
 #' @param \dots additional arguments, unused (included for compatibility with the generic)
+#' 
 #' @author Emmanuelle Comets <emmanuelle.comets@@inserm.fr>, Audrey Lavenu,
 #' Marc Lavielle.
+#' 
 #' @seealso \code{\link{SaemixObject}},\code{\link{saemix}},
 #' \code{\link{saemix.plot.data}}, \code{\link{saemix.plot.convergence}},
 #' \code{\link{saemix.plot.llis}}, \code{\link{saemix.plot.randeff}},
 #' \code{\link{saemix.plot.obsvspred}}, \code{\link{saemix.plot.fits}},
 #' \code{\link{saemix.plot.parcov}}, \code{\link{saemix.plot.distpsi}},
 #' \code{\link{saemix.plot.scatterresiduals}}, \code{\link{saemix.plot.vpc}}
+#' 
 #' @references Brendel, K, Comets, E, Laffont, C, Laveille, C, Mentre, F.
 #' Metrics for external model evaluation with an application to the population
 #' pharmacokinetics of gliclazide, Pharmaceutical Research 23 (2006),
@@ -42,15 +45,18 @@
 #' @importFrom stats simulate
 #' @export 
 
-simulate.SaemixObject<-function(saemixObject,nsim=saemixObject["options"]$nb.sim, seed=NULL, predictions=TRUE,res.var=TRUE,uncertainty=FALSE,...) {
+simulate.SaemixObject<-function(object, nsim, seed, predictions=TRUE,res.var=TRUE,uncertainty=FALSE,...) {
   # Simulate individual parameters from the population distribution
   # predictions: if TRUE, use the parameters to predict observations
   # res.var: if TRUE, add residual error to the predictions to obtain simulated data
   # uncertainty: if TRUE, add uncertainty when simulating (not implemented yet)
-  saemix.model<-saemixObject["model"]
-  saemix.data<-saemixObject["data"]
-  saemix.res<-saemixObject["results"]
+  saemix.model<-object["model"]
+  saemix.data<-object["data"]
+  saemix.res<-object["results"]
   xind<-saemix.data["data"][,c(saemix.data["name.predictors"],saemix.data["name.cens"],saemix.data["name.mdv"],saemix.data["name.ytype"]),drop=FALSE]
+  if(missing(nsim)) nsim<-object["options"]$nb.sim
+  if(missing(seed)) seed<-NULL
+  if(!is.null(seed)) set.seed(seed)
   
   N<-saemix.data["N"]
   ind.eta<-saemix.model["indx.omega"]
@@ -89,7 +95,7 @@ simulate.SaemixObject<-function(saemixObject,nsim=saemixObject["options"]$nb.sim
   datasim<-data.frame(idsim=rep(index,nsim),irep=rep(1:nsim, each=saemix.data["ntot.obs"]),ypred=sim.pred,ysim=sim.data)
   ysim<-new(Class="SaemixSimData",saemix.data,datasim)
   ysim["sim.psi"]<-sim.psi
-  saemixObject["sim.data"]<-ysim
+  object["sim.data"]<-ysim
   
-  return(saemixObject)
+  return(object)
 }

@@ -308,23 +308,24 @@ saemix<-function(model,data,control=list()) {
 # Compute the MAP estimates of the PSI_i's 
   if(saemix.options$map) {
     x<-try(saemixObject<-map.saemix(saemixObject))
-    if(inherits(x,"try-error") & saemixObject@options$warnings) cat("Problem estimating the MAP parameters\n")
+    if(inherits(x,"try-error") & saemixObject@options$warnings) message("Problem estimating the MAP parameters\n") else 
+      if(!saemix.options$save.graphs) saemixObject<-saemix.predict(saemixObject, type=c("ipred","ppred")) # if no graphs, compute predictions all the same
   }
   
 # Compute the Fisher Information Matrix & update saemix.res
   if(saemix.options$fim) {
     x<-try(saemixObject<-fim.saemix(saemixObject))
-    if(inherits(x,"try-error") & saemixObject@options$warnings) cat("Problem estimating the FIM\n")
+    if(inherits(x,"try-error") & saemixObject@options$warnings) message("Problem estimating the FIM\n")
   }
   
 # Estimate the log-likelihood via importance Sampling/Gaussian quadrature
   if(saemix.options$ll.is) {
     x<-try(saemixObject<-llis.saemix(saemixObject))
-    if(inherits(x,"try-error") & saemixObject@options$warnings) cat("Problem estimating the likelihood by IS\n")
+    if(inherits(x,"try-error") & saemixObject@options$warnings) message("Problem estimating the likelihood by IS\n")
   }
   if(saemix.options$ll.gq) {
     x<-try(saemixObject<-llgq.saemix(saemixObject))
-    if(inherits(x,"try-error") & saemixObject@options$warnings) cat("Problem estimating the likelihood by GQ\n")
+    if(inherits(x,"try-error") & saemixObject@options$warnings) message("Problem estimating the likelihood by GQ\n")
   }
   
 #### Pretty printing the results (TODO finish in particular cov2cor)
@@ -337,18 +338,18 @@ saemix<-function(model,data,control=list()) {
      if(!xsave) {
 # Check that we're not trying to create a directory with the same name as a file
        if(!file_test("-d",saemix.options$directory)) {
-         if(saemix.options$warnings) cat("Unable to create directory",saemix.options$directory)
+         if(saemix.options$warnings) message("Unable to create directory",saemix.options$directory)
          saemix.options$directory<-"newdir"
          dir.create(saemix.options$directory)         
          xsave<-file_test("-d",saemix.options$directory)
          if(!xsave) {
            saemix.options$directory<-""
            xsave<-TRUE
-           if(saemix.options$warnings) cat(", saving in current directory.\n")
-         } else {if(saemix.options$warnings) cat(", saving results in newdir instead.\n")}
+           if(saemix.options$warnings) message(", saving in current directory.\n")
+         } else {if(saemix.options$warnings) message(", saving results in newdir instead.\n")}
        } else {
        xsave<-TRUE
-       if(saemix.options$warnings) cat("Overwriting files in directory",saemix.options$directory,"\n")
+       if(saemix.options$warnings) message("Overwriting files in directory",saemix.options$directory,"\n")
        }
      }
    }

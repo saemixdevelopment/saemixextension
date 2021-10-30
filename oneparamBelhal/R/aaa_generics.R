@@ -15,6 +15,7 @@
 #' @import stats
 #' @import grDevices
 #' @import utils
+## #' @importFrom utils head read.table modifyList ## needed if import all of utils ?
 
 setGeneric(name="read",
            def=function(object, dat=NULL, verbose=TRUE){standardGeneric("read")}
@@ -154,7 +155,8 @@ setGeneric(name="showall",
 #'   covariance.model=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE),
 #'   omega.init=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE),error.model="constant")
 #' 
-#' saemix.options<-list(algorithm=c(1,0,0),seed=632545,save=FALSE,save.graphs=FALSE)
+#' saemix.options<-list(algorithm=c(1,0,0),seed=632545,save=FALSE,save.graphs=FALSE, 
+#' displayProgress=FALSE)
 #' 
 #' # Not run (strict time constraints for CRAN)
 #' # saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
@@ -444,7 +446,7 @@ NULL
 #'        dimnames=list(NULL, c("ka","V","CL"))),transform.par=c(1,1,1))
 #'  # Note: remove the options save=FALSE and save.graphs=FALSE 
 #'  # to save the results and graphs
-#'  saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE)
+#'  saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
 #'  \donttest{
 #'  # Not run (strict time constraints for CRAN)
 #'  saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
@@ -458,7 +460,7 @@ NULL
 #'       covariance.model=matrix(c(1,0,0,0,1,1,0,1,1),ncol=3,byrow=TRUE),
 #'       omega.init=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE),error.model="combined")
 #'       
-#'  saemix.options<-list(seed=39546,save=FALSE,save.graphs=FALSE)
+#'  saemix.options<-list(seed=39546,save=FALSE,save.graphs=FALSE,displayProgress=FALSE)
 #'  \donttest{
 #'  # Not run (strict time constraints for CRAN)
 #'  saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
@@ -539,7 +541,7 @@ NULL
 #' 
 #' # SE not computed as not needed for the test
 #' saemix.options<-list(algorithms=c(0,1,1),nb.chains=3,seed=765754, 
-#'        nbiter.saemix=c(500,300),save=FALSE,save.graphs=FALSE)
+#'        nbiter.saemix=c(500,300),save=FALSE,save.graphs=FALSE,displayProgress=FALSE)
 #' 
 #' fit1<-saemix(model1,saemix.data,saemix.options)
 #' fit2<-saemix(model2,saemix.data,saemix.options)
@@ -596,7 +598,7 @@ NULL
 #'       error.model="constant")
 #' 
 #' saemix.options<-list(algorithms=c(1,1,1),nb.chains=1,seed=201004,
-#'       save=FALSE,save.graphs=FALSE)
+#'       save=FALSE,save.graphs=FALSE,displayProgress=FALSE)
 #' \donttest{
 #' saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
 #' }
@@ -653,7 +655,7 @@ NULL
 #'       omega.init=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE),error.model="constant")
 #' 
 #' saemix.options<-list(algorithms=c(1,1,1),nb.chains=1,nbiter.saemix=c(200,100), 
-#'              seed=4526,save=FALSE,save.graphs=FALSE)
+#'              seed=4526,save=FALSE,save.graphs=FALSE,displayProgress=FALSE)
 #' 
 #' # Plotting the data
 #' plot(saemix.data,xlab="Time (day)",ylab="Weight of the cow (kg)")
@@ -719,7 +721,7 @@ NULL
 #'             byrow=TRUE),error.model="constant")
 #' 
 #' saemix.options<-list(algorithms=c(1,1,1),nb.chains=1,seed=666, 
-#'        save=FALSE,save.graphs=FALSE)
+#'        save=FALSE,save.graphs=FALSE,displayProgress=FALSE)
 #' 
 #' # Plotting the data
 #' plot(saemix.data,xlab="Fertiliser dose (kg/ha)", ylab="Wheat yield (t/ha)")
@@ -923,4 +925,44 @@ NULL
 #' @keywords datasets
 NULL
 
+
+#' Epilepsy count data
+#' 
+#' The epilepsy data from Thall and Vail (1990), available from the MASS package, records two-week seizure counts for 59 epileptics. 
+#' The number of seizures was recorded for a baseline period of 8 weeks, and then patients were randomly assigned to a treatment group 
+#' or a control group. Counts were then recorded for four successive two-week periods. The subject's age is the only covariate. See the
+#' documentation for epil in the MASS package for details on the dataset.
+#' 
+#' @docType data
+#' @name epilepsy.saemix
+#' 
+#' @source MASS package in R
+#' 
+#' @references Thall P, Vail S (1990). Some covariance models for longitudinal count data with overdispersion. Biometrics 46(3):657-71.
+#' 
+#' @examples
+#' # You need to have MASS installed to successfully run this example
+#' if (requireNamespace("MASS")) {
+#'   
+#'   epilepsy<-MASS::epil
+#'   saemix.data<-saemixData(name.data=epilepsy, name.group=c("subject"),
+#'      name.predictors=c("period","y"),name.response=c("y"),
+#'      name.covariates=c("trt","base", "age"), units=list(x="2-week",y="",covariates=c("","","yr")))
+#'   ## Poisson model with one parameter
+#'   countPoi<-function(psi,id,xidep) { 
+#'     y<-xidep[,2]
+#'     lambda<-psi[id,1]
+#'     logp <- -lambda + y*log(lambda) - log(factorial(y))
+#'     return(logp)
+#'     }
+#'  saemix.model<-saemixModel(model=countPoi,description="Count model Poisson",modeltype="likelihood", 
+#'    psi0=matrix(c(0.5),ncol=1,byrow=TRUE,dimnames=list(NULL, c("lambda"))), transform.par=c(1))
+#'  \donttest{
+#'   saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
+#'   poisson.fit<-saemix(saemix.model,saemix.data,saemix.options)
+#'   }
+#' }
+#'   
+#' @keywords datasets
+NULL
 
