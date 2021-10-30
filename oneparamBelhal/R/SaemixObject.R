@@ -216,7 +216,9 @@ setMethod(
 #' @param nb.chains nb of chains to be run in parallel in the MCMC algorithm
 #' (defaults to 1)
 #' @param nbiter.burn nb of iterations for burning
-#' @param nbiter.map nb of iterations for the fourth kernel (using the MAP)
+#' @param nbiter.map nb of iterations of the MAP kernel (4th kernel) to run at the beginning 
+#' of the estimation process (defaults to nbiter.saemix\[1\]/10 if nbiter.mcmc\[4\] is more than 0) 
+#' (EXPERIMENTAL, see Karimi et al. 2019 for details)
 #' @param nbiter.mcmc nb of iterations in each kernel during the MCMC step
 #' @param nbiter.sa nb of iterations subject to simulated annealing (defaults to nbiter.saemix\[1\]/2, 
 #' will be cut down to K1=nbiter.saemix\[1\] if greater than that value). We recommend to stop 
@@ -276,13 +278,16 @@ setMethod(
 #' @seealso \code{\link{SaemixData}},\code{\link{SaemixModel}},
 #' \code{\link{SaemixObject}}, \code{\link{saemix}}
 #' 
-#' @references Comets  E, Lavenu A, Lavielle M. Parameter estimation in nonlinear mixed effect models using saemix, an R implementation of the SAEM algorithm. Journal of Statistical Software 80, 3 (2017), 1-41.
+#' @references Comets  E, Lavenu A, Lavielle M  (2017). Parameter estimation in nonlinear mixed effect models using saemix, an R implementation of the SAEM algorithm. Journal of Statistical Software, 3:1-41.
 #' 
 #' Kuhn E, Lavielle M. Maximum likelihood estimation in nonlinear mixed effects models. Computational Statistics and Data Analysis 49, 4 (2005), 1020-1038.
 #' 
-#' Comets E, Lavenu A, Lavielle M. SAEMIX, an R version of the SAEM algorithm.
-#' 20th meeting of the Population Approach Group in Europe, Athens, Greece
-#' (2011), Abstr 2173.
+#' Comets E, Lavenu A, Lavielle M. SAEMIX, an R version of the SAEM algorithm. 20th meeting of the Population Approach Group in 
+#' Europe, Athens, Greece (2011), Abstr 2173.
+#' 
+#' Karimi B, Lavielle M, Moulines E  (2019). f-SAEM: A fast Stochastic Approximation of the EM algorithm for nonlinear mixed effects models.
+#' Computational Statistics & Data Analysis, 141:123-38
+#' 
 #' @keywords models
 #' @examples
 #' 
@@ -291,7 +296,6 @@ setMethod(
 #' 
 #' # All default options, changing seed
 #' saemix.options<-saemixControl(seed=632545)
-#' 
 #' 
 #' @export saemixControl
 
@@ -706,10 +710,12 @@ setMethod("showall","SaemixObject",
 #' @rdname predict-methods
 #' 
 #' @param object an SaemixObject
-#' @param newdata an optional dataframe for which predictions are desired
+#' @param newdata an optional dataframe for which predictions are desired. If newdata is given, it must contain the predictors needed for the model in object
 #' @param type the type of predictions (ipred= individual, ppred=population predictions obtained with the population estimates, ypred=mean of the population predictions, icpred=conditional predictions). With newdata, individual parameters can be estimated if the new data contains observations; otherwise, predictions correspond to the population predictions ppred, and type is ignored.
 #' @param se.fit whether the SE are to be taken into account in the model predictions
 #' @param ... additional arguments passed on to fitted()
+#' 
+#' @return a vector or a dataframe (if more than one type) with the corresponding predictions for each observation in the dataframe
 #' 
 #' @exportMethod predict
 
@@ -727,7 +733,7 @@ setMethod(f="predict",
             saemix.data<-object["data"]
             saemix.model<-object["model"]
             #    se.fit<-match.arg(se.fit) # doesn't work with logical type, change
-            #    if(se.fit) cat("Currently predict() does not handle argument se.fit=TRUE.\n")
+            #    if(se.fit & object@options$warnings) message("Currently predict() does not handle argument se.fit=TRUE.\n")
             if(missing(newdata)) { # Return predictions from fitted object
               xpred<-fitted(object,type,...)
               if(length(xpred)==0) {
@@ -751,7 +757,7 @@ setMethod(f="predict",
                 if(object["options"]$warnings) cat("Please provide values of the response to obtain predictions for a model defined by loglikelihood\n")
                 return()
               }
-              listpred<-predict.newdata(object,newdata,type=type)
+              listpred<-saemixPredictNewdata(object,newdata,type=type)
               xpred<-listpred$predictions[,type]
             }
             return(xpred)
@@ -763,52 +769,71 @@ setMethod(f="predict",
 #' In nonlinear mixed effect models, different types of predictions may be obtained, including individual predictions and population predictions.
 #' This function takes an SaemixObject and adds any missing predictions for maximum a posteriori and conditional mean estimations of the individual
 #' parameters, and for the different types of individual and population predictions for the response variable.
+#' 
 #' @param object an SaemixObject object
+#' @param type the type of predictions (ipred= individual, ppred=population predictions obtained with the population estimates, 
+#' ypred=mean of the population predictions, icpred=conditional predictions). 
+#' By default, computes all the predictions and residuals, along with the corresponding parameter estimates
+#' 
 #' @return an updated SaemixObject object
+#' 
+#' @details This function is used internally by saemix to automatically compute a number of elements needed for diagnostic plots.
+#' It is normally executed directly during a call to saemix() but can be called to add residuals
+#' 
 #' @keywords methods
 #' @export saemix.predict
 
-saemix.predict<-function(object) {
-  if(length(object["results"]["map.psi"])==0)
+saemix.predict<-function(object, type=c("ipred", "ypred", "ppred", "icpred")) {
+  type<-intersect(type, c("ipred", "ypred", "ppred", "icpred"))
+  # Estimate individual parameters
+  if(length(object["results"]["map.psi"])==0 & ("ipred" %in% type))
     object<-map.saemix(object)
   # en principe n'arrive jamais car on les calcule pdt le fit...
-  if(length(object["results"]["cond.mean.phi"])==0)
+  if(length(object["results"]["cond.mean.phi"])==0 & ("icpred" %in% type))
     object<-conddist.saemix(object)
   saemix.res<-object["results"]
+  
+  # Population predictions using the population parameters [ f(mu) ] - always computed
   xind<-object["data"]["data"][,c(object["data"]["name.predictors"],object["data"]["name.cens"],object["data"]["name.mdv"],object["data"]["name.ytype"]),drop=FALSE]
   # If exponential model, this is the transformed data
   yobs<-object["data"]["data"][,object["data"]["name.response"]]
-
   index<-object["data"]["data"][,"index"]
-  # Individual predictions
-  ipred<-object["model"]["model"](saemix.res["map.psi"],index,xind)
-  ires<-yobs-ipred
-  psiM<-transphi(saemix.res["cond.mean.phi"],object["model"]["transform.par"])
-  icond.pred<-object["model"]["model"](psiM,index,xind)
-  saemix.res["ipred"]<-ipred
-  saemix.res["icpred"]<-icond.pred
-  # Individual weighted residuals
-  pres<-saemix.res["respar"]
-  gpred<-error(ipred,pres,xind$ytype)
-  iwres<-(yobs-ipred)/gpred
-  gpred<-error(icond.pred,pres,xind$ytype)
-  icwres<-(yobs-icond.pred)/gpred
-  saemix.res["iwres"]<-iwres
-  saemix.res["icwres"]<-icwres
-  # Population predictions using the population parameters [ f(mu) ]
   psiM<-transphi(saemix.res["mean.phi"],object["model"]["transform.par"])
   ppred<-object["model"]["model"](psiM,index,xind)
   saemix.res["ppred"]<-unname(ppred)
-  if(length(saemix.res["predictions"])==0) 
-    saemix.res["predictions"]<-data.frame(ppred=ppred,ipred=ipred,icpred=icond.pred,ires=ires,iwres=iwres,icwres=icwres) else {
-      saemix.res["predictions"]$ppred<-ppred
+  if(length(saemix.res["predictions"])==0)
+    saemix.res["predictions"]<-data.frame(ppred=ppred) # create dataframe for predictions if not yet available
+  
+  # Compute predictions and residuals
+  if(length(intersect(c("ipred","icpred"),type))>0) {
+    # Individual predictions
+    pres<-saemix.res["respar"]
+    if("ipred" %in% type) {
+      ipred<-object["model"]["model"](saemix.res["map.psi"],index,xind) # Predictions with MAP
+      ires<-yobs-ipred
+      # Individual weighted residuals
+      gpred<-error(ipred,pres,xind$ytype)
+      iwres<-(yobs-ipred)/gpred
+      saemix.res["ipred"]<-ipred
+      saemix.res["ires"]<-ires
+      saemix.res["iwres"]<-iwres
       saemix.res["predictions"]$ipred<-ipred
-      saemix.res["predictions"]$icpred<-icond.pred
       saemix.res["predictions"]$ires<-ires
       saemix.res["predictions"]$iwres<-iwres
+    } 
+    if("icpred" %in% type) {
+      psiM<-transphi(saemix.res["cond.mean.phi"],object["model"]["transform.par"])
+      icond.pred<-object["model"]["model"](psiM,index,xind) # Predictions with Conditional mean
+      gpred<-error(icond.pred,pres,xind$ytype)
+      icwres<-(yobs-icond.pred)/gpred
+      saemix.res["icpred"]<-icond.pred
+      saemix.res["icwres"]<-icwres
+      saemix.res["predictions"]$icpred<-icond.pred
       saemix.res["predictions"]$icwres<-icwres
     }
-  # Population weighted residuals: needs the individual variance-covariance matrix => use compute.sres to estimate these by simulations
+  } 
+  
+  # Population weighted residuals, npde: needs the individual variance-covariance matrix => use compute.sres to estimate these by simulations
   object["results"]<-saemix.res
   return(object)
 }
@@ -820,7 +845,7 @@ saemix.predict<-function(object) {
 #' 
 #' Several plots (selectable by the type argument) are currently available:
 #' convergence plot, individual plots, predictions versus observations,
-#' distribution plots, VPC, residual plots.
+#' distribution plots, VPC, residual plots, mirror.
 #' 
 #' This is the generic plot function for an SaemixObject object, which
 #' implements different graphs related to the algorithm (convergence plots,
@@ -854,6 +879,7 @@ saemix.predict<-function(object) {
 #' \item{both.fit:}{Individual fits, superposing fits obtained using the population 
 #' parameters with the individual covariates (red) and using the individual parameters 
 #' with the individual covariates (green)} 
+#' \item{mirror:}{Mirror plots assessing the compatibility of simulated data compared to the original}
 #' \item{marginal.distribution:}{Distribution of
 #' the parameters (conditional on covariates when some are included in the
 #' model). A histogram of individual parameter estimates can be overlayed on
@@ -1002,10 +1028,10 @@ setMethod(f="plot",
     if(plot.type[1]=="reduced") plot.type<-c("data","convergence","likelihood", "observations.vs.predictions")
     if(plot.type[1]=="full") plot.type<-c("data","convergence","likelihood", "observations.vs.predictions","residuals.scatter","residuals.distribution","vpc")
     
-    pltyp<-c("data","convergence","likelihood","individual.fit", "population.fit", "both.fit","observations.vs.predictions","residuals.scatter", "residuals.distribution","vpc","npde","random.effects","marginal.distribution", "correlations","parameters.vs.covariates","randeff.vs.covariates")
+    pltyp<-c("data","convergence","likelihood","individual.fit", "population.fit", "both.fit","observations.vs.predictions","residuals.scatter", "residuals.distribution","vpc","npde","random.effects","marginal.distribution", "correlations","parameters.vs.covariates","randeff.vs.covariates", "mirror")
     ifnd<-pmatch(plot.type,pltyp)
     if(sum(is.na(ifnd))>0) {
-      cat("The following plot types were not found or are ambiguous:", plot.type[is.na(ifnd)],"\n")
+      if(x@options$warnings) message("The following plot types were not found or are ambiguous:", plot.type[is.na(ifnd)],"\n")
     }
     ifnd<-ifnd[!is.na(ifnd)]
     if(length(ifnd)==0) return()
@@ -1014,7 +1040,7 @@ setMethod(f="plot",
     id.pred<-match(plot.type,c("observations.vs.predictions","individual.fit", "residuals.scatter","residuals.distribution"))
     if(x@prefs$which.poppred=="ppred") id.pred<-c(id.pred,match(plot.type, c("population.fit", "both.fit")))
     id.map<-match(plot.type,c("randeff.vs.covariates","parameters.vs.covariates"))
-    id.sim<-match(plot.type, c("vpc"))
+    id.sim<-match(plot.type, c("vpc","mirror"))
     id.res<-match(plot.type, c("npde","residuals.scatter", "residuals.distribution"))
     if(x@prefs$which.poppred=="ppred") id.sim<-c(id.sim,match(plot.type, c("population.fit", "both.fit")))
     id.pred<-id.pred[!is.na(id.pred)]
@@ -1043,7 +1069,7 @@ setMethod(f="plot",
         cok<-readline(prompt="Simulations will be performed. This might take a while, proceed ? (y/Y) [default=yes] ")
         if(!cok %in% c("y","Y","yes","")) return()
         } else {
-        	cat("Performing simulations under the model.\n")
+        	if(x@options$warnings) message("Performing simulations under the model.\n")
         }
         if(boolpred) {
           x<-simulate(x)
@@ -1066,7 +1092,7 @@ setMethod(f="plot",
     }
     if(length(id.map)>0) {
       if(length(x["results"]["map.eta"])==0) {
-        cat("Computing ETA estimates and adding them to fitted object.\n")
+        if(x@options$warnings) message("Computing ETA estimates and adding them to fitted object.\n")
 	x<-compute.eta.map(x)
         assign(namObj,x,envir=parent.frame())
       }
@@ -1074,39 +1100,43 @@ setMethod(f="plot",
     for(ipl in plot.type) {
       switch (EXPR=ipl,
     "data"={
-       cat("Plotting the data\n")
+       if(x@options$warnings) message("Plotting the data\n")
        saemix.plot.data(x,...)
     },
     "convergence"={
-       cat("Plotting convergence plots\n")
+       if(x@options$warnings) message("Plotting convergence plots\n")
        saemix.plot.convergence(x,...)
     },
     "likelihood"={  
-       cat("Plotting the likelihood\n")
+       if(x@options$warnings) message("Plotting the likelihood\n")
        saemix.plot.llis(x,...)
     },
     "observations.vs.predictions"={
-       cat("Plotting observations versus predictions\n")      
+       if(x@options$warnings) message("Plotting observations versus predictions\n")      
        saemix.plot.obsvspred(x,...)
     },
     "individual.fit"={
-      cat("Plotting individual fits\n")
+      if(x@options$warnings) message("Plotting individual fits\n")
       saemix.plot.fits(x,...)
     },
     "population.fit"={
-      cat("Plotting fits obtained with population predictions\n")
+      if(x@options$warnings) message("Plotting fits obtained with population predictions\n")
       saemix.plot.fits(x,level=0,...)
     },
     "both.fit"={
-      cat("Plotting the fits overlaying individual and population predictions\n")
+      if(x@options$warnings) message("Plotting the fits overlaying individual and population predictions\n")
       saemix.plot.fits(x,level=c(0,1),...)
     },
+    "individual.fit"={
+      if(x@options$warnings) message("Mirror plots\n")
+      saemix.plot.mirror(x,...)
+    },
     "residuals.scatter"={
-      cat("Plotting scatterplots of residuals\n")
+      if(x@options$warnings) message("Plotting scatterplots of residuals\n")
       saemix.plot.scatterresiduals(x,...)
     },
     "residuals.distribution"={
-      cat("Plotting the distribution of residuals\n")
+      if(x@options$warnings) message("Plotting the distribution of residuals\n")
       saemix.plot.distribresiduals(x,...)
     },
     "random.effects"={
@@ -1117,13 +1147,13 @@ setMethod(f="plot",
     },
     "parameters.vs.covariates"={
       if(length(x@data@name.covariates)==0) {
-        cat("No covariates in the dataset\n")
+        if(x@options$warnings) message("No covariates in the dataset\n")
         return()
       } else saemix.plot.parcov(x,...)
     },
     "randeff.vs.covariates"={
       if(length(x@data@name.covariates)==0) {
-        cat("No covariates in the dataset\n")
+        if(x@options$warnings) message("No covariates in the dataset\n")
         return()
       } else saemix.plot.randeffcov(x,...)
     },
@@ -1131,11 +1161,11 @@ setMethod(f="plot",
       saemix.plot.distpsi(x,...)
     },
     "vpc"={
-      cat("Plotting VPC\n")
+      if(x@options$warnings) message("Plotting VPC\n")
       saemix.plot.vpc(x,...)
     },
     "npde"={
-      cat("Plotting npde\n")
+      if(x@options$warnings) message("Plotting npde\n")
       saemix.plot.npde(x,...)
     },
     cat("Plot ",ipl," not implemented yet\n")

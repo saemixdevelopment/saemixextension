@@ -83,7 +83,8 @@
 #' \code{\link{saemix.plot.llis}}, \code{\link{saemix.plot.randeff}},
 #' \code{\link{saemix.plot.obsvspred}}, \code{\link{saemix.plot.fits}},
 #' \code{\link{saemix.plot.parcov}}, \code{\link{saemix.plot.distpsi}},
-#' \code{\link{saemix.plot.scatterresiduals}}, \code{\link{saemix.plot.vpc}}
+#' \code{\link{saemix.plot.scatterresiduals}}, \code{\link{saemix.plot.vpc}},
+#' \code{\link{saemix.plot.mirror}}
 #' @references Comets  E, Lavenu A, Lavielle M. Parameter estimation in nonlinear mixed effect models using saemix, an R implementation of the SAEM algorithm. Journal of Statistical Software 80, 3 (2017), 1-41.
 #' 
 #' Kuhn E, Lavielle M. Maximum likelihood estimation in nonlinear mixed effects models. Computational Statistics and Data Analysis 49, 4 (2005), 1020-1038.
@@ -428,7 +429,7 @@ saemix.plot.select<-function(saemixObject,data=FALSE,convergence=FALSE, likeliho
   if(npde) plot(saemixObject,plot.type="npde",...)
 }
 
-#### Meta-niveau
+#### Metalevel
 
 
 #' Wrapper functions to produce certain sets of default plots
@@ -596,7 +597,7 @@ covariate.fits<-function(saemixObject,which="parameters",...) {
 #' 
 #' Several plots (selectable by the type argument) are currently available:
 #' convergence plot, individual plots, predictions versus observations,
-#' distribution plots, VPC, residual plots.
+#' distribution plots, VPC, residual plots, and mirror plots.
 #' 
 #' These functions implement plots different graphs related to the algorithm
 #' (convergence plots, likelihood estimation) as well as diagnostic graphs. A
@@ -654,6 +655,10 @@ covariate.fits<-function(saemixObject,which="parameters",...) {
 #' the selected interval as well as around the median (50th percentile of the
 #' simulated data). Several methods are available to define binning on the
 #' X-axis (see methods in the PDF guide).} 
+#' \item{saemix.plot.mirror:}{When simulated data is available in the object (component
+#' sim.dat, which can be filled by a call to \code{\link{simulate}}), this function
+#' plots the original data as spaghetti plot and compares it to several simulated
+#' datasets under the fitted model.} 
 #' }
 #' 
 #' Each plot can be customised by modifying options, either through a list of
@@ -665,7 +670,8 @@ covariate.fits<-function(saemixObject,which="parameters",...) {
 #' saemix.plot.scatterresiduals saemix.plot.fits saemix.plot.distpsi
 #' saemix.plot.randeff saemix.plot.correlations saemix.plot.parcov
 #' saemix.plot.randeffcov saemix.plot.npde saemix.plot.vpc
-#' saemix.plot.parcov.aux compute.sres compute.eta.map
+#' saemix.plot.mirror saemix.plot.parcov.aux compute.sres compute.eta.map 
+#' 
 #' @param saemixObject an object returned by the \code{\link{saemix}} function
 #' @param \dots optional arguments passed to the plots
 #' @return None
@@ -711,54 +717,57 @@ covariate.fits<-function(saemixObject,which="parameters",...) {
 #'   omega.init=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE),error.model="constant")
 #' 
 #' saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE)
-#' 
+#' \donttest{
 #' # Not run (strict time constraints for CRAN)
-#' # saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
+#' saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
 #' 
 #' # Simulate data and compute weighted residuals and npde
-#' # saemix.fit<-compute.sres(saemix.fit)
+#' saemix.fit<-compute.sres(saemix.fit)
 #' 
 #' # Data
-#' # saemix.plot.data(saemix.fit)
+#' saemix.plot.data(saemix.fit)
 #' 
 #' # Convergence
-#' # saemix.plot.convergence(saemix.fit)
+#' saemix.plot.convergence(saemix.fit)
 #' 
 #' # Individual plot for subject 1, smoothed
-#' # saemix.plot.fits(saemix.fit,ilist=1,smooth=TRUE)
+#' saemix.plot.fits(saemix.fit,ilist=1,smooth=TRUE)
 #' 
 #' # Individual plot for subject 1 to 12, with ask set to TRUE 
 #' # (the system will pause before a new graph is produced)
-#' # saemix.plot.fits(saemix.fit,ilist=c(1:12),ask=TRUE)
+#' saemix.plot.fits(saemix.fit,ilist=c(1:12),ask=TRUE)
+#' 
+#' # Mirror plots (plots of simulated data compared to the original)
+#' saemix.plot.mirror(saemix.fit)
 #' 
 #' # Diagnostic plot: observations versus population predictions
-#' # par(mfrow=c(1,1))
-#' # saemix.plot.obsvspred(saemix.fit,level=0,new=FALSE)
+#' par(mfrow=c(1,1))
+#' saemix.plot.obsvspred(saemix.fit,level=0,new=FALSE)
 #' 
 #' # LL by Importance Sampling
-#' # saemix.plot.llis(saemix.fit)
+#' saemix.plot.llis(saemix.fit)
 #' 
 #' # Scatter plot of residuals
-#' # saemix.plot.scatterresiduals(saemix.fit)
+#' saemix.plot.scatterresiduals(saemix.fit)
 #' 
 #' # Boxplot of random effects
-#' # saemix.plot.randeff(saemix.fit)
+#' saemix.plot.randeff(saemix.fit)
 #' 
 #' # Relationships between parameters and covariates
-#' # saemix.plot.parcov(saemix.fit)
+#' saemix.plot.parcov(saemix.fit)
 #' 
 #' # Relationships between parameters and covariates, on the same page
-#' # par(mfrow=c(3,2))
-#' # saemix.plot.parcov(saemix.fit,new=FALSE)
+#' par(mfrow=c(3,2))
+#' saemix.plot.parcov(saemix.fit,new=FALSE)
 #' 
 #' # VPC, default options (10 bins, equal number of observations in each bin)
 #' # Not run (time constraints for CRAN)
-#' # saemix.plot.vpc(saemix.fit)
+#' saemix.plot.vpc(saemix.fit)
 #' 
 #' # VPC, user-defined breaks for binning
 #' # Not run (time constraints for CRAN)
-#' # saemix.plot.vpc(saemix.fit,vpc.method="user", vpc.breaks=c(0.4,0.8,1.5,2.5,4,5.5,8,10,13))
-#' 
+#' saemix.plot.vpc(saemix.fit,vpc.method="user", vpc.breaks=c(0.4,0.8,1.5,2.5,4,5.5,8,10,13))
+#' }
 #' @export saemix.plot.data
 
 saemix.plot.data<-function(saemixObject,...) {
@@ -777,6 +786,57 @@ saemix.plot.data<-function(saemixObject,...) {
   }
   plot(saemixObject["data"],plot.type=plot.opt$plot.type,...)
 }
+
+
+saemix.plot.mirror<-function(saemixObject, nplots=3,...) {
+  # Plot of the data and nplots associated mirror plots (3 mirror plots by default)
+  # Creates a new page to plot the graphs in
+  # when main is used, it passes a title to all the plots; use main.origonly to pass a title only to
+  # the first plot
+  # options: change data point, line type, line color, lines plotted or not, points plotted or not...
+  oldpar <- par(no.readonly = TRUE)    # code line i
+  on.exit(par(oldpar))            # code line i + 1
+  userPlotOptions<-list(...)
+  plot.opt<-saemixObject["prefs"]
+  plot.opt$new<-FALSE
+  plot.opt$main<-""
+  plot.opt$plot.type<-"l"
+  if(length(userPlotOptions)>0)
+    plot.opt <- modifyList(plot.opt, userPlotOptions[intersect(names(userPlotOptions), names(plot.opt))])
+  i1<-match("main.origonly",names(userPlotOptions))
+  if(!is.na(i1)) plot.opt$main.origonly<-as.character(userPlotOptions[[i1]]) else plot.opt$main.origonly<-""
+  
+# Tried to use the do.call approach but it doesn't recognise the plot function to apply
+#  list.args<-plot.opt
+  
+  if(saemixObject@sim.data@nsim>0) nplots<-min(saemixObject@sim.data@nsim, nplots)
+  np<-nplots+1
+  if(np>12) np<-12
+  n1<-round(sqrt(np))
+  n2<-ceiling(np/n1)
+  par(mfrow=c(n1,n2),ask=plot.opt$ask)
+  # data
+  plot.opt2<-plot.opt
+  if(plot.opt$main=="") plot.opt2$main<-"Original data"
+  if(plot.opt2$main.origonly!="") plot.opt2$main<-plot.opt2$main.origonly
+  plot(saemixObject["data"],plot.opt2)
+#  print(plot.opt$new)
+#  list.args$saemixObject<-saemixObject@data
+#  do.call(plot, list.args)
+  # simulated datasets
+  if(saemixObject@sim.data@nsim>0) {
+    irep1<-sort(sample(1:saemixObject@sim.data@nsim, nplots, replace=FALSE))
+  } else {
+    saemixObject<-simulate(saemixObject, nsim=nplots)
+    irep1<-1:nplots
+  }
+#  list.args$saemixObject<-saemixObject@sim.data
+  if(plot.opt$main=="") plot.opt2$main<-" "
+  for(irep in irep1)
+    plot(saemixObject["sim.data"],irep=irep, plot.opt2)
+  #    do.call(plot, list.args)
+}
+
 
 #######################	   Convergence plots & LL	 ########################
 

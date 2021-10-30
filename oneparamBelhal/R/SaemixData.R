@@ -189,6 +189,7 @@ setClass(
     N="numeric",		# number of subjects
     name.group="character", # name of column with ID element
     name.response="character",	# name of column with response
+    name.predictors="character",# name of column(s) with predictors 
     name.X="character",		# name of predictor used on X axis for graphs
     units="list",		# units (list with components for x, y, and cov)
     data="data.frame",		# ECO TODO: do we need to keep it here ?
@@ -343,6 +344,7 @@ setMethod(
       .Object@N<-data@N
       .Object@name.group<-data@name.group
       .Object@name.response<-data@name.response
+      .Object@name.predictors<-data@name.predictors
       .Object@name.X<-data@name.X
       .Object@units<-data@units
       .Object@data<-data@data
@@ -520,6 +522,7 @@ setMethod(
     "N"={return(x@N)},
     "name.group"={return(x@name.group)},
     "name.response"={return(x@name.response)},
+    "name.predictors"={return(x@name.predictors)},
     "name.X"={return(x@name.X)},
     "units"={return(x@units)},
     "data"={return(x@data)},
@@ -546,6 +549,7 @@ setReplaceMethod(
     "N"={x@N<-value},
     "name.group"={x@name.group<-value},
     "name.response"={x@name.response<-value},
+    "name.predictors"={x@name.predictors<-value},
     "name.X"={x@name.X<-value},
     "units"={x@units<-value},
     "data"={x@data<-value},
@@ -1079,14 +1083,18 @@ saemix.data.setoptions<-function(saemix.data) {
 
 replace.data.options<-function(plot.opt,...) {
   args1<-match.call(expand.dots=TRUE)
+  # These arguments are used by other functions and may be passed on via "...", so we want to ignore them. Other arguments not in list will raise warnings
+  legacy<-c("plot.type","individual")
   if(length(args1)>2) {
 # Other arguments
     for(i in 3:length(args1)) {
-      if(match(names(args1)[i],names(plot.opt),nomatch=0)>0)    
-    plot.opt[[names(args1)[i]]]<-eval(args1[[i]]) else {
-      if(!(names(args1)[i] %in% c("plot.type","individual"))) message("Argument",names(args1)[i],"not available, check spelling.\n")
+      if(match(names(args1)[i],names(plot.opt),nomatch=0)>0) {
+        #    plot.opt[[names(args1)[i]]]<-args1[[i]] else {
+        if(!is.null(eval(args1[[i]]))) plot.opt[[names(args1)[i]]]<-eval(args1[[i]])
+      } else {
+        if(is.na(match(names(args1)[i],legacy))) message(paste("Argument",names(args1)[i],"not available, check spelling"))
+      }
     }
-   }
   }
   return(plot.opt)
 }
@@ -1106,144 +1114,170 @@ replace.data.options<-function(plot.opt,...) {
 #' @aliases plot,SaemixData plot,SaemixData,ANY-method
 #' @keywords plot
 ### #' @docType methods
-#' @exportMethod plot
 #' @rdname plot-SaemixData
 #' 
 #' @import ggplot2 grid gridExtra
-#' 
+#' @importFrom graphics plot
+#' @importFrom rlang is_missing
+#' @method plot SaemixData
+#' @export 
+
 
 # Plot the data, either as points or as lines grouped by x@name.group
-setMethod("plot","SaemixData",
-  function(x,y,...) {
-    if(length(x@data)==0) {
-    	message("No data to plot.\n")
-    	return("Missing data")
+plot.SaemixData<-function(x,y,...) {
+  if(length(x@data)==0) {
+    message("No data to plot.\n")
+    return("Missing data")
+  }
+  # Eco: commented, otherwise was resetting the graphical layout on exit and preventing the graphs to be set on the same page
+  #    oldpar <- par(no.readonly = TRUE)    # code line i
+  #    on.exit(par(oldpar))            # code line i + 1
+  
+  # User-defined options
+  userPlotOptions<-list(...)
+  if(!is_missing(y) && is.list(y)) {
+    userPlotOptions<-c(y,userPlotOptions)
+  }
+  i1<-match("individual",names(userPlotOptions))
+  if(!is.na(i1)) {
+    individual<-as.logical(eval(userPlotOptions[[i1]]))
+  } else individual<-FALSE
+  i1<-match("type",names(userPlotOptions))
+  if(!is.na(i1)) {
+    plot.type<-as.character(userPlotOptions[[i1]])
+    plot.type<-plot.type[plot.type!="c"]
+  } else plot.type<-c()
+  if(length(plot.type)==0) plot.type<-ifelse(individual,"b","l")
+  
+  # Default options for data plot
+  plot.opt <- saemix.data.setoptions(x)
+  plot.opt$xlab<-paste(x@name.X," (",x@units$x,")",sep="")
+  plot.opt$ylab<-paste(x@name.response," (",x@units$y,")",sep="")
+  plot.opt$type<-ifelse(individual,"b","l")
+  
+  # Replace default options by options passed explicitly
+  if(length(userPlotOptions)>0)
+    plot.opt <- modifyList(plot.opt, userPlotOptions[intersect(names(userPlotOptions), names(plot.opt))])
+  
+  #plot.opt<-replace.data.options(plot.opt,...)
+  logtyp<-paste(ifelse(plot.opt$xlog,"x",""),ifelse(plot.opt$ylog,"y",""),sep="")
+  if(individual) { # separate plots subject per subject
+    if(length(plot.opt$ilist)>plot.opt$nmax & plot.opt$limit) {
+      if(plot.opt$interactive) {
+        x1<-readline(prompt=paste("The number of subjects may be too large to be plotted. Should I plot only",plot.opt$nmax,"subjects ? (Y/n) \n"))
+        if(tolower(x1)=="y") {
+          plot.opt$limit<-TRUE
+          plot.opt$ilist<-plot.opt$ilist[1:plot.opt$nmax]
+          if(plot.opt$sample) plot.opt$ilist<-sort(sample(plot.opt$ilist, plot.opt$nmax)) else plot.opt$ilist<-plot.opt$ilist[1:plot.opt$nmax]
+          if(!plot.opt$ask) {
+            x1<-readline(prompt="Stop after each page of plot ? (Y/n) \n")
+            if(tolower(x1)=="y") plot.opt$ask<-TRUE
+          }
+        }
+      } else {
+        if(plot.opt$interactive) {
+          cat("The number of subjects is too large, I will plot only")
+          if(plot.opt$sample) cat(" the data for",plot.opt$nmax,"subjects sampled randomly;") else cat(" only the data for the first",plot.opt$nmax,"subjects;")
+          cat(" use limit=FALSE in the call to plot to force plotting all the subjects.\n")
+        }
+        if(plot.opt$sample) plot.opt$ilist<-sort(sample(plot.opt$ilist, plot.opt$nmax)) else plot.opt$ilist<-plot.opt$ilist[1:plot.opt$nmax]
+      }
+    } # end of test on length(ilist)
+    if(plot.opt$new) {
+      if(length(plot.opt$mfrow)==0) {
+        np<-length(plot.opt$ilist)
+        if(np>12) np<-12
+        n1<-round(sqrt(np))
+        n2<-ceiling(np/n1)
+        par(mfrow=c(n1,n2),ask=plot.opt$ask)
+      } else par(mfrow=plot.opt$mfrow,ask=plot.opt$ask)
     }
-    oldpar <- par(no.readonly = TRUE)    # code line i
-    on.exit(par(oldpar))            # code line i + 1
-    
-    args1<-match.call(expand.dots=TRUE)
-    i1<-match("individual",names(args1))
-    if(!is.na(i1)) {
-    	individual<-as.logical(eval(args1[[i1]]))
-    } else individual<-FALSE
-    i1<-match("type",names(args1))
-    if(!is.na(i1)) {
-      plot.type<-as.character(args1[[i1]])
-      plot.type<-plot.type[plot.type!="c"]
-    } else plot.type<-c()
-    if(length(plot.type)==0) plot.type<-ifelse(individual,"b","l")
-    plot.opt<-saemix.data.setoptions(x)
-    mainkeep<-plot.opt$main
-    plot.opt$new<-TRUE
-    plot.opt$xlab<-paste(x@name.X," (",x@units$x,")",sep="")
-    plot.opt$ylab<-paste(x@name.response," (",x@units$y,")",sep="")
-    plot.opt$type<-ifelse(individual,"b","l")
-    plot.opt<-replace.data.options(plot.opt,...)
-    change.main<-FALSE
-    if(plot.opt$main!=mainkeep) change.main<-TRUE
-    logtyp<-paste(ifelse(plot.opt$xlog,"x",""),ifelse(plot.opt$ylog,"y",""),sep="")
-    if(individual) { # separate plots subject per subject
-    	if(length(plot.opt$ilist)>plot.opt$nmax & plot.opt$limit) {
-    		if(plot.opt$interactive) {
-    			x1<-readline(prompt=paste("The number of subjects may be too large to be plotted. Should I plot only",plot.opt$nmax,"subjects ? (Y/n) \n"))
-    			if(tolower(x1)=="y") {
-    				plot.opt$limit<-TRUE
-    				plot.opt$ilist<-plot.opt$ilist[1:plot.opt$nmax]
-    				if(plot.opt$sample) plot.opt$ilist<-sort(sample(plot.opt$ilist, plot.opt$nmax)) else plot.opt$ilist<-plot.opt$ilist[1:plot.opt$nmax]
-     				if(!plot.opt$ask) {
-    					x1<-readline(prompt="Stop after each page of plot ? (Y/n) \n")
-    			  	if(tolower(x1)=="y") plot.opt$ask<-TRUE
-    				}
-    			}
-    		} else {
-    		  if(plot.opt$interactive) {
-    		    cat("The number of subjects is too large, I will plot only")
-    		    if(plot.opt$sample) cat(" the data for",plot.opt$nmax,"subjects sampled randomly;") else cat(" only the data for the first",plot.opt$nmax,"subjects;")
-    		    cat(" use limit=FALSE in the call to plot to force plotting all the subjects.\n")
-    		  }
-   				if(plot.opt$sample) plot.opt$ilist<-sort(sample(plot.opt$ilist, plot.opt$nmax)) else plot.opt$ilist<-plot.opt$ilist[1:plot.opt$nmax]
-    		}
-    	} # end of test on length(ilist)
-	    if(plot.opt$new) {
-		    if(length(plot.opt$mfrow)==0) {
-		    np<-length(plot.opt$ilist)
-		    if(np>12) np<-12
-		    n1<-round(sqrt(np))
-		    n2<-ceiling(np/n1)
-		    par(mfrow=c(n1,n2),ask=plot.opt$ask)
-		  } else par(mfrow=plot.opt$mfrow,ask=plot.opt$ask)
-	    }
-		  xind<-x["data"][,x["name.predictors"], drop=FALSE]
-		  id<-x["data"][,"index"]
-		  yobs<-x["data"][,x["name.response"]]
-    	for(isuj in plot.opt$ilist) {
-    		if(!change.main) main<-paste("Subject",isuj) else main<-plot.opt$main
-    		plot(xind[id==isuj,x@name.X],yobs[id==isuj],type=plot.type, xlab=plot.opt$xlab,ylab=plot.opt$ylab,col=plot.opt$col,pch=plot.opt$pch,log=logtyp, xlim=plot.opt$xlim,ylim=plot.opt$ylim,main=main,cex=plot.opt$cex, cex.axis=plot.opt$cex.axis,cex.lab=plot.opt$cex.lab,lty=plot.opt$lty, lwd=plot.opt$lwd)
-    	}
-    } else {	# One plot for all the data
-	    if(plot.opt$new) par(mfrow=c(1,1))
-	      if(plot.type=="p" | plot.type=="b") {
-	        plot(x@data[,x@name.X],x@data[,x@name.response],xlab=plot.opt$xlab, ylab=plot.opt$ylab,col=plot.opt$col,pch=plot.opt$pch,log=logtyp,xlim=plot.opt$xlim, ylim=plot.opt$ylim,main=plot.opt$main,cex=plot.opt$cex,cex.axis=plot.opt$cex.axis, cex.lab=plot.opt$cex.lab) }
-	      if(plot.type=="l") {
-	        plot(x@data[,x@name.X],x@data[,x@name.response],xlab=plot.opt$xlab, ylab=plot.opt$ylab,col=plot.opt$col,lty=plot.opt$lty,lwd=plot.opt$lwd,type="n", log=logtyp,xlim=plot.opt$xlim,ylim=plot.opt$ylim,main=plot.opt$main, cex=plot.opt$cex,cex.axis=plot.opt$cex.axis, cex.lab=plot.opt$cex.lab)
-	      }
-	      if(plot.type=="l" | plot.type=="b") {
-	        for(isuj in unique(x@data[,x@name.group])) {
-	          lines(x@data[x@data[,x@name.group]==isuj,x@name.X], x@data[x@data[,x@name.group]==isuj,x@name.response],col=plot.opt$col, lty=plot.opt$lty,lwd=plot.opt$lwd)
-	      }
-			}
+    xind<-x["data"][,x["name.predictors"], drop=FALSE]
+    id<-x["data"][,"index"]
+    yobs<-x["data"][,x["name.response"]]
+    for(isuj in plot.opt$ilist) {
+      if(plot.opt$main=="") main<-paste("Subject",isuj) else main<-plot.opt$main
+      plot(xind[id==isuj,x@name.X],yobs[id==isuj],type=plot.type, xlab=plot.opt$xlab,ylab=plot.opt$ylab,col=plot.opt$col,pch=plot.opt$pch,log=logtyp, xlim=plot.opt$xlim,ylim=plot.opt$ylim,main=main,cex=plot.opt$cex, cex.axis=plot.opt$cex.axis,cex.lab=plot.opt$cex.lab,lty=plot.opt$lty, lwd=plot.opt$lwd)
+    }
+  } else {	# One plot for all the data
+    if(plot.opt$new) par(mfrow=c(1,1))
+    if(plot.type=="p" | plot.type=="b") {
+      plot(x@data[,x@name.X],x@data[,x@name.response],xlab=plot.opt$xlab, ylab=plot.opt$ylab,col=plot.opt$col,pch=plot.opt$pch,log=logtyp,xlim=plot.opt$xlim, ylim=plot.opt$ylim,main=plot.opt$main,cex=plot.opt$cex,cex.axis=plot.opt$cex.axis, cex.lab=plot.opt$cex.lab) }
+    if(plot.type=="l") {
+      plot(x@data[,x@name.X],x@data[,x@name.response],xlab=plot.opt$xlab, ylab=plot.opt$ylab,col=plot.opt$col,lty=plot.opt$lty,lwd=plot.opt$lwd,type="n", log=logtyp,xlim=plot.opt$xlim,ylim=plot.opt$ylim,main=plot.opt$main, cex=plot.opt$cex,cex.axis=plot.opt$cex.axis, cex.lab=plot.opt$cex.lab)
+    }
+    if(plot.type=="l" | plot.type=="b") {
+      for(isuj in unique(x@data[,x@name.group])) {
+        lines(x@data[x@data[,x@name.group]==isuj,x@name.X], x@data[x@data[,x@name.group]==isuj,x@name.response],col=plot.opt$col, lty=plot.opt$lty,lwd=plot.opt$lwd)
+      }
     }
   }
-)
+}
+
 
 #' When applied to an SaemixSimData object, mirror plots are produced which help assess whether the simulated data has similar features when compared to the original data.
 #'
 #' @name plot-SaemixData
 #' 
-#' @param irep number of replicate datasets to use in the mirror plot
+#' @param irep which replicate datasets to use in the mirror plot (defaults to -1, causing a random simulated dataset to be sampled from the nsim
+#' simulated datasets)
 #' 
-#' @aliases plot,SaemixSimData-method plot,SaemixSimData
+#' @aliases plot,SaemixSimData-method plot,SaemixSimData plot,SaemixSimData,ANY-method
 ### #' @docType methods
-#' @exportMethod plot
 #' @rdname plot-SaemixData
+#' @importFrom graphics plot
+#' @method plot SaemixSimData
+#' @export 
 
-# Check for mirror plots
-setMethod("plot","SaemixSimData",
-  function(x,y,irep=-1,...) {
-    oldpar <- par(no.readonly = TRUE)    # code line i
-    on.exit(par(oldpar))            # code line i + 1
-    args1<-match.call(expand.dots=TRUE)
-    i1<-match("type",names(args1))
-    if(!is.na(i1)) {
-      plot.type<-as.character(args1[[i1]])
-      plot.type<-plot.type[plot.type!="c"]
-    } else plot.type<-"l"
-    plot.opt<-saemix.data.setoptions(x)
-    plot.opt$new<-TRUE
-    plot.opt$plot.type<-"b"
-    plot.opt$xlab<-paste(x@name.X," (",x@units$x,")",sep="")
-    plot.opt$ylab<-paste(x@name.response," (",x@units$y,")",sep="")
-    plot.opt<-replace.data.options(plot.opt,...)
-    logtyp<-paste(ifelse(plot.opt$xlog,"x",""),ifelse(plot.opt$ylog,"y",""),sep="")
-    if(length(x@sim.y)==0) {
-      if(plot.opt$interactive) cat("No simulated data.\n")} else {
-      if(irep<0) irep<-sample(unique(x@sim.rep),1)
-      tit<-paste("Mirror plot (replication ",irep,")",sep="")
-      tab<-data.frame(id=x@data[,x@name.group],x=x@data[,x@name.X], y=x@datasim$ysim[x@datasim$irep==irep])
-      if(plot.type=="p" | plot.type=="b") {
-        plot(tab[,"x"],tab[,"y"],xlab=plot.opt$xlab, ylab=plot.opt$ylab, col=plot.opt$col,pch=plot.opt$pch,log=logtyp,xlim=plot.opt$xlim, ylim=plot.opt$ylim,main=tit,cex=plot.opt$cex,cex.axis=plot.opt$cex.axis, cex.lab=plot.opt$cex.lab) }
-      if(plot.type=="l") {
-        plot(tab[,"x"],tab[,"y"],type="n",xlab=plot.opt$xlab, ylab=plot.opt$ylab,col=plot.opt$col,lty=plot.opt$lty,lwd=plot.opt$lwd,type="n", log=logtyp,xlim=plot.opt$xlim,ylim=plot.opt$ylim,main=tit, cex=plot.opt$cex,cex.axis=plot.opt$cex.axis, cex.lab=plot.opt$cex.lab)
-      }
-      if(plot.type=="l" | plot.type=="b") {
-        for(isuj in unique(tab[,"id"])) {
-          lines(tab[tab[,"id"]==isuj,"x"],tab[tab[,"id"]==isuj,"y"])
-      }
+# Check simulations using mirror plots
+plot.SaemixSimData<-function(x,y,irep=-1,...) {
+  #    oldpar <- par(no.readonly = TRUE)    # code line i
+  #    on.exit(par(oldpar))            # code line i + 1
+  # User-defined options
+  userPlotOptions<-list(...)
+  if(!is_missing(y) && is.list(y)) {
+    userPlotOptions<-c(y,userPlotOptions)
+  }
+  i1<-match("interactive",names(userPlotOptions))
+  if(!is.na(i1)) interactive<-as.logical(userPlotOptions[[i1]]) else interactive<-FALSE
+  i1<-match("warnings",names(userPlotOptions))
+  if(!is.na(i1)) printwarnings<-as.logical(userPlotOptions[[i1]]) else printwarnings<-FALSE
+  if(dim(x@datasim)[1]==0) {
+    if(interactive | printwarnings) message("No simulated data.\n")} else {  
+      i1<-match("type",names(userPlotOptions))
+      if(!is.na(i1)) {
+        plot.type<-as.character(userPlotOptions[[i1]])
+        plot.type<-plot.type[plot.type!="c"]
+      } else plot.type<-"l"
+      # Default options for data plot
+      plot.opt <- saemix.data.setoptions(x)
+      plot.opt$new<-FALSE
+      plot.opt$plot.type<-"b"
+      plot.opt$xlab<-paste(x@name.X," (",x@units$x,")",sep="")
+      plot.opt$ylab<-paste(x@name.response," (",x@units$y,")",sep="")
+      # Replace default options by options passed explicitly
+      if(length(userPlotOptions)>0)
+        plot.opt <- modifyList(plot.opt, userPlotOptions[intersect(names(userPlotOptions), names(plot.opt))])
+      logtyp<-paste(ifelse(plot.opt$xlog,"x",""),ifelse(plot.opt$ylog,"y",""),sep="")
+      
+      if(irep[1]<0) irep<-sample(unique(x@nsim),1)
+      for(irep1 in irep) {
+        if(plot.opt$main==" ") tit<-paste("Mirror plot (replication ",irep1,")",sep="") else tit<-plot.opt$main
+        tab<-data.frame(id=x@data[,x@name.group],x=x@data[,x@name.X], y=x@datasim$ysim[x@datasim$irep==irep1])
+        if(plot.type=="p" | plot.type=="b") {
+          plot(tab[,"x"],tab[,"y"],xlab=plot.opt$xlab, ylab=plot.opt$ylab, col=plot.opt$col,pch=plot.opt$pch,log=logtyp,xlim=plot.opt$xlim, ylim=plot.opt$ylim,main=tit,cex=plot.opt$cex,cex.axis=plot.opt$cex.axis, cex.lab=plot.opt$cex.lab) }
+        if(plot.type=="l") {
+          plot(tab[,"x"],tab[,"y"],type="n",xlab=plot.opt$xlab, ylab=plot.opt$ylab,col=plot.opt$col,lty=plot.opt$lty,lwd=plot.opt$lwd, log=logtyp,xlim=plot.opt$xlim,ylim=plot.opt$ylim,main=tit, cex=plot.opt$cex,cex.axis=plot.opt$cex.axis, cex.lab=plot.opt$cex.lab)
+        }
+        if(plot.type=="l" | plot.type=="b") {
+          for(isuj in unique(tab[,"id"])) {
+            lines(tab[tab[,"id"]==isuj,"x"],tab[tab[,"id"]==isuj,"y"])
+          }
+        }
+        
       }
     }
-  }
-)
+}
 
 ####################################################################################
 ####		Creating an object of SaemixData class - User-level function	####
@@ -1380,17 +1414,19 @@ transform.SaemixData<-function(`_data`, ...) {
 #' @name transform
 #' @aliases transform.numeric
 #' 
-#' @param x a vector with values of type numeric
+#' @param _data a vector with values of type numeric
 #' @param transformation transformation function. Defaults to no transformation
 #' @param centering string, giving the value used to center the covariate; can be "mean" or "median", in which case this value will be computed from the data, 'none' or 0 for no centering, or a value given by the user. Defaults to the median value over the dataset.
 #' @param verbose a boolean, prints messages during the execution of the function if TRUE. Defaults to FALSE.
+#' @param \dots unused, for consistency with the generic method
 #' @examples 
 #' # TODO
 #' @return a vector
 #' @keywords data
 #' @export
 
-transform.numeric<-function(x,transformation=function(x) x, centering="median",verbose=FALSE) {
+transform.numeric<-function(`_data`,transformation=function(x) x, centering="median",verbose=FALSE, ...) {
+  x <- `_data`
   if(!(centering %in% c('mean','median')) & is.na(as.double(centering))) {
     if(verbose) cat("Need a proper value to center. Please specify mean, median or a numerical value\n")
     return(x)
