@@ -1,9 +1,11 @@
-^saemix.Rproj$
 ^bootstrap
+^compilation
 ^dataSimulationScripts
+^documentation
 ^fimAGQ
 ^newCode
-^README.txt$
+^oneparamBelhal
+^saemix.Rcheck
 ^saemixWorkAna
 ^SIR
 ^testbelhal
@@ -12,7 +14,9 @@
 ^testmaud
 ^userguide
 ^xchange
-^saemix.Rcheck
+^README.txt$
+^saemix.Rproj$
 ^saemix_.*\.tar\.gz
+^test.sh$
 ^.*\.Rproj$
 ^\.Rproj\.user$
