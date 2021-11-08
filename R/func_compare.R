@@ -55,23 +55,25 @@
 #'   psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))),
 #'   transform.par=c(1,1,1),covariate.model=matrix(c(1,0,1,0,1,0),ncol=3,byrow=TRUE))
 #'
+#' \donttest{
 #' # Running the main algorithm to estimate the population parameters
 #' saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE)
 #' saemix.fit1<-saemix(saemix.model1,saemix.data,saemix.options)
 #' saemix.fit2<-saemix(saemix.model2,saemix.data,saemix.options)
 #' saemix.fit3<-saemix(saemix.model3,saemix.data,saemix.options)
 #'
-#' # Model comparison
-#'
 #' compare.saemix(saemix.fit1, saemix.fit2, saemix.fit3)
 #' compare.saemix(saemix.fit1, saemix.fit2, saemix.fit3, method = "lin")
-#' # We would need to run llgq.saemix first to make this work
-#' # compare.saemix(saemix.fit1, saemix.fit2, saemix.fit3, method = "gq")
-#' 
 #'
-#' @export compare.saemix
-
-
+#' # We need to explicitly run Gaussian Quadrature if we want to use it in
+#' # the comparisons
+#' saemix.fit1 <- llgq.saemix(saemix.fit1)
+#' saemix.fit2 <- llgq.saemix(saemix.fit2)
+#' saemix.fit3 <- llgq.saemix(saemix.fit3)
+#' compare.saemix(saemix.fit1, saemix.fit2, saemix.fit3, method = "gq")
+#'
+#' }
+#' @export
 
 compare.saemix<-function(..., method = c("is", "lin", "gq")) {
 
