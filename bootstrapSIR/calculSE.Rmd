@@ -90,7 +90,7 @@ source(file.path(saemixDir,"bootstrap","bootstrapDistribution.R"))
 
 ```
 
-Summary, SD and quantiles of bootstrap distributions for the 2 fixed, effect, the covariate effect and the 2 variabilities.
+Summary, SD and quantiles of bootstrap distributions for the 2 fixed effects, the covariate effect and the 2 variabilities.
 
 ```{r bootstrapdata1.out}
 

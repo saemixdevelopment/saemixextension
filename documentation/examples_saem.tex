@@ -907,7 +907,7 @@ binary.fit<-saemix(saemix.model,saemix.data,saemix.options)
 
 {\bf Important notes:}
 \begin{itemize}
-\item The linear approximation of the FIM is not applicable to discrete response models, and there is no automated . Exact computation methods to estimate the FIM without linearisation have been proposed by~\cite{Riviere16} using Hamiltonian Monte-Carlo and~\cite{Ueckert16} using adaptive Gaussian quadrature. These methods can be applied to estimate SE for the parameters but are not automatically available yet in \monolix.
+\item The linear approximation of the FIM does not apply well to discrete response models. Exact computation methods to estimate the FIM without linearisation have been proposed by~\cite{Riviere16} using Hamiltonian Monte-Carlo and~\cite{Ueckert16} using adaptive Gaussian quadrature. These methods can be applied to estimate SE for the parameters but are not automatically available yet in \monolix.
 \item Automated visualisation or diagnostic plots have not yet been implemented for discrete response models, but we can of course create our own in R.
 \end{itemize}
 
@@ -918,9 +918,9 @@ barplot(table(toe$y,toe$visit),beside=T)
 % ECO TODO: add Marc's npd for categorical data...
 
 
-\subsection{Categorical data} \label{sec:knee}
+\subsection{Categorical data} \label{sec:kneeCat}
 
-\subsection{Count data}
+\subsection{Count data} \label{sec:epilepsyCount}
 
 \section{Time-to-event data}
 

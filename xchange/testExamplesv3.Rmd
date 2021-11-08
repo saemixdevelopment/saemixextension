@@ -431,12 +431,14 @@ compare.saemix(ord.fit.cov1,ord.fit.cov2, ord.fit.cov3)
 
 ### Count data model
 
-- Vraies données **TODO** ??? (difficile à trouver :-/)
-  - contacté David Atkins (tutorial in 2013 on analysing count data with GLMM and GEE): dataset on gender differences in drinking patterns that would be great to use as an example in saemix
+- Vraies données ??? (difficile à trouver :-/)
+  - contacté David Atkins (tutorial in 2013 on analysing count data with GLMM and GEE): dataset on gender differences in drinking patterns that would be great to use as an example in saemix $\Rightarrow$ accepted ! lovely :-)
   - Salamanders data from the glmmTMB package
     - fit successful when using only the data for one species
     - but error when using more than one species with a recurrent error message (solve.default...) **TODO** investigate
     - note: error in the previous version of Poisson model (factorial(y) instead of log(factorial(y))) ?
+- Epilepsy
+- Drinking patterns
 
 ```{r countEpilepsy}
 epilepsy<-MASS::epil
@@ -449,6 +451,17 @@ saemix.data<-saemixData(name.data=epilepsy, name.group=c("subject"),
 countmodel.poisson<-function(psi,id,xidep) { 
   y<-xidep[,2]
   lambda<-psi[id,1]
+  logp <- -lambda + y*log(lambda) - log(factorial(y))
+  return(logp)
+}
+
+# Adding a period effect
+countmodel.periodpoi<-function(psi,id,xidep) { 
+  tim <- xidep[,1]
+  y<-xidep[,2]
+  lam<-psi[id,1]
+  betaT<-psi[id,2]
+  lambda<-lam*exp(beta*log(tim))
   logp <- -lambda + y*log(lambda) - log(factorial(y))
   return(logp)
 }
