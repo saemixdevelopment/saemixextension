@@ -966,3 +966,35 @@ NULL
 #' @keywords datasets
 NULL
 
+
+#' Rutgers Alcohol Problem Index 
+#' 
+#' The RAPI data studies gender differences across two years in alcohol-related problems, as measured by the Rutgers
+#' Alcohol Problem Index (RAPI; White & Labouvie, 1989). The dataset includes 3,616 repeated measures of counts 
+#' representing the number of alcohol problems reported over six months period, across five time points from 818 individuals. 
+#' 
+#' #' @format This data frame contains the following columns: 
+#' \describe{
+#' \item{id}{subject identification number} 
+#' \item{time}{time since the beginning of the study (months)}
+#' \item{rapi}{the number of reported alcohol problems during a six-months period} 
+#' \item{gender}{ gender (0=Men, 1=Women} }
+#' 
+#' @docType data
+#' @name rapi.saemix
+#' 
+#' @source David Atkins, University of Washington
+#' 
+#' @references Atkins D, Baldwin S, Zheng C, Gallop R, Neighbors C (2013). A tutorial on count regression and zero-altered count models
+#' for longitudinal substance use data. Psychology of Addictive Behaviors, 27(1):166–177. 
+#' 
+#' Neighbors C, Barnett N, Rohsenow D, Colby S, Monti P (2010). Cost-Effectiveness of a Motivational lntervention for 
+#' Alcohol-Involved Youth in a Hospital Emergency Department. Journal of Studies on Alcohol and Drugs 71(3):384-394.
+#' 
+#' @examples
+#'
+#'   
+#' @keywords datasets
+NULL
+
+

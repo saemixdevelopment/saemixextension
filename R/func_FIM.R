@@ -147,12 +147,12 @@ fim.saemix<-function(saemixObject) {
     }
     #    invVi[[i]]<-solve(Vi[[i]])
     # Invert avoiding numerical problems
-    Gi[[i]]<-round(Vi*1e10)/1e10
+    # Invert avoiding numerical problems
+    Gi[[i]]<-round(Vi*1e12)/1e12
     VD<-try(eigen(Gi[[i]]))
-    if(inherits(VD,"try-error")) {
-      cat("Unable to compute the FIM by linearisation.\n")
+    if(inherits(VD,"try-error") || det(Gi[[i]])==0) {
+      cat("Unable to compute the FIM by linearisation.\n") # si matrice de variance non inversible
       stop()
-      #    return(saemixObject)
     }
     D<-Re(VD$values)
     V<-Re(VD$vectors)

@@ -26,6 +26,7 @@ datDir<-file.path(saemixDir,"data")
 # Libraries
 library(ggplot2)
 library(MASS)
+library(rlang)
 
 testMode<-FALSE
 
@@ -438,7 +439,14 @@ compare.saemix(ord.fit.cov1,ord.fit.cov2, ord.fit.cov3)
     - but error when using more than one species with a recurrent error message (solve.default...) **TODO** investigate
     - note: error in the previous version of Poisson model (factorial(y) instead of log(factorial(y))) ?
 - Epilepsy
-- Drinking patterns
+  - dataset epil from MASS
+  - very basic model with only one parameter
+- Drinking patterns amongst students (David Atkins from tutorial)
+  - dataset rapi.saemix
+  - lambda parameter from Poisson model with a time-effect, gender effects on both intercept and slope
+  - different models can be adjusted to the data
+
+#### Epilepsy data
 
 ```{r countEpilepsy}
 epilepsy<-MASS::epil
@@ -473,7 +481,8 @@ countmodel.genpoisson<-function(psi,id,xidep) {
   lambda<-psi[id,2]
   logp <- -lambda
   pos.ind <- which(y>0)
-  logp[pos.ind] <- log(lambda) + (y-1)*log(lambda+y*delta) - (lambda+y*delta) - log(factorial(y))
+  lp1 <-log(lambda) + (y-1)*log(lambda+y*delta) - (lambda+y*delta) - log(factorial(y))
+  logp[pos.ind] <- lp1[pos.ind]
   return(logp)
 }
 
@@ -509,7 +518,68 @@ zippoisson.fit<-saemix(saemix.model.zip,saemix.data,saemix.options)
 
 ```
 
-- Meantimes, simulated data
+#### RAPI
+
+```{r countRAPI}
+if(testMode)
+  data(rapi.saemix) else
+    rapi.saemix<-read.table(file.path(datDir, "rapi.saemix.tab"), header=TRUE)
+
+## Models
+# Poisson with a time effect
+count.poisson<-function(psi,id,xidep) { 
+  time<-xidep[,1]
+  y<-xidep[,2]
+  intercept<-psi[id,1]
+  slope<-psi[id,2]
+  lambda<- exp(intercept + slope*time)
+  logp <- -lambda + y*log(lambda) - log(factorial(y))
+  return(logp)
+}
+
+## ZIP Poisson model with time effect
+count.poissonzip<-function(psi,id,xidep) {
+  time<-xidep[,1]
+  y<-xidep[,2]
+  intercept<-psi[id,1]
+  slope<-psi[id,2]
+  p0<-psi[id,3] # Probability of zero's
+  lambda<- exp(intercept + slope*time)
+  logp <- log(1-p0) -lambda + y*log(lambda) - log(factorial(y)) # Poisson
+  logp0 <- log(p0+(1-p0)*exp(-lambda)) # Zeroes
+  logp[y==0]<-logp0[y==0]
+  return(logp)
+}
+
+## Generalized Poisson model with time effect
+count.genpoisson<-function(psi,id,xidep) {
+  time<-xidep[,1]
+  y<-xidep[,2]
+  intercept<-psi[id,1]
+  slope<-psi[id,2]
+  lambda<- exp(intercept + slope*time)
+  delta<-psi[id,3]
+  logp <- log(lambda) + (y-1)*log(lambda+y*delta) - lambda - y*delta - log(factorial(y))
+  return(logp)
+}
+
+## Negative binomial model with time effect
+count.NB<-function(psi,id,xidep) {
+  time<-xidep[,1]
+  y<-xidep[,2]
+  intercept<-psi[id,1]
+  slope<-psi[id,2]
+  k<-psi[id,3]
+  lambda<- exp(intercept + slope*time)
+  logp <- log(factorial(y+k-1)) - log(factorial(y)) - log(factorial(k-1)) + y*log(lambda) - y*log(lambda+k) + k*log(k) - k*log(lambda+k)
+  return(logp)
+}
+
+
+```
+
+
+#### Simulated data
 
 ```{r countCreate}
 # Settings  
@@ -757,7 +827,7 @@ plot(tte.fit, plot.type="convergence")
 ypred<-predict(tte.fit)
 
 # Use survival package to assess Survival curve
-if(FALSE) {
+if(TRUE) {
   library(survival)
   lung.surv<-lung.saemix[lung.saemix$time>0,]
   lung.surv$status<-lung.surv$status+1
@@ -803,39 +873,52 @@ if(FALSE) {
   - discretised PCA events during warfarin treatment ? (from the warfarin PK/PD) (but threshold ?)
 
 ```{r RTTEsimul}
-# Simulating TTE data
-set.seed(12345)
-
-nsuj<-50
-xtim<-c(0)
-tte.data<-data.frame(id=rep(1:nsuj,each=length(xtim)),time=rep(xtim,nsuj))
-psiM<-data.frame(lambda=seq(1.6,2,length.out=length(unique(tte.data$id))),beta = 2)
-
-simul.tte<-function(psi,id,xidep) {
-  T<-xidep
-  N <- nrow(psi)
-  Nj <- length(T)
-  censoringtime = 3
-  lambda <- psi[id,1]
-  beta <- psi[id,2]
-  obs <-rep(0,length(T))
-  for (i in (1:N)){
-    obs[id==i] <- rweibull(n=length(id[id==i]), shape=beta[i], scale=lambda[i])
-  } 
-  obs[obs>censoringtime]<-censoringtime
-  return(obs)
+# Simulating RTTE data by simulating from U(0,1) and inverting the cdf
+simul.rtte.unif<-function(psi) { # xidep, id not important, we only use psi
+  censoringtime <- 3
+  maxevents <- 30
+  lambda <- psi[,1]
+  beta <- psi[,2]
+  simdat<-NULL
+  N<-nrow(psi)
+  for(i in 1:N) {
+    eventTimes<-c(0)
+    T<-0
+    Vj<-runif(1)
+    #    T <- (-log(Vj)*lambda[i])^(beta[i])
+    T<-lambda[i]*(-log(Vj))^(1/beta[i])
+    nev<-0
+    while (T < censoringtime & nev<maxevents){
+      eventTimes <- c(eventTimes, T)  
+      nev<-nev+1
+      Vj<-runif(1)
+      #      T <- T+(-log(Vj)*lambda[i])^(beta[i])
+      #      T<-(-log(Vj)*lambda[i] + T^(1/beta[i]))^(beta[i])
+      T<-lambda[i]*(-log(Vj) + (T/lambda[i])^(beta[i]))^(1/beta[i])
+    }
+    if(nev==maxevents) {
+      message("Reached maximum number of events\n")
+    }
+    eventTimes<-c(eventTimes, censoringtime)
+    cens<-rep(1,length(eventTimes))
+    cens[1]<-cens[length(cens)]<-0
+    simdat<-rbind(simdat,
+                  data.frame(id=i, T=eventTimes, status=cens))
+  }
+  return(simdat)
 }
 
-preds <- simul.tte(psiM, tte.data$id, tte.data[,c("time")])
-tte.data$y<-0
-tte.data$tlat<-preds
-dat1<-tte.data[,c("id","time","y")]
-dat2<-tte.data[,c("id","tlat","y")]
-dat2$y<-as.integer(dat2$tlat>0 & dat2$tlat<3)
-colnames(dat2)[2]<-"time"
-tte.data<-rbind(dat1,dat2)
-tte.data<-tte.data[order(tte.data$id, tte.data$time),]
-tte.psiM<-psiM
+# Subjects
+set.seed(12345)
+param<-c(2, 1.5, 0.5)
+# param<-c(4, 1.2, 0.3)
+omega<-c(0.25,0.25)
+nsuj<-200
+risk<-rep(0,nsuj)
+risk[(nsuj/2+1):nsuj]<-1
+psiM<-data.frame(lambda=param[1]*exp(rnorm(nsuj,sd=omega[1])), beta=param[2]*exp(param[3]*risk+rnorm(nsuj,sd=omega[2])))
+simdat <- simul.rtte.unif(psiM)
+simdat$risk<-as.integer(simdat$id>(nsuj/2))
 
 # Simulate T from Weibull (check)
 if(FALSE) { 
@@ -856,36 +939,40 @@ if(FALSE) {
 ```
 
 ```{r fitRTTE}
-saemix.data<-saemixData(name.data=tte.data, name.group=c("id"),
-  name.predictors=c("time"), name.response="y")
+saemix.data<-saemixData(name.data=simdat, name.group=c("id"), name.predictors=c("T"), name.response="status", name.covariates="risk")
 
-tte.model<-function(psi,id,xidep) {
+rtte.model<-function(psi,id,xidep) {
   T<-xidep[,1]
-  N <- nrow(psi)
-  Nj <- length(T)
+  N <- nrow(psi) # nb of subjects
+  Nj <- length(T) # nb of events (including 0 and censoring times)
   # censoringtime = 6
-  censoringtime = max(T)
+  censoringtime = max(T) # same censoring for everyone
   lambda <- psi[id,1]
   beta <- psi[id,2]
-  init <- which(T==0)
-  cens <- which(T==censoringtime)
-  ind <- setdiff(1:Nj, append(init,cens))
+  tinit <- which(T==0) # indices of beginning of observation period
+  tcens <- which(T==censoringtime) # indices of censored events 
+  tevent <- setdiff(1:Nj, append(tinit,tcens)) # indices of non-censored event times
   hazard <- (beta/lambda)*(T/lambda)^(beta-1)
   H <- (T/lambda)^beta
   logpdf <- rep(0,Nj)
-  logpdf[cens] <- -H[cens] + H[cens-1]
-  logpdf[ind] <- -H[ind] + H[ind-1] + log(hazard[ind])
+  logpdf[tcens] <- -H[tcens] + H[tcens-1]
+  logpdf[tevent] <- -H[tevent] + H[tevent-1] + log(hazard[tevent])
   return(logpdf)
 }
 
-saemix.model<-saemixModel(model=tte.model,description="time model",modeltype="likelihood",
-  psi0=matrix(c(1,2),ncol=2,byrow=TRUE,dimnames=list(NULL,  c("lambda","beta"))),
-  transform.par=c(1,1),covariance.model=matrix(c(1,0,0,1),ncol=2, byrow=TRUE))
-saemix.model<-saemixModel(model=tte.model,description="time model",modeltype="likelihood",
-  psi0=matrix(c(1,2),ncol=2,byrow=TRUE,dimnames=list(NULL,  c("lambda","beta"))),
-  transform.par=c(1,1),covariance.model=matrix(c(1,0,0,0),ncol=2, byrow=TRUE))
-saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
-tte.fit<-saemix(saemix.model,saemix.data,saemix.options)
-plot(tte.fit, plot.type="convergence")
+saemix.model.base<-saemixModel(model=rtte.model,description="Repeated TTE model",modeltype="likelihood",
+                               psi0=matrix(c(1,2),ncol=2,byrow=TRUE,dimnames=list(NULL,  c("lambda","beta"))),
+                               transform.par=c(1,1),covariance.model=matrix(c(1,0,0,1),ncol=2, byrow=TRUE))
+saemix.model<-saemixModel(model=rtte.model,description="Repeated TTE model",modeltype="likelihood",
+                          psi0=matrix(c(1,2),ncol=2,byrow=TRUE,dimnames=list(NULL,  c("lambda","beta"))),
+                          transform.par=c(1,1),covariate.model=matrix(c(0,1),ncol=2),
+                          covariance.model=matrix(c(1,0,0,1),ncol=2, byrow=TRUE))
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, fim=FALSE, displayProgress=FALSE)
+rtte.fit<-saemix(saemix.model,saemix.data,saemix.options)
+plot(rtte.fit, plot.type="convergence")
+
+saemix.data<-saemixData(name.data=tte.data, name.group=c("id"),
+  name.predictors=c("time"), name.response="y")
 ```
+
 

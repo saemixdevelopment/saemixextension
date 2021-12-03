@@ -1,3 +1,47 @@
+########################################################################
+### Create datasets forn the new discrete outcome models
+### Prepare figures for the LaTeX documentation
+########################################################################
+# Folders
+saemixDir<-"/home/eco/work/saemix/saemixextension"
+datDir<-file.path(saemixDir, "data")
+docDir<-file.path(saemixDir, "documentation")
+figDir<-file.path(docDir,"figs")
+progDir<-file.path(saemixDir,"R")
+
+createDataSaemix<-FALSE
+testMode<-FALSE
+########################################################################
+# Load library
+library(ggplot2)
+library(gridExtra)
+library(tidyverse)
+
+if(!testMode) {
+  source(file.path(progDir,"aaa_generics.R"))
+  #source(file.path(progDir,"global.R"))
+  source(file.path(progDir,"SaemixData.R"))
+  source(file.path(progDir,"SaemixRes.R"))
+  source(file.path(progDir,"SaemixModel.R"))
+  source(file.path(progDir,"SaemixObject.R"))
+  source(file.path(progDir,"main.R"))
+  source(file.path(progDir,"func_aux.R"))
+  source(file.path(progDir,"main_initialiseMainAlgo.R"))
+  source(file.path(progDir,"main_estep.R"))
+  source(file.path(progDir,"main_mstep.R"))
+  source(file.path(progDir,"func_FIM.R"))
+  source(file.path(progDir,"func_plots.R"))
+  source(file.path(progDir,"func_distcond.R"))
+  source(file.path(progDir,"func_simulations.R"))
+  source(file.path(progDir,"compute_LL.R"))
+  source(file.path(progDir,"func_estimParam.R"))
+  source(file.path(progDir,"backward.R"))
+  source(file.path(progDir,"forward.R"))
+  source(file.path(progDir,"stepwise.R"))
+  source(file.path(progDir,"func_stepwise.R"))
+  source(file.path(progDir,"func_compare.R"))
+} else
+  library(saemix)
 
 ########################################################################
 # Binary data - Toenail 
@@ -7,19 +51,66 @@
 # saemix.data<-saemixData(name.data=toe,name.group=c("patientID"),name.predictors=c("time","y"), name.response="y",
 #                        name.covariates=c("treatment"),name.X=c("time"))
 
-library(prLogistic)
-data(Toenail)
-if(FALSE) {
+if(createDataSaemix) {
+  library(prLogistic)
+  data(Toenail)
   toenail.saemix<-Toenail
   colnames(toenail.saemix)<-c("id","y","treatment","time","visit")
   toenail.saemix<-toenail.saemix[,c(1,4,2,3,5)]
   write.table(toenail.saemix,file.path(datDir,"toenail.saemix.tab"), quote=F, row.names=F)
 }
+if(testMode)
+  data(toenail.saemix) else
+  toenail.saemix<-read.table(file.path(datDir,"toenail.saemix.tab"),header=TRUE)
 toe<-toenail.saemix
 
+# Data
 saemix.data<-saemixData(name.data=toenail.saemix,name.group=c("id"),name.predictors=c("time","y"), name.response="y",
                         name.covariates=c("treatment"),name.X=c("time"))
 
+# Explore data
+toe1 <- toenail.saemix %>%
+  group_by(visit, treatment) %>%
+  summarise(nev = sum(y), n=n()) %>%
+  mutate(freq = nev/n, sd=sqrt((1-nev/n)/nev)) %>%
+  mutate(lower=freq-1.96*sd, upper=freq+1.96*sd)
+toe1$lower[toe1$lower<0] <-0 # we should use a better approximation for CI
+toe1$treatment <- factor(toe1$treatment, labels=c("A","B"))
+
+
+plot1<-ggplot(toe1, aes(x=visit, y=freq, group=treatment)) + geom_line(aes(colour=treatment)) + 
+  geom_point(aes(colour=treatment)) + 
+  geom_ribbon(aes(ymin=lower, ymax=upper, fill=treatment), alpha=0.2) +
+  ylim(c(0,1)) + theme_bw() + theme(legend.position = "top") +
+  xlab("Visit number") + ylab("Observed frequency of infection")
+
+# theme(legend.position = "none") + scale_x_discrete(name = "Treatment", labels = c("A", "B")) +
+#labs(colour = "Treatment") +
+
+namfig<-"toenail_rawdata.eps"
+cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
+plot(plot1)
+dev.off()
+
+plot2 <- ggplot(toe1, aes(x=visit, y=nev, group=treatment, fill=treatment)) + 
+  geom_bar(stat="identity",position=position_dodge()) +
+  theme_bw() + theme(legend.position = "top") +
+  xlab("Visit number") + ylab("Number of infected subjects")
+
+namfig<-"toenail_barplotData.eps"
+cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
+plot(plot2)
+dev.off()
+
+
+if(FALSE) {
+  sum(toe$y[toe$visit==1])/length(toe$y[toe$visit==1])
+  sum(toe$y[toe$visit==1 & toe$treatment==1])/length(toe$y[toe$visit==1 & toe$treatment==1])
+  sum(toe$y[toe$visit==1 & toe$treatment==0])/length(toe$y[toe$visit==1 & toe$treatment==0])
+  sum(toe$y[toe$visit==7])/length(toe$y[toe$visit==7])
+}
+
+# Fit with saemix
 binary.model<-function(psi,id,xidep) {
   tim<-xidep[,1]
   y<-xidep[,2]
@@ -37,19 +128,94 @@ saemix.model<-saemixModel(model=binary.model,description="Binary model",
                           modeltype="likelihood",
                           psi0=matrix(c(0,-.5,0,0.5),ncol=2,byrow=TRUE,dimnames=list(NULL,c("theta1","theta2"))),
                           transform.par=c(0,0), covariate.model=c(0,1),covariance.model=matrix(c(1,0,0,1),ncol=2))
+saemix.model.paper<-saemixModel(model=binary.model,description="Binary model",
+                          modeltype="likelihood",
+                          psi0=matrix(c(-5,-.1,0,0),ncol=2,byrow=TRUE,dimnames=list(NULL,c("theta1","theta2"))),
+                          transform.par=c(0,0), covariate.model=c(0,1),covariance.model=matrix(c(1,0,0,0),ncol=2))
+saemix.model.paper2<-saemixModel(model=binary.model,description="Binary model",
+                                modeltype="likelihood",
+                                psi0=matrix(c(-5,-0.2,0,0),ncol=2,byrow=TRUE,dimnames=list(NULL,c("theta1","theta2"))),
+                                transform.par=c(0,0), covariate.model=c(0,1),covariance.model=matrix(c(1,0,0,1),ncol=2))
 
 saemix.options<-list(seed=1234567,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, nb.chains=10, fim=FALSE)
 
 binary.fit<-saemix(saemix.model,saemix.data,saemix.options)
+binary.fit.paper<-saemix(saemix.model.paper,saemix.data,saemix.options)
+binary.fit.paper2<-saemix(saemix.model.paper2,saemix.data,saemix.options)
+
+binary.fit.paper@results@fixed.effects
+sqrt(binary.fit.paper@results@omega[1,1])
+# Estimates with Monolix
+# $\theta_1$ & 1.76 & 0.33 & 18.6 \\
+# $\theta_2$ & 0.36 & 0.039 & 11 \\
+# $\beta$ & 0.19 & 0.064 & 33.3\\
+# $\omega_1$ & 4.05 & 0.37 & 9.04\\
+
+# Simulations
+## Simulation file
+simulBinary<-function(psi,id,xidep) {
+  tim<-xidep[,1]
+  y<-xidep[,2]
+  inter<-psi[id,1]
+  slope<-psi[id,2]
+  logit<-inter+slope*tim
+  pevent<-1/(1+exp(-logit))
+  ysim<-rbinom(length(tim),size=1, prob=pevent)
+  return(ysim)
+}
+
+yfit<-binary.fit.paper
+nsim<-100
+yfit <- simulateDiscreteSaemix(yfit, simulBinary, nsim=nsim)
+
+yfit<-binary.fit.paper2
+nsim<-100
+yfit <- simulateDiscreteSaemix(yfit, simulBinary, nsim=nsim)
+
+#yfit1<-simulate.SaemixObject(yfit, nsim=nsim, predictions=FALSE, uncertainty=uncertainty)
+
+## Population-level prediction interval for the proportion, per visit across treatments
+head(yfit@sim.data@datasim)
+simdat <-yfit@sim.data@datasim
+simdat$visit<-rep(toenail.saemix$visit,nsim)
+simdat$treatment<-rep(toenail.saemix$treatment,nsim)
+
+ytab<-NULL
+for(irep in 1:nsim) {
+  xtab<-simdat[simdat$irep==irep,]
+  xtab1 <- xtab %>%
+    group_by(visit) %>%
+    summarise(nev = sum(ysim), n=n()) %>%
+    mutate(freq = nev/n)
+  ytab<-rbind(ytab,xtab1[,c(1,4)])
+}
+gtab<-data.frame(visit=sort(unique(ytab$visit)),matrix(unlist(tapply(ytab$freq, ytab$visit, quantile, c(0.05,0.5, 0.95))), byrow=T, ncol=3))
+colnames(gtab)[2:4]<-c("lower","median","upper")
+gtab$treatment<-1
+gtab$freq<-1
+
+plot1 <- ggplot(toe1, aes(x=visit, y=freq, group=treatment)) + geom_line(aes(colour=treatment)) + 
+  geom_point(aes(colour=treatment)) + 
+  geom_line(data=gtab, aes(x=visit, y=median), linetype=2, colour='lightblue') + 
+  geom_ribbon(data=gtab,aes(ymin=lower, ymax=upper), alpha=0.5, fill='lightblue') +
+  ylim(c(0,0.5)) + theme_bw() + theme(legend.position = "top") +
+  xlab("Visit number") + ylab("Observed frequency of infection")
+
+plot1
+
+namfig<-"toenail_globalpropVPC.eps"
+cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
+plot(plot1)
+dev.off()
+
+
+#####################
+## Binomial model in saemix for the toenail data - complete data 
+## Fit only to the subjects with complete observations over the 7 visits :
 
 # Some graphs
 barplot(table(toenail.saemix$y,toenail.saemix$visit),beside=T)
-
 barplot(table(toenail.saemix$y,toenail.saemix$visit),beside=F)
-
-
-## Binomial model in saemix for the toenail data - complete data 
-## Fit only to the subjects with complete observations over the 7 visits :
 
 # Graph of raw data
 nobs<-tapply(toenail$visit,toenail$patientID,length)
@@ -349,6 +515,257 @@ data("grouseticks")
 form <- TICKS~YEAR+HEIGHT+(1|BROOD)+(1|INDEX)+(1|LOCATION)
 full_mod1  <- glmer(form, family="poisson",data=grouseticks)
 
+########################################################################
+# Count data - RAPI
+atkinsDir<-"/home/eco/work/saemix/examples/coutRegTutorialAtkins"
+rapi.df <- read.csv(file.path(atkinsDir,"RAPI.Final.csv"), header = TRUE)
+
+### Set categorical variables as factors
+rapi.df <- within(rapi.df, {
+  gender <- factor(gender, 0:1, c("Women","Men"))
+})
+
+### Basic file summaries
+summary(rapi.df)
+
+### Number of participants
+length(unique(rapi.df$id)) # 818
+
+### How much data per person?
+table(table(rapi.df$id)) # 561 have all 5 assessments
+
+rapi.saemix<-rapi.df[,c(1,4,2,3)]
+
+if(FALSE) 
+  write.table(rapi.saemix, file.path(datDir, "rapi.saemix.tab"), quote=FALSE, row.names=FALSE)
+
+# Data
+saemix.data<-saemixData(name.data=rapi.saemix, name.group=c("id"),
+                        name.predictors=c("time","rapi"),name.response=c("rapi"),
+                        name.covariates=c("gender"),
+                        units=list(x="months",y="",covariates=c("")))
+hist(rapi.saemix$rapi, main="", xlab="RAPI score", breaks=30)
+
+# Models
+# Poisson with a time effect
+  count.poisson<-function(psi,id,xidep) { 
+    time<-xidep[,1]
+    y<-xidep[,2]
+    intercept<-psi[id,1]
+    slope<-psi[id,2]
+    lambda<- exp(intercept + slope*time)
+    logp <- -lambda + y*log(lambda) - log(factorial(y))
+    return(logp)
+  }
+
+## ZIP Poisson model with time effect
+count.poissonzip<-function(psi,id,xidep) {
+  time<-xidep[,1]
+  y<-xidep[,2]
+  intercept<-psi[id,1]
+  slope<-psi[id,2]
+  p0<-psi[id,3] # Probability of zero's
+  lambda<- exp(intercept + slope*time)
+  logp <- log(1-p0) -lambda + y*log(lambda) - log(factorial(y)) # Poisson
+  logp0 <- log(p0+(1-p0)*exp(-lambda)) # Zeroes
+  logp[y==0]<-logp0[y==0]
+  return(logp)
+}
+
+## Generalized Poisson model with time effect
+count.genpoisson<-function(psi,id,xidep) {
+  time<-xidep[,1]
+  y<-xidep[,2]
+  intercept<-psi[id,1]
+  slope<-psi[id,2]
+  lambda<- exp(intercept + slope*time)
+  delta<-psi[id,3]
+  logp <- log(lambda) + (y-1)*log(lambda+y*delta) - lambda - y*delta - log(factorial(y))
+  return(logp)
+}
+
+
+# C^n_p = n! /(p! (n-p)!)
+
+## Negative binomial model with time effect
+count.NB<-function(psi,id,xidep) {
+  time<-xidep[,1]
+  y<-xidep[,2]
+  intercept<-psi[id,1]
+  slope<-psi[id,2]
+  k<-psi[id,3]
+  lambda<- exp(intercept + slope*time)
+  logp <- log(factorial(y+k-1)) - log(factorial(y)) - log(factorial(k-1)) + y*log(lambda) - y*log(lambda+k) + k*log(k) - k*log(lambda+k)
+  return(logp)
+}
+
+# Fits
+## Poisson
+### Model without covariate
+saemix.model.poi<-saemixModel(model=count.poisson,description="Count model Poisson",modeltype="likelihood",   
+                              psi0=matrix(c(log(5),0.01),ncol=2,byrow=TRUE,dimnames=list(NULL, c("intercept","slope"))), 
+                              transform.par=c(0,0), omega.init=diag(c(0.5, 0.5)))
+
+### Gender effect on intercept and slope
+saemix.model.poi.cov2<-saemixModel(model=count.poisson,description="Count model Poisson",modeltype="likelihood",   
+                                   psi0=matrix(c(log(5),0.01),ncol=2,byrow=TRUE,dimnames=list(NULL, c("intercept","slope"))), 
+                                   transform.par=c(0,0), omega.init=diag(c(0.5, 0.5)),
+                                   covariance.model =matrix(data=1, ncol=2, nrow=2),
+                                   covariate.model=matrix(c(1,1), ncol=2, byrow=TRUE))
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
+  
+### Fit with saemix
+poisson.fit<-saemix(saemix.model.poi,saemix.data,saemix.options)
+poisson.fit.cov2<-saemix(saemix.model.poi.cov2,saemix.data,saemix.options)
+exp(poisson.fit@results@fixed.effects)
+exp(poisson.fit.cov2@results@fixed.effects)
+
+### Simulations
+saemix.simulatePoisson<-function(psi, id, xidep) {
+  time<-xidep[,1]
+  y<-xidep[,2]
+  intercept<-psi[id,1]
+  slope<-psi[id,2]
+  lambda<- exp(intercept + slope*time)
+  y<-rpois(length(time), lambda=lambda)
+  return(y)
+}
+
+yfit1<-simulateDiscreteSaemix(poisson.fit.cov2, 10, saemix.simulatePoisson)
+
+hist(yfit1@data@data$rapi, xlim=c(0,50), freq=F, breaks=30, xlab="Observed counts", main="")
+lines(density(yfit1@sim.data@datasim$ysim[yfit1@sim.data@datasim$ysim<50]), lwd = 2, col = 'red')
+
+cat("Observed proportion of 0's", length(yfit1@data@data$rapi[yfit1@data@data$rapi==0])/yfit1@data@ntot.obs,"\n")
+cat("      Poisson model, p=",length(yfit1@sim.data@datasim$ysim[yfit1@sim.data@datasim$ysim==0])/length(yfit1@sim.data@datasim$ysim),"\n")
+
+## ZIP
+### base model
+saemix.model.zip<-saemixModel(model=count.poissonzip,description="count model ZIP",modeltype="likelihood",   
+                              psi0=matrix(c(1.5, 0.01, 0.2),ncol=3,byrow=TRUE,dimnames=list(NULL, c("intercept", "slope","p0"))), 
+                              transform.par=c(0,0,3), covariance.model=diag(c(1,1,0)), omega.init=diag(c(0.5,0.3,0)))
+
+### ZIP Poisson with gender on both intercept
+saemix.model.zip.cov1<-saemixModel(model=count.poissonzip,description="count model ZIP",modeltype="likelihood",   
+                                   psi0=matrix(c(1.5, 0.01, 0.2),ncol=3,byrow=TRUE,dimnames=list(NULL, c("intercept", "slope","p0"))), 
+                                   transform.par=c(0,0,3), covariance.model=diag(c(1,1,0)), omega.init=diag(c(0.5,0.3,0)),
+                                   covariate.model = matrix(c(1,0,0),ncol=3, byrow=TRUE))
+### ZIP Poisson with gender on both intercept and slope
+saemix.model.zip.cov2<-saemixModel(model=count.poissonzip,description="count model ZIP",modeltype="likelihood",   
+                                   psi0=matrix(c(1.5, 0.01, 0.2),ncol=3,byrow=TRUE,dimnames=list(NULL, c("intercept", "slope","p0"))), 
+                                   transform.par=c(0,0,3), covariance.model=diag(c(1,1,0)), omega.init=diag(c(0.5,0.3,0)),
+                                   covariate.model = matrix(c(1,1,0),ncol=3, byrow=TRUE))
+
+zippoisson.fit<-saemix(saemix.model.zip,saemix.data,saemix.options)
+zippoisson.fit.cov1<-saemix(saemix.model.zip.cov1,saemix.data,saemix.options)
+zippoisson.fit.cov2<-saemix(saemix.model.zip.cov2,saemix.data,saemix.options)
+
+### Simulations
+
+yfit2<-simulateDiscreteSaemix(zippoisson.fit.cov2, 10, saemix.simulatePoissonZIP)
+if(FALSE) {
+  par(mfrow=c(1,2))
+  hist(yfit@sim.data@datasim$ysim[yfit@sim.data@datasim$ysim<50], xlim=c(0,50), freq=F, breaks=20, xlab="Simulated counts", main="By hand")
+  hist(yfit1@sim.data@datasim$ysim[yfit1@sim.data@datasim$ysim<50], xlim=c(0,50), freq=F, breaks=20, xlab="Simulated counts", main="Function")
+}
+
+par(mfrow=c(1,3))
+hist(yfit1@data@data$rapi, xlim=c(0,50), freq=F, breaks=30, xlab="Observed counts", main="")
+hist(yfit1@sim.data@datasim$ysim[yfit1@sim.data@datasim$ysim<50], xlim=c(0,50), freq=F, breaks=20, xlab="Simulated counts", main="Poisson model")
+hist(yfit2@sim.data@datasim$ysim[yfit2@sim.data@datasim$ysim<50], xlim=c(0,50), freq=F, breaks=20, xlab="Simulated counts", main="ZIP model")
+
+# As densities - very weird, must be doing something wrong with the plot :-/
+par(mfrow=c(1,1))
+hist(yfit1@data@data$rapi, xlim=c(0,50), freq=F, breaks=30, xlab="Observed counts", main="")
+lines(density(yfit1@sim.data@datasim$ysim[yfit1@sim.data@datasim$ysim<50]), lwd = 2, col = 'red')
+lines(density(yfit2@sim.data@datasim$ysim[yfit2@sim.data@datasim$ysim<50]), lwd = 2, col = 'blue')
+
+cat("      ZIP model,     p=",length(yfit2@sim.data@datasim$ysim[yfit2@sim.data@datasim$ysim==0])/length(yfit2@sim.data@datasim$ysim),"\n")
+
+
+## Generalised Poisson - not sure the results make much sense
+saemix.model.genpoi<-saemixModel(model=count.genpoisson,description="Generalised Poisson model",modeltype="likelihood",   
+                                 psi0=matrix(c(1.5, 0.01, 0.2),ncol=3,byrow=TRUE,dimnames=list(NULL, c("intercept", "slope","delta"))), 
+                                 transform.par=c(0,0,1), covariance.model=diag(c(1,1,0)), omega.init=diag(c(0.5,0.5,0.5)))
+
+genpoisson.fit<-saemix(saemix.model.genpoi,saemix.data,saemix.options)
+
+## Negative binomial
+saemix.model.NB<-saemixModel(model=count.NB,description="Negative binomial model",modeltype="likelihood",   
+                             psi0=matrix(c(1.5, 0.01, 2),ncol=3,byrow=TRUE,dimnames=list(NULL, c("intercept", "slope","k"))), 
+                             transform.par=c(0,0,1), covariance.model=diag(c(1,1,0)), omega.init=diag(c(0.5,0.5,0.5)))
+
+negbin.fit<-saemix(saemix.model.NB,saemix.data,saemix.options)
+
+# Comparing parameters across fits - guessing intercept and slope shouldn't change much
+poisson.fit@results@fixed.effects
+zippoisson.fit@results@fixed.effects
+zippoisson.fit.cov2@results@fixed.effects
+genpoisson.fit@results@fixed.effects
+negbin.fit@results@fixed.effects
+
+## Hurdle - 2 models 
+saemix.data1<-saemixData(name.data=rapi.saemix[rapi.saemix$rapi>0,], name.group=c("id"),
+                         name.predictors=c("time","rapi"),name.response=c("rapi"),
+                         name.covariates=c("gender"),
+                         units=list(x="week",y="",covariates=c("")))
+
+rapi.saemix$y0<-as.integer(rapi.saemix$rapi>0)
+saemix.data0<-saemixData(name.data=rapi.saemix, name.group=c("id"),
+                         name.predictors=c("time","y0"),name.response=c("y0"),
+                         name.covariates=c("gender"),
+                         units=list(x="week",y="",covariates=c("")))
+
+# Fit Binomial model to saemix.data0
+binary.model<-function(psi,id,xidep) {
+  tim<-xidep[,1]
+  y<-xidep[,2]
+  inter<-psi[id,1]
+  slope<-psi[id,2]
+  logit<-inter+slope*tim
+  pevent<-exp(logit)/(1+exp(logit))
+  logpdf<-rep(0,length(tim))
+  P.obs = (y==0)*(1-pevent)+(y==1)*pevent
+  logpdf <- log(P.obs)
+  return(logpdf)
+}
+
+saemix.hurdle0<-saemixModel(model=binary.model,description="Binary model",
+                            modeltype="likelihood",
+                            psi0=matrix(c(-1.5,-.1,0,0),ncol=2,byrow=TRUE,dimnames=list(NULL,c("theta1","theta2"))),
+                            transform.par=c(0,0), covariate.model=c(1,1),
+                            covariance.model=matrix(c(1,0,0,1),ncol=2), omega.init=diag(c(1,0.3)))
+
+saemix.options<-list(seed=1234567,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, nb.chains=10, fim=FALSE, displayProgress=FALSE)
+
+hurdlefit0<-saemix(saemix.hurdle0,saemix.data0,saemix.options)
+
+# proportion of 0's in the data
+rapi.tab <- table(rapi.saemix$rapi == 0)
+rapi.tab/sum(rapi.tab)
+
+# Fit Poisson model to saemix.data1
+saemix.hurdle1.cov2<-saemixModel(model=count.poisson,description="Count model Poisson",modeltype="likelihood",   
+                                 psi0=matrix(c(log(5),0.01),ncol=2,byrow=TRUE,dimnames=list(NULL, c("intercept","slope"))), 
+                                 transform.par=c(0,0), omega.init=diag(c(0.5, 0.5)),
+                                 covariance.model =matrix(data=1, ncol=2, nrow=2),
+                                 covariate.model=matrix(c(1,1), ncol=2, byrow=TRUE))
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
+
+hurdlefit1<-saemix(saemix.hurdle1.cov2,saemix.data1,saemix.options)
+
+summary(hurdlefit0)
+summary(hurdlefit1)
+
+# Table form - compare to column B in Table 2
+yfit0<-hurdlefit0
+yfit1<-hurdlefit1
+
+rr.tab<-data.frame(param=c("intercept", "beta.Male.inter", "slope", "beta.Male.slope", "omega.inter","omega.slope"), 
+                   poissonNoZero=c(yfit1@results@fixed.effects, c(sqrt(diag(yfit1@results@omega)))),
+                   logistic=c(yfit0@results@fixed.effects, c(sqrt(diag(yfit0@results@omega)))))
+
+print(rr.tab)
 
 ########################################################################
 # Categorical data - Knee
@@ -642,6 +1059,7 @@ if(FALSE) {
 
 if(FALSE)
   write.table(simdat,file.path(ecoDir,"simulatedRTTE.csv"), quote=F, row.names=F)
+
 saemix.data<-saemixData(name.data=simdat, name.group=c("id"), name.predictors=c("T"), name.response="status", name.covariates="risk")
 
 ### Fit RTTE

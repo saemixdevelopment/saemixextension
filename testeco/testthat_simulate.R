@@ -10,6 +10,21 @@ test_that("Simulate from a model fit for the dataset in the object", {
   plot(simdat@sim.data, irep=2, new=FALSE)
 })
 
+
+test_that("Simulate parameters from a model fit for the dataset in the object", {
+  simdat<-simulate(theo.fit1, nsim=20, predictions=FALSE)
+  expect_equal(dim(theo.fit1@sim.data@data)[1],0)
+  expect_equal(dim(simdat@sim.data@datasim)[1],theo.fit1@data@ntot.obs*2)
+  expect_equal(dim(simdat@sim.data@datasim)[2],2) # no predictions or simulations, just idsim and irep
+  # Graph overlaying the histogram of individual parameters and the density from 20 simulations of the same parameters
+  par(mfrow=c(1,3))
+  for(icol in 1:3) {
+    hist(theo.fit1@results@map.psi[,icol],freq=F)
+    lines(density(simdat@sim.data@sim.psi[,(icol+1)]), lwd = 2, col = 'red')
+  }
+})
+
+
 if(FALSE) {
   par(mfrow=c(1,3))
   plot(simdat@data)

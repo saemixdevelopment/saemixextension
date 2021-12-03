@@ -1,0 +1,241 @@
+---
+title: "Saemix with competing risks"
+author: "Emmanuelle Comets"
+date: "23/11/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+# Setup
+
+- set up work directories
+- two versions toggled by testMode
+  - if testMode is FALSE, load the functions in R
+  - if testMode is TRUE, load the library in a dev_mode environment
+- aim: implement competing risk models
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# Directories
+saemixDir<-"/home/eco/work/saemix/saemixextension"
+progDir<-file.path(saemixDir,"R")
+datDir<-file.path(saemixDir,"data")
+
+# Libraries
+library(ggplot2)
+library(MASS)
+library(rlang)
+
+testMode<-FALSE
+```
+
+# Testing library
+
+```{r testLibrary, include=FALSE}
+# Sourcing saemix functions
+if(!testMode) {
+  source(file.path(progDir,"aaa_generics.R"))
+  #source(file.path(progDir,"global.R"))
+  source(file.path(progDir,"SaemixData.R"))
+  source(file.path(progDir,"SaemixRes.R"))
+  source(file.path(progDir,"SaemixModel.R"))
+  source(file.path(progDir,"SaemixObject.R"))
+  source(file.path(progDir,"main.R"))
+  source(file.path(progDir,"func_aux.R"))
+  source(file.path(progDir,"main_initialiseMainAlgo.R"))
+  source(file.path(progDir,"main_estep.R"))
+  source(file.path(progDir,"main_mstep.R"))
+  source(file.path(progDir,"func_FIM.R"))
+  source(file.path(progDir,"func_plots.R"))
+  source(file.path(progDir,"func_distcond.R"))
+  source(file.path(progDir,"func_simulations.R"))
+  source(file.path(progDir,"compute_LL.R"))
+  source(file.path(progDir,"func_estimParam.R"))
+}
+
+if(!testMode) {
+  source(file.path(progDir,"backward.R"))
+  source(file.path(progDir,"forward.R"))
+  source(file.path(progDir,"stepwise.R"))
+  source(file.path(progDir,"func_stepwise.R"))
+  source(file.path(progDir,"func_compare.R"))
+}
+
+# Loading library
+if(testMode) {
+  dev_mode()
+  install.packages("saemix3.0.tar.gz",repos=NULL)
+  library(saemix)
+}
+```
+
+### Competing risks model - cause-specific assumption
+
+- Simulation
+  - both competing risks simulated with a constant hazard
+  - small IIV added to the second event (but doesn't seem to change anything much)
+
+```{r competingRisksSimul}
+## Simulation
+constantHazardTTE.simul<-function(psi,id,xidep) {
+  T<-xidep[,1]
+  N <- nrow(psi)
+  Nj <- length(T)
+  censoringtime <- 3 # eg years
+  lam1 <- psi[id,1]
+  lam2 <- psi[id,2]
+  Vj<-runif(Nj)
+  T1 <- -log(Vj)/lam1
+  Vj<-runif(Nj)
+  T2 <- -log(Vj)/lam2
+  event.id<-ifelse(T1<T2, 1, 2)
+  event.id[pmin(T1,T2)>censoringtime]<-0
+  event.time<-pmin(T1,T2,rep(censoringtime,Nj))
+  return(data.frame(t=event.time, k=event.id, t1=T1, t2=T2))
+}
+
+set.seed(12345)
+
+nsuj<-1000
+lam1<-0.30 # S1(Tcens)=40%
+lam2<-0.30
+omega<-0.1
+xtim<-c(0)
+tte.data<-data.frame(id=rep(1:nsuj,each=length(xtim)),time=rep(xtim,nsuj))
+psiM<-data.frame(lam1=rep(lam1, nsuj), lam2=lam2*exp(rnorm(nsuj, sd=omega)))
+tevent<-constantHazardTTE.simul(psiM, 1:nsuj, tte.data)
+summary(tevent$t)
+table(tevent$k)
+hist(tevent$t)
+length(tevent$t1[tevent$t1<3])
+length(tevent$t2[tevent$t2<3])
+
+nev<-cumsum(rep(1,nsuj))
+plot(sort(tevent$t1), nev)
+
+tte.data<-cbind(tte.data, event=0)
+tte.data2<-data.frame(id=tte.data$id, time=tevent$t, event=tevent$k)
+tte.data<-rbind(tte.data, tte.data2)
+tte.data <- tte.data[order(tte.data$id, tte.data$time),]
+
+causeTTE<-tte.data
+```
+
+```{r competingRisksEstimCause}
+## Probability for a competing risk model - cause specific
+competingRisks<-function(psi,id,xidep) {
+  T<-xidep[,1] # time of the event
+  idevent<-xidep[,2]  # events (0=no event (censored), 1=event 1, 2=event 2)
+  cens<-which(T==max(T))  # censoring time=3
+  #which(xidep[,3]==1) # censoring times (subject specific)
+  init <- which(T==0)
+  lam1 <- psi[id,1]
+  lam2 <- psi[id,2]
+  Nj <- length(T)
+  ind <- setdiff(1:Nj, append(init,cens)) # indices of events
+  h1 <- lam1 # H' event 1
+  H1 <- lam1*T # H
+  h2 <- lam2 # H' event 2
+  H2 <- lam2*T # H
+
+  logpdf <- rep(0, Nj)
+#  logpdf[cens] <- log(exp(-H1[cens]) + exp(-H2[cens]) -1) # expression for when T0=0
+#  logpdf[cens] <- log(exp(-H1[cens]) + exp(-H2[cens]) -1) -  log(exp(-H1[cens-1]) + exp(-H2[cens-1]) -1) # general expression not assuming T0=0
+  logpdf[cens] <- -H1[cens]-H2[cens] + H1[cens-1] + H2[cens-1] # general expression not assuming T0=0
+  logpdf[idevent==1] <-  -H1[idevent==1] + H1[which(idevent==1)-1] + log(h1[idevent==1]) -H2[idevent==1] + H2[which(idevent==1)-1]
+  logpdf[idevent==2] <-  -H2[idevent==2] + H2[which(idevent==2)-1] + log(h2[idevent==2]) -H1[idevent==2] + H1[which(idevent==2)-1] 
+  return(logpdf)
+}
+
+### Computing logpdf given psiM and tte.data (test function)
+lpdf<-competingRisks(psiM, id=rep(1:nsuj, each=2), tte.data[,2:3])
+
+### Trying saemix
+saemix.data<-saemixData(name.data=causeTTE, name.group=c("id"), name.predictors=c("time","event"), name.response="event")
+
+saemix.model<-saemixModel(model=competingRisks,description="Cause-specific competing risks model",modeltype="likelihood",
+                          psi0=matrix(c(0.2, 0.2),ncol=2,byrow=TRUE,dimnames=list(NULL,  c("lam1","lam2"))),
+                          transform.par=c(1,1),covariance.model=matrix(c(1,0,0,0),ncol=2, byrow=TRUE))
+
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, fim=FALSE, displayProgress=FALSE)
+tte.fit<-saemix(saemix.model,saemix.data,saemix.options)
+plot(tte.fit, plot.type="convergence")
+
+```
+
+
+### Competing risks model - subdistribution assumption
+
+- **TODO** change simulation if needed to reflect the subdistribution assumption (not sure needed...)
+
+```{r competingRisksSimulSub}
+# Simulate with parameters so that S>0
+nsuj<-1000
+lam1<-0.17 # S1(Tcens)=60% at T=3
+lam2<-0.17
+omega<-0.1
+xtim<-c(0)
+ttesub.data<-data.frame(id=rep(1:nsuj,each=length(xtim)),time=rep(xtim,nsuj))
+psiM2<-data.frame(lam1=rep(lam1, nsuj), lam2=lam2*exp(rnorm(nsuj, sd=omega)))
+tevent2<-constantHazardTTE.simul(psiM2, 1:nsuj, ttesub.data)
+summary(tevent2$t)
+table(tevent2$k)
+hist(tevent2$t)
+length(tevent2$t1[tevent2$t1<3])
+length(tevent2$t2[tevent2$t2<3])
+
+nev<-cumsum(rep(1,nsuj))
+plot(sort(tevent2$t1), nev)
+
+ttesub.data<-cbind(ttesub.data, event=0)
+ttesub.data2<-data.frame(id=ttesub.data$id, time=tevent2$t, event=tevent2$k)
+ttesub.data<-rbind(ttesub.data, ttesub.data2)
+ttesub.data <- ttesub.data[order(ttesub.data$id, ttesub.data$time),]
+
+subdistTTE <- ttesub.data
+```
+
+```{r competingRisksEstimSub}
+
+## Probability for a competing risk model - subdistribution
+competingRisks.subdist<-function(psi,id,xidep) {
+    T<-xidep[,1] # time of the event
+  idevent<-xidep[,2]  # events (0=no event (censored), 1=event 1, 2=event 2)
+  cens<-which(T==max(T))  # censoring time=3
+  #which(xidep[,3]==1) # censoring times (subject specific)
+  init <- which(T==0)
+  lam1 <- psi[id,1]
+  lam2 <- psi[id,2]
+  Nj <- length(T)
+  ind <- setdiff(1:Nj, append(init,cens)) # indices of events
+  h1 <- lam1 # H' event 1
+  H1 <- lam1*T # H
+  h2 <- lam2 # H' event 2
+  H2 <- lam2*T # H
+
+  logpdf <- exp(-H1)+exp(-H2) -1 # 1-F1-F2 = S1+S2-1
+  
+#  logpdf[cens] <- oversurv[cens] # expression for when T0=0
+#  logpdf[cens] <- oversurv[cens]-oversurv[cens-1] # expression for when T0 <> 0
+  logpdf[idevent==1] <- logpdf[idevent==1] -H1[idevent==1]+ log(h1[idevent==1]) # assumes no RTTE (wouldn't make sense with subdistribution model) and T0=0
+  logpdf[idevent==2] <- logpdf[idevent==2] -H2[idevent==2] + log(h2[idevent==2])
+  return(logpdf)
+}
+
+lpdf2<-competingRisks.subdist(psiM2, id=rep(1:nsuj, each=2), ttesub.data[,2:3])
+summary(lpdf2)
+
+
+### Trying saemix
+saemix.data2<-saemixData(name.data=subdistTTE, name.group=c("id"), name.predictors=c("time","event"), name.response="event")
+
+saemix.model2<-saemixModel(model=competingRisks.subdist,description="Subdistribution competing risks model",modeltype="likelihood",
+                          psi0=matrix(c(0.3, 0.3),ncol=2,byrow=TRUE,dimnames=list(NULL,  c("lam1","lam2"))),
+                          transform.par=c(1,1),covariance.model=matrix(c(1,0,0,0),ncol=2, byrow=TRUE))
+
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, fim=FALSE, displayProgress=FALSE)
+tte.fit2<-saemix(saemix.model2,saemix.data2,saemix.options)
+plot(tte.fit2, plot.type="convergence")
+
+```

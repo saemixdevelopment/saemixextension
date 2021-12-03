@@ -312,7 +312,7 @@ saemixControl<-function(map=TRUE,fim=TRUE,ll.is=TRUE,ll.gq=FALSE,nbiter.saemix=c
   if(is.na(nbiter.sa)) nbiter.sa<-nbiter.saemix[1]/2
   if(nbiter.sa>nbiter.saemix[1]) {
     if(warnings) message("The number of iterations for the simulated annealing should be lower or equal to K1, setting it to nbiter.saemix[1]. We advise setting it to nbiter.saemix[1]/2.\n")
-    nbiber.sa<-nbiter.saemix[1]
+    nbiter.sa<-nbiter.saemix[1]
   }
   list(map=map,fim=fim,ll.is=ll.is,ll.gq=ll.gq,nbiter.saemix=nbiter.saemix, nbiter.sa=nbiter.sa, nbiter.burn=nbiter.burn, nbiter.map=nbiter.map,nb.chains=nb.chains,
        fix.seed=fix.seed,seed=seed, nmc.is=nmc.is,nu.is=nu.is,print.is=print.is, nbdisplay=nbdisplay,displayProgress=displayProgress,

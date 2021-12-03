@@ -127,7 +127,7 @@ For repeated event models, times when events occur for individual $i$ are random
 \mathbb{P}(T_{ij} > t|T_{i(j-1)}=t_{i(j-1)}) = \exp\left\{-\int_{t_{i(j-1)}}^{t}h(u, \psi_i)\textrm{d}u\right\}\eqs.
 \end{equation}
 Here, $t_{ij}$ is the observed value of the random time $T_{ij}$.
-If the last event is right censored, then the last observation $y_{i,n_i}$ for individual $i$ is the information that the censoring time has been reached $"T_{i,n_i} > \tau_c"$. The conditional pdf of $y_i = (y_{ij},1\leq n_i)$ reads (see \cite{Lavielle14} for more details)
+If the last event is right censored, then the last observation $y_{i,n_i}$ for individual $i$ is the information that the censoring time has been reached $"T_{i,n_i} > \tau_c"$. The conditional pdf of $y_i = (y_{ij},1\leq n_i)$ reads (see \cite{LavielleMonolix} for more details)
 \begin{equation} \label{pdf_tte}
 \dens(y_i |\psi_i) = \exp\left\{-\int_{0}^{\tau_c}h(u, \psi_i)\textrm{d}u \right\} \prod_{j=1}^{n_i-1} h(t_{ij},\psi_i)\eqs.
 \end{equation}

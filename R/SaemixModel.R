@@ -445,6 +445,7 @@ setMethod("print","SaemixModel",
     distrib<-c("normal","log-normal","probit","logit")
     cat("  Model function")
     if(length(x@description)>0 && nchar(x@description)>0) cat(": ",x@description)
+    cat("\n")
     cat("  Model type")
     if(length(x@modeltype)>0 && nchar(x@modeltype)>0) cat(": ",x@modeltype)
     cat("\n")
@@ -489,7 +490,8 @@ setMethod("show","SaemixModel",
     }
     fix1<-ifelse(object@fixed.estim==1,""," [fixed]")
     cat("    ",object@nb.parameters,"parameters:", paste(object@name.modpar,fix1,sep=""),"\n")
-    cat("     error model:",object@error.model,"\n")
+    if (object@modeltype=="structural")
+      cat("     error model:",object@error.model,"\n")
     if(dim(object@covariate.model)[1]>0) {
       cat("     covariate model:\n")
       print(object@covariate.model) 

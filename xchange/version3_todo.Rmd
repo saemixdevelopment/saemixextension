@@ -55,6 +55,11 @@ output:
     - move online or keep pdf/tex version ?
       - if move completely online, need to transform the LaTeX guide into a bookdown
       - copy on iame github
+- dependencies
+  - ggplot2 in Depends for 3.0
+  - npde 3.2: 
+    - Suggests for ggplot2
+    - @importFrom statements in roxygen documentation for all objects from ggplot2 that are needed (ex: geom_bar,...)
 
 # Comparing 2.4 and 3.0
 
