@@ -760,6 +760,7 @@ NULL
 #' Toenail data
 #'
 #' The \code{toenail.saemix} data are from a multicenter study comparing two oral treatments for toe-nail infection, including information for 294 patients measured at 7 weeks, comprising a total of 1908 measurements. The outcome binary variable "onycholysis" indicates the degree of separation of the nail plate from the nail-bed (none or mild versus moderate or severe). Patients were evaluated at baseline (week 0) and at weeks 4, 8, 12, 24, 36, and 48 thereafter.
+#' 
 #' @docType data
 #' @name toenail.saemix
 #' 
@@ -775,7 +776,8 @@ NULL
 #' }
 #' #'   
 #' @details The data in the \code{toenail.saemix} was copied from the Toenail dataset provided by the prLogistic package. Different models
-#' and analyses have been performed to describe this dataset in Molenberg and Verbeke (2000).
+#' and analyses have been performed to describe this dataset in Molenberg and Verbeke (2000). 
+#' Please refer to the PDF documentation (chapter 4, section 4.6) for more details on the analysis, including how to obtain diagnostic plots.
 #' 
 #' @source prLogistic package in R
 #' 
@@ -793,8 +795,32 @@ NULL
 #' 
 #' #' @examples
 #' data(toenail.saemix)
+#' saemix.data<-saemixData(name.data=toenail.saemix,name.group=c("id"), name.predictors=c("time","y"), 
+#'  name.response="y", name.covariates=c("treatment"),name.X=c("time"))
+#' binary.model<-function(psi,id,xidep) {
+#'   tim<-xidep[,1]
+#'   y<-xidep[,2]
+#'   inter<-psi[id,1]
+#'   slope<-psi[id,2]
+#'   logit<-inter+slope*tim
+#'   pevent<-exp(logit)/(1+exp(logit))
+#'   pobs = (y==0)*(1-pevent)+(y==1)*pevent
+#'   logpdf <- log(pobs)
+#'   return(logpdf)
+#' }
 #' 
-#' #' @keywords datasets
+#' saemix.model<-saemixModel(model=binary.model,description="Binary model",
+#'      modeltype="likelihood",
+#'      psi0=matrix(c(-5,-.1,0,0),ncol=2,byrow=TRUE,dimnames=list(NULL,c("theta1","theta2"))),
+#'      transform.par=c(0,0), covariate.model=c(0,1),
+#'      covariance.model=matrix(c(1,0,0,1),ncol=2))
+#' \donttest{
+#' saemix.options<-list(seed=1234567,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, nb.chains=10, fim=FALSE)
+#' binary.fit<-saemix(saemix.model,saemix.data,saemix.options)
+#' plot(binary.fit, plot.type="convergence")
+#' }
+#'  
+#' @keywords datasets
 NULL
 
 
@@ -826,6 +852,9 @@ NULL
 #' of the measurement (with 0 being the baseline value) and each observation corresponds to a different
 #' line in the dataset. Treatment was recoded as 0/1 (placebo/treatment), gender as 0/1 (male/female)
 #' and Age2 represents the squared of centered Age.
+#' 
+#' Please refer to the PDF documentation (chapter 4, section 4.6) for more details on the analysis, 
+#' including examples of diagnostic plots.
 #' 
 #' @source catdata package in R
 #' 
@@ -868,9 +897,9 @@ NULL
 #' }
 #'   
 #' @details The data in the \code{lung.saemix} was reformatted from the lung cancer dataset (see data(cancer, package="survival")). 
-#' Patients with missing age, sex, institution or physician assessments were removed from the dataset. Status was recoded as 1 for death and 0 for
-#' censored event, and a censoring column was added to denote whether the patient was dead or alive at the time of the last observation.
-#' For saemix, a line at time=0 was added for all subjects. Finally, subjects were numbered consecutively from 0 to 1.
+#' Patients with missing age, sex, institution or physician assessments were removed from the dataset. Status was recoded as 1 for death 
+#' and 0 for a censored event, and a censoring column was added to denote whether the patient was dead or alive at the time of 
+#' the last observation. For saemix, a line at time=0 was added for all subjects. Finally, subjects were numbered consecutively from 0 to 1.
 #' 
 #' @source Terry Therneau from the survival package in R
 #' 
@@ -925,7 +954,7 @@ NULL
 #' @keywords datasets
 NULL
 
-
+  
 #' Epilepsy count data
 #' 
 #' The epilepsy data from Thall and Vail (1990), available from the MASS package, records two-week seizure counts for 59 epileptics. 
@@ -973,7 +1002,7 @@ NULL
 #' Alcohol Problem Index (RAPI; White & Labouvie, 1989). The dataset includes 3,616 repeated measures of counts 
 #' representing the number of alcohol problems reported over six months period, across five time points from 818 individuals. 
 #' 
-#' #' @format This data frame contains the following columns: 
+#' @format This data frame contains the following columns: 
 #' \describe{
 #' \item{id}{subject identification number} 
 #' \item{time}{time since the beginning of the study (months)}
@@ -992,7 +1021,87 @@ NULL
 #' Alcohol-Involved Youth in a Hospital Emergency Department. Journal of Studies on Alcohol and Drugs 71(3):384-394.
 #' 
 #' @examples
-#'
+#'  data(rapi.saemix)
+#'  saemix.data<-saemixData(name.data=rapi.saemix, name.group=c("id"),
+#'                      name.predictors=c("time","rapi"),name.response=c("rapi"),
+#'                      name.covariates=c("gender"),units=list(x="months",y="",covariates=c("")))
+#' hist(rapi.saemix$rapi, main="", xlab="RAPI score", breaks=30)
+#' 
+#' \donttest{
+#' # Fitting a Poisson model
+#' count.poisson<-function(psi,id,xidep) { 
+#'   time<-xidep[,1]
+#'   y<-xidep[,2]
+#'   intercept<-psi[id,1]
+#'   slope<-psi[id,2]
+#'   lambda<- exp(intercept + slope*time)
+#'   logp <- -lambda + y*log(lambda) - log(factorial(y))
+#'   return(logp)
+#' }
+#' # Gender effect on intercept and slope
+#' rapimod.poisson<-saemixModel(model=count.poisson,
+#'    description="Count model Poisson",modeltype="likelihood",   
+#'    psi0=matrix(c(log(5),0.01),ncol=2,byrow=TRUE,dimnames=list(NULL, c("intercept","slope"))), 
+#'    transform.par=c(0,0), omega.init=diag(c(0.5, 0.5)),
+#'     covariance.model =matrix(data=1, ncol=2, nrow=2),
+#'     covariate.model=matrix(c(1,1), ncol=2, byrow=TRUE))
+#' saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, fim=FALSE)
+#' poisson.fit<-saemix(rapimod.poisson,saemix.data,saemix.options)
+#' 
+#' # Fitting a ZIP model
+#' count.poissonzip<-function(psi,id,xidep) {
+#'   time<-xidep[,1]
+#'   y<-xidep[,2]
+#'   intercept<-psi[id,1]
+#'   slope<-psi[id,2]
+#'   p0<-psi[id,3] # Probability of zero's
+#'   lambda<- exp(intercept + slope*time)
+#'   logp <- log(1-p0) -lambda + y*log(lambda) - log(factorial(y)) # Poisson
+#'   logp0 <- log(p0+(1-p0)*exp(-lambda)) # Zeroes
+#'   logp[y==0]<-logp0[y==0]
+#'   return(logp)
+#' }
+#' rapimod.zip<-saemixModel(model=count.poissonzip,
+#'    description="count model ZIP",modeltype="likelihood",   
+#'    psi0=matrix(c(1.5, 0.01, 0.2),ncol=3,byrow=TRUE,dimnames=list(NULL, c("intercept", "slope","p0"))), 
+#'    transform.par=c(0,0,3), covariance.model=diag(c(1,1,0)), omega.init=diag(c(0.5,0.3,0)),
+#'    covariate.model = matrix(c(1,1,0),ncol=3, byrow=TRUE))
+#' zippoisson.fit<-saemix(rapimod.zip,saemix.data,saemix.options)
+#' 
+#' # Simulation functions to simulate from the models
+#' saemix.simulatePoisson<-function(psi, id, xidep) {
+#'   time<-xidep[,1]
+#'   y<-xidep[,2]
+#'   intercept<-psi[id,1]
+#'   slope<-psi[id,2]
+#'   lambda<- exp(intercept + slope*time)
+#'   y<-rpois(length(time), lambda=lambda)
+#'   return(y)
+#' }
+#' saemix.simulatePoissonZIP<-function(psi, id, xidep) {
+#'   time<-xidep[,1]
+#'   y<-xidep[,2]
+#'   intercept<-psi[id,1]
+#'   slope<-psi[id,2]
+#'   p0<-psi[id,3] 
+#'   lambda<- exp(intercept + slope*time)
+#'   prob0<-rbinom(length(time), size=1, prob=p0)
+#'   y<-rpois(length(time), lambda=lambda)
+#'   y[prob0==1]<-0
+#'   return(y)
+#' }
+#' 
+#' # Using simulations to compare the predicted proportion of 0's in the two models
+#' nsim<-100
+#' yfit1<-simulateDiscreteSaemix(poisson.fit, saemix.simulatePoisson, nsim=nsim)
+#' yfit2<-simulateDiscreteSaemix(zippoisson.fit, saemix.simulatePoissonZIP, 100)
+#' {
+#' nobssim<-length(yfit1@sim.data@datasim$ysim)
+#' cat("Observed proportion of 0's", length(yfit1@data@data$rapi[yfit1@data@data$rapi==0])/yfit1@data@ntot.obs,"\n")
+#' cat("      Poisson model, p=",length(yfit1@sim.data@datasim$ysim[yfit1@sim.data@datasim$ysim==0])/nobssim,"\n")
+#' cat("          ZIP model, p=",length(yfit2@sim.data@datasim$ysim[yfit2@sim.data@datasim$ysim==0])/nobssim,"\n")
+#' }
+#'   }
 #'   
 #' @keywords datasets
 NULL

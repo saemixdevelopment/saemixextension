@@ -1,0 +1,95 @@
+
+
+### TTE model - simulated data (removed from testExamplesv3_discrete.Rmd)
+
+
+TTE data simulated according to a Weibull model, hazard defined by shape ($\beta$) and scale ($\lambda$) as:
+$$ h(t) = \frac{\beta}{\lambda} \left( \frac{t}{\lambda} \right) ^{\beta-1}$$
+
+```{r TTEsimul}
+# Simulating TTE data
+set.seed(12345)
+
+nsuj<-50
+xtim<-c(0)
+tte.data<-data.frame(id=rep(1:nsuj,each=length(xtim)),time=rep(xtim,nsuj))
+psiM<-data.frame(lambda=seq(1.6,2,length.out=length(unique(tte.data$id))),beta = 2)
+
+simul.tte<-function(psi,id,xidep) {
+  T<-xidep
+  N <- nrow(psi)
+  Nj <- length(T)
+  censoringtime = 3
+  lambda <- psi[id,1]
+  beta <- psi[id,2]
+  obs <-rep(0,length(T))
+  for (i in (1:N)){
+    obs[id==i] <- rweibull(n=length(id[id==i]), shape=beta[i], scale=lambda[i])
+  } 
+  obs[obs>censoringtime]<-censoringtime
+  return(obs)
+}
+
+preds <- simul.tte(psiM, tte.data$id, tte.data[,c("time")])
+tte.data$y<-0
+tte.data$tlat<-preds
+dat1<-tte.data[,c("id","time","y")]
+dat2<-tte.data[,c("id","tlat","y")]
+dat2$y<-as.integer(dat2$tlat>0 & dat2$tlat<3)
+colnames(dat2)[2]<-"time"
+tte.data<-rbind(dat1,dat2)
+tte.data<-tte.data[order(tte.data$id, tte.data$time),]
+tte.psiM<-psiM
+
+# Simulate T from Weibull (check)
+if(FALSE) { 
+  lambda<-2
+  beta<-2
+  nsim<-5000
+  # By hand
+  q1<-runif(nsim)
+  #  tevent<-lambda*exp(log(q1)/beta)
+  tevent<-lambda*exp(log(-log(q1))/beta)
+  tevent<-sort(tevent)
+#  plot(tevent, exp(-(tevent/lambda)^beta))
+  tevent2<-sort(rweibull(nsim, shape=beta, scale=lambda))
+  plot(tevent, tevent2)
+  abline(0,1)
+   
+}
+```
+
+
+```{r fitTTE}
+saemix.data<-saemixData(name.data=tte.data, name.group=c("id"),
+  name.predictors=c("time"), name.response="y")
+
+tte.model<-function(psi,id,xidep) {
+  T<-xidep[,1]
+  N <- nrow(psi)
+  Nj <- length(T)
+  # censoringtime = 6
+  censoringtime = max(T)
+  lambda <- psi[id,1]
+  beta <- psi[id,2]
+  init <- which(T==0)
+  cens <- which(T==censoringtime)
+  ind <- setdiff(1:Nj, append(init,cens))
+  hazard <- (beta/lambda)*(T/lambda)^(beta-1)
+  H <- (T/lambda)^beta
+  logpdf <- rep(0,Nj)
+  logpdf[cens] <- -H[cens] + H[cens-1]
+  logpdf[ind] <- -H[ind] + H[ind-1] + log(hazard[ind])
+  return(logpdf)
+}
+
+saemix.model<-saemixModel(model=tte.model,description="time model",modeltype="likelihood",
+  psi0=matrix(c(1,2),ncol=2,byrow=TRUE,dimnames=list(NULL,  c("lambda","beta"))),
+  transform.par=c(1,1),covariance.model=matrix(c(1,0,0,1),ncol=2, byrow=TRUE))
+saemix.model<-saemixModel(model=tte.model,description="time model",modeltype="likelihood",
+  psi0=matrix(c(1,2),ncol=2,byrow=TRUE,dimnames=list(NULL,  c("lambda","beta"))),
+  transform.par=c(1,1),covariance.model=matrix(c(1,0,0,0),ncol=2, byrow=TRUE))
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
+tte.fit<-saemix(saemix.model,saemix.data,saemix.options)
+plot(tte.fit, plot.type="convergence")
+```

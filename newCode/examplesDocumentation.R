@@ -43,7 +43,7 @@ if(!testMode) {
 } else
   library(saemix)
 
-########################################################################
+######################################################################## BINARY
 # Binary data - Toenail 
 # library(HSAUR3)
 # data(toenail)
@@ -209,7 +209,36 @@ plot(plot1)
 dev.off()
 
 
-#####################
+ytab<-NULL
+for(irep in 1:nsim) {
+  xtab<-simdat[simdat$irep==irep,]
+  xtab1 <- xtab %>%
+    group_by(visit, treatment) %>%
+    summarise(nev = sum(ysim), n=n()) %>%
+    mutate(freq = nev/n)
+  ytab<-rbind(ytab,xtab1[,c("visit","freq","treatment")])
+}
+gtab <- ytab %>%
+  group_by(visit, treatment) %>%
+  summarise(lower=quantile(freq, c(0.05)), median=quantile(freq, c(0.5)), upper=quantile(freq, c(0.95))) %>%
+  mutate(treatment=ifelse(treatment==1,"B","A"))
+gtab$freq<-1
+
+plot2 <- ggplot(toe1, aes(x=visit, y=freq, group=treatment)) + geom_line(aes(colour=treatment)) + 
+  geom_point(aes(colour=treatment)) + 
+  geom_line(data=gtab, aes(x=visit, y=median), linetype=2, colour='lightblue') + 
+  geom_ribbon(data=gtab,aes(ymin=lower, ymax=upper), alpha=0.5, fill='lightblue') +
+  ylim(c(0,0.5)) + theme_bw() + theme(legend.position = "none") + facet_wrap(.~treatment) +
+  xlab("Visit number") + ylab("Frequency of infection")
+
+
+namfig<-"toenail_globalVPC.eps"
+cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
+plot(plot2)
+dev.off()
+
+
+##################### 
 ## Binomial model in saemix for the toenail data - complete data 
 ## Fit only to the subjects with complete observations over the 7 visits :
 
@@ -227,7 +256,260 @@ saemix.data2<-saemixData(name.data=toe2,name.group=c("patientID"),name.predictor
 
 binary.fit2<-saemix(saemix.model,saemix.data2,saemix.options)
 
-########################################################################
+######################################################################## ORDINAL
+# Categorical data - Knee
+library(catdata)
+data(knee)
+
+# Transformation to long format and dichotomisation of response
+# knee <- reshape(knee, direction="long", varying=list(5:8), v.names="R",timevar="Time")
+knee2<-cbind(knee[,c(1:5)], time=0)
+xtim<-c(0,3,7,10)
+for(icol in 6:8) {
+  xprov<-cbind(knee[,c(1:4,icol)], time=xtim[icol-4])
+  colnames(xprov)<-colnames(knee2)
+  knee2<-rbind(knee2, xprov)
+}
+knee2<-knee2[order(knee2$N, knee2$time),c(1,6,5,2:4)]
+colnames(knee2)[3]<-"y"
+knee2$RD<-as.integer(knee2$y>2)
+knee2$Age <- knee2$Age - 30
+knee2$treatment<-knee2$Th-1
+knee2$Age2 <- knee2$Age^2
+
+knee.saemix<-knee2[,-c(4,7)]
+colnames(knee.saemix)[1]<-"id"
+barplot(table(knee.saemix$y,knee.saemix$time),beside=T)
+ggplot(knee.saemix, aes(x=y))
+
+if(FALSE) 
+  write.table(knee.saemix, file.path(datDir, "knee.saemix.tab"), row.names=F, quote=F)
+
+saemix.data<-saemixData(name.data=knee.saemix,name.group=c("id"),
+                        name.predictors=c("y", "time"), name.X=c("time"),
+                        name.covariates = c("Age","Sex","treatment","Age2"),
+                        units=list(x="d",y="", covariates=c("yr","-","-","yr2")))
+
+# Barplot
+gtab <- knee.saemix %>%
+  group_by(time, y) %>%
+  summarise(n=length(y)) %>%
+  mutate(y=as.factor(y))
+
+kneebp <- ggplot(data = gtab, aes(x = time, y=n, group=y, fill=y)) + 
+  geom_bar(stat="identity", position = "dodge") + theme_bw() + 
+  scale_fill_brewer(palette = "Blues") + theme(legend.position = "top") +
+  labs(fill = "Score") + xlab("Time (d)") + ylab("Counts")
+
+namfig<-"knee_barplotData.eps"
+cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
+plot(kneebp)
+dev.off()
+
+ordinal.model<-function(psi,id,xidep) {
+  y<-xidep[,1]
+  time<-xidep[,2]
+  alp1<-psi[id,1]
+  alp2<-psi[id,2]
+  alp3<-psi[id,3]
+  alp4<-psi[id,4]
+  beta<-psi[id,5]
+  
+  logit1<-alp1 + beta*time
+  logit2<-logit1+alp2
+  logit3<-logit2+alp3
+  logit4<-logit3+alp4
+  pge1<-exp(logit1)/(1+exp(logit1))
+  pge2<-exp(logit2)/(1+exp(logit2))
+  pge3<-exp(logit3)/(1+exp(logit3))
+  pge4<-exp(logit4)/(1+exp(logit4))
+  pobs = (y==1)*pge1+(y==2)*(pge2 - pge1)+(y==3)*(pge3 - pge2)+(y==4)*(pge4 - pge3)+(y==5)*(1 - pge4)
+  logpdf <- log(pobs)
+  
+  return(logpdf)
+}
+
+covmodel4<-covmodel3<-covmodel2<-covmodel<-matrix(data=0,ncol=5,nrow=4)
+#covmodel[1:2,1]<-1
+covmodel[,1]<-1
+covmodel[,5]<-1
+covmodel2[1,1]<-covmodel2[4,5]<-1
+covmodel3[3,5]<-covmodel3[1,1]<-1
+covmodel4[3,5]<-covmodel4[4,1]<-1
+
+saemix.model<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",
+                          psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))),
+                          transform.par=c(0,1,1,1,1),omega.init=diag(rep(1,5)), covariance.model = diag(c(1,0,0,0,1)))
+
+saemix.model.cov<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",
+                              psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))),
+                              transform.par=c(0,1,1,1,1),omega.init=diag(rep(1,5)), covariance.model = diag(c(1,0,0,0,1)),
+                              covariate.model = covmodel)
+saemix.model.cov2<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",
+                               psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))),
+                               transform.par=c(0,1,1,1,1),omega.init=diag(rep(1,5)), covariance.model = diag(c(1,0,0,0,1)),
+                               covariate.model = covmodel2)
+saemix.model.cov3<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",
+                               psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))),
+                               transform.par=c(0,1,1,1,1),omega.init=diag(rep(1,5)), covariance.model = diag(c(1,0,0,0,1)),
+                               covariate.model = covmodel3)
+saemix.model.cov4<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",
+                               psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))),
+                               transform.par=c(0,1,1,1,1),omega.init=diag(rep(1,5)), covariance.model = diag(c(1,0,0,0,1)),
+                               covariate.model = covmodel4)
+
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, nb.chains=10)
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, nb.chains=10, fim=FALSE)
+
+ord.fit<-saemix(saemix.model,saemix.data,saemix.options)
+ord.fit.cov<-saemix(saemix.model.cov,saemix.data,saemix.options)
+ord.fit.cov2<-saemix(saemix.model.cov2,saemix.data,saemix.options)
+ord.fit.cov3<-saemix(saemix.model.cov3,saemix.data,saemix.options)
+ord.fit.cov4<-saemix(saemix.model.cov4,saemix.data,saemix.options)
+BIC(ord.fit)
+BIC(ord.fit.cov)
+BIC(ord.fit.cov2)
+BIC(ord.fit.cov3)
+BIC(ord.fit.cov4)
+
+# why does this return NULL (rerun with same covariates)
+compare.saemix(ord.fit.cov, ord.fit.cov2, ord.fit.cov3, ord.fit.cov4)
+
+### Simulations for VPC
+simulateOrdinal<-function(psi,id,xidep) {
+  y<-xidep[,1]
+  time<-xidep[,2]
+  alp1<-psi[id,1]
+  alp2<-psi[id,2]
+  alp3<-psi[id,3]
+  alp4<-psi[id,4]
+  beta<-psi[id,5]
+  
+  logit1<-alp1 + beta*time
+  logit2<-logit1+alp2
+  logit3<-logit2+alp3
+  logit4<-logit3+alp4
+  pge1<-exp(logit1)/(1+exp(logit1))
+  pge2<-exp(logit2)/(1+exp(logit2))
+  pge3<-exp(logit3)/(1+exp(logit3))
+  pge4<-exp(logit4)/(1+exp(logit4))
+  x<-runif(length(time))
+  ysim<-1+as.integer(x>pge1)+as.integer(x>pge2)+as.integer(x>pge3)+as.integer(x>pge4)
+  return(ysim)
+}
+
+nsim<-100
+yfit<-ord.fit
+yfit<-simulateDiscreteSaemix(yfit, simulateOrdinal, nsim=nsim)
+
+simdat <-yfit@sim.data@datasim
+simdat$time<-rep(yfit@data@data$time,nsim)
+simdat$treatment<-rep(yfit@data@data$treatment,nsim)
+
+
+ytab<-NULL
+for(irep in 1:nsim) {
+  xtab<-simdat[simdat$irep==irep,]
+  xtab1 <- xtab %>%
+    group_by(time, treatment, ysim) %>%
+    summarise(n=length(ysim))
+  ytab<-rbind(ytab,xtab1[,c("time","ysim","n","treatment")])
+}
+gtab <- ytab %>%
+  group_by(time, treatment, ysim) %>%
+  summarise(lower=quantile(n, c(0.05)), n=quantile(n, c(0.5)), upper=quantile(n, c(0.95))) %>%
+  mutate(y=as.factor(ysim))
+
+knee2 <- knee.saemix %>%
+  group_by(time, treatment, y) %>%
+  summarise(n=length(y)) %>%
+  mutate(y=as.factor(y))
+
+
+kneevpc <- ggplot(data = knee2, aes(x = time, y=n, fill=y, group=treatment)) + 
+  geom_ribbon(data=gtab, aes(x=time, ymin=lower, ymax=upper), alpha=0.9, colour="lightblue") +
+  geom_col(position = "dodge", width=0.5, colour="lightblue") + theme_bw() + 
+  scale_fill_brewer(palette = "Blues") + theme(legend.position = "top") +
+  labs(fill = "Score") + xlab("Time (d)") + ylab("Counts") + facet_wrap(treatment~y, nrow=2)
+
+# VPC for median score in each group
+knee3 <- knee.saemix %>%
+  group_by(time, treatment) %>%
+  summarise(mean=mean(y))
+
+ytab<-NULL
+for(irep in 1:nsim) {
+  xtab<-simdat[simdat$irep==irep,]
+  xtab1 <- xtab %>%
+    group_by(time, treatment) %>%
+    summarise(mean=mean(ysim))
+  ytab<-rbind(ytab,xtab1[,c("time","treatment","mean")])
+}
+gtab <- ytab %>%
+  group_by(time, treatment) %>%
+  summarise(lower=quantile(mean, c(0.05)), mean=median(mean), upper=quantile(mean, c(0.95)))
+
+kneeMedvpc <- ggplot(data = knee3, aes(x = time, y=mean, group=treatment)) + 
+  geom_ribbon(data=gtab, aes(x=time, ymin=lower, ymax=upper), alpha=0.5, fill="lightblue") +
+  geom_point(colour='blue') + theme_bw() + 
+  scale_fill_brewer(palette = "Blues") + theme(legend.position = "top") +
+  labs(fill = "Score") + xlab("Time (d)") + ylab("Median value of score over time") + facet_wrap(.~treatment)
+
+namfig<-"knee_medianScoreVPC.eps"
+cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
+plot(kneeMedvpc)
+dev.off()
+
+#########################
+#  ysim[x==0]<-1 
+#  ysim[x==1]<-5
+# Debug
+nsim<-100
+object<-ord.fit.cov3
+simulate.function<-simulateOrdinal
+object<-simulate.SaemixObject(object, nsim=nsim, predictions=FALSE, uncertainty=uncertainty)
+simpar<-object@sim.data@sim.psi
+
+# Simulate observations using these parameters and the simulate.function to simulate from the same model
+xidep<-object@data@data[,object@data@name.predictors]
+id1<-object@data@data[,"index"]
+nsuj<-object@data@N
+datasim<-object@sim.data@datasim
+datasim$ysim<-NA
+for(irep in 1:nsim) {
+  psi1<-simpar[(1+(irep-1)*nsuj):(irep*nsuj),-c(1)]
+  ysim<-simulate.function(psi1, id1, xidep)
+  #    if(sum(is.na(ysim))>0) cat(irep,"\n")
+  datasim$ysim[datasim$irep==irep]<-ysim
+}
+object@sim.data@datasim<-datasim
+
+#######################################
+# Analysis of dichotomised response :-/
+if(FALSE) { # install glmmML, same factors found significant
+  library(glmmML)
+  kneeGHQ <- glmmML(RD ~ as.factor(Th) + as.factor(Sex) + Age + Age2, data=knee2,
+                    family=binomial(), method="ghq", n.points=20, cluster=N)
+  summary(kneeGHQ)
+}
+
+kneePQL <- glmmPQL(RD ~ as.factor(Th) + as.factor(Sex) + Age + Age2, data=knee2,
+                   random = ~ 1|N, family=binomial())
+summary(kneePQL)
+
+kneePQL2 <- glmmPQL(RD ~ as.factor(Th) + Age2, data=knee2,
+                    random = ~ 1|N, family=binomial())
+summary(kneePQL2)
+
+######################################################################## COUNT
+# - Vraies données: epilepsy and RAPI
+# - contacté David Atkins (tutorial in 2013 on analysing count data with GLMM and GEE): dataset on gender differences in drinking patterns that would be great to use as an example in saemix $\Rightarrow$ accepted ! lovely :-)
+# - Salamanders data from the glmmTMB package
+# - fit successful when using only the data for one species
+# - but error when using more than one species with a recurrent error message (solve.default...) **TODO** investigate
+# - note: error in the previous version of Poisson model (factorial(y) instead of log(factorial(y))) ?
+#   
+
 # Count data - Epilepsy
 library(MASS)
 data(epil)
@@ -308,6 +590,259 @@ saemix.model.gp<-saemixModel(model=countmodel.zip,description="Generalised Poiss
                               covariance.model=matrix(c(1,0,0,0),ncol=2,byrow=TRUE))
 genpoisson.fit<-saemix(saemix.model.gp,saemix.data,saemix.options)
 
+########################################################################
+# Count data - RAPI
+atkinsDir<-"/home/eco/work/saemix/examples/coutRegTutorialAtkins"
+rapi.df <- read.csv(file.path(atkinsDir,"RAPI.Final.csv"), header = TRUE)
+
+### Set categorical variables as factors
+rapi.df <- within(rapi.df, {
+  gender <- factor(gender, 0:1, c("Women","Men"))
+})
+
+### Basic file summaries
+summary(rapi.df)
+
+### Number of participants
+length(unique(rapi.df$id)) # 818
+
+### How much data per person?
+table(table(rapi.df$id)) # 561 have all 5 assessments
+
+rapi.saemix<-rapi.df[,c(1,4,2,3)]
+
+if(FALSE) 
+  write.table(rapi.saemix, file.path(datDir, "rapi.saemix.tab"), quote=FALSE, row.names=FALSE)
+
+# Data
+saemix.data<-saemixData(name.data=rapi.saemix, name.group=c("id"),
+                        name.predictors=c("time","rapi"),name.response=c("rapi"),
+                        name.covariates=c("gender"),
+                        units=list(x="months",y="",covariates=c("")))
+hist(rapi.saemix$rapi, main="", xlab="RAPI score", breaks=30)
+
+# Models
+# Poisson with a time effect
+count.poisson<-function(psi,id,xidep) { 
+  time<-xidep[,1]
+  y<-xidep[,2]
+  intercept<-psi[id,1]
+  slope<-psi[id,2]
+  lambda<- exp(intercept + slope*time)
+  logp <- -lambda + y*log(lambda) - log(factorial(y))
+  return(logp)
+}
+
+## ZIP Poisson model with time effect
+count.poissonzip<-function(psi,id,xidep) {
+  time<-xidep[,1]
+  y<-xidep[,2]
+  intercept<-psi[id,1]
+  slope<-psi[id,2]
+  p0<-psi[id,3] # Probability of zero's
+  lambda<- exp(intercept + slope*time)
+  logp <- log(1-p0) -lambda + y*log(lambda) - log(factorial(y)) # Poisson
+  logp0 <- log(p0+(1-p0)*exp(-lambda)) # Zeroes
+  logp[y==0]<-logp0[y==0]
+  return(logp)
+}
+
+## Generalized Poisson model with time effect
+count.genpoisson<-function(psi,id,xidep) {
+  time<-xidep[,1]
+  y<-xidep[,2]
+  intercept<-psi[id,1]
+  slope<-psi[id,2]
+  lambda<- exp(intercept + slope*time)
+  delta<-psi[id,3]
+  logp <- log(lambda) + (y-1)*log(lambda+y*delta) - lambda - y*delta - log(factorial(y))
+  return(logp)
+}
+
+
+# C^n_p = n! /(p! (n-p)!)
+
+## Negative binomial model with time effect
+count.NB<-function(psi,id,xidep) {
+  time<-xidep[,1]
+  y<-xidep[,2]
+  intercept<-psi[id,1]
+  slope<-psi[id,2]
+  k<-psi[id,3]
+  lambda<- exp(intercept + slope*time)
+  logp <- log(factorial(y+k-1)) - log(factorial(y)) - log(factorial(k-1)) + y*log(lambda) - y*log(lambda+k) + k*log(k) - k*log(lambda+k)
+  return(logp)
+}
+
+# Fits
+## Poisson
+### Model without covariate
+saemix.model.poi<-saemixModel(model=count.poisson,description="Count model Poisson",modeltype="likelihood",   
+                              psi0=matrix(c(log(5),0.01),ncol=2,byrow=TRUE,dimnames=list(NULL, c("intercept","slope"))), 
+                              transform.par=c(0,0), omega.init=diag(c(0.5, 0.5)))
+
+### Gender effect on intercept and slope
+saemix.model.poi.cov2<-saemixModel(model=count.poisson,description="Count model Poisson",modeltype="likelihood",   
+                                   psi0=matrix(c(log(5),0.01),ncol=2,byrow=TRUE,dimnames=list(NULL, c("intercept","slope"))), 
+                                   transform.par=c(0,0), omega.init=diag(c(0.5, 0.5)),
+                                   covariance.model =matrix(data=1, ncol=2, nrow=2),
+                                   covariate.model=matrix(c(1,1), ncol=2, byrow=TRUE))
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
+
+### Fit with saemix
+poisson.fit<-saemix(saemix.model.poi,saemix.data,saemix.options)
+poisson.fit.cov2<-saemix(saemix.model.poi.cov2,saemix.data,saemix.options)
+exp(poisson.fit@results@fixed.effects)
+exp(poisson.fit.cov2@results@fixed.effects)
+
+### Simulations
+saemix.simulatePoisson<-function(psi, id, xidep) {
+  time<-xidep[,1]
+  y<-xidep[,2]
+  intercept<-psi[id,1]
+  slope<-psi[id,2]
+  lambda<- exp(intercept + slope*time)
+  y<-rpois(length(time), lambda=lambda)
+  return(y)
+}
+
+yfit1<-simulateDiscreteSaemix(poisson.fit.cov2, 10, saemix.simulatePoisson)
+
+hist(yfit1@data@data$rapi, xlim=c(0,50), freq=F, breaks=30, xlab="Observed counts", main="")
+lines(density(yfit1@sim.data@datasim$ysim[yfit1@sim.data@datasim$ysim<50]), lwd = 2, col = 'red')
+
+cat("Observed proportion of 0's", length(yfit1@data@data$rapi[yfit1@data@data$rapi==0])/yfit1@data@ntot.obs,"\n")
+cat("      Poisson model, p=",length(yfit1@sim.data@datasim$ysim[yfit1@sim.data@datasim$ysim==0])/length(yfit1@sim.data@datasim$ysim),"\n")
+
+## ZIP
+### base model
+saemix.model.zip<-saemixModel(model=count.poissonzip,description="count model ZIP",modeltype="likelihood",   
+                              psi0=matrix(c(1.5, 0.01, 0.2),ncol=3,byrow=TRUE,dimnames=list(NULL, c("intercept", "slope","p0"))), 
+                              transform.par=c(0,0,3), covariance.model=diag(c(1,1,0)), omega.init=diag(c(0.5,0.3,0)))
+
+### ZIP Poisson with gender on both intercept
+saemix.model.zip.cov1<-saemixModel(model=count.poissonzip,description="count model ZIP",modeltype="likelihood",   
+                                   psi0=matrix(c(1.5, 0.01, 0.2),ncol=3,byrow=TRUE,dimnames=list(NULL, c("intercept", "slope","p0"))), 
+                                   transform.par=c(0,0,3), covariance.model=diag(c(1,1,0)), omega.init=diag(c(0.5,0.3,0)),
+                                   covariate.model = matrix(c(1,0,0),ncol=3, byrow=TRUE))
+### ZIP Poisson with gender on both intercept and slope
+saemix.model.zip.cov2<-saemixModel(model=count.poissonzip,description="count model ZIP",modeltype="likelihood",   
+                                   psi0=matrix(c(1.5, 0.01, 0.2),ncol=3,byrow=TRUE,dimnames=list(NULL, c("intercept", "slope","p0"))), 
+                                   transform.par=c(0,0,3), covariance.model=diag(c(1,1,0)), omega.init=diag(c(0.5,0.3,0)),
+                                   covariate.model = matrix(c(1,1,0),ncol=3, byrow=TRUE))
+
+zippoisson.fit<-saemix(saemix.model.zip,saemix.data,saemix.options)
+zippoisson.fit.cov1<-saemix(saemix.model.zip.cov1,saemix.data,saemix.options)
+zippoisson.fit.cov2<-saemix(saemix.model.zip.cov2,saemix.data,saemix.options)
+
+### Simulations
+
+yfit2<-simulateDiscreteSaemix(zippoisson.fit.cov2, 10, saemix.simulatePoissonZIP)
+if(FALSE) {
+  par(mfrow=c(1,2))
+  hist(yfit@sim.data@datasim$ysim[yfit@sim.data@datasim$ysim<50], xlim=c(0,50), freq=F, breaks=20, xlab="Simulated counts", main="By hand")
+  hist(yfit1@sim.data@datasim$ysim[yfit1@sim.data@datasim$ysim<50], xlim=c(0,50), freq=F, breaks=20, xlab="Simulated counts", main="Function")
+}
+
+par(mfrow=c(1,3))
+hist(yfit1@data@data$rapi, xlim=c(0,50), freq=F, breaks=30, xlab="Observed counts", main="")
+hist(yfit1@sim.data@datasim$ysim[yfit1@sim.data@datasim$ysim<50], xlim=c(0,50), freq=F, breaks=20, xlab="Simulated counts", main="Poisson model")
+hist(yfit2@sim.data@datasim$ysim[yfit2@sim.data@datasim$ysim<50], xlim=c(0,50), freq=F, breaks=20, xlab="Simulated counts", main="ZIP model")
+
+# As densities - very weird, must be doing something wrong with the plot :-/
+par(mfrow=c(1,1))
+hist(yfit1@data@data$rapi, xlim=c(0,50), freq=F, breaks=30, xlab="Observed counts", main="")
+lines(density(yfit1@sim.data@datasim$ysim[yfit1@sim.data@datasim$ysim<50]), lwd = 2, col = 'red')
+lines(density(yfit2@sim.data@datasim$ysim[yfit2@sim.data@datasim$ysim<50]), lwd = 2, col = 'blue')
+
+cat("      ZIP model,     p=",length(yfit2@sim.data@datasim$ysim[yfit2@sim.data@datasim$ysim==0])/length(yfit2@sim.data@datasim$ysim),"\n")
+
+
+## Generalised Poisson - not sure the results make much sense
+saemix.model.genpoi<-saemixModel(model=count.genpoisson,description="Generalised Poisson model",modeltype="likelihood",   
+                                 psi0=matrix(c(1.5, 0.01, 0.2),ncol=3,byrow=TRUE,dimnames=list(NULL, c("intercept", "slope","delta"))), 
+                                 transform.par=c(0,0,1), covariance.model=diag(c(1,1,0)), omega.init=diag(c(0.5,0.5,0.5)))
+
+genpoisson.fit<-saemix(saemix.model.genpoi,saemix.data,saemix.options)
+
+## Negative binomial
+saemix.model.NB<-saemixModel(model=count.NB,description="Negative binomial model",modeltype="likelihood",   
+                             psi0=matrix(c(1.5, 0.01, 2),ncol=3,byrow=TRUE,dimnames=list(NULL, c("intercept", "slope","k"))), 
+                             transform.par=c(0,0,1), covariance.model=diag(c(1,1,0)), omega.init=diag(c(0.5,0.5,0.5)))
+
+negbin.fit<-saemix(saemix.model.NB,saemix.data,saemix.options)
+
+# Comparing parameters across fits - guessing intercept and slope shouldn't change much
+poisson.fit@results@fixed.effects
+zippoisson.fit@results@fixed.effects
+zippoisson.fit.cov2@results@fixed.effects
+genpoisson.fit@results@fixed.effects
+negbin.fit@results@fixed.effects
+
+## Hurdle - 2 models 
+saemix.data1<-saemixData(name.data=rapi.saemix[rapi.saemix$rapi>0,], name.group=c("id"),
+                         name.predictors=c("time","rapi"),name.response=c("rapi"),
+                         name.covariates=c("gender"),
+                         units=list(x="week",y="",covariates=c("")))
+
+rapi.saemix$y0<-as.integer(rapi.saemix$rapi>0)
+saemix.data0<-saemixData(name.data=rapi.saemix, name.group=c("id"),
+                         name.predictors=c("time","y0"),name.response=c("y0"),
+                         name.covariates=c("gender"),
+                         units=list(x="week",y="",covariates=c("")))
+
+# Fit Binomial model to saemix.data0
+binary.model<-function(psi,id,xidep) {
+  tim<-xidep[,1]
+  y<-xidep[,2]
+  inter<-psi[id,1]
+  slope<-psi[id,2]
+  logit<-inter+slope*tim
+  pevent<-exp(logit)/(1+exp(logit))
+  logpdf<-rep(0,length(tim))
+  P.obs = (y==0)*(1-pevent)+(y==1)*pevent
+  logpdf <- log(P.obs)
+  return(logpdf)
+}
+
+saemix.hurdle0<-saemixModel(model=binary.model,description="Binary model",
+                            modeltype="likelihood",
+                            psi0=matrix(c(-1.5,-.1,0,0),ncol=2,byrow=TRUE,dimnames=list(NULL,c("theta1","theta2"))),
+                            transform.par=c(0,0), covariate.model=c(1,1),
+                            covariance.model=matrix(c(1,0,0,1),ncol=2), omega.init=diag(c(1,0.3)))
+
+saemix.options<-list(seed=1234567,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, nb.chains=10, fim=FALSE, displayProgress=FALSE)
+
+hurdlefit0<-saemix(saemix.hurdle0,saemix.data0,saemix.options)
+
+# proportion of 0's in the data
+rapi.tab <- table(rapi.saemix$rapi == 0)
+rapi.tab/sum(rapi.tab)
+
+# Fit Poisson model to saemix.data1
+saemix.hurdle1.cov2<-saemixModel(model=count.poisson,description="Count model Poisson",modeltype="likelihood",   
+                                 psi0=matrix(c(log(5),0.01),ncol=2,byrow=TRUE,dimnames=list(NULL, c("intercept","slope"))), 
+                                 transform.par=c(0,0), omega.init=diag(c(0.5, 0.5)),
+                                 covariance.model =matrix(data=1, ncol=2, nrow=2),
+                                 covariate.model=matrix(c(1,1), ncol=2, byrow=TRUE))
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
+
+hurdlefit1<-saemix(saemix.hurdle1.cov2,saemix.data1,saemix.options)
+
+summary(hurdlefit0)
+summary(hurdlefit1)
+
+# Table form - compare to column B in Table 2
+yfit0<-hurdlefit0
+yfit1<-hurdlefit1
+
+rr.tab<-data.frame(param=c("intercept", "beta.Male.inter", "slope", "beta.Male.slope", "omega.inter","omega.slope"), 
+                   poissonNoZero=c(yfit1@results@fixed.effects, c(sqrt(diag(yfit1@results@omega)))),
+                   logistic=c(yfit0@results@fixed.effects, c(sqrt(diag(yfit0@results@omega)))))
+
+print(rr.tab)
+
+######################################################################## COUNT other
 ####################################### Other
 # Count data - Encephalitis
 if(FALSE) {
@@ -515,366 +1050,88 @@ data("grouseticks")
 form <- TICKS~YEAR+HEIGHT+(1|BROOD)+(1|INDEX)+(1|LOCATION)
 full_mod1  <- glmer(form, family="poisson",data=grouseticks)
 
-########################################################################
-# Count data - RAPI
-atkinsDir<-"/home/eco/work/saemix/examples/coutRegTutorialAtkins"
-rapi.df <- read.csv(file.path(atkinsDir,"RAPI.Final.csv"), header = TRUE)
 
-### Set categorical variables as factors
-rapi.df <- within(rapi.df, {
-  gender <- factor(gender, 0:1, c("Women","Men"))
-})
 
-### Basic file summaries
-summary(rapi.df)
+####### Simulated count data
 
-### Number of participants
-length(unique(rapi.df$id)) # 818
+# Settings  
+param <- c(39.1, 0.0388, 0.1 )
+omega<-c(0.5, 0.5) # SD=50%
+paramSimul<-c(param, omega)
+parnam<-c("alpha","beta","risk","omega.alpha","omega.beta")
 
-### How much data per person?
-table(table(rapi.df$id)) # 561 have all 5 assessments
+nsuj<-40
+xtim<-c(0.0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100)
 
-rapi.saemix<-rapi.df[,c(1,4,2,3)]
+partab<-as.data.frame(matrix(data=0,nrow=nsuj,ncol=2,dimnames=list(NULL,parnam[1:2])))
+for(i in 1:2) partab[,i]<-rnorm(nsuj,mean=log(param[i]),sd=omega[i])
+partab[(1+nsuj/2):nsuj,2]<-partab[(1+nsuj/2):nsuj,2]+param[3]
+for(i in 1:2) partab[,i]<-exp(partab[,i])
 
-if(FALSE) 
-  write.table(rapi.saemix, file.path(datDir, "rapi.saemix.tab"), quote=FALSE, row.names=FALSE)
-
-# Data
-saemix.data<-saemixData(name.data=rapi.saemix, name.group=c("id"),
-                        name.predictors=c("time","rapi"),name.response=c("rapi"),
-                        name.covariates=c("gender"),
-                        units=list(x="months",y="",covariates=c("")))
-hist(rapi.saemix$rapi, main="", xlab="RAPI score", breaks=30)
-
-# Models
-# Poisson with a time effect
-  count.poisson<-function(psi,id,xidep) { 
-    time<-xidep[,1]
-    y<-xidep[,2]
-    intercept<-psi[id,1]
-    slope<-psi[id,2]
-    lambda<- exp(intercept + slope*time)
-    logp <- -lambda + y*log(lambda) - log(factorial(y))
-    return(logp)
-  }
-
-## ZIP Poisson model with time effect
-count.poissonzip<-function(psi,id,xidep) {
-  time<-xidep[,1]
-  y<-xidep[,2]
-  intercept<-psi[id,1]
-  slope<-psi[id,2]
-  p0<-psi[id,3] # Probability of zero's
-  lambda<- exp(intercept + slope*time)
-  logp <- log(1-p0) -lambda + y*log(lambda) - log(factorial(y)) # Poisson
-  logp0 <- log(p0+(1-p0)*exp(-lambda)) # Zeroes
-  logp[y==0]<-logp0[y==0]
-  return(logp)
+psim<-data.frame()
+for(itim in xtim) {
+  lambda<-partab[,1]*exp(-partab[,2]*itim)
+  psim<-rbind(psim,lambda)
 }
-
-## Generalized Poisson model with time effect
-count.genpoisson<-function(psi,id,xidep) {
-  time<-xidep[,1]
-  y<-xidep[,2]
-  intercept<-psi[id,1]
-  slope<-psi[id,2]
-  lambda<- exp(intercept + slope*time)
-  delta<-psi[id,3]
-  logp <- log(lambda) + (y-1)*log(lambda+y*delta) - lambda - y*delta - log(factorial(y))
-  return(logp)
-}
+datsim<-data.frame(id=rep(1:nsuj,each=length(xtim)),time=rep(xtim,nsuj),lambda=unlist(psim))
+rownames(datsim)<-NULL
+ysim<-rpois(dim(datsim)[1], lambda=datsim$lambda)
+#  summary(datsim)
+datsim$y<-ysim
+datsim$risk<-ifelse(datsim$id>(nsuj/2),1,0)
 
 
-# C^n_p = n! /(p! (n-p)!)
+saemix.data<-saemixData(name.data=datsim,name.group=c("id"),name.predictors=c("time","y"), name.covariates=c("risk"),name.X=c("time"))
 
-## Negative binomial model with time effect
-count.NB<-function(psi,id,xidep) {
-  time<-xidep[,1]
-  y<-xidep[,2]
-  intercept<-psi[id,1]
-  slope<-psi[id,2]
-  k<-psi[id,3]
-  lambda<- exp(intercept + slope*time)
-  logp <- log(factorial(y+k-1)) - log(factorial(y)) - log(factorial(k-1)) + y*log(lambda) - y*log(lambda+k) + k*log(k) - k*log(lambda+k)
-  return(logp)
-}
-
-# Fits
-## Poisson
-### Model without covariate
-saemix.model.poi<-saemixModel(model=count.poisson,description="Count model Poisson",modeltype="likelihood",   
-                              psi0=matrix(c(log(5),0.01),ncol=2,byrow=TRUE,dimnames=list(NULL, c("intercept","slope"))), 
-                              transform.par=c(0,0), omega.init=diag(c(0.5, 0.5)))
-
-### Gender effect on intercept and slope
-saemix.model.poi.cov2<-saemixModel(model=count.poisson,description="Count model Poisson",modeltype="likelihood",   
-                                   psi0=matrix(c(log(5),0.01),ncol=2,byrow=TRUE,dimnames=list(NULL, c("intercept","slope"))), 
-                                   transform.par=c(0,0), omega.init=diag(c(0.5, 0.5)),
-                                   covariance.model =matrix(data=1, ncol=2, nrow=2),
-                                   covariate.model=matrix(c(1,1), ncol=2, byrow=TRUE))
-saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
+# Model
+countData.model<-function(psi,id,xidep) {
+  tim <- xidep[,1]
+  y <- xidep[,2] 
+  alpha <- psi[id,1]
+  beta <- psi[id,2]
+  lambda <- alpha*exp(-beta*tim)
   
-### Fit with saemix
-poisson.fit<-saemix(saemix.model.poi,saemix.data,saemix.options)
-poisson.fit.cov2<-saemix(saemix.model.poi.cov2,saemix.data,saemix.options)
-exp(poisson.fit@results@fixed.effects)
-exp(poisson.fit.cov2@results@fixed.effects)
-
-### Simulations
-saemix.simulatePoisson<-function(psi, id, xidep) {
-  time<-xidep[,1]
-  y<-xidep[,2]
-  intercept<-psi[id,1]
-  slope<-psi[id,2]
-  lambda<- exp(intercept + slope*time)
-  y<-rpois(length(time), lambda=lambda)
-  return(y)
+  logpdf <- rep(0,length(tim))
+  logpdf <- -lambda + y*( (log(alpha) - beta*tim )) - log(factorial(y))
+  return(logpdf) 
 }
+saemix.model.true<-saemixModel(model=countData.model,description="Count data model", modeltype="likelihood",
+                               psi0=matrix(c(param[1:2],0,param[3]),ncol=2,byrow=TRUE,dimnames=list(NULL,parnam[1:2])),
+                               covariate.model=matrix(c(0,1),ncol=2), omega.init = diag(c(0.5,0.5)),
+                               transform.par=c(1,1),covariance.model=matrix(c(1,0,0,1),ncol=2))
+# Running saemix
 
-yfit1<-simulateDiscreteSaemix(poisson.fit.cov2, 10, saemix.simulatePoisson)
-
-hist(yfit1@data@data$rapi, xlim=c(0,50), freq=F, breaks=30, xlab="Observed counts", main="")
-lines(density(yfit1@sim.data@datasim$ysim[yfit1@sim.data@datasim$ysim<50]), lwd = 2, col = 'red')
-
-cat("Observed proportion of 0's", length(yfit1@data@data$rapi[yfit1@data@data$rapi==0])/yfit1@data@ntot.obs,"\n")
-cat("      Poisson model, p=",length(yfit1@sim.data@datasim$ysim[yfit1@sim.data@datasim$ysim==0])/length(yfit1@sim.data@datasim$ysim),"\n")
-
-## ZIP
-### base model
-saemix.model.zip<-saemixModel(model=count.poissonzip,description="count model ZIP",modeltype="likelihood",   
-                              psi0=matrix(c(1.5, 0.01, 0.2),ncol=3,byrow=TRUE,dimnames=list(NULL, c("intercept", "slope","p0"))), 
-                              transform.par=c(0,0,3), covariance.model=diag(c(1,1,0)), omega.init=diag(c(0.5,0.3,0)))
-
-### ZIP Poisson with gender on both intercept
-saemix.model.zip.cov1<-saemixModel(model=count.poissonzip,description="count model ZIP",modeltype="likelihood",   
-                                   psi0=matrix(c(1.5, 0.01, 0.2),ncol=3,byrow=TRUE,dimnames=list(NULL, c("intercept", "slope","p0"))), 
-                                   transform.par=c(0,0,3), covariance.model=diag(c(1,1,0)), omega.init=diag(c(0.5,0.3,0)),
-                                   covariate.model = matrix(c(1,0,0),ncol=3, byrow=TRUE))
-### ZIP Poisson with gender on both intercept and slope
-saemix.model.zip.cov2<-saemixModel(model=count.poissonzip,description="count model ZIP",modeltype="likelihood",   
-                                   psi0=matrix(c(1.5, 0.01, 0.2),ncol=3,byrow=TRUE,dimnames=list(NULL, c("intercept", "slope","p0"))), 
-                                   transform.par=c(0,0,3), covariance.model=diag(c(1,1,0)), omega.init=diag(c(0.5,0.3,0)),
-                                   covariate.model = matrix(c(1,1,0),ncol=3, byrow=TRUE))
-
-zippoisson.fit<-saemix(saemix.model.zip,saemix.data,saemix.options)
-zippoisson.fit.cov1<-saemix(saemix.model.zip.cov1,saemix.data,saemix.options)
-zippoisson.fit.cov2<-saemix(saemix.model.zip.cov2,saemix.data,saemix.options)
-
-### Simulations
-
-yfit2<-simulateDiscreteSaemix(zippoisson.fit.cov2, 10, saemix.simulatePoissonZIP)
-if(FALSE) {
-  par(mfrow=c(1,2))
-  hist(yfit@sim.data@datasim$ysim[yfit@sim.data@datasim$ysim<50], xlim=c(0,50), freq=F, breaks=20, xlab="Simulated counts", main="By hand")
-  hist(yfit1@sim.data@datasim$ysim[yfit1@sim.data@datasim$ysim<50], xlim=c(0,50), freq=F, breaks=20, xlab="Simulated counts", main="Function")
-}
-
-par(mfrow=c(1,3))
-hist(yfit1@data@data$rapi, xlim=c(0,50), freq=F, breaks=30, xlab="Observed counts", main="")
-hist(yfit1@sim.data@datasim$ysim[yfit1@sim.data@datasim$ysim<50], xlim=c(0,50), freq=F, breaks=20, xlab="Simulated counts", main="Poisson model")
-hist(yfit2@sim.data@datasim$ysim[yfit2@sim.data@datasim$ysim<50], xlim=c(0,50), freq=F, breaks=20, xlab="Simulated counts", main="ZIP model")
-
-# As densities - very weird, must be doing something wrong with the plot :-/
-par(mfrow=c(1,1))
-hist(yfit1@data@data$rapi, xlim=c(0,50), freq=F, breaks=30, xlab="Observed counts", main="")
-lines(density(yfit1@sim.data@datasim$ysim[yfit1@sim.data@datasim$ysim<50]), lwd = 2, col = 'red')
-lines(density(yfit2@sim.data@datasim$ysim[yfit2@sim.data@datasim$ysim<50]), lwd = 2, col = 'blue')
-
-cat("      ZIP model,     p=",length(yfit2@sim.data@datasim$ysim[yfit2@sim.data@datasim$ysim==0])/length(yfit2@sim.data@datasim$ysim),"\n")
-
-
-## Generalised Poisson - not sure the results make much sense
-saemix.model.genpoi<-saemixModel(model=count.genpoisson,description="Generalised Poisson model",modeltype="likelihood",   
-                                 psi0=matrix(c(1.5, 0.01, 0.2),ncol=3,byrow=TRUE,dimnames=list(NULL, c("intercept", "slope","delta"))), 
-                                 transform.par=c(0,0,1), covariance.model=diag(c(1,1,0)), omega.init=diag(c(0.5,0.5,0.5)))
-
-genpoisson.fit<-saemix(saemix.model.genpoi,saemix.data,saemix.options)
-
-## Negative binomial
-saemix.model.NB<-saemixModel(model=count.NB,description="Negative binomial model",modeltype="likelihood",   
-                             psi0=matrix(c(1.5, 0.01, 2),ncol=3,byrow=TRUE,dimnames=list(NULL, c("intercept", "slope","k"))), 
-                             transform.par=c(0,0,1), covariance.model=diag(c(1,1,0)), omega.init=diag(c(0.5,0.5,0.5)))
-
-negbin.fit<-saemix(saemix.model.NB,saemix.data,saemix.options)
-
-# Comparing parameters across fits - guessing intercept and slope shouldn't change much
-poisson.fit@results@fixed.effects
-zippoisson.fit@results@fixed.effects
-zippoisson.fit.cov2@results@fixed.effects
-genpoisson.fit@results@fixed.effects
-negbin.fit@results@fixed.effects
-
-## Hurdle - 2 models 
-saemix.data1<-saemixData(name.data=rapi.saemix[rapi.saemix$rapi>0,], name.group=c("id"),
-                         name.predictors=c("time","rapi"),name.response=c("rapi"),
-                         name.covariates=c("gender"),
-                         units=list(x="week",y="",covariates=c("")))
-
-rapi.saemix$y0<-as.integer(rapi.saemix$rapi>0)
-saemix.data0<-saemixData(name.data=rapi.saemix, name.group=c("id"),
-                         name.predictors=c("time","y0"),name.response=c("y0"),
-                         name.covariates=c("gender"),
-                         units=list(x="week",y="",covariates=c("")))
-
-# Fit Binomial model to saemix.data0
-binary.model<-function(psi,id,xidep) {
-  tim<-xidep[,1]
-  y<-xidep[,2]
-  inter<-psi[id,1]
-  slope<-psi[id,2]
-  logit<-inter+slope*tim
-  pevent<-exp(logit)/(1+exp(logit))
-  logpdf<-rep(0,length(tim))
-  P.obs = (y==0)*(1-pevent)+(y==1)*pevent
-  logpdf <- log(P.obs)
-  return(logpdf)
-}
-
-saemix.hurdle0<-saemixModel(model=binary.model,description="Binary model",
-                            modeltype="likelihood",
-                            psi0=matrix(c(-1.5,-.1,0,0),ncol=2,byrow=TRUE,dimnames=list(NULL,c("theta1","theta2"))),
-                            transform.par=c(0,0), covariate.model=c(1,1),
-                            covariance.model=matrix(c(1,0,0,1),ncol=2), omega.init=diag(c(1,0.3)))
-
-saemix.options<-list(seed=1234567,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, nb.chains=10, fim=FALSE, displayProgress=FALSE)
-
-hurdlefit0<-saemix(saemix.hurdle0,saemix.data0,saemix.options)
-
-# proportion of 0's in the data
-rapi.tab <- table(rapi.saemix$rapi == 0)
-rapi.tab/sum(rapi.tab)
-
-# Fit Poisson model to saemix.data1
-saemix.hurdle1.cov2<-saemixModel(model=count.poisson,description="Count model Poisson",modeltype="likelihood",   
-                                 psi0=matrix(c(log(5),0.01),ncol=2,byrow=TRUE,dimnames=list(NULL, c("intercept","slope"))), 
-                                 transform.par=c(0,0), omega.init=diag(c(0.5, 0.5)),
-                                 covariance.model =matrix(data=1, ncol=2, nrow=2),
-                                 covariate.model=matrix(c(1,1), ncol=2, byrow=TRUE))
-saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
-
-hurdlefit1<-saemix(saemix.hurdle1.cov2,saemix.data1,saemix.options)
-
-summary(hurdlefit0)
-summary(hurdlefit1)
-
-# Table form - compare to column B in Table 2
-yfit0<-hurdlefit0
-yfit1<-hurdlefit1
-
-rr.tab<-data.frame(param=c("intercept", "beta.Male.inter", "slope", "beta.Male.slope", "omega.inter","omega.slope"), 
-                   poissonNoZero=c(yfit1@results@fixed.effects, c(sqrt(diag(yfit1@results@omega)))),
-                   logistic=c(yfit0@results@fixed.effects, c(sqrt(diag(yfit0@results@omega)))))
-
-print(rr.tab)
-
-########################################################################
-# Categorical data - Knee
-library(catdata)
-data(knee)
-
-# Transformation to long format and dichotomisation of response
-# knee <- reshape(knee, direction="long", varying=list(5:8), v.names="R",timevar="Time")
-knee2<-cbind(knee[,c(1:5)], time=0)
-xtim<-c(0,3,7,10)
-for(icol in 6:8) {
-  xprov<-cbind(knee[,c(1:4,icol)], time=xtim[icol-4])
-  colnames(xprov)<-colnames(knee2)
-  knee2<-rbind(knee2, xprov)
-}
-knee2<-knee2[order(knee2$N, knee2$time),c(1,6,5,2:4)]
-colnames(knee2)[3]<-"y"
-knee2$RD<-as.integer(knee2$y>2)
-knee2$Age <- knee2$Age - 30
-knee2$treatment<-knee2$Th-1
-knee2$Age2 <- knee2$Age^2
-
-knee.saemix<-knee2[,-c(4,7)]
-colnames(knee.saemix)[1]<-"id"
-barplot(table(knee.saemix$y,knee.saemix$time),beside=T)
-
-if(FALSE) 
-  write.table(knee.saemix, file.path(datDir, "knee.saemix.tab"), row.names=F, quote=F)
-
-saemix.data<-saemixData(name.data=knee.saemix,name.group=c("id"),
-                        name.predictors=c("y", "time"), name.X=c("time"),
-                        name.covariates = c("Age","Sex","treatment"))
-
-ordinal.model<-function(psi,id,xidep) {
-  y<-xidep[,1]
-  time<-xidep[,2]
-  alp1<-psi[id,1]
-  alp2<-psi[id,2]
-  alp3<-psi[id,3]
-  alp4<-psi[id,4]
-  beta<-psi[id,5]
-  
-  logit1<-alp1 + beta*time
-  logit2<-logit1+alp2
-  logit3<-logit2+alp3
-  logit4<-logit3+alp4
-  pge1<-exp(logit1)/(1+exp(logit1))
-  pge2<-exp(logit2)/(1+exp(logit2))
-  pge3<-exp(logit3)/(1+exp(logit3))
-  pge4<-exp(logit4)/(1+exp(logit4))
-  logpdf<-rep(0,length(y))
-  P.obs = (y==1)*pge1+(y==2)*(pge2 - pge1)+(y==3)*(pge3 - pge2)+(y==4)*(pge4 - pge3)+(y==5)*(1 - pge4)
-  logpdf <- log(P.obs)
-  
-  return(logpdf)
-}
-covmodel3<-covmodel2<-covmodel<-matrix(data=0,ncol=5,nrow=3)
-covmodel[1:2,1]<-1
-covmodel[,5]<-1
-covmodel2[1,1]<-covmodel2[3,5]<-1
-covmodel3[1,1]<-1
-
-saemix.model<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",
-                          psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))),
-                          transform.par=c(0,1,1,1,1),omega.init=diag(rep(1,5)), covariance.model = diag(c(1,0,0,0,1)))
-
-saemix.model.cov<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",
-                          psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))),
-                          transform.par=c(0,1,1,1,1),omega.init=diag(rep(1,5)), covariance.model = diag(c(1,0,0,0,1)),
-                          covariate.model = covmodel)
-saemix.model.cov2<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",
-                              psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))),
-                              transform.par=c(0,1,1,1,1),omega.init=diag(rep(1,5)), covariance.model = diag(c(1,0,0,0,1)),
-                              covariate.model = covmodel2)
-saemix.model.cov3<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",
-                               psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))),
-                               transform.par=c(0,1,1,1,1),omega.init=diag(rep(1,5)), covariance.model = diag(c(1,0,0,0,1)),
-                               covariate.model = covmodel3)
-
-saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, nb.chains=10)
-
-ord.fit<-saemix(saemix.model,saemix.data,saemix.options)
-ord.fit.cov<-saemix(saemix.model.cov,saemix.data,saemix.options)
-ord.fit.cov2<-saemix(saemix.model.cov2,saemix.data,saemix.options)
-ord.fit.cov3<-saemix(saemix.model.cov3,saemix.data,saemix.options)
-BIC(ord.fit)
-BIC(ord.fit.cov)
-BIC(ord.fit.cov2)
-BIC(ord.fit.cov3)
-
-#######################################
-# Analysis of dichotomised response :-/
-if(FALSE) { # install glmmML, same factors found significant
-  library(glmmML)
-  kneeGHQ <- glmmML(RD ~ as.factor(Th) + as.factor(Sex) + Age + Age2, data=knee2,
-                    family=binomial(), method="ghq", n.points=20, cluster=N)
-  summary(kneeGHQ)
-}
-
-kneePQL <- glmmPQL(RD ~ as.factor(Th) + as.factor(Sex) + Age + Age2, data=knee2,
-                    random = ~ 1|N, family=binomial())
-summary(kneePQL)
-
-kneePQL2 <- glmmPQL(RD ~ as.factor(Th) + Age2, data=knee2,
-                   random = ~ 1|N, family=binomial())
-summary(kneePQL2)
+saemix.options<-list(seed=123456,save=FALSE,save.graphs=FALSE, fim=FALSE, displayProgress=FALSE)
+count.fit<-try(saemix(saemix.model.true,saemix.data,saemix.options))
 
 ########################################################################
 # TTE - Lung cancer
+
+## Creating the dataset for lung cancer
+if(FALSE) {
+  library(survival)
+  data(cancer)
+  cancer$cens<-as.integer(cancer$status==1) # censored=1, non-censored=0
+  cancer$status<-cancer$status-1 # dead=1, alive=0
+  cancer<-cbind(id=1:dim(cancer)[1],cancer)
+  cancer2<-cancer
+  cancer2$time<-0
+  cancer2$status<-0
+  cancer2$cens<-0
+  lung.saemix<-rbind(cancer2, cancer)
+  lung.saemix<-lung.saemix[order(lung.saemix$id, lung.saemix$time),]
+  lung.saemix$sex<-lung.saemix$sex-1
+  lung.saemix<-lung.saemix[,c("id","time","status","cens","inst","age", 
+                              "sex", "ph.ecog", "ph.karno", "pat.karno", "wt.loss","meal.cal")]
+  hasnoNA<-function(xmat) 
+    apply(xmat,1,function(x) sum(is.na(x))==0)
+  lung.saemix<-lung.saemix[hasnoNA(lung.saemix[,5:9]),]
+  write.table(lung.saemix, file.path(datDir, "lung.saemix.tab"), quote=F, row.names=F)
+}
+
+lung.saemix
+
+## 
 
 weibulltte.model<-function(psi,id,xidep) {
   T<-xidep[,1]
@@ -894,6 +1151,7 @@ weibulltte.model<-function(psi,id,xidep) {
   return(logpdf)
 }
 
+######################################################################## TTE - OTHER
 # TTE - PBC
 data("pbc2.id", package = "JM")
 

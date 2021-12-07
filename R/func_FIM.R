@@ -341,7 +341,7 @@ fim.saemix<-function(saemixObject) {
   se.sdcor<-se.cov<-matrix(0,nphi,nphi)
   se.omega[saemix.model["indx.omega"]]<-sO[myidx.omega-npar]
   se.res<-matrix(0,2*nytype,1)
-  se.res[saemix.res["indx.res"]]<-sO[(nomega+1):length(sO)]    
+  if(saemixObject@model@modeltype=="structural") se.res[saemix.res["indx.res"]]<-sO[(nomega+1):length(sO)]    
   # Table with SE, CV and confidence intervals
   estpar<-c(saemixObject@results@fixed.effects)
   estSE<-c(se.fixed)
@@ -371,11 +371,12 @@ fim.saemix<-function(saemixObject) {
         }
       }
     }
-    estpar<-c(estpar,est1,saemixObject@results@respar[saemixObject@results@indx.res],est2)
-    estSE<-c(estSE,se1,se.res[saemixObject@results@indx.res],se2)
+    if(saemixObject@model@modeltype=="structural") estpar<-c(estpar,est1,saemixObject@results@respar[saemixObject@results@indx.res],est2) else
+      estpar<-c(estpar,est1,est2)
+    if(saemixObject@model@modeltype=="structural") estSE<-c(estSE,se1,se.res[saemixObject@results@indx.res],se2) else estSE<-c(estSE,se1,se2)
   } else {
     diag(se.cov)<-se.omega
-    if(saemixObject@model@modeltype=="structural")
+    if(saemixObject@model@modeltype=="structural")  
       estpar<-c(estpar,diag(omega)[saemixObject@results@indx.omega],saemixObject@results@respar[saemixObject@results@indx.res], sqrt(diag(omega)[saemixObject@results@indx.omega])) else estpar<-c(estpar,diag(omega)[saemixObject@results@indx.omega], sqrt(diag(omega)[saemixObject@results@indx.omega])) 
     if(saemixObject@model@modeltype=="structural")
       estSE<-c(estSE,se.omega[saemixObject@results@indx.omega],se.res[saemixObject@results@indx.res],se.omega[saemixObject@results@indx.omega]/2/sqrt(diag(omega)[saemixObject@results@indx.omega])) else estSE<-c(estSE,se.omega[saemixObject@results@indx.omega],se.omega[saemixObject@results@indx.omega]/2/sqrt(diag(omega)[saemixObject@results@indx.omega]))
@@ -387,7 +388,7 @@ fim.saemix<-function(saemixObject) {
   saemix.res["se.fixed"]<-se.fixed
   saemix.res["se.omega"]<-c(se.omega)
   saemix.res["se.cov"]<-se.cov
-  saemix.res["se.respar"]<-c(se.res)
+  if(saemixObject@model@modeltype=="structural") saemix.res["se.respar"]<-c(se.res)
   saemix.res["conf.int"]<-conf.int
   saemix.res["ll.lin"]<-c(ll.lin )
   saemix.res["fim"]<-fim

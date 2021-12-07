@@ -37,9 +37,8 @@ binary.model<-function(psi,id,xidep) {
   slope<-psi[id,2]
   logit<-inter+slope*tim
   pevent<-exp(logit)/(1+exp(logit))
-  logpdf<-rep(0,length(tim))
-  P.obs = (y==0)*(1-pevent)+(y==1)*pevent
-  logpdf <- log(P.obs)
+  pobs = (y==0)*(1-pevent)+(y==1)*pevent
+  logpdf <- log(pobs)
   return(logpdf)
 }
 
@@ -58,15 +57,11 @@ saemix.options<-list(seed=1234567,save=FALSE,save.graphs=FALSE,
 binary.fit<-saemix(saemix.model,saemix.data,saemix.options)
 \end{verbatim}
 
-{\bf Important notes:}
-\begin{itemize}
-\item The linear approximation of the FIM does not apply well to discrete response models. Exact computation methods to estimate the FIM without linearisation have been proposed by~\cite{Riviere16} using Hamiltonian Monte-Carlo and~\cite{Ueckert16} using adaptive Gaussian quadrature. These methods can be applied to estimate SE for the parameters but are not automatically available yet in \monolix.
-\item Automated visualisation or diagnostic plots have not yet been implemented for discrete response models, but we can of course create our own in R.
-\end{itemize}
+{\bf Important note:} The linear approximation of the FIM does not apply well to discrete response models. Exact computation methods to estimate the FIM without linearisation have been proposed by~\cite{Riviere16} using Hamiltonian Monte-Carlo and~\cite{Ueckert16} using adaptive Gaussian quadrature. These methods can be applied to estimate SE for the parameters but are not automatically available yet in \monolix.
 
+\paragraph{Diagnostics:} automated visualisation or diagnostic plots have not yet been implemented for discrete response models, but we can of course create our own in R by simulating from the model. To to this we need to define a simulation function associated with the structural model, with the same arguments as the model function, and returning simulated responses. For the binary model, this function would be the following, where we replace the line defining the log-probability {\sf logp} in {\sf binary.model} with a line simulating from a Binomial distribution with parameter $pevent$ for each value of time, and returning those simulated events.
 % ECO TODO: add Marc's npd for categorical data...
 
-Some diagnostics for this model can be obtained by simulating from the model. To to this we need to define a simulation function associated with the structural model, with the same arguments as the model function, and returning simulated responses. For the binary model, this function would be the following, where we replace the line defining the log-probability {\sf logp} in {\sf binary.model} with a line simulating from a Binomial distribution with parameter $pevent$ for each value of time, and returning those simulated events.
 \begin{verbatim}
 simulBinary<-function(psi,id,xidep) {
   tim<-xidep[,1]
@@ -82,27 +77,162 @@ nsim<-100
 binary.fit <- simulateDiscreteSaemix(binary.fit, simulBinary, nsim=nsim)
 \end{verbatim}
 
-In figure~\ref{fig:toenailPropVPC} we use the simulated data in the {\sf datasim} dataframe contained in the {\sf sim.data} element of the object after the call to the function to compute a 90\% prediction interval on the proportion of events at each visit. With additional work, we could produce VPC or npd plots using the simulated data, but already this figure shows that the change in the probability of infection over time may be non-linear.
+In figure~\ref{fig:toenailPropVPC} we use the simulated data in the {\sf datasim} dataframe contained in the {\sf sim.data} element of the object after the call to the function to compute a 90\% prediction interval on the proportion of events at each visit. This VPC plot shows a reasonable model fit in the two treatment groups.
 
 \begin{figure}[!h]
 \begin{center}
-\epsfig{file=figs/toenail_globalpropVPC.eps,width=11cm,angle=0}
+\epsfig{file=figs/toenail_globalVPC.eps,width=11cm,angle=0}
 \end{center}
 \par \kern -0.5cm
 \caption{Proportion of expected events compared to the observed proportion across time, for the model fit to the toenail data.} \label{fig:toenailPropVPC}
 \end{figure}
+
+The following code was used to produce this plot:
+\begin{verbatim}
+simdat <-binary.fit@sim.data@datasim
+simdat$visit<-rep(toenail.saemix$visit,nsim)
+simdat$treatment<-rep(toenail.saemix$treatment,nsim)
+ 
+# requires 
+# library(tidyverse)
+# library(ggplot2)
+# library(gridExtra)
+
+ytab<-NULL
+for(irep in 1:nsim) {
+  xtab<-simdat[simdat$irep==irep,]
+  xtab1 <- xtab %>%
+    group_by(visit, treatment) %>%
+    summarise(nev = sum(ysim), n=n()) %>%
+    mutate(freq = nev/n)
+  ytab<-rbind(ytab,xtab1[,c("visit","freq","treatment")])
+}
+gtab <- ytab %>%
+  group_by(visit, treatment) %>%
+  summarise(lower=quantile(freq, c(0.05)), median=quantile(freq, c(0.5)), 
+  upper=quantile(freq, c(0.95))) %>%
+  mutate(treatment=ifelse(treatment==1,"B","A"))
+gtab$freq<-1
+
+# summarising data
+toe1 <- toenail.saemix %>%
+  group_by(visit, treatment) %>%
+  summarise(nev = sum(y), n=n()) %>%
+  mutate(freq = nev/n, sd=sqrt((1-nev/n)/nev)) %>%
+  mutate(treatment=ifelse(treatment==1,"B","A"))
+
+plot2 <- ggplot(toe1, aes(x=visit, y=freq, group=treatment)) + 
+  geom_line(aes(colour=treatment)) + 
+  geom_point(aes(colour=treatment)) + 
+  geom_line(data=gtab, aes(x=visit, y=median), linetype=2, colour='lightblue') + 
+  geom_ribbon(data=gtab,aes(ymin=lower, ymax=upper), alpha=0.5, fill='lightblue') +
+  ylim(c(0,0.5)) + theme_bw() + theme(legend.position = "none") + 
+  facet_wrap(.~treatment) +
+  xlab("Visit number") + ylab("Frequency of infection")
+print(plot2)
+\end{verbatim}
+
 
 \clearpage
 \newpage
 
 \subsection{Categorical data} \label{sec:kneeCat}
 
+The {\sf knee.saemix} data represents pain scores recorded in a clinical study in 127 patients with sport related injuries treated with two different therapies. The pain occuring during knee movement was observed after 3,7 and 10 days of treatment. It was taken from the {\sf catdata} package in R~\cite{catdata} (dataset {\sf knee}) and reformatted as follows. A time column was added representing the day of the measurement (with 0 being the baseline value) and each observation corresponds to a different line in the dataset. Treatment was recoded as 0/1 (placebo/treatment), gender as 0/1 (male/female) and {\sf Age2} represents the squared of centered Age. Figure~\ref{fig:kneeData} shows barplots of the different pain scores as a function of time in study, illustrating a recovery as the proportion of lower pain scores increases.
+
+\begin{figure}[!h]
+\begin{center}
+\epsfig{file=figs/knee_barplotData.eps,width=11cm,angle=0}
+\end{center}
+\par \kern -0.5cm
+\caption{Barplot of the evolution of pain scores with time in the {\sf knee.saemix} dataset.} \label{fig:kneeData}
+\end{figure}
+
 \begin{verbatim}
 data(knee.saemix)
 \end{verbatim}
 
-\begin{verbatim}
+The dataset is part of the datasets analysed in~\cite{Tutz12} with various methods (please refer to the different vignettes in the documentation of {\sf knee}), but mainly as logistic regression on the response after 10 days, or as mixed binary regression after dichotomising the response. Here, we will fit the following proportional odds model to the full data:
+The probability $p_{ij}=P(Y_{ij}=1 | \theta_{1,i}, \theta_{2,i})$ associated with an event $Y_{ij}$ at time $t_{ij}$ is given by the following equation for the logit:
+\begin{equation}
+\begin{split}
+logit(P(Y_{ij} = 1 | \psi_i)) &= \alpha_{1,i} + \beta_{i} t_{ij} \\
+logit(P(Y_{ij} = 2 | \psi_i)) &= \alpha_{1,i} + \alpha_2 \\
+logit(P(Y_{ij} = 3 | \psi_i)) &= \alpha_{1,i} + \alpha_2 + \alpha_3 \\
+logit(P(Y_{ij} = 4 | \psi_i)) &= \alpha_{1,i} + \alpha_2 + \alpha_3 +\alpha_4\\
+P(Y_{ij} = 4 | \psi_i) &= 1 - \sum_k=1^4 P(Y_{ij} = k | \psi_i)\\
+\end{split}
+\end{equation}
+where $\alpha_1$ and $\beta$ have interindividual variability, $\beta$ is the effect of time, $\alpha_1$ is the probability of a pain score of 1 and the other parameters represent an incremental risk to move into the higher pain category.
 
+When the response has more than one category, we define the probability for (K-1) categories and combine them to obtain the likelihood for each observation.
+
+\begin{verbatim}
+ordinal.model<-function(psi,id,xidep) {
+  y<-xidep[,1]
+  time<-xidep[,2]
+  alp1<-psi[id,1]
+  alp2<-psi[id,2]
+  alp3<-psi[id,3]
+  alp4<-psi[id,4]
+  beta<-psi[id,5]
+  
+  logit1<-alp1 + beta*time
+  logit2<-logit1+alp2
+  logit3<-logit2+alp3
+  logit4<-logit3+alp4
+  pge1<-exp(logit1)/(1+exp(logit1))
+  pge2<-exp(logit2)/(1+exp(logit2))
+  pge3<-exp(logit3)/(1+exp(logit3))
+  pge4<-exp(logit4)/(1+exp(logit4))
+  pobs<-(y==1)*pge1+(y==2)*(pge2-pge1)+(y==3)*(pge3-pge2)+(y==4)*(pge4-pge3)+(y==5)*(1-pge4)
+  logpdf <- log(pobs)  
+  return(logpdf)
+}  
+saemix.model<-saemixModel(model=ordinal.model,
+        description="Ordinal categorical model",modeltype="likelihood",
+        psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5,byrow=TRUE,
+           dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))),
+        transform.par=c(0,1,1,1,1),
+        covariance.model = diag(c(1,0,0,0,1)))
+
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, nb.chains=10, 
+    fim=FALSE)
+
+ord.fit<-saemix(saemix.model,saemix.data,saemix.options)
+\end{verbatim}
+
+Figure~\ref{fig:kneeMedScoreVPC}, representing a VPC of the mean value of pain score at each time point, stratified over treatment, shows some model misfit especially for treatment 0. This figure was produced using simulations from the fitted model as in the binary data examples using the simulation function below.
+\begin{figure}[!h]
+\begin{center}
+\epsfig{file=figs/knee_medianScoreVPC.eps,width=11cm,angle=0}
+\end{center}
+\par \kern -0.5cm
+\caption{VPC of the mean value of pain score in the model adjusted to the {\sf knee.saemix} dataset.} \label{fig:kneeMedScoreVPC}
+\end{figure}
+
+\begin{verbatim}
+simulateOrdinal<-function(psi,id,xidep) {
+  y<-xidep[,1]
+  time<-xidep[,2]
+  alp1<-psi[id,1]
+  alp2<-psi[id,2]
+  alp3<-psi[id,3]
+  alp4<-psi[id,4]
+  beta<-psi[id,5]
+  
+  logit1<-alp1 + beta*time
+  logit2<-logit1+alp2
+  logit3<-logit2+alp3
+  logit4<-logit3+alp4
+  pge1<-exp(logit1)/(1+exp(logit1))
+  pge2<-exp(logit2)/(1+exp(logit2))
+  pge3<-exp(logit3)/(1+exp(logit3))
+  pge4<-exp(logit4)/(1+exp(logit4))
+  x<-runif(length(time))
+  ysim<-1+as.integer(x>pge1)+as.integer(x>pge2)+as.integer(x>pge3)+as.integer(x>pge4)
+  return(ysim)
+}
 \end{verbatim}
 
 
@@ -110,7 +240,7 @@ data(knee.saemix)
 
 \subsubsection{Epilepsy data} \label{sec:epilepsyCount}
 
-We first show a simple example using the epilepsy data from the MASS package. We can fit the Poisson model to the data, which assumes that the probability to observe a count value equal to $n$ is given by:
+We first show a simple example using the {\sf epilepsy} data from the {\sf MASS} package. We can fit the Poisson model to the data, which assumes that the probability to observe a count value equal to $n$ is given by:
 \begin{equation}
 P(Y=n) = \frac{\lambda^n \; e^{-\lambda}}{n!}
 \end{equation}
@@ -155,8 +285,7 @@ hist(rapi.saemix$rapi, main="", xlab="RAPI score", breaks=30)
 \end{verbatim}
 \monolix~currently does not have automated plots for discrete outcome data, but we can produce our own histogram (here, across all measurements without taking time into account) to notice that indeed, there seems to be many subjects reporting no alcohol related problems over some periods.
 
-
-\paragraph{Poisson model:} the first model we can fit to this data is the Poisson model. Here we will write the same model as in {\sf glmer()} to compare our results. In {\sf glmer()} a logarithmic link function is used to transform the mean of the Poisson model ($\lambda$) into a linear predictor of time and covariates. Random effects are then added to the parameters of the linear model. To take into account the change with time in {\sf saemix}, we need to rewrite the previous model to use normal distributions for the parameters and explicitely write the linear model in the function, as follows:
+\paragraph{Poisson model:} the first model we can fit to this data is, as previously, the Poisson model, but this time we add a time effect. Here we will write the same model as in {\sf glmer()} to compare our results. In {\sf glmer()} a logarithmic link function is used to transform the mean of the Poisson model ($\lambda$) into a linear predictor of time and covariates. Random effects are then added to the parameters of the linear model. To take into account the change with time in {\sf saemix}, we need to rewrite the previous model to use normal distributions for the parameters and explicitely write the linear model in the function, as follows:
 \begin{verbatim}
 count.poisson<-function(psi,id,xidep) { 
   time<-xidep[,1]
@@ -207,25 +336,83 @@ saemix.simulatePoisson<-function(psi, id, xidep) {
 }
 \end{verbatim}
 
-We then use the {\sf simulateDiscreteSaemix} function to obtain simulations from the model, using the estimated parameters. Here we set the number of simulations to 10 as the dataset is large and we are interested in global diagnostics.
+We then use the {\sf simulateDiscreteSaemix} function to obtain simulations from the model, using the estimated parameters. Here we set the number of simulations to 100 as the dataset is large and we are interested in global diagnostics.
 \begin{verbatim}
 yfit1<-simulateDiscreteSaemix(poisson.fit.cov2, simulate.function=saemix.simulatePoisson, 
-    nsim=10)
-
-hist(yfit1@data@data$rapi, xlim=c(0,50), freq=F, breaks=30, xlab="Observed counts", main="")
-lines(density(yfit1@sim.data@datasim$ysim[yfit1@sim.data@datasim$ysim<50]), lwd=2, col='red')
-
+    nsim=100)
 cat("Observed proportion of 0's", 
      length(yfit1@data@data$rapi[yfit1@data@data$rapi==0])/yfit1@data@ntot.obs,"\n")
 cat("      Poisson model, p=",
-    length(yfit1@sim.data@datasim$ysim[yfit1@sim.data@datasim$ysim==0])/length(yfit1@sim.data@datasim$ysim),"\n") 
+    length(yfit1@sim.data@datasim$ysim[yfit1@sim.data@datasim$ysim==0])/
+    length(yfit1@sim.data@datasim$ysim),"\n") 
 \end{verbatim}
+
+\paragraph{Handling overdispersion:} the model predicts a lower proportion of subjects without alcohol-related problems than we observe in data, a sign of overdispersion (with a Poisson model, the mean of the Poisson distribution, $\lambda$, is equal to the variance, an assumption which is violated here). Several models can be used to take this feature into account. First, we can use the Zero-Inflated Poisson model, where the number of counts equal to 0 is increased. This model can be built as a mixture between a distribution of 0's with probability $p_0$ and a standard Poisson model. We modify our model function above to:
+\begin{verbatim}
+count.poissonzip<-function(psi,id,xidep) {
+  time<-xidep[,1]
+  y<-xidep[,2]
+  intercept<-psi[id,1]
+  slope<-psi[id,2]
+  p0<-psi[id,3] # Probability of zero's
+  lambda<- exp(intercept + slope*time)
+  logp <- log(1-p0) -lambda + y*log(lambda) - log(factorial(y)) # Poisson
+  logp0 <- log(p0+(1-p0)*exp(-lambda)) # Zeroes
+  logp[y==0]<-logp0[y==0]
+  return(logp)
+}
+\end{verbatim}
+and fit the model using:
+\begin{verbatim}
+modsmx.zip<-saemixModel(model=count.poissonzip,description="count model ZIP",
+   modeltype="likelihood", 
+   psi0=matrix(c(1.5, 0.01, 0.2),ncol=3,byrow=TRUE,dimnames=list(NULL, 
+      c("intercept", "slope","p0"))), 
+   transform.par=c(0,0,3), covariance.model=diag(c(1,1,0)), 
+   omega.init=diag(c(0.5,0.3,0)),
+   covariate.model = matrix(c(1,1,0),ncol=3, byrow=TRUE))
+
+zippoisson.fit <- saemix(modsmx.zip,saemix.data,saemix.options)
+\end{verbatim}
+where we assume a logit-normal distribution for the added parameter p0 through the transform.par argument. We could also model logit(p0) on a normal scale if we needed to add a time effect. The same approach as above can then be used to simulate from the model, this time using the simulation function:
+\begin{verbatim}
+saemix.simulatePoissonZIP<-function(psi, id, xidep) {
+  time<-xidep[,1]
+  y<-xidep[,2]
+  intercept<-psi[id,1]
+  slope<-psi[id,2]
+  p0<-psi[id,3] # Probability of zero's
+  lambda<- exp(intercept + slope*time)
+  prob0<-rbinom(length(time), size=1, prob=p0)
+  y<-rpois(length(time), lambda=lambda)
+  y[prob0==1]<-0
+  return(y)
+}
+\end{verbatim}
+and we can check that the proportion of simulated 0's is now closer to the observed value.
+
+A second type of model used in~\cite{Atkins13} is the hurdle model, which combines a binary logistic model for the probability of having counts greater than 0, with a truncated Poisson model for counts greater than 0. To implement this, we fit separately the two models: the binary logistic model is fit to the data where we use as a response the binary outcome with values 0 for counts of 0 and 1 for counts strictly positive, then the Poisson model is fit to the data excluding zero counts.
+
+Other possible models include the negative binomial model and generalised Poisson models with additional parameters handling the overdispersion.
+
+\paragraph{Diagnostics:} the simulation functions can be used to produce diagnostic plots. As an example, we can compare the expected proportion of 0's, representing subjects without alcohol problems, versus time and stratified by gender, to compare the different models (the code available as a notebook on the github for saemix). The results, shown in Figure~\ref{fig:rapiCompareProp0}. We could also look at the counts for different categories or the evolution of the median counts. 
+
+\begin{figure}[!h]
+\begin{center}
+\epsfig{file=figs/rapi_comparePropNoDrinking.eps,width=14cm,angle=0}
+\end{center}
+\par \kern -0.5cm
+\caption{Proportion of subjects without drinking problems versus time, for men and women, observed and expected for the Poisson, ZIP and hurdle models, for the RAPI data.} \label{fig:rapiCompareProp0}
+\end{figure}
+
 
 \section{Time-to-event data}
 
 \subsection{Single event} \label{sec:lungtte}
 
-We will use a Weibull model for the hazard, parameterised as $\lambda$ and $\beta$. For individual $i$, the hazard function of this model is:
+The example chosen to illustrate the analysis of time-to-event data is the NCCTG Lung Cancer Data, describing the survival in patients with advanced lung cancer from the North Central Cancer Treatment Group~\cite{Loprinzi94}. Covariates measured in the study include performance scores rating how well the patient can perform usual daily activities. We reformatted the {\sf cancer} dataset provided in the {\sf survival} package in R~\cite{survivalPkg} in SAEM format: patients with missing age, sex, institution or physician assessments were removed from the dataset. Status was recoded as 1 for death and 0 for a censored event, and a censoring column was added to denote whether the patient was dead or alive at the time of the last observation. A line at time=0 was added for all subjects. Finally, subjects were numbered consecutively from 0 to 1.
+
+We can use a Weibull model for the hazard, parameterised as $\lambda$ and $\beta$. For individual $i$, the hazard function of this model is:
 \begin{align}\label{weibullmodel}
 & h(t, \psi_i) = \frac{\beta_i}{\lambda_i}\left(\frac{t}{\lambda_i}\right)^{\beta_i-1}\eqs.
 \end{align}
@@ -239,7 +426,7 @@ Then, the vector of population parameters is $\theta = (\lambda_{\rm pop}, \beta
 The survival function for this model is:
 $$ S(t) = e^{ - \left( \frac{t}{\lambda} \right) ^{\beta}}$$
 
-The model function needs to define the log-pdf for each observation. At time 0, it is 0 (no event has occurred yet). For a censored event, the log-likelihood is equal to the logarithm of the survival function since the beginning of the observation period, while for an observed event we add the logarithm of the hazard at the time of the event. In the model below, we pass individual censoring times as the third predictor, so that each individual may have his or her own follow-up duration.
+The model function for \monolix~needs to define the log-pdf for each observation. At time 0, it is 0 (no event has occurred yet). For a censored event, the log-likelihood is equal to the logarithm of the survival function since the beginning of the observation period, while for an observed event we add the logarithm of the hazard at the time of the event. In the model below, we pass individual censoring times as the third predictor, so that each individual may have his or her own follow-up duration.
 
 \begin{verbatim}
 weibulltte.model<-function(psi,id,xidep) {
@@ -262,14 +449,20 @@ weibulltte.model<-function(psi,id,xidep) {
 \end{verbatim}
 
 
-{\bf Important notes:}
-\begin{itemize}
-\item In TTE models with a single event, there is not enough information to estimate interindividual variability, but \monolix needs at least one parameter to run. In this case, we include a random effect in the model but it cannot be estimated properly.
-\item Automated visualisation or diagnostic plots have not yet been implemented for discrete response models, but we can of course create our own in R.
-\end{itemize}
+{\bf Important note:} In TTE models with a single event, there is not enough information to estimate interindividual variability, but \monolix~needs at least one parameter to run. In this case, we include a random effect in the model but it cannot be estimated properly.
 
-\paragraph{}
 
+\paragraph{Diagnostics:} Automated visualisation or diagnostic plots have not yet been implemented for discrete response models, but we can of course create our own in R. In Figure~\ref{fig:lungcompareKM} we used the linear approximation of the FIM and the delta-method to compute a very rough estimate of the confidence interval on the predicted survival curve, overlaying it to the non-parametric Kaplan-Meier estimate provided by the {\sf survival} package. Here despite its shortcomings the FIM approximation seems to be adequate.
+
+\begin{figure}[!h]
+\begin{center}
+\epsfig{file=figs/lung_compareKM.eps,width=12cm,angle=270}
+\end{center}
+\par \kern -0.5cm
+\caption{Survival function, as a Kaplan-Meier estimate (black) and fitted by a Weibull model with {\sf saemix} (red).} \label{fig:compareKM}
+\end{figure}
+
+We can also use simulations to compute the normalised prediction discrepancies (npd) developed by~\cite{Cerou18}.
 
 \subsection{Repeated time-to-event}
 
@@ -281,7 +474,8 @@ The following code was used in R to run this example:
 
 \begin{verbatim}
 data(tte.saemix)
-saemix.data<-saemixData(name.data=tte.saemix,header=TRUE,sep=" ",na=NA, name.group=c("id"),name.response=c("y"),name.predictors=c("time","y"), name.X=c("time"))
+saemix.data<-saemixData(name.data=tte.saemix,header=TRUE,sep=" ",na=NA,
+   name.group=c("id"),name.response=c("y"),name.predictors=c("time","y"), name.X=c("time"))
 
 timetoevent.model<-function(psi,id,xidep) {
 T<-xidep[,1]
@@ -341,9 +535,9 @@ omega2.beta   0             1
 \begin{figure}[!h]
 \begin{center}
 \par \kern -1cm
-\epsfig{file=figs/popparam_tte.eps,width=9cm,angle=270}
+%\epsfig{file=figs/popparam_tte.eps,width=12cm,angle=0}
 \end{center}
 \par \kern -0.5cm
-\caption{Time-to-event data modelling: convergence of the empirical quantiles of order 0.1, 0.5 and 0.9 of $\dens(\psi_i | y_i ; \theta)$ for a single individual. The reference MH algorithm is in blue and the nlme-IMH is in red.} \label{fig:popTTE}
+\caption{Convergence plot obtained for the RTTE data} \label{fig:popTTE}
 \end{figure}
 
