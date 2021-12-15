@@ -58,11 +58,15 @@ NULL
 #'     \item{summary}{\code{signature(object = "SaemixData")}: summary of the data. Returns a list with a number of elements extracted from the dataset (N: the number of subjects; nobs: the total number of observations; nind.obs: a vector giving the number of observations for each subject; id: subject ID; x: predictors; y: response, and, if present in the data, covariates: the covariates (as many lines as observations) and ind.covariates: the individual covariates (one line per individual).}
 #'     \item{subset}{\code{signature(object = "SaemixData")}: extract part of the data; this function will operate on the rows of the dataset (it can be used for instance to extract the data corresponding to the first ten subjects)}
 #' 	 }
-#' @references Comets  E, Lavenu A, Lavielle M. Parameter estimation in nonlinear mixed effect models using saemix, an R implementation of the SAEM algorithm. Journal of Statistical Software 80, 3 (2017), 1-41.
+#' @references E Comets, A Lavenu, M Lavielle M (2017). Parameter estimation in nonlinear mixed effect models using saemix,
+#' an R implementation of the SAEM algorithm. Journal of Statistical Software, 80(3):1-41.
 #' 
-#' Kuhn E, Lavielle M. Maximum likelihood estimation in nonlinear mixed effects models. Computational Statistics and Data Analysis 49, 4 (2005), 1020-1038.
+#' E Kuhn, M Lavielle (2005). Maximum likelihood estimation in nonlinear mixed effects models. 
+#' Computational Statistics and Data Analysis, 49(4):1020-1038.
 #' 
-#' Comets E, Lavenu A, Lavielle M. SAEMIX, an R version of the SAEM algorithm. 20th meeting of the Population Approach Group in Europe, Athens, Greece (2011), Abstr 2173.
+#' E Comets, A Lavenu, M Lavielle (2011). SAEMIX, an R version of the SAEM algorithm. 20th meeting of the 
+#' Population Approach Group in Europe, Athens, Greece, Abstr 2173.
+#' 
 #' @author Emmanuelle Comets \email{emmanuelle.comets@@inserm.fr}
 #' @author Audrey Lavenu
 #' @author Marc Lavielle.
@@ -644,13 +648,15 @@ validate.names<-function(usernames,datanames,recognisednames=c(),verbose=TRUE, a
 #' Helper function not intended to be called by the user
 #'  
 #' @param object an SaemixData object
+#' @param dat the name of a dataframe in the R environment, defaults to NULL; if NULL, the function will
+#' attempt to read the file defined by the slot name.data.
 #'  
 #' @rdname read-methods
-#' @aliases read,SaemixData read,SaemixData-method
+#' @aliases readSaemix,SaemixData readSaemix,SaemixData-method
 #'  
-#' @exportMethod read
+#' @exportMethod readSaemix
 
-setMethod("read",
+setMethod("readSaemix",
           signature="SaemixData",
   function(object, dat = NULL) {
     ow <- options("warn")
@@ -756,12 +762,15 @@ setMethod("read",
     object@ocov<-dat[,object@name.covariates,drop=FALSE]
     for(icov in object@name.covariates) {
       if(length(unique(dat[,icov]))==2) dat[,icov]<-suppressWarnings(as.integer(factor(dat[,icov])))-1
-    }   
+    }
 # Removing missing values in predictor columns
 # dat<-dat[!is.na(dat[,object@name.response]),]
 	for(i in object@name.predictors) {
-		if(sum(is.na(dat[,i]))>0) {if(object@messages) cat("Removing missing values for predictor",i,"\n")}
-		dat<-dat[!is.na(dat[,i]),]
+		if(sum(is.na(dat[,i]))>0) {
+		  if(object@messages) cat("Removing missing values for predictor",i,"\n")
+		  if(!is.null(dim(object@ocov)[1])) object@ocov<-object@ocov[!is.na(dat[,i]),,drop=FALSE]
+  		dat<-dat[!is.na(dat[,i]),]
+	}
 	}
 # Removing subjects with only MDV in responses
 	idx<-c();inull<-c()
@@ -775,12 +784,14 @@ setMethod("read",
   if(length(inull)>0) {
     if(object@messages) cat("Some subjects have no observations, removing them:",inull,"\n")
   	dat<-dat[-idx,]
-  	object@ocov<-object@ocov[-idx,,drop=FALSE]
+  	if(!is.null(dim(object@ocov)[1])) object@ocov<-object@ocov[-idx,,drop=FALSE]
   }
-
+	if(!is.null(dim(object@ocov)[1])) object@ocov <- object@ocov[order(dat[,object@name.group], dat[,object@name.X]),,drop=FALSE]
+	
 # ECO TODO: missing data in covariates kept for the moment, only excluded depending on the model
 #    for(i in object@name.covariates) dat<-dat[!is.na(dat[,i]),]
   	object@ntot.obs<-dim(dat)[1] # total number of observations
+    dat <- dat[order(dat[,object@name.group], dat[,object@name.X]),]
     id<-dat[,object@name.group]
     object@N<-length(unique(id))
     nind.obs<-tapply(id,id,length) # individual numbers of observations (1xN)
@@ -1316,11 +1327,15 @@ plot.SaemixSimData<-function(x,y,irep=-1,...) {
 #' @param automatic a boolean indicating whether to attempt automatic name recognition when some colum names are missing or wrong (defaults to TRUE)
 #' @details This function is the user-friendly constructor for the SaemixData object class. The read is a helper function, used to read the dataset, and is not intended to be called directly.
 #' @return A SaemixData object (see \code{\link{saemixData}}).
-#' @references Comets  E, Lavenu A, Lavielle M. Parameter estimation in nonlinear mixed effect models using saemix, an R implementation of the SAEM algorithm. Journal of Statistical Software 80, 3 (2017), 1-41.
+#' @references E Comets, A Lavenu, M Lavielle M (2017). Parameter estimation in nonlinear mixed effect models using saemix,
+#' an R implementation of the SAEM algorithm. Journal of Statistical Software, 80(3):1-41.
 #' 
-#' Kuhn E, Lavielle M. Maximum likelihood estimation in nonlinear mixed effects models. Computational Statistics and Data Analysis 49, 4 (2005), 1020-1038.
+#' E Kuhn, M Lavielle (2005). Maximum likelihood estimation in nonlinear mixed effects models. 
+#' Computational Statistics and Data Analysis, 49(4):1020-1038.
 #' 
-#' Comets E, Lavenu A, Lavielle M. SAEMIX, an R version of the SAEM algorithm. 20th meeting of the Population Approach Group in Europe, Athens, Greece (2011), Abstr 2173.
+#' E Comets, A Lavenu, M Lavielle (2011). SAEMIX, an R version of the SAEM algorithm. 20th meeting of the 
+#' Population Approach Group in Europe, Athens, Greece, Abstr 2173.
+#' 
 #' @author Emmanuelle Comets \email{emmanuelle.comets@@inserm.fr}, Audrey Lavenu, Marc Lavielle.
 #' @seealso \code{\link{SaemixData}},\code{\link{SaemixModel}}, \code{\link{saemixControl}},\code{\link{saemix}}
 #' @examples
@@ -1365,9 +1380,9 @@ saemixData<-function(name.data,header,sep,na,name.group,name.predictors, name.re
   x<-new(Class="SaemixData",name.data=name.data,header=header,sep=sep,na=na, name.group=name.group,name.predictors=name.predictors,name.X=name.X, name.response=name.response,name.covariates=name.covariates,units=units, name.mdv=name.mdv, name.cens=name.cens, name.occ=name.occ, name.ytype=name.ytype, verbose=verbose, automatic=automatic)
 #  showall(x)
   if(data_from_name.data) {
-    x1<-read(x, dat)
+    x1<-readSaemix(x, dat)
   } else
-  x1<-read(x)
+  x1<-readSaemix(x)
   if(is(x1,"SaemixData")) {
   	igen<-rep(FALSE,length(name.covariates))
   	igen[match(name.genetic.covariates,name.covariates)]<-TRUE

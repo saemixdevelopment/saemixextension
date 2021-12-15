@@ -129,14 +129,15 @@ simulate.SaemixObject<-function(object, nsim, seed, predictions=TRUE,res.var=TRU
 #' 
 #' @export 
 
-simulateDiscreteSaemix <- function(object, simulate.function, nsim, uncertainty=FALSE) {
+simulateDiscreteSaemix <- function(object, simulate.function, nsim, seed, uncertainty=FALSE) {
   # Simulate individual parameters from the population distribution
   ## object: an SaemixObject object resulting from a call to saemix()
   ## simulate.function: a function matching the model object@model@model and simulating outcomes given predictors and individual parameters
   ## nsim: number of simulations
   ## uncertainty: if TRUE, add uncertainty when simulating (not implemented yet)
   if(missing(nsim)) nsim<-object["options"]$nb.sim
-  object<-simulate.SaemixObject(object, nsim=nsim, predictions=FALSE, uncertainty=uncertainty)
+  if(missing(seed)) seed<-NULL
+  object<-simulate.SaemixObject(object, nsim=nsim, seed=seed, predictions=FALSE, uncertainty=uncertainty)
   simpar<-object@sim.data@sim.psi
   
   # Simulate observations using these parameters and the simulate.function to simulate from the same model

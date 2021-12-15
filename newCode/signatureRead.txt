@@ -1,0 +1,23 @@
+2 different signatures in npde and saemix => change that
+- either harmonise
+- or change the function name
+
+# npde
+setGeneric(name="read",
+           def=function(object,name.data,header=TRUE,sep="",na.strings=c("NA","."),detect=TRUE,verbose=FALSE){standardGeneric("read")})
+
+# saemix
+setGeneric(name="read",
+           def=function(object, dat=NULL){standardGeneric("read")}
+)
+
+  
+methods("read", table)
+.S3methods(generic.function, class, envir=parent.frame())
+
+.S3methods("read", table)
+
+# most functions:
+
+ (file, header = TRUE, sep = "\t", quote = "\"", dec = ".", 
+    fill = TRUE, comment.char = "", ...) 

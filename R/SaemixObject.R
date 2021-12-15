@@ -38,10 +38,15 @@ NULL
 #'     \item{show}{\code{signature(object = "SaemixObject")}: prints details about the object}
 #'     \item{summary}{\code{signature(object = "SaemixObject")}: summary of the object. Returns a list with a number of elements extracted from the object.}
 #' 	 }
-#' @references Kuhn E, Lavielle M. Maximum likelihood estimation in nonlinear  mixed effects models. Computational Statistics and Data Analysis 49, 4 (2005), 1020-1038.
+#' @references E Comets, A Lavenu, M Lavielle M (2017). Parameter estimation in nonlinear mixed effect models using saemix,
+#' an R implementation of the SAEM algorithm. Journal of Statistical Software, 80(3):1-41.
 #' 
-#' Comets E, Lavenu A, Lavielle M. SAEMIX, an R version of the SAEM algorithm. 20th meeting of the 
-#' Population Approach Group in Europe, Athens, Greece (2011), Abstr 2173.
+#' E Kuhn, M Lavielle (2005). Maximum likelihood estimation in nonlinear mixed effects models. 
+#' Computational Statistics and Data Analysis, 49(4):1020-1038.
+#' 
+#' E Comets, A Lavenu, M Lavielle (2011). SAEMIX, an R version of the SAEM algorithm. 20th meeting of the 
+#' Population Approach Group in Europe, Athens, Greece, Abstr 2173.
+#' 
 #' @author Emmanuelle Comets \email{emmanuelle.comets@@inserm.fr}
 #' @author Audrey Lavenu
 #' @author Marc Lavielle.
@@ -278,14 +283,16 @@ setMethod(
 #' @seealso \code{\link{SaemixData}},\code{\link{SaemixModel}},
 #' \code{\link{SaemixObject}}, \code{\link{saemix}}
 #' 
-#' @references Comets  E, Lavenu A, Lavielle M  (2017). Parameter estimation in nonlinear mixed effect models using saemix, an R implementation of the SAEM algorithm. Journal of Statistical Software, 3:1-41.
+#' @references E Comets, A Lavenu, M Lavielle M (2017). Parameter estimation in nonlinear mixed effect models using saemix,
+#' an R implementation of the SAEM algorithm. Journal of Statistical Software, 80(3):1-41.
 #' 
-#' Kuhn E, Lavielle M. Maximum likelihood estimation in nonlinear mixed effects models. Computational Statistics and Data Analysis 49, 4 (2005), 1020-1038.
+#' E Kuhn, M Lavielle (2005). Maximum likelihood estimation in nonlinear mixed effects models. 
+#' Computational Statistics and Data Analysis, 49(4):1020-1038.
 #' 
-#' Comets E, Lavenu A, Lavielle M. SAEMIX, an R version of the SAEM algorithm. 20th meeting of the Population Approach Group in 
-#' Europe, Athens, Greece (2011), Abstr 2173.
+#' E Comets, A Lavenu, M Lavielle (2011). SAEMIX, an R version of the SAEM algorithm. 20th meeting of the 
+#' Population Approach Group in Europe, Athens, Greece, Abstr 2173.
 #' 
-#' Karimi B, Lavielle M, Moulines E  (2019). f-SAEM: A fast Stochastic Approximation of the EM algorithm for nonlinear mixed effects models.
+#' B Karimi, M Lavielle , E Moulines E  (2019). f-SAEM: A fast Stochastic Approximation of the EM algorithm for nonlinear mixed effects models.
 #' Computational Statistics & Data Analysis, 141:123-38
 #' 
 #' @keywords models
@@ -930,13 +937,15 @@ saemix.predict<-function(object, type=c("ipred", "ypred", "ppred", "icpred")) {
 #' @seealso \code{\link{SaemixObject}},\code{\link{saemix}},
 #' \code{\link{saemix.plot.setoptions}}, \code{\link{saemix.plot.select}},
 #' \code{\link{saemix.plot.data}}
-#' @references Comets  E, Lavenu A, Lavielle M. Parameter estimation in nonlinear mixed effect models using saemix, an R implementation of the SAEM algorithm. Journal of Statistical Software 80, 3 (2017), 1-41.
+#' @references E Comets, A Lavenu, M Lavielle M (2017). Parameter estimation in nonlinear mixed effect models using saemix,
+#' an R implementation of the SAEM algorithm. Journal of Statistical Software, 80(3):1-41.
 #' 
-#' Kuhn E, Lavielle M. Maximum likelihood estimation in nonlinear mixed effects models. Computational Statistics and Data Analysis 49, 4 (2005), 1020-1038.
+#' E Kuhn, M Lavielle (2005). Maximum likelihood estimation in nonlinear mixed effects models. 
+#' Computational Statistics and Data Analysis, 49(4):1020-1038.
 #' 
-#' Comets E, Lavenu A, Lavielle M. SAEMIX, an R version of the SAEM algorithm.
-#' 20th meeting of the Population Approach Group in Europe, Athens, Greece
-#' (2011), Abstr 2173.
+#' E Comets, A Lavenu, M Lavielle (2011). SAEMIX, an R version of the SAEM algorithm. 20th meeting of the 
+#' Population Approach Group in Europe, Athens, Greece, Abstr 2173.
+#' 
 #' @keywords plot
 #' @examples
 #' 
@@ -1026,7 +1035,7 @@ setMethod(f="plot",
     } else plot.type<-"reduced"
 #    cat("plot.type=",plot.type,"\n")
     if(plot.type[1]=="reduced") plot.type<-c("data","convergence","likelihood", "observations.vs.predictions")
-    if(plot.type[1]=="full") plot.type<-c("data","convergence","likelihood", "observations.vs.predictions","residuals.scatter","residuals.distribution","vpc")
+    if(plot.type[1]=="full") plot.type<-c("data","convergence","likelihood", "observations.vs.predictions") #,"residuals.scatter","residuals.distribution","vpc")
     
     pltyp<-c("data","convergence","likelihood","individual.fit", "population.fit", "both.fit","observations.vs.predictions","residuals.scatter", "residuals.distribution","vpc","npde","random.effects","marginal.distribution", "correlations","parameters.vs.covariates","randeff.vs.covariates", "mirror")
     ifnd<-pmatch(plot.type,pltyp)
@@ -1132,12 +1141,14 @@ setMethod(f="plot",
       saemix.plot.mirror(x,...)
     },
     "residuals.scatter"={
-      if(x@options$warnings) message("Plotting scatterplots of residuals\n")
-      saemix.plot.scatterresiduals(x,...)
+      message("Please use npdeSaemix to obtain VPC and npde\n")
+#      if(x@options$warnings) message("Plotting scatterplots of residuals\n")
+#      saemix.plot.scatterresiduals(x,...)
     },
     "residuals.distribution"={
-      if(x@options$warnings) message("Plotting the distribution of residuals\n")
-      saemix.plot.distribresiduals(x,...)
+      message("Please use npdeSaemix to obtain VPC and npde\n")
+#      if(x@options$warnings) message("Plotting the distribution of residuals\n")
+#      saemix.plot.distribresiduals(x,...)
     },
     "random.effects"={
       saemix.plot.randeff(x,...)
@@ -1165,8 +1176,9 @@ setMethod(f="plot",
       saemix.plot.vpc(x,...)
     },
     "npde"={
-      if(x@options$warnings) message("Plotting npde\n")
-      saemix.plot.npde(x,...)
+      message("Please use npdeSaemix to obtain VPC and npde\n")
+#      if(x@options$warnings) message("Plotting npde\n")
+#      saemix.plot.npde(x,...)
     },
     cat("Plot ",ipl," not implemented yet\n")
      )
@@ -1178,27 +1190,30 @@ setMethod(f="plot",
 ####			Likelihood and tests		####
 ####################################################################################
 
-##' Extract likelihood from a saemixObject resulting from a call to saemix
-##'
-##' The likelihood in saemix can be computed by one of three methods: linearisation (linearisation of the model), importance sampling (stochastic integration) and gaussian quadrature (numerical integration). The linearised likelihood is obtained as a byproduct of the computation of the Fisher Information Matrix (argument FIM=TRUE in the options given to the saemix function).
-##' If no method argument is given, this function will attempt to extract the likelihood computed by importance sampling (method="is"), unless the object contains the likelihood computed by linearisation, in which case the function will extract this component instead.
-##' If the requested likelihood is not present in the object, it will be computed and aded to the object before returning.
-##' 
-##' BIC.covariate implements the computation of the BIC from Delattre et al. 2014.
-##'
-##' @name logLik
-##' @aliases AIC.SaemixObject BIC.SaemixObject logLik.SaemixObject BIC.covariate
-##'
-##' @param object name of an SaemixObject object
-##' @param method character string, one of c("is","lin","gq"), to select one of the available approximations to the log-likelihood (is: Importance Sampling; lin: linearisation and gq: Gaussian Quadrature). See documentation for details
-##' @param ... additional arguments
-##' @param k numeric, the penalty per parameter to be used; the default k = 2 is the classical AIC
-##' @return Returns the selected statistical criterion (log-likelihood, AIC, BIC) extracted from the SaemixObject, computed with the 'method' argument if given (defaults to IS).
-##' @references Comets  E, Lavenu A, Lavielle M. Parameter estimation in nonlinear mixed effect models using saemix, an R implementation of the SAEM algorithm. Journal of Statistical Software 80, 3 (2017), 1-41.
-##' 
-##' Kuhn E, Lavielle M. Maximum likelihood estimation in nonlinear mixed effects models. Computational Statistics and Data Analysis 49, 4 (2005), 1020-1038.
-##' 
-#' Delattre M. Lavielle M. Poursat MA. A note on BIC in mixed-effects models. Electronic Journal of Statistics (2014) 8, 456-475.
+#' Extract likelihood from a saemixObject resulting from a call to saemix
+#'
+#' The likelihood in saemix can be computed by one of three methods: linearisation (linearisation of the model), importance sampling (stochastic integration) and gaussian quadrature (numerical integration). The linearised likelihood is obtained as a byproduct of the computation of the Fisher Information Matrix (argument FIM=TRUE in the options given to the saemix function).
+#' If no method argument is given, this function will attempt to extract the likelihood computed by importance sampling (method="is"), unless the object contains the likelihood computed by linearisation, in which case the function will extract this component instead.
+#' If the requested likelihood is not present in the object, it will be computed and aded to the object before returning.
+#' 
+#' BIC.covariate implements the computation of the BIC from Delattre et al. 2014.
+#'
+#' @name logLik
+#' @aliases AIC.SaemixObject BIC.SaemixObject logLik.SaemixObject BIC.covariate
+#'
+#' @param object name of an SaemixObject object
+#' @param method character string, one of c("is","lin","gq"), to select one of the available approximations to the log-likelihood (is: Importance Sampling; lin: linearisation and gq: Gaussian Quadrature). See documentation for details
+#' @param ... additional arguments
+#' @param k numeric, the penalty per parameter to be used; the default k = 2 is the classical AIC
+#' @return Returns the selected statistical criterion (log-likelihood, AIC, BIC) extracted from the SaemixObject, computed with the 'method' argument if given (defaults to IS).
+#' @references E Comets, A Lavenu, M Lavielle M (2017). Parameter estimation in nonlinear mixed effect models using saemix,
+#' an R implementation of the SAEM algorithm. Journal of Statistical Software, 80(3):1-41.
+#' 
+#' E Kuhn, M Lavielle (2005). Maximum likelihood estimation in nonlinear mixed effects models. 
+#' Computational Statistics and Data Analysis, 49(4):1020-1038.
+#' 
+#' E Comets, A Lavenu, M Lavielle (2011). SAEMIX, an R version of the SAEM algorithm. 20th meeting of the 
+#' Population Approach Group in Europe, Athens, Greece, Abstr 2173.
 #' 
 #' @author Emmanuelle Comets \email{emmanuelle.comets@@inserm.fr}
 #' @author Audrey Lavenu

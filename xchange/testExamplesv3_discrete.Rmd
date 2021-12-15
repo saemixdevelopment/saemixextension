@@ -64,6 +64,7 @@ if(!testMode) {
   source(file.path(progDir,"main_estep.R"))
   source(file.path(progDir,"main_mstep.R"))
   source(file.path(progDir,"func_FIM.R"))
+  source(file.path(progDir,"func_npde.R"))
   source(file.path(progDir,"func_plots.R"))
   source(file.path(progDir,"func_distcond.R"))
   source(file.path(progDir,"func_simulations.R"))
@@ -952,10 +953,15 @@ if(TRUE) {
   sesurv<-rep(0,length(xcal))
   for(i in 1:length(xcal))
     sesurv[i]<-sqrt(t(xmat[,i]) %*% invfim %*% xmat[,i])
-  plot(f1, xlab = "Days", ylab = "Overall survival probability")
-  lines(xtim,ypred, col="red",lwd=2)
-  lines(xtim,ypred+1.96*sesurv, col="red",lwd=1, lty=2)
-  lines(xtim,ypred-1.96*sesurv, col="red",lwd=1, lty=2)
+  if(saveForDocs) {
+    namfile<-"lung_compareKM.eps"
+    postscript(file.path(figDir, namfile), horizontal=TRUE)
+    plot(f1, xlab = "Days", ylab = "Overall survival probability")
+    lines(xtim,ypred, col="red",lwd=2)
+    lines(xtim,ypred+1.96*sesurv, col="red",lwd=1, lty=2)
+    lines(xtim,ypred-1.96*sesurv, col="red",lwd=1, lty=2)
+    dev.off()
+  }
   
   # ypred2<-exp(-(xtim/(estpar[1]-1.96*sqrt(invfim[1,1])))^(estpar[2]+1.96*sqrt(invfim[2,2])))
   # ypred3<-exp(-(xtim/(estpar[1]+1.96*sqrt(invfim[1,1])))^(estpar[2]+1.96*sqrt(invfim[2,2])))
@@ -1075,8 +1081,6 @@ saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, fim=FALSE, displa
 rtte.fit<-saemix(saemix.model,saemix.data,saemix.options)
 plot(rtte.fit, plot.type="convergence")
 
-saemix.data<-saemixData(name.data=tte.data, name.group=c("id"),
-  name.predictors=c("time"), name.response="y")
 ```
 
 ## Exiting

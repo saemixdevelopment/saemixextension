@@ -17,7 +17,7 @@
 #' and the covariance structure for the random effects, the matrix includes an additional column with BIC.cov
 #' values that are more appropriate when the comparison only concerns the covariates.
 #' @author Maud Delattre
-#' @references Delattre M, Lavielle M, Poursat MA (2014) A note on BIC in mixed effects models. 
+#' @references M Delattre, M Lavielle, MA Poursat (2014) A note on BIC in mixed effects models. 
 #' Electronic Journal of Statistics 8(1) p. 456-475
 #' @keywords model comparison, AIC, BIC
 #' @examples

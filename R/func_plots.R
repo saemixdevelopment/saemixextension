@@ -85,13 +85,15 @@
 #' \code{\link{saemix.plot.parcov}}, \code{\link{saemix.plot.distpsi}},
 #' \code{\link{saemix.plot.scatterresiduals}}, \code{\link{saemix.plot.vpc}},
 #' \code{\link{saemix.plot.mirror}}
-#' @references Comets  E, Lavenu A, Lavielle M. Parameter estimation in nonlinear mixed effect models using saemix, an R implementation of the SAEM algorithm. Journal of Statistical Software 80, 3 (2017), 1-41.
+#' @references E Comets, A Lavenu, M Lavielle M (2017). Parameter estimation in nonlinear mixed effect models using saemix,
+#' an R implementation of the SAEM algorithm. Journal of Statistical Software, 80(3):1-41.
 #' 
-#' Kuhn E, Lavielle M. Maximum likelihood estimation in nonlinear mixed effects models. Computational Statistics and Data Analysis 49, 4 (2005), 1020-1038.
+#' E Kuhn, M Lavielle (2005). Maximum likelihood estimation in nonlinear mixed effects models. 
+#' Computational Statistics and Data Analysis, 49(4):1020-1038.
 #' 
-#' Comets E, Lavenu A, Lavielle M. SAEMIX, an R version of the SAEM algorithm.
-#' 20th meeting of the Population Approach Group in Europe, Athens, Greece
-#' (2011), Abstr 2173.
+#' E Comets, A Lavenu, M Lavielle (2011). SAEMIX, an R version of the SAEM algorithm. 20th meeting of the 
+#' Population Approach Group in Europe, Athens, Greece, Abstr 2173.
+#' 
 #' @keywords plot
 #' @examples
 #' 
@@ -261,8 +263,8 @@ replace.plot.options<-function(plot.opt,...) {
 #' \item{parameters.versus.covariates}{Plots of the estimate of the individual parameters versus the covariates, using scatterplot for continuous covariates, boxplot for categorical covariates}
 #' \item{randeff.versus.covariates}{Plots of the estimate of the individual random effects versus the covariates, using scatterplot for continuous covariates, boxplot for categorical covariates}
 #' \item{marginal.distribution}{Distribution of each parameter in the model (conditional on covariates when some are included in the model)}
-#' \item{npde}{Plot of npde as in package npde} 
-#' \item{vpc}{Visual Predictive Check} 
+#' \item{npde}{Plot of npde as in package npde (deprecated in 3.0, please use \code{\link{npdeSaemix}} instead)} 
+#' \item{vpc}{Visual Predictive Check (we suggest to use \code{\link{npdeSaemix}} instead)} 
 #' }
 #' 
 #' @param saemixObject an object returned by the \code{\link{saemix}} function
@@ -294,8 +296,8 @@ replace.plot.options<-function(plot.opt,...) {
 #' of individual random effects. Defaults to FALSE
 #' @param marginal.distribution if TRUE, produce plots of the marginal
 #' distribution of the random effects. Defaults to FALSE
-#' @param vpc if TRUE, produce Visual Predictive Check plots. Defaults to FALSE
-#' @param npde if TRUE, produce plots of the npde. Defaults to FALSE
+#' @param vpc if TRUE, produce Visual Predictive Check plots. Defaults to FALSE (we suggest to use \code{\link{npdeSaemix}} instead)
+#' @param npde if TRUE, produce plots of the npde. Defaults to FALSE (deprecated in 3.0, please use \code{\link{npdeSaemix}} instead)
 #' @param \dots optional arguments passed to the plots
 #' 
 #' @return None
@@ -308,16 +310,18 @@ replace.plot.options<-function(plot.opt,...) {
 #' \code{\link{saemix.plot.llis}}, \code{\link{saemix.plot.randeff}},
 #' \code{\link{saemix.plot.obsvspred}}, \code{\link{saemix.plot.fits}},
 #' \code{\link{saemix.plot.parcov}}, \code{\link{saemix.plot.randeffcov}},
-#' \code{\link{saemix.plot.distpsi}},
+#' \code{\link{saemix.plot.distpsi}}, \code{\link{npdeSaemix}}
 #' \code{\link{saemix.plot.scatterresiduals}},
 #' \code{\link{saemix.plot.distribresiduals}}, \code{\link{saemix.plot.vpc}}
-#' @references Comets  E, Lavenu A, Lavielle M. Parameter estimation in nonlinear mixed effect models using saemix, an R implementation of the SAEM algorithm. Journal of Statistical Software 80, 3 (2017), 1-41.
+#' @references E Comets, A Lavenu, M Lavielle M (2017). Parameter estimation in nonlinear mixed effect models using saemix,
+#' an R implementation of the SAEM algorithm. Journal of Statistical Software, 80(3):1-41.
 #' 
-#' Kuhn E, Lavielle M. Maximum likelihood estimation in nonlinear mixed effects models. Computational Statistics and Data Analysis 49, 4 (2005), 1020-1038.
+#' E Kuhn, M Lavielle (2005). Maximum likelihood estimation in nonlinear mixed effects models. 
+#' Computational Statistics and Data Analysis, 49(4):1020-1038.
 #' 
-#' Comets E, Lavenu A, Lavielle M. SAEMIX, an R version of the SAEM algorithm.
-#' 20th meeting of the Population Approach Group in Europe, Athens, Greece
-#' (2011), Abstr 2173.
+#' E Comets, A Lavenu, M Lavielle (2011). SAEMIX, an R version of the SAEM algorithm. 20th meeting of the 
+#' Population Approach Group in Europe, Athens, Greece, Abstr 2173.
+#' 
 #' @keywords plot
 #' @examples
 #' 
@@ -426,7 +430,9 @@ saemix.plot.select<-function(saemixObject,data=FALSE,convergence=FALSE, likeliho
   if(randeff.vs.covariates) plot(saemixObject,plot.type="randeff.vs.covariates",...)
   if(marginal.distribution) plot(saemixObject,plot.type="marginal.distribution",...)
   if(vpc) plot(saemixObject,plot.type="vpc",...)
-  if(npde) plot(saemixObject,plot.type="npde",...)
+    #message("Please use npdeSaemix to obtain VPC and npde\n")
+  if(npde) message("Please use npdeSaemix to obtain VPC and npde\n")
+    # plot(saemixObject,plot.type="npde",...)
 }
 
 #### Metalevel
@@ -466,13 +472,15 @@ saemix.plot.select<-function(saemixObject,data=FALSE,convergence=FALSE, likeliho
 #' Marc Lavielle.
 #' @seealso \code{\link{saemix}}, \code{\link{saemix.plot.data}},
 #' \code{\link{saemix.plot.setoptions}}, \code{\link{plot.saemix}}
-#' @references Comets  E, Lavenu A, Lavielle M. Parameter estimation in nonlinear mixed effect models using saemix, an R implementation of the SAEM algorithm. Journal of Statistical Software 80, 3 (2017), 1-41.
+#' @references E Comets, A Lavenu, M Lavielle M (2017). Parameter estimation in nonlinear mixed effect models using saemix,
+#' an R implementation of the SAEM algorithm. Journal of Statistical Software, 80(3):1-41.
 #' 
-#' Kuhn E, Lavielle M. Maximum likelihood estimation in nonlinear mixed effects models. Computational Statistics and Data Analysis 49, 4 (2005), 1020-1038.
+#' E Kuhn, M Lavielle (2005). Maximum likelihood estimation in nonlinear mixed effects models. 
+#' Computational Statistics and Data Analysis, 49(4):1020-1038.
 #' 
-#' Comets E, Lavenu A, Lavielle M. SAEMIX, an R version of the SAEM algorithm.
-#' 20th meeting of the Population Approach Group in Europe, Athens, Greece
-#' (2011), Abstr 2173.
+#' E Comets, A Lavenu, M Lavielle (2011). SAEMIX, an R version of the SAEM algorithm. 20th meeting of the 
+#' Population Approach Group in Europe, Athens, Greece, Abstr 2173.
+#' 
 #' @keywords plots
 #' @examples
 #' 
@@ -538,7 +546,8 @@ default.saemix.plots<-function(saemixObject,...) {
     saemixObject<-compute.sres(saemixObject)
     assign(namObj,saemixObject,envir=parent.frame())
   }
-  saemix.plot.select(saemixObject,data=TRUE,convergence=TRUE,likelihood=TRUE, observations.vs.predictions=TRUE,residuals.scatter=TRUE, residuals.distribution=TRUE,random.effects=TRUE,correlations=TRUE, marginal.distribution=TRUE,vpc=TRUE,...)
+  saemix.plot.select(saemixObject,data=TRUE,convergence=TRUE,likelihood=TRUE, observations.vs.predictions=TRUE,residuals.scatter=FALSE, residuals.distribution=FALSE,random.effects=TRUE,correlations=TRUE, marginal.distribution=TRUE,vpc=TRUE,...)
+#  saemix.plot.select(saemixObject,data=TRUE,convergence=TRUE,likelihood=TRUE, observations.vs.predictions=TRUE,residuals.scatter=TRUE, residuals.distribution=TRUE,random.effects=TRUE,correlations=TRUE, marginal.distribution=TRUE,vpc=TRUE,...)
 }
 
 basic.gof<-function(saemixObject,...) {
@@ -564,7 +573,7 @@ advanced.gof<-function(saemixObject,...) {
     saemixObject<-compute.sres(saemixObject)
     assign(namObj,saemixObject,envir=parent.frame())
   }
-  saemix.plot.select(saemixObject,residuals.scatter=TRUE,residuals.distribution=TRUE, vpc=TRUE,...)
+  saemix.plot.select(saemixObject, residuals.scatter=TRUE, residuals.distribution=TRUE, vpc=TRUE,...)
 }
 
 individual.fits<-function(saemixObject,...) {
@@ -680,13 +689,15 @@ covariate.fits<-function(saemixObject,which="parameters",...) {
 #' @seealso \code{\link{SaemixObject}},\code{\link{saemix}},
 #' \code{\link{saemix.plot.setoptions}}, \code{\link{saemix.plot.select}},
 #' \code{\link{plot.saemix}}
-#' @references Comets  E, Lavenu A, Lavielle M. Parameter estimation in nonlinear mixed effect models using saemix, an R implementation of the SAEM algorithm. Journal of Statistical Software 80, 3 (2017), 1-41.
+#' @references E Comets, A Lavenu, M Lavielle M (2017). Parameter estimation in nonlinear mixed effect models using saemix,
+#' an R implementation of the SAEM algorithm. Journal of Statistical Software, 80(3):1-41.
 #' 
-#' Kuhn E, Lavielle M. Maximum likelihood estimation in nonlinear mixed effects models. Computational Statistics and Data Analysis 49, 4 (2005), 1020-1038.
+#' E Kuhn, M Lavielle (2005). Maximum likelihood estimation in nonlinear mixed effects models. 
+#' Computational Statistics and Data Analysis, 49(4):1020-1038.
 #' 
-#' Comets E, Lavenu A, Lavielle M. SAEMIX, an R version of the SAEM algorithm.
-#' 20th meeting of the Population Approach Group in Europe, Athens, Greece
-#' (2011), Abstr 2173.
+#' E Comets, A Lavenu, M Lavielle (2011). SAEMIX, an R version of the SAEM algorithm. 20th meeting of the 
+#' Population Approach Group in Europe, Athens, Greece, Abstr 2173.
+#' 
 #' @keywords plot
 #' @examples
 #' 
@@ -747,9 +758,6 @@ covariate.fits<-function(saemixObject,which="parameters",...) {
 #' # LL by Importance Sampling
 #' saemix.plot.llis(saemix.fit)
 #' 
-#' # Scatter plot of residuals
-#' saemix.plot.scatterresiduals(saemix.fit)
-#' 
 #' # Boxplot of random effects
 #' saemix.plot.randeff(saemix.fit)
 #' 
@@ -760,13 +768,21 @@ covariate.fits<-function(saemixObject,which="parameters",...) {
 #' par(mfrow=c(3,2))
 #' saemix.plot.parcov(saemix.fit,new=FALSE)
 #' 
+#' # Scatter plot of residuals
+#' # Not run
+#' # Works interactively but not in the contained environment of CRAN (it looks for a datafile 
+#' # instesad of finding the dataset in the environment)
+#' # saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
+#' # npde.obj<-npdeSaemix(saemix.fit)
+#' # plot(npde.obj)
 #' # VPC, default options (10 bins, equal number of observations in each bin)
-#' # Not run (time constraints for CRAN)
-#' saemix.plot.vpc(saemix.fit)
-#' 
+#' # plot(npde.obj, plot.type="vpc")
+#' # plot(npde.obj, plot.type="covariates")
+#' # plot(npde.obj, plot.type="cov.x.scatter")
+#' # plot(npde.obj, plot.type="cov.ecdf")
 #' # VPC, user-defined breaks for binning
-#' # Not run (time constraints for CRAN)
-#' saemix.plot.vpc(saemix.fit,vpc.method="user", vpc.breaks=c(0.4,0.8,1.5,2.5,4,5.5,8,10,13))
+#' # plot(npde.obj, plot.type="vpc", bin.method="user", bin.breaks=c(0.4,0.8,1.5,2.5,4,5.5,8,10,13))
+#' 
 #' }
 #' @export saemix.plot.data
 
@@ -949,6 +965,9 @@ saemix.plot.obsvspred<-function(saemixObject,...) {
    }
 }
 
+# Eco TODO: deprecate this function to use npde library instead
+# current function only for wres (no PI)
+
 saemix.plot.distribresiduals<-function(saemixObject,...) {
 # Histogram and QQ-plot
   oldpar <- par(no.readonly = TRUE)    # code line i
@@ -958,7 +977,7 @@ saemix.plot.distribresiduals<-function(saemixObject,...) {
   plot.opt$level<-0:1
   plot.opt$smooth<-TRUE
   plot.opt$which.resplot<-c("dist.qqplot","dist.hist")
-  plot.opt$which.pres<-c("wres","npde")
+  plot.opt$which.pres<-c("wres") #,"npde")
   plot.opt<-replace.plot.options(plot.opt,...)
   change.main<-FALSE
   if(plot.opt$main!=saemixObject["prefs"]$main) change.main<-TRUE
@@ -1068,6 +1087,10 @@ saemix.plot.distribresiduals<-function(saemixObject,...) {
   }
 }
 
+# Eco TODO: deprecate this function to use npde library instead
+# removed npde from list of residuals to plot
+# current function should be only for wres (no PI)
+
 saemix.plot.scatterresiduals<-function(saemixObject,...) {
 # Graphs of residuals versus time and predictions
   oldpar <- par(no.readonly = TRUE)    # code line i
@@ -1076,7 +1099,8 @@ saemix.plot.scatterresiduals<-function(saemixObject,...) {
   plot.opt$main<-""
   plot.opt$level<-0:1
   plot.opt$which.resplot<-c("res.vs.x","res.vs.pred")
-  plot.opt$which.pres<-c("wres","npde")
+  plot.opt$which.pres<-c("wres") # only wres, better plots with the npde package
+  #  plot.opt$which.pres<-c("wres","npde")
   plot.opt<-replace.plot.options(plot.opt,...)
   change.main<-FALSE
   if(plot.opt$main!=saemixObject["prefs"]$main) change.main<-TRUE
@@ -1302,6 +1326,8 @@ plotnpde<-function(xobs,npde,ypred) {
     abline(h=0,lty=2)
     abline(h=x1,lty=3);abline(h=(-x1),lty=3)
 }
+
+# Eco TODO: Replaced by a call to the npde library in 3.0, remove in next version
 
 saemix.plot.npde<-function(saemixObject,...) {
   if(length(saemixObject["results"]["npde"])==0) {

@@ -10,9 +10,9 @@
 #' @return An object of the SaemixObject class storing the covariate model and the covariance structure of 
 #' random effects of the final model.
 #' @author Maud Delattre
-#' @references Delattre M, Lavielle M, Poursat MA (2014) A note on BIC in mixed effects models. 
+#' @references M Delattre, M Lavielle, MA Poursat (2014) A note on BIC in mixed effects models. 
 #' Electronic Journal of Statistics 8(1) p. 456-475
-#' Delattre M, Poursat MA (2017) BIC strategies for model choice in a population approach. 
+#' M Delattre, MA Poursat (2017) BIC strategies for model choice in a population approach. 
 #' (arXiv:1612.02405)
 #' @keywords joint covariate and random effects selection, forward, BIC.covariate
 

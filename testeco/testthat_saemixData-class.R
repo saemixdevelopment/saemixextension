@@ -12,6 +12,17 @@ test_that("Using saemixData with dataframe", {
   expect_true(validObject(x))
 })
 
+
+test_that("Reordering data", {
+  theo.saemix<-read.table(file.path(datDir,"theo.saemix.tab"),header=T,na=".")
+  theo2<-theo.saemix[order(theo.saemix$Time),]
+  x<-saemixData(name.data=theo.saemix,header=TRUE,sep=" ",na=NA, name.group=c("Id"),name.predictors=c("Dose","Time"),name.response=c("Concentration"),name.covariates=c("Weight","Sex"),units=list(x="hr",y="mg/L", covariates=c("kg","-")), name.X="Time")
+  x2<-saemixData(name.data=theo2,header=TRUE,sep=" ",na=NA, name.group=c("Id"),name.predictors=c("Dose","Time"),name.response=c("Concentration"),name.covariates=c("Weight","Sex"),units=list(x="hr",y="mg/L", covariates=c("kg","-")), name.X="Time")
+  expect_identical(x@data,x2@data)
+  expect_identical(x@ocov,x2@ocov)
+})
+
+
 test_that("Using saemixData with file on disk", {
   x<-try(saemixData(name.data=file.path(datDir,"PD1.saemix.tab"),header=T,na=".", name.group="subject",name.predictors="dose",name.response="response", name.covariates="gender",units=list(x="mg",y="-",covariates="-"),verbose=TRUE))
   expect_equal(x@name.group,'subject')

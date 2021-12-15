@@ -1,31 +1,40 @@
-
-#' Compute normalised prediction distribution errors
+#' Create an npdeObject from an saemixObject 
 #'
-#' This function uses the npde library to compute npde 
+#' This function uses the npde library to compute normalised prediction distribution errors (npde)
+#' and normalised prediction discrepancies  (npd). The simulations can also be used to plot VPCs. 
+#' As of version 3.0, the plot functions for diagnostics involving VPC, npde or npd are deprecated and
+#' the user will be redirected to the current proposed method (creating an NpdeObject and using the 
+#' plot functions from the library npde).
 #' 
-#' @param saemixObject an object resulting from a saemix fit
+#' @param saemixObject a fitted object resulting from a call to saemix()
 #' @param nsim the number of simulations used to compute npde (1000 by default, we suggest increasing
 #' it for large datasets)
 #' 
 #' @return An object of class \code{\link{NpdeObject}}
 #'
-#' @details See the documentation for \code{\link{npde}} for details on the computation methods
+#' @details Since version 3.0, the saemix package depends on the npde package, which computes the npd/npde and
+#' produces graphs. See the documentation for \code{\link{npde}} for details on the computation methods
 #' See the PDF documentation and the bookdown \url{https://iame-researchcenter.github.io/npde_bookdown/}
 #' for details on the different plots available.
 #' 
 #' @author Emmanuelle Comets <emmanuelle.comets@@bichat.inserm.fr>
 #' @seealso \code{\link{npde.graphs}}, \code{\link{gof.test}}
+#' @seealso \code{\link{NpdeObject}} \code{\link{npde.plot.select}}  \code{\link{autonpde}}
+#' @seealso \code{\link{npde.plot.scatterplot}} \code{\link{npde.plot.dist}}
 #' 
-#' @references Comets E, Brendel K, Mentre F. Computing normalised prediction distribution errors
+#' @references E Comets, K Brendel, F Mentre (2008). Computing normalised prediction distribution errors
 #' to evaluate nonlinear mixed-effect models: the npde add-on package for R. 
-#' Computer Methods and Programs in Biomedicine 2008, 90:154-66.
+#' Computer Methods and Programs in Biomedicine, 90:154-66.
 #' 
-#' Brendel K, Comets E, Laffont C, Laveille C, Mentre F. Metrics for external model evaluation 
-#' with an application to the population pharmacokinetics of gliclazide. \emph{Pharmaceutical Research},
-#' 23:2036--49, 2006.
+#' K Brendel, E Comets, C Laffont, C Laveille, F Mentre (2006). Metrics for external model evaluation 
+#' with an application to the population pharmacokinetics of gliclazide. Pharmaceutical Research,
+#' 23:2036--49
 #' 
 #' @references PDF documentation for npde 3.0: \url{https://github.com/ecomets/npde30/blob/main/userguide_npde_3.1.pdf}
+#' 
+#' @import npde
 #' @export
+#' 
 #' @examples
 #' data(theo.saemix)
 #' 
@@ -66,7 +75,7 @@
 #' # plot(npde.obj, plot.type="cov.x.scatter")
 #' # plot(npde.obj, plot.type="cov.ecdf")
 #' 
-#' @import npde
+#' @importFrom npde autonpde
 
 npdeSaemix<-function(saemixObject, nsim=1000) {
   if(saemixObject@results@status!="fitted") {
@@ -85,7 +94,7 @@ npdeSaemix<-function(saemixObject, nsim=1000) {
   namsim<-data.frame(idsim=saemixObject@sim.data@datasim[,"idsim"],
                      xsim=rep(namobs[,saemixObject@data@name.X],saemixObject@sim.data@nsim),
                      ysim=saemixObject@sim.data@datasim[,"ysim"])
-  npdeObject<-autonpde(namobs=saemixObject@data@data, namsim=namsim, iid=saemixObject@data@name.group, ix=saemixObject@data@name.X, 
+  npdeObject<-autonpde(namobs=namobs, namsim=namsim, iid=saemixObject@data@name.group, ix=saemixObject@data@name.X, 
                        iy=saemixObject@data@name.response, icens="cens", imdv="mdv", icov=saemixObject@data@name.covariates,
                        units=list(x=saemixObject@data@units$x, y=saemixObject@data@units$y))
   

@@ -28,10 +28,16 @@ dir.create(file.path(workDir,"saemix"))
 
 cmd<-paste("cp -rp ",file.path(saemixDir,"R")," ", file.path(workDir,"saemix","/"),sep="")
 system(cmd)
+cmd<-paste("cp -rp ",file.path(saemixDir,"data")," ", file.path(workDir,"saemix","/"),sep="")
+system(cmd)
+cmd<-paste("cp -rp ",file.path(saemixDir,"inst")," ", file.path(workDir,"saemix","/"),sep="")
+system(cmd)
 for(ifile in c("CHANGES","DESCRIPTION")) {
   cmd<-paste("cp ",file.path(saemixDir,ifile)," ", file.path(workDir,"saemix"),sep="")
   system(cmd)
 }
+cmd<-paste("cp ",file.path(saemixDir,"inst","CITATION")," ", file.path(workDir,"saemix","inst"),sep="")
+system(cmd)
 
 
 ```
@@ -40,8 +46,8 @@ for(ifile in c("CHANGES","DESCRIPTION")) {
 
 ```{r compilation}
 # Reduce size of viral load simulation data (to 500 simulations) for CRAN
-setwd(file.path(workDir,"saemix"))
 knitr::opts_chunk$set(root.dir = file.path(workDir,"saemix"))
+setwd(file.path(workDir,"saemix"))
 
 devtools::document(file.path(workDir,"saemix"))
 roxygenise()
@@ -59,9 +65,13 @@ if(testExamples) system("R CMD check --as-cran --run-donttest saemix_3.0.tar.gz"
 
 Examples with CPU or elapsed time > 5s
               user system elapsed
-cow.saemix  18.827  0.088  18.916
-PD1.saemix  13.894  0.040  14.092
-theo.saemix  7.095  0.016   7.112
+rapi.saemix    37.043  0.148  37.203
+cow.saemix     17.601  0.096  17.698
+toenail.saemix 13.748  0.020  13.769
+PD1.saemix     12.040  0.040  12.083
+compare.saemix  6.702  0.012   6.716
+theo.saemix     5.675  0.040   5.715
+yield.saemix    4.980  0.041   5.021
 
 ### Warnings
 
@@ -82,6 +92,7 @@ Documentation not found
 
 ```{r helpTheo}
 ?theo.saemix
+?saemix
 ```
 
 Run on the theophylline example
@@ -133,6 +144,7 @@ Plot results:
 plot(saemix.fit)
 plot(saemix.fit, plot.type="vpc")
 plot(saemix.fit, plot.type="npde")
+ynpde<-npdeSaemix(saemix.fit)
 plot(saemix.fit, plot.type="individual")
 ```
 

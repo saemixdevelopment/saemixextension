@@ -26,6 +26,8 @@ test_file(file.path(saemixDir,"testeco","testthat_saemixData-read.R"))
 
 test_file(file.path(saemixDir,"testeco","testthat_saemixData.R"))
 
+test_file(file.path(saemixDir,"testeco","testthat_saemixData-plot.R"))
+
 # Problème d'environnement - obligée de définir les data frame passés à saemixData dans l'environnement global et de nettoyer après, pas très clean !!!
 rm(theo.saemix)
 rm(PD1.saemix)
