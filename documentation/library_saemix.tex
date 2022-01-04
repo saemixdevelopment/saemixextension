@@ -253,29 +253,38 @@ The \monolix~algorithm can provide three different approximations to the likelih
 
 %The Importance Sampling algorithm computes an estimate $ \ell_M(\yg;\hthetag)$ of the observed likelihood together with its standard error.
 
-\noindent {\bf d) Hypothesis testing and model selection:} % MAUD TODO: add covariate selection BIC and algorithms
+\noindent {\bf d) Hypothesis testing and model selection:} 
 
 We can test the covariate model, the covariance model and the residual error model.
 
 The AIC and BIC criteria are defined by
 \begin{eqnarray}
-AIC &=& - 2 \log \ell_M(\yg;\hthetag) + 2 P \\
-BIC &=& - 2 \log \ell_M(\yg;\hthetag) + \log(N) P
+	AIC &= - 2 \log \ell_M(\yg;\hthetag) + 2 P \\
+	BIC &= - 2 \log \ell_M(\yg;\hthetag) + \log(N) P \label{BICN}
 \end{eqnarray}
 where $P$ is the total number of parameters to be estimated and $N$ is the number of subjects. Note that the BIC defined using this formula is in fact the corrected BIC (BICc) proposed by Raftery to better account for the information in mixed-effect models~\cite{Raftery95}; it differs from the traditional BIC which uses a factor $\log(N_{tot})$ instead of $\log(N)$. The same formula is also used in {\sc Monolix}.
 
+A specific version of BIC can be used for the comparison of covariate models with fixed covariance structure of the random effects~\cite{DelattrePoursatLavielle2014}:
+\begin{equation} 
+BIC_h =- 2 \log \ell_M(\yg;\hthetag) + \log(N) P_R + \log(N_{tot}) P_F \label{BICh}
+\end{equation}
+where $P_R$ (resp.$P_F$) is the number of estimated parameters in $\fixed_effect$ that are related to the covariate effects on the random (resp. non random) components of the individual parameters. It is important to note that $BIC_h$ is not appropriate if the compared models do not share the same covariance model.  
+
+Joint covariate and random effects selection often leads to the definition of many candidate models whose exhaustive comparison by an information criterion such as AIC or BIC is not possible in a reasonable time. An alternative approach is to use stepwise methods. The algorithm proposed in~\cite{DelattrePoursat2020} follows such idea by iteratively combining the classical BIC~\eqref{BICN} and the hybrid BIC~\eqref{BICh} for covariance and covariate model selection respectively.
+ 
 When comparing two nested models ${\cal M}_0$ and ${\cal M}_1$ with dimensions $P_0$ and $P_1$ (with $P_1>P_0$), the Likelihood Ratio Test uses the test statistic 
 $$LRT = 2 ( \log \ell_{M,1}(\yg;\hthetag_1) -  \log \ell_{M,0}(\yg;\hthetag_0) )$$
 According to the hypotheses to test, the limiting distribution of $LRT$ under the null hypothesis is either a $\chi ^2$ distribution, or a mixture of a $\chi^2$ distribution and a
 $\delta-Dirac$ distribution. For example:
 \begin{itemize}
-\item[-] to test whether some fixed effects are null, assuming the same covariance structure of the random effects, one should use
-$$LRT \limite{N\to \infty}{} \chi^2(P_1-P_0) $$
-\item[-] to test whether some correlations of the covariance matrix $\IIV$ are null, assuming the same covariate model, one should use 
-$$LRT \limite{N\to \infty}{} \chi^2(P_1-P_0) $$
-\item[-] to test whether the variance of one of the random effects is zero, assuming the same covariate model, one should use
-$$LRT \limite{N\to \infty}{} \frac{1}{2} \chi^2(1) + \frac{1}{2}\delta_0 $$
+	\item[-] to test whether some fixed effects are null, assuming the same covariance structure of the random effects, one should use
+	$$LRT \limite{N\to \infty}{} \chi^2(P_1-P_0) $$
+	\item[-] to test whether some correlations of the covariance matrix $\IIV$ are null, assuming the same covariate model, one should use 
+	$$LRT \limite{N\to \infty}{} \chi^2(P_1-P_0) $$
+	\item[-] to test whether the variance of one of the random effects is zero, assuming the same covariate model, one should use
+	$$LRT \limite{N\to \infty}{} \frac{1}{2} \chi^2(1) + \frac{1}{2}\delta_0 $$
 \end{itemize}
+
 
 \noindent {\bf e) Estimation of the weighted residuals:}
 

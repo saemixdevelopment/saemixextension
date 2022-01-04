@@ -773,7 +773,7 @@ predict.SaemixModel<-function(object, predictors, psi=c(), id=c(), ...) {
 ####			SaemixModel & SaemixData class - method to plot	predictions from a model for the data in a dataset		####
 ####################################################################################
 
-#' Plot model predictions for a new dataset
+#' Plot model predictions for a new dataset. If the dataset is large, only the first 20 subjects (id's) will be shown.
 #' 
 #' @param x an SaemixModel object
 #' @param y an SaemixData object
@@ -847,13 +847,15 @@ setMethod("plot",c("SaemixModel","SaemixData"),
             }
             if(dim(psi)[1]==1 || dim(psi)[1]<y@N)
               psi<-do.call(rbind,rep(list(psi),length.out=y@N))
+            i1<-match("ilist",names(args1))
+            if(!is.na(i1)) ilist<-eval(args1[[i1]]) else ilist<-NA
             
             nvalues<-100
             xt<-seq(min(y@data[,y@name.X]), max(y@data[,y@name.X]), length.out=nvalues)
             xidep<-data.frame(x=xt)
             colnames(xidep)<-y@name.X
+            id<-y@data[,y@name.group]
             if(length(y@name.predictors)>1) {
-              id<-y@data[,y@name.group]
               otherpred<-y@name.predictors[y@name.predictors != y@name.X]
               x1<-y@data[match(unique(id), id), otherpred, drop=FALSE]
               dat1<-NULL
@@ -873,8 +875,22 @@ setMethod("plot",c("SaemixModel","SaemixData"),
             colnames(gdat)[colnames(gdat)==y@name.X]<-"x"
             colnames(gdat)[colnames(gdat)==y@name.response]<-"y"
             colnames(gdat)[colnames(gdat)==y@name.group]<-"id"
+            zesuj<-unique(gdat$id)
+            if(!is.na(ilist)[1]) {
+              if(is(ilist,"numeric")) ilist<-zesuj[intersect(ilist, 1:length(zesuj))] else ilist<-intersect(ilist, zesuj)
+            } else ilist<-zesuj[1:min(20, length(zesuj))]
+            gdat1<-gdat[gdat$id %in% ilist,]
+            gpred1<-gpred[gpred$id %in% ilist,]
+            if(length(unique(gdat$id))>20) {
+              nrow<-4
+              ncol<-5
+            } else {
+              nrow<-NULL
+              ncol<-NULL
+            }
             
-            g1<-ggplot(data=gdat, aes(x=.data$x, y=.data$y, group=.data$id)) + geom_point() + geom_line(data=gpred,aes(x=.data$x, y=.data$y)) + facet_wrap(.~id, nrow=3, ncol=4) + 
+            g1<-ggplot(data=gdat1, aes(x=.data$x, y=.data$y, group=.data$id)) + geom_point() + geom_line(data=gpred1,aes(x=.data$x, y=.data$y)) +
+              facet_wrap(.~id, nrow=nrow, ncol=ncol) + 
               labs(x=y@name.X, y=y@name.response) + theme_bw()
             return(g1)
           } 

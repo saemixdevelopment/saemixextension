@@ -58,7 +58,8 @@ predict.saemixmodel<-function(object, predictors, psi=NA, id=NA) {
   ypred<-object["model"](psi, id, xidep)
   return(list(param=cbind(id=1:dim(psi)[1],psi), predictions=data.frame(id=idkeep, xidep, pred=unname(ypred))))
 }
-#' Plot model predictions for a new dataset
+
+#' Plot model predictions for a new dataset. If the dataset is large, only the first 20 subjects (id's) will be shown.
 #' 
 #' @param smx.model an SaemixModel object
 #' @param smx.data an SaemixData object
@@ -84,7 +85,7 @@ predict.saemixmodel<-function(object, predictors, psi=NA, id=NA) {
 #' @export
 
 plot.saemixModel <- function(smx.model, smx.data, psi=NA) {
-  if(smx.model@modeltype!="likelihood") {
+  if(smx.model@modeltype!="structural") {
     message("Currently plots of the model are only available for continuous response models\n")
     return()
   }
@@ -123,8 +124,21 @@ plot.saemixModel <- function(smx.model, smx.data, psi=NA) {
   colnames(gdat)[colnames(gdat)==smx.data@name.response]<-"y"
   colnames(gdat)[colnames(gdat)==smx.data@name.group]<-"id"
   
-  g1<-ggplot(data=gdat, aes(x=x, y=y, group=id)) + geom_point() + geom_line(data=gpred,aes(x=x, y=y)) + facet_wrap(.~id, nrow=3, ncol=4) + 
-    labs(x=smx.data@name.X, y=smx.data@name.response) + theme_bw()
+  if(length(unique(gdat$id))>20) {
+    nrow<-4
+    ncol<-5
+    zesuj<-unique(gdat$id)
+    gdat1<-gdat[gdat$id %in% zesuj[1:12],]
+    gpred1<-gpred[gpred$id %in% zesuj[1:12],]
+  } else {
+    gdat1<-gdat
+    gpred1<-gpred
+    nrow<-NULL
+    ncol<-NULL
+  }
+  
+  g1<-ggplot(data=gdat1, aes(x=x, y=y, group=id)) + geom_point() + geom_line(data=gpred1,aes(x=x, y=y)) + 
+    facet_wrap(.~id, nrow=nrow, ncol=ncol) + labs(x=smx.data@name.X, y=smx.data@name.response) + theme_bw()
   return(g1)
 } 
 
