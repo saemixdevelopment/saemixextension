@@ -26,6 +26,7 @@ knitr::opts_chunk$set(echo = TRUE)
 saemixDir<-"/home/eco/work/saemix/saemixextension"
 progDir<-file.path(saemixDir,"R")
 datDir<-file.path(saemixDir,"data")
+figDir<-file.path(saemixDir,"documentation","figs")
 
 # Libraries
 library(MASS)
@@ -38,6 +39,8 @@ library(rlang)
 # testMode FALSE => tests the library functions by loading them
 testMode<-FALSE
 
+# Whether to save the plots for the documentation
+saveForDocs<-FALSE
 ```
 
 # Testing library
@@ -191,6 +194,10 @@ wstat<-(-2)*(fit1["results"]["ll.is"]-fit2["results"]["ll.is"])
 
 cat("LRT test for covariate effect on EC50: p-value=",1-pchisq(wstat,1),"\n")
 
+if(FALSE) {
+  plot(model1, saemix.data)
+  plot(model1, saemix.data, psi=c(0, 200, 50))
+}
 ```
 
 

@@ -599,10 +599,13 @@ setMethod("summary","SaemixModel",
 #' 
 #' @param x an SaemixData object or an SaemixSimData object
 #' @param y unused, present for compatibility with base plot function
-#' @param range range of X over which the model is to be plotted
+#' @param range range of X over which the model is to be plotted. Important note: the *first* predictor will be used for the X-axis, the other
+#' predictors when present need to be passed sequentially in the predictors argument, in the order in which they appear in the model
+#' Less important note: please use explicitely range=XXX where XXX is of the form c(a,b) to pass the plotting range on the X-axis)
 #' @param psi parameters of the model 
 #' @param predictors additional predictors needed to pass on to the model
-#' @param ... additional arguments to be passed on to plot (titles, legends, ...)
+#' @param ... additional arguments to be passed on to plot (titles, legends, ...). Use verbose=TRUE to print some messages 
+#' concerning the characteristics of the plot
 #' 
 #' @aliases plot,SaemixModel-methods 
 #' @aliases plot,SaemixModel
@@ -611,27 +614,54 @@ setMethod("summary","SaemixModel",
 ### #' @docType methods
 #' @exportMethod plot
 #' @rdname plot-SaemixModel
+#' 
+#'@examples
+#' # Note that we have written the PK model so that time is the first predictor (xidep[,1]) 
+#' # and dose the second
+#' model1cpt<-function(psi,id,xidep) { 
+#'      tim<-xidep[,1]  
+#'      dose<-xidep[,2]
+#'      ka<-psi[id,1]
+#'      V<-psi[id,2]
+#'      CL<-psi[id,3]
+#'      k<-CL/V
+#'      ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
+#'      return(ypred)
+#'      }
+#'  x<-saemixModel(model=model1cpt,description="One-compartment model with first-order absorption", 
+#'                psi0=matrix(c(1.5,30,1), ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))))
+#'  # Plot the model over 0-24h, using the parameters given in psi0 and a dose of 300
+#'  plot(x, range=c(0,24), predictors=300, verbose=TRUE)
+#'  # Plot the model over 0-24h, using another set of parameters and a dose of 350
+#'  plot(x, range=c(0,24), psi=c(1.5,20,2), predictors=350, verbose=TRUE)
+
 
 # Plot simulations from the model
 # ECO TODO: adjust to multiple responses
 
 setMethod("plot","SaemixModel",
-  function(x,y,range=c(0,1),psi,predictors,...) {
-    if(missing(psi)) psi<-x@psi0[1,]
-    psi<-matrix(psi,nrow=1)
+  function(x, y , range=c(0,1), psi=NULL, predictors=NULL, ...) {
+    # If verbose=TRUE, print messages
+    args1<-match.call(expand.dots=TRUE)
+    list.args <- list(...)
+    i1<-match("verbose",names(args1))
+    if(!is.na(i1)) verbose<-FALSE else verbose<-eval(args1[[i1]])
+    # Set psi by default to the starting parameters given in the model (if not given as arguments)
+    if(is.null(psi)) psi<-x@psi0[1,,drop=FALSE]
+    if(is.null(dim(psi)[1])) psi<-matrix(psi,nrow=1)
     npred<-length(x@name.predictors)
-    if(npred==0 & missing(predictors)) npred<-1 else {
+    if(npred==0 & is.null(predictors)) npred<-1 else {
       if(npred==0 & !missing(predictors)) {
         npred<-1+length(predictors)
       } else {
         if(npred>1 & (missing(predictors) || length(predictors)<(npred-1))) {
-        message("Please provide the value of the predictors other than X\n")
+        if(verbose) message("Please provide the value of the predictors other than X\n")
         return("Missing predictors")
       }
      }
     }
     if(length(x@name.response)>1) {
-      message("Currently the plot can only be obtained for single-response models.\n")
+      if(verbose) message("Currently the plot can only be obtained for single-response models.\n")
       return()
     }
     npts<-100
@@ -648,9 +678,9 @@ setMethod("plot","SaemixModel",
       } else colnames(xdep)<-paste("Predictor",1:npred)
     }
     ypred<-try(x@model(psi,id,xdep))
-    if(!is.numeric(ypred)) {
+    if(!is.numeric(ypred) & verbose) {
       message("Problem when attempting to obtain predictions from the model.\n")
-      message("Usage: plot(x,range=c(0,1),psi,predictors) \n")
+      message("Usage: plot(x, range=c(0,1), psi, predictors) \n")
       message("Possible solutions can be:\n")
       message("   1. provide suitable values for X (option range=c(<lower bound>, <upper bound>))\n")
       message("   2. provide values for additional predictors (option predictors=c(<value for predictor 1>, <value for predictor 2>, ...)).\n")
@@ -658,7 +688,7 @@ setMethod("plot","SaemixModel",
       message("   4. the predictor used the X-axis is assumed to be in the first column; please check your model is written in a compatible way.\n")
     } else {
       if(length(x@name.X)==0 | length(x@name.predictors)==0) message("Warning: X predictor supposed to be on the first axis\n")
-      message("Plot characteristics:\n")
+      if(verbose) message("Plot characteristics:\n")
       if(npred>1) {
         for(j in 1:dim(xdep)[2]) {
     if(length(x@name.X)==0) {
@@ -667,8 +697,8 @@ setMethod("plot","SaemixModel",
       if(colnames(xdep)[j]!=x@name.X) message("    predictor:",colnames(xdep)[j],"=",xdep[1,j],"\n")
     }
       }}
-      message("   range for X-axis:",min(xval),"-",max(xval),"\n")
-      message("   parameters used in the simulation:", paste(x@name.modpar,"=",psi[1,],collapse=", "),"\n")
+      if(verbose) message("   range for X-axis:",min(xval),"-",max(xval),"\n")
+      if(verbose) message("   parameters used: ", paste(x@name.modpar,"=",psi[1,],collapse=", "),"\n")
       plot(xval,ypred,type="l",xlab=ifelse(length(x@name.X)==0, "X",x@name.X),ylab=ifelse(length(x@name.response)==0, "Response",x@name.response))
     }
   }
@@ -838,6 +868,8 @@ setMethod("plot",c("SaemixModel","SaemixData"),
             }
             args1<-match.call(expand.dots=TRUE)
             list.args <- list(...)
+            i1<-match("verbose",names(args1))
+            if(!is.na(i1)) verbose<-FALSE else verbose<-eval(args1[[i1]])
             i1<-match("psi",names(args1))
             if(!is.na(i1)) psi<-eval(args1[[i1]]) else psi<-x["psi0"][1,,drop=FALSE]
             if(is.null(dim(psi))) psi<-as.data.frame(t(psi)) # psi given as a vector

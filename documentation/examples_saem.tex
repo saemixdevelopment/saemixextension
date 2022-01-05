@@ -59,19 +59,25 @@ The data is shown in figure~\ref{fig:theodata}.
 \caption{Theophylline concentrations versus time for the 12 subjects included in the study.} \label{fig:theodata}
 \end{figure}
 
-The following code was used in \R~to read the data and model:
+The following code was used in \R~to read the data, using the saemixData to create the structured object we will use in the analysis, and the {\sf plot} function developed for SaemixData objects to obtain the plot in figure~\ref{fig:theodata}:
 \begin{verbatim}
 library(saemix)
 
 data(theo.saemix)
 saemix.data<-saemixData(name.data=theo.saemix,header=TRUE,sep=" ",na=NA, 
-name.group=c("Id"),name.predictors=c("Dose","Time"),name.response=c("Concentration"), 
-name.covariates=c("Weight","Sex"),units=list(x="hr",y="mg/L",covariates=c("kg","-")), 
-name.X="Time")
+  name.group=c("Id"),name.predictors=c("Dose", "Time"),name.response=c("Concentration"), 
+  name.covariates=c("Weight","Sex"),units=list(x="hr",y="mg/L",covariates=c("kg","-")), 
+  name.X="Time")
+  
+plot(saemix.data)
+\end{verbatim}
+The {\sf name.X} is used to specify which of the predictors should be used on the X-axis, it is optional when the first predictor in the list.
 
+The following code is used to specify the model:
+\begin{verbatim}
 model1cpt<-function(psi,id,xidep) { 
-	  dose<-xidep[,1]
 	  tim<-xidep[,2]  
+	  dose<-xidep[,1]
 	  ka<-psi[id,1]
 	  V<-psi[id,2]
 	  CL<-psi[id,3]
@@ -80,12 +86,12 @@ model1cpt<-function(psi,id,xidep) {
 	  return(ypred)
 }
 saemix.model<-saemixModel(model=model1cpt,
-description="One-compartment model with first-order absorption", 
-psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3, byrow=TRUE,dimnames=list(NULL, 
-c("ka","V","CL"))),transform.par=c(1,1,1), 
-covariate.model=matrix(c(0,0,1,0,0,0),ncol=3,byrow=TRUE),fixed.estim=c(1,1,1),
-covariance.model=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE), 
-omega.init=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE), error.model="constant")
+  description="One-compartment model with first-order absorption", 
+  psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3, byrow=TRUE,dimnames=list(NULL, 
+    c("ka","V","CL"))),transform.par=c(1,1,1), 
+  covariate.model=matrix(c(0,0,1,0,0,0),ncol=3,byrow=TRUE),fixed.estim=c(1,1,1),
+  covariance.model=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE), 
+  omega.init=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE), error.model="constant")
 \end{verbatim}
 
 In this example, we specify the vector of starting values through \texttt{psi0}, which is defined as the following matrix:
@@ -100,8 +106,8 @@ covariate.model=matrix(c(0,1,1,0,0,1),ncol=3,byrow=TRUE)
 \end{verbatim}
 and give different starting values for each parameter-relationship in \texttt{psi0}, for example 0.1 for both weight effects and -0.1 for the gender effect:
 \begin{verbatim}
-psi0=matrix(c(1.,20,0.5,0,0.1,0.1,0,0,-0.1),ncol=3, byrow=TRUE,dimnames=list(NULL, 
-c("ka","V","CL")))
+psi0=matrix(c(1.,20,0.5,0,0.1,0.1,0,0,-0.1),ncol=3, byrow=TRUE,
+  dimnames=list(NULL, c("ka","V","CL")))
 \end{verbatim}
 
 Note that the model requires two predictors, dose and time. The user is responsible for writing the model function and checking the consistency between the model function and the data. Here, the first predictor (first column) is dose and the second predictor is time so that we need both items in the dataset, and we need to give the names of the two predictors in the proper order (the order corresponding to the way the model function is written here) when creating the data object. This is a single-dose administration and therefore the dose column contains the same dose repeated for each time-point. However, for graphs we want the observations to be plotted versus time and not versus dose; by default, the program will use the first predictor as the X axis, but we override this behaviour here by setting the option {\sf name.X="Time"} in the creation of the data object, so that the graphs will use time on the X-axis.
@@ -109,7 +115,7 @@ Note that the model requires two predictors, dose and time. The user is responsi
 Then we fit the model using the {\sf saemix()} function:
 \begin{verbatim}
 saemix.fit<-saemix(saemix.model,saemix.data,list(seed=632545,nb.chains=5,
-nbiter.saemix = c(300, 150)))
+  nbiter.saemix = c(300, 150)))
 \end{verbatim}
 We use 5 chains here to stabilise the estimation because there are only 12 subjects in the dataset (by default, the algorithm will increase the number of chains if there are less than 50 subjects in the dataset, and set it to a higher value as describe in section~\ref{sec:usingsaemix}), and we increase the number of steps in the second stage to 150 (default: 100) to show how to set this option. Increasing the number of iterations in the second stage helps to obtain a more stable conditional distribution for the individual parameters.
 
@@ -443,7 +449,6 @@ The data is shown in figure~\ref{fig:PDdata}.
 \caption{Effect versus dose for the data simulated with an E$_{\rm max}$ model, with a gender effect on $ED_{50}$ (left) and without a gender effect (right).} \label{fig:PDdata}
 \end{figure}
 
-The following code was used in \R~to run this example on the first dataset:
 \begin{verbatim}
 library(saemix)
 data(PD1.saemix)
@@ -471,12 +476,24 @@ modelemax<-function(psi,id,xidep) {
   return(f)
 }
 saemix.model<-saemixModel(model=modelemax,description="Emax model", 
-psi0=matrix(c(20,300,20,0,0,0),ncol=3,byrow=TRUE,
-dimnames=list(NULL,c("E0","Emax","EC50"))),transform.par=c(1,1,1), 
-covariate.model=matrix(c(0,0,1),ncol=3,byrow=TRUE), 
-fixed.estim=c(1,1,1),covariance.model=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,
-byrow=TRUE),error.model="constant")
+  psi0=matrix(c(20,300,20,0,0,0),ncol=3,byrow=TRUE,
+  dimnames=list(NULL,c("E0","Emax","EC50"))),transform.par=c(1,1,1), 
+  covariate.model=matrix(c(0,0,1),ncol=3,byrow=TRUE), 
+  fixed.estim=c(1,1,1), error.model="constant",
+  covariance.model=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE))
+\end{verbatim}
+We can check the predictions for the model using the plot function with the model and data objects as arguments (predictions will be obtained for the parameters in the {\sf psi0} argument of the model), as well as change the parameters on the fly using the {\sf psi=c(XXX)} argument. If additional predictors are needed by the model, we would add them using {\sf predictors=c(XXX)}. The {\sf ilist} argument is used to specify which subjects to plot (by default, the first 20 subjects are used):
+\begin{verbatim}
+# Predictions for psi0
+plot(saemix.model, saemix.data)
 
+# Predictions for psi=c(0, 200, 50)
+plot(saemix.model, saemix.data, psi=c(0, 200, 50), ilist=1:12)
+\end{verbatim}
+\noindent {\bf Note:} when applied directly, the {\sf plot} function requires the first predictor (here, the only one, dose) in the model to be the one on the X-axis, if there are several predictors in the model (see the online help example for how to permute the two predictors in the theophylline example to use this function). The {\sf plot} function can also be applied after a model fit to the two elements (model and data) in an SaemixObject object, in which case the mapping of the predictors will be automatic and predictions can be obtained for the population or individual parameters.
+
+The following code was used in \R~to run this example on the two datasets:
+\begin{verbatim}
 saemix.options<-list(directory=directory,algorithms=c(1,1,1),nb.chains=1, 
 save=FALSE,save.graphs=FALSE)
 

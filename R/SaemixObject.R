@@ -251,7 +251,7 @@ setMethod(
 #' @param displayProgress when TRUE, the convergence plots are plotted after
 #' every nbdisplay iteration, and a dot is written in the terminal window to
 #' indicate progress. When FALSE, plots are not shown and the algorithm runs
-#' silently. Defaults to TRUE
+#' silently. Defaults to FALSE
 #' @param nnodes.gq number of nodes to use for the Gaussian quadrature when
 #' computing the likelihood with this method (defaults to 12)
 #' @param nsd.gq span (in SD) over which to integrate when computing the
@@ -306,7 +306,7 @@ setMethod(
 #' 
 #' @export saemixControl
 
-saemixControl<-function(map=TRUE,fim=TRUE,ll.is=TRUE,ll.gq=FALSE,nbiter.saemix=c(300,100), nbiter.sa=NA, nb.chains=1,fix.seed=TRUE,seed=23456,nmc.is=5000,nu.is=4, print.is=FALSE,nbdisplay=100,displayProgress=TRUE,nbiter.burn=5,nbiter.map=5, nbiter.mcmc=c(2,2,2,0),proba.mcmc=0.4,stepsize.rw=0.4,rw.init=0.5,alpha.sa=0.97,  nnodes.gq=12,nsd.gq=4,maxim.maxiter=100,nb.sim=1000,nb.simpred=100, ipar.lmcmc=50,ipar.rmcmc=0.05, print=TRUE, save=TRUE, save.graphs=TRUE,directory="newdir",warnings=FALSE) {
+saemixControl<-function(map=TRUE,fim=TRUE,ll.is=TRUE,ll.gq=FALSE,nbiter.saemix=c(300,100), nbiter.sa=NA, nb.chains=1,fix.seed=TRUE,seed=23456,nmc.is=5000,nu.is=4, print.is=FALSE, nbdisplay=100, displayProgress=FALSE, nbiter.burn=5,nbiter.map=5, nbiter.mcmc=c(2,2,2,0),proba.mcmc=0.4,stepsize.rw=0.4,rw.init=0.5,alpha.sa=0.97,  nnodes.gq=12,nsd.gq=4,maxim.maxiter=100,nb.sim=1000,nb.simpred=100, ipar.lmcmc=50,ipar.rmcmc=0.05, print=TRUE, save=TRUE, save.graphs=TRUE,directory="newdir",warnings=FALSE) {
   if(fix.seed) seed<-seed else {
     rm(.Random.seed)
     runif(1)

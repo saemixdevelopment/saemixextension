@@ -1,8 +1,17 @@
-Version 3.0 -  November 2021
+Version 3.0 -  January 2022
 
 o Extension to noncontinuous data models
    * New argument in saemixModel to differentiate between continuous (type = structural) and noncontinuous (type = likelihood)
    * New examples have been included in the package to showcase discrete response models (see the online documentation for more information on lung.saemix, toenail.saemix, knee.saemix)
+
+o Verbosity
+   * displayProgress is now set to FALSE by default, which suppresses the convergence plots previously shown during the fit
+   * running saemix, as well as obtaining diagnostic plots, has been made much more silent by suppressing most messages and warnings unless the user explicitely requests a verbose output (usually by passing a verbose=TRUE argument to functions such as plot)
+   
+o Plot functions for models
+   * the predictions of a model over a range of X-values can be plotted for the starting values of the parameters or for a set of selected values
+   * an SaemixModel object can also be combined with an SaemixData object to plot the predictions corresponding to the design in the data object
+   * both these functions can be used to check the starting values before a fit
 
 o Updated user guide (PDF)
    * available from https://github.com/saemixdevelopment/saemixextension/blob/master/documentation/userguide_saemix3.pdf
@@ -20,7 +29,7 @@ o Changes
    * function simul.saemix has been renamed simulate.saemix
 
 o Dependencies
-   * saemix now depends on ggplot2, grid and gridExtra
+   * saemix now depends on npde (3.2), ggplot2, grid and gridExtra
    
 Version 2.4 -  February 2021
 
