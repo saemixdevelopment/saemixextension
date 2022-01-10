@@ -14,9 +14,10 @@
 \fi}
 \global\let\hyper@last\relax 
 \gdef\HyperFirstAtBeginDocument#1{#1}
-\providecommand*\HyPL@Entry[1]{}
+\providecommand\HyField@AuxAddToFields[1]{}
+\providecommand\HyField@AuxAddToCoFields[2]{}
 \bibstyle{acm}
-\HyPL@Entry{0<</S/D>>}
+\citation{R}
 \citation{R}
 \citation{Kuhn05}
 \citation{LavielleMonolix}
@@ -46,7 +47,7 @@
 \@writefile{toc}{\contentsline {section}{\numberline {1.2}Installation and legalese}{7}{section.1.2}}
 \newlabel{sec:installation}{{1.2}{7}{Installation and legalese}{section.1.2}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {1.2.1}Installation}{7}{subsection.1.2.1}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {1.2.2}Citing {\sc  SAEMIX}}{7}{subsection.1.2.2}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.2.2}Citing {\sf  saemix}}{7}{subsection.1.2.2}}
 \citation{Davidian95}
 \citation{davgil1}
 \citation{PinheiroBates00}
@@ -64,7 +65,7 @@
 \@writefile{toc}{\contentsline {paragraph}{Categorical data:}{9}{section*.6}}
 \@writefile{toc}{\contentsline {paragraph}{Count data:}{10}{section*.7}}
 \@writefile{toc}{\contentsline {subsubsection}{Time-to-event outcome}{10}{section*.8}}
-\citation{Lavielle14}
+\citation{LavielleMonolix}
 \newlabel{survival}{{1.4}{11}{Time-to-event outcome}{equation.1.3.4}{}}
 \newlabel{pdf_tte}{{1.7}{11}{Time-to-event outcome}{equation.1.3.7}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {1.3.2}The statistical model for the individual parameters}{11}{subsection.1.3.2}}
@@ -76,7 +77,7 @@
 \newlabel{section_model_contcov}{{1.3.2}{12}{Example of continuous covariate model}{section*.10}{}}
 \@writefile{toc}{\contentsline {subsubsection}{Example of categorical covariate model}{13}{section*.11}}
 \newlabel{section_model_catcov}{{1.3.2}{13}{Example of categorical covariate model}{section*.11}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {1.3.3}General form of the model}{13}{subsection.1.3.3}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {1.3.3}General form of the non-linear mixed effect model (NLMEM)}{13}{subsection.1.3.3}}
 \citation{Dempster77}
 \citation{Wu83}
 \citation{Delyon}
@@ -98,34 +99,37 @@
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.1.3}The Simulated Annealing SAEM algorithm}{20}{subsection.2.1.3}}
 \newlabel{tau1}{{2.14}{20}{The Simulated Annealing SAEM algorithm}{equation.2.1.12}{}}
 \newlabel{tau2}{{2.15}{20}{The Simulated Annealing SAEM algorithm}{equation.2.1.12}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {2.2}Estimation of the Fisher Information matrix}{21}{section.2.2}}
-\newlabel{sec_fish}{{2.2}{21}{Estimation of the Fisher Information matrix}{section.2.2}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.2.1}Linearization of the model}{21}{subsection.2.2.1}}
+\citation{Karimi19}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1.4}The MCMC-SAEM algorithm for non continuous data models}{21}{subsection.2.1.4}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1.5}A fast variant of the MCMC-SAEM algorithm for general data models}{21}{subsection.2.1.5}}
 \citation{Louis82}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.2.2}A stochastic approximation of the Fisher Information Matrix}{22}{subsection.2.2.2}}
-\newlabel{louis}{{2.17}{22}{A stochastic approximation of the Fisher Information Matrix}{equation.2.2.17}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {2.3}Estimation of the individual parameters}{22}{section.2.3}}
-\newlabel{section_indivparam}{{2.3}{22}{Estimation of the individual parameters}{section.2.3}{}}
-\newlabel{Lmcmc}{{2.20}{24}{Estimation of the individual parameters}{equation.2.3.20}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {2.4}Estimation of the likelihood}{24}{section.2.4}}
-\newlabel{estilik}{{2.4}{24}{Estimation of the likelihood}{section.2.4}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.4.1}Linearization of the model}{24}{subsection.2.4.1}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.4.2}Estimation using importance sampling}{24}{subsection.2.4.2}}
-\newlabel{islike}{{2.21}{25}{Estimation using importance sampling}{equation.2.4.21}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.4.3}Estimation using Gaussian Quadrature}{25}{subsection.2.4.3}}
-\newlabel{sec:gqlike}{{2.4.3}{25}{Estimation using Gaussian Quadrature}{subsection.2.4.3}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {2.5}Model predictions}{26}{section.2.5}}
-\newlabel{section_preds}{{2.5}{26}{Model predictions}{section.2.5}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.5.1}Population predictions}{26}{subsection.2.5.1}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.5.2}Individual predictions}{26}{subsection.2.5.2}}
-\@writefile{toc}{\contentsline {section}{\numberline {2.6}Estimation of the weighted residuals}{27}{section.2.6}}
-\newlabel{section_wres}{{2.6}{27}{Estimation of the weighted residuals}{section.2.6}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.6.1}Population Weighted Residuals}{27}{subsection.2.6.1}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.6.2}Individual Weighted Residuals}{27}{subsection.2.6.2}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.6.3}Normalised Prediction Distribution Errors}{28}{subsection.2.6.3}}
-\newlabel{eq:pdedef}{{2.22}{28}{Normalised Prediction Distribution Errors}{equation.2.6.22}{}}
-\newlabel{eq:decorrsim}{{2.23}{28}{Normalised Prediction Distribution Errors}{equation.2.6.23}{}}
-\newlabel{eq:decorrobs}{{2.24}{28}{Normalised Prediction Distribution Errors}{equation.2.6.24}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {2.2}Estimation of the Fisher Information matrix}{23}{section.2.2}}
+\newlabel{sec_fish}{{2.2}{23}{Estimation of the Fisher Information matrix}{section.2.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2.1}Linearization of the model}{23}{subsection.2.2.1}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.2.2}A stochastic approximation of the Fisher Information Matrix}{24}{subsection.2.2.2}}
+\newlabel{louis}{{2.21}{24}{A stochastic approximation of the Fisher Information Matrix}{equation.2.2.21}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {2.3}Estimation of the individual parameters}{24}{section.2.3}}
+\newlabel{section_indivparam}{{2.3}{24}{Estimation of the individual parameters}{section.2.3}{}}
+\newlabel{Lmcmc}{{2.24}{25}{Estimation of the individual parameters}{equation.2.3.24}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {2.4}Estimation of the likelihood}{26}{section.2.4}}
+\newlabel{estilik}{{2.4}{26}{Estimation of the likelihood}{section.2.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.4.1}Linearization of the model}{26}{subsection.2.4.1}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.4.2}Estimation using importance sampling}{26}{subsection.2.4.2}}
+\newlabel{islike}{{2.25}{26}{Estimation using importance sampling}{equation.2.4.25}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.4.3}Estimation using Gaussian Quadrature}{27}{subsection.2.4.3}}
+\newlabel{sec:gqlike}{{2.4.3}{27}{Estimation using Gaussian Quadrature}{subsection.2.4.3}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {2.5}Model predictions}{27}{section.2.5}}
+\newlabel{section_preds}{{2.5}{27}{Model predictions}{section.2.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.5.1}Population predictions}{27}{subsection.2.5.1}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.5.2}Individual predictions}{28}{subsection.2.5.2}}
+\@writefile{toc}{\contentsline {section}{\numberline {2.6}Estimation of the weighted residuals}{28}{section.2.6}}
+\newlabel{section_wres}{{2.6}{28}{Estimation of the weighted residuals}{section.2.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.6.1}Population Weighted Residuals}{28}{subsection.2.6.1}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.6.2}Individual Weighted Residuals}{29}{subsection.2.6.2}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.6.3}Normalised Prediction Distribution Errors}{29}{subsection.2.6.3}}
+\newlabel{eq:pdedef}{{2.26}{29}{Normalised Prediction Distribution Errors}{equation.2.6.26}{}}
+\newlabel{eq:decorrsim}{{2.27}{30}{Normalised Prediction Distribution Errors}{equation.2.6.27}{}}
+\newlabel{eq:decorrobs}{{2.28}{30}{Normalised Prediction Distribution Errors}{equation.2.6.28}{}}
 \@writefile{toc}{\contentsline {chapter}{\numberline {3}The {\sf  saemix} package}{31}{chapter.3}}
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
@@ -147,6 +151,10 @@
 \@writefile{lot}{\contentsline {table}{\numberline {3.2}{Elements contained in the results object.}}{37}{table.3.2}}
 \newlabel{tab:resSlots}{{3.2}{37}{Elements contained in the results object}{table.3.2}{}}
 \citation{Raftery95}
+\citation{DelattrePoursatLavielle2014}
+\citation{DelattrePoursat2020}
+\newlabel{BICN}{{3.2}{38}{The outputs}{equation.3.1.1}{}}
+\newlabel{BICh}{{3.3}{38}{The outputs}{equation.3.1.3}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.1.3}Plots}{40}{subsection.3.1.3}}
 \newlabel{sec:plot.functions}{{3.1.3}{40}{Plots}{subsection.3.1.3}{}}
 \citation{CometsCMPB08}
@@ -163,16 +171,16 @@
 \newlabel{sec:techystuff}{{3.2}{46}{Classes in the saemix package}{section.3.2}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.2.1}A very short introduction to S4 classes}{46}{subsection.3.2.1}}
 \newlabel{sec:introS4}{{3.2.1}{46}{A very short introduction to S4 classes}{subsection.3.2.1}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.2.2}S4 classes used in {\sc  SAEMIX}}{47}{subsection.3.2.2}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2.2}S4 classes used in {\sf  saemix}}{47}{subsection.3.2.2}}
 \newlabel{sec:saemixS4}{{3.2.2}{47}{S4 classes used in \monolix }{subsection.3.2.2}{}}
 \@writefile{toc}{\contentsline {subsubsection}{Visible S4 objects}{47}{section*.12}}
 \@writefile{toc}{\contentsline {subsubsection}{Hidden S4 objects}{48}{section*.13}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.2.3}Methods for S4 objects in {\sc  SAEMIX}}{49}{subsection.3.2.3}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2.3}Methods for S4 objects in {\sf  saemix}}{49}{subsection.3.2.3}}
 \@writefile{toc}{\contentsline {subsubsection}{Generic methods}{49}{section*.14}}
 \@writefile{toc}{\contentsline {subsubsection}{Specific methods}{50}{section*.15}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.2.4}Accessing S4 objects in {\sc  SAEMIX}}{51}{subsection.3.2.4}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2.4}Accessing S4 objects in {\sf  saemix}}{51}{subsection.3.2.4}}
 \@writefile{toc}{\contentsline {subsubsection}{Help for S4 objects and methods}{51}{section*.16}}
-\@writefile{toc}{\contentsline {subsubsection}{Elements for S4 objects defined in {\sc  SAEMIX}}{52}{section*.17}}
+\@writefile{toc}{\contentsline {subsubsection}{Elements for S4 objects defined in {\sf  saemix}}{52}{section*.17}}
 \citation{NONMEM}
 \citation{Davidian95}
 \citation{Pinheiro95}
@@ -186,79 +194,108 @@
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.1.1}One-compartment model}{53}{subsection.4.1.1}}
 \@writefile{lof}{\contentsline {figure}{\numberline {4.1}{\ignorespaces Theophylline concentrations versus time for the 12 subjects included in the study.}}{54}{figure.4.1}}
 \newlabel{fig:theodata}{{4.1}{54}{Theophylline concentrations versus time for the 12 subjects included in the study}{figure.4.1}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {4.1}{\ignorespaces Pharmacokinetic parameters estimated by {\sc  SAEMIX}\nobreakspace  {}for the theophylline data.}}{59}{table.4.1}}
-\newlabel{tab:paramtheo}{{4.1}{59}{Pharmacokinetic parameters estimated by \monolix ~for the theophylline data}{table.4.1}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4.1}{\ignorespaces Pharmacokinetic parameters estimated by {\sf  saemix}\nobreakspace  {}for the theophylline data.}}{60}{table.4.1}}
+\newlabel{tab:paramtheo}{{4.1}{60}{Pharmacokinetic parameters estimated by \monolix ~for the theophylline data}{table.4.1}{}}
 \@writefile{lof}{\contentsline {figure}{\numberline {4.2}{\ignorespaces Convergence plots for the estimated pharmacokinetic parameters and the variabilities.}}{60}{figure.4.2}}
 \newlabel{fig:convergtheo}{{4.2}{60}{Convergence plots for the estimated pharmacokinetic parameters and the variabilities}{figure.4.2}{}}
 \@writefile{lof}{\contentsline {figure}{\numberline {4.3}{\ignorespaces Estimating the log-likelihood by Importance Sampling.}}{61}{figure.4.3}}
 \newlabel{fig:LLIS}{{4.3}{61}{Estimating the log-likelihood by Importance Sampling}{figure.4.3}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.4}{\ignorespaces Observations versus predictions (left: population predictions, right: individual predictions).}}{61}{figure.4.4}}
-\newlabel{fig:theodiagnos}{{4.4}{61}{Observations versus predictions (left: population predictions, right: individual predictions)}{figure.4.4}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.5}{\ignorespaces Individual plots for the 12 subjects in the study. Dots represent observations and the line shows the smoothed profile predicted using the individual estimated parameters.}}{62}{figure.4.5}}
-\newlabel{fig:theoindividual}{{4.5}{62}{Individual plots for the 12 subjects in the study. Dots represent observations and the line shows the smoothed profile predicted using the individual estimated parameters}{figure.4.5}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.6}{\ignorespaces Individual plots for the first 4 subjects in the study, with different options.}}{63}{figure.4.6}}
-\newlabel{fig:theoindopt}{{4.6}{63}{Individual plots for the first 4 subjects in the study, with different options}{figure.4.6}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.7}{\ignorespaces VPC for the theophylline data.}}{64}{figure.4.7}}
-\newlabel{fig:theovpc}{{4.7}{64}{VPC for the theophylline data}{figure.4.7}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.8}{\ignorespaces Scatterplots of the residuals (left: weighted population residuals; middle: individual weighted residuals; right: npde) versus time (top) and predictions (bottom).}}{65}{figure.4.8}}
-\newlabel{fig:theoresid}{{4.8}{65}{Scatterplots of the residuals (left: weighted population residuals; middle: individual weighted residuals; right: npde) versus time (top) and predictions (bottom)}{figure.4.8}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.1.2}One-compartment model at steady-state}{66}{subsection.4.1.2}}
-\@writefile{toc}{\contentsline {section}{\numberline {4.2}Simulated pharmacodynamic model}{67}{section.4.2}}
-\newlabel{sec:examplePD}{{4.2}{67}{Simulated pharmacodynamic model}{section.4.2}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.9}{\ignorespaces Effect versus dose for the data simulated with an E$_{\rm  max}$ model, with a gender effect on $ED_{50}$ (left) and without a gender effect (right).}}{68}{figure.4.9}}
-\newlabel{fig:PDdata}{{4.9}{68}{Effect versus dose for the data simulated with an E$_{\rm max}$ model, with a gender effect on $ED_{50}$ (left) and without a gender effect (right)}{figure.4.9}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {4.2}{\ignorespaces Pharmacokinetic parameters estimated by {\sc  SAEMIX}\nobreakspace  {}for the simulated PD data.}}{69}{table.4.2}}
-\newlabel{tab:paramPD}{{4.2}{69}{Pharmacokinetic parameters estimated by \monolix ~for the simulated PD data}{table.4.2}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.10}{\ignorespaces Convergence plots for the estimated pharmacokinetic parameters and the variabilities, for the first dataset.}}{70}{figure.4.10}}
-\newlabel{fig:convergPD1}{{4.10}{70}{Convergence plots for the estimated pharmacokinetic parameters and the variabilities, for the first dataset}{figure.4.10}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.11}{\ignorespaces Convergence plots for the estimated pharmacokinetic parameters and the variabilities, for the second dataset.}}{71}{figure.4.11}}
-\newlabel{fig:convergPD2}{{4.11}{71}{Convergence plots for the estimated pharmacokinetic parameters and the variabilities, for the second dataset}{figure.4.11}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.12}{\ignorespaces Individual plots for the 12 subjects in the first dataset ({\sf  PD1.saemix}). Dots represent observations and the line shows the profile predicted using the individual estimated parameters.}}{72}{figure.4.12}}
-\newlabel{fig:PDindividual}{{4.12}{72}{Individual plots for the 12 subjects in the first dataset ({\sf PD1.saemix}). Dots represent observations and the line shows the profile predicted using the individual estimated parameters}{figure.4.12}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {4.3}Weight gain of cows}{73}{section.4.3}}
-\newlabel{sec:examplecow}{{4.3}{73}{Weight gain of cows}{section.4.3}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.13}{\ignorespaces Weight gain of 560 cows recorded repeatedly over time.}}{74}{figure.4.13}}
-\newlabel{fig:cowdata}{{4.13}{74}{Weight gain of 560 cows recorded repeatedly over time}{figure.4.13}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.4}{\ignorespaces Observations versus predictions (left: population predictions, right: individual predictions).}}{62}{figure.4.4}}
+\newlabel{fig:theodiagnos}{{4.4}{62}{Observations versus predictions (left: population predictions, right: individual predictions)}{figure.4.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.5}{\ignorespaces Individual plots for the 12 subjects in the study. Dots represent observations and the line shows the smoothed profile predicted using the individual estimated parameters.}}{63}{figure.4.5}}
+\newlabel{fig:theoindividual}{{4.5}{63}{Individual plots for the 12 subjects in the study. Dots represent observations and the line shows the smoothed profile predicted using the individual estimated parameters}{figure.4.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.6}{\ignorespaces Individual plots for the first 4 subjects in the study, with different options.}}{64}{figure.4.6}}
+\newlabel{fig:theoindopt}{{4.6}{64}{Individual plots for the first 4 subjects in the study, with different options}{figure.4.6}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.7}{\ignorespaces VPC for the theophylline data.}}{65}{figure.4.7}}
+\newlabel{fig:theovpc}{{4.7}{65}{VPC for the theophylline data}{figure.4.7}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.8}{\ignorespaces Scatterplots of the residuals (left: weighted population residuals; middle: individual weighted residuals; right: npde) versus time (top) and predictions (bottom).}}{66}{figure.4.8}}
+\newlabel{fig:theoresid}{{4.8}{66}{Scatterplots of the residuals (left: weighted population residuals; middle: individual weighted residuals; right: npde) versus time (top) and predictions (bottom)}{figure.4.8}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.1.2}One-compartment model at steady-state}{67}{subsection.4.1.2}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.2}Simulated pharmacodynamic model}{68}{section.4.2}}
+\newlabel{sec:examplePD}{{4.2}{68}{Simulated pharmacodynamic model}{section.4.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.9}{\ignorespaces Effect versus dose for the data simulated with an E$_{\rm  max}$ model, with a gender effect on $ED_{50}$ (left) and without a gender effect (right).}}{69}{figure.4.9}}
+\newlabel{fig:PDdata}{{4.9}{69}{Effect versus dose for the data simulated with an E$_{\rm max}$ model, with a gender effect on $ED_{50}$ (left) and without a gender effect (right)}{figure.4.9}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4.2}{\ignorespaces Pharmacokinetic parameters estimated by {\sf  saemix}\nobreakspace  {}for the simulated PD data.}}{71}{table.4.2}}
+\newlabel{tab:paramPD}{{4.2}{71}{Pharmacokinetic parameters estimated by \monolix ~for the simulated PD data}{table.4.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.10}{\ignorespaces Convergence plots for the estimated pharmacokinetic parameters and the variabilities, for the first dataset.}}{72}{figure.4.10}}
+\newlabel{fig:convergPD1}{{4.10}{72}{Convergence plots for the estimated pharmacokinetic parameters and the variabilities, for the first dataset}{figure.4.10}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.11}{\ignorespaces Convergence plots for the estimated pharmacokinetic parameters and the variabilities, for the second dataset.}}{73}{figure.4.11}}
+\newlabel{fig:convergPD2}{{4.11}{73}{Convergence plots for the estimated pharmacokinetic parameters and the variabilities, for the second dataset}{figure.4.11}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.12}{\ignorespaces Individual plots for the 12 subjects in the first dataset ({\sf  PD1.saemix}). Dots represent observations and the line shows the profile predicted using the individual estimated parameters.}}{74}{figure.4.12}}
+\newlabel{fig:PDindividual}{{4.12}{74}{Individual plots for the 12 subjects in the first dataset ({\sf PD1.saemix}). Dots represent observations and the line shows the profile predicted using the individual estimated parameters}{figure.4.12}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.3}Weight gain of cows}{75}{section.4.3}}
+\newlabel{sec:examplecow}{{4.3}{75}{Weight gain of cows}{section.4.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.13}{\ignorespaces Weight gain of 560 cows recorded repeatedly over time.}}{76}{figure.4.13}}
+\newlabel{fig:cowdata}{{4.13}{76}{Weight gain of 560 cows recorded repeatedly over time}{figure.4.13}{}}
 \citation{nlme}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.14}{\ignorespaces Fit for the first four subjects in the {\sf  cow} dataset.}}{76}{figure.4.14}}
-\newlabel{fig:cow.individual}{{4.14}{76}{Fit for the first four subjects in the {\sf cow} dataset}{figure.4.14}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {4.4}Height of Oxford boys}{76}{section.4.4}}
-\newlabel{sec:exampleoxboys}{{4.4}{76}{Height of Oxford boys}{section.4.4}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.15}{\ignorespaces Evolution with age of the height of boys from Oxford.}}{77}{figure.4.15}}
-\newlabel{fig:oxboysdata}{{4.15}{77}{Evolution with age of the height of boys from Oxford}{figure.4.15}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {4.5}A yield model}{78}{section.4.5}}
-\newlabel{sec:exampleyield}{{4.5}{78}{A yield model}{section.4.5}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.16}{\ignorespaces Yield from 37 winter wheat experiments.}}{79}{figure.4.16}}
-\newlabel{fig:yielddata}{{4.16}{79}{Yield from 37 winter wheat experiments}{figure.4.16}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.17}{\ignorespaces Observations versus predictions for the LP model (upper panel) and QP model (lower panel), with population predictions on the left and individual predictions on the right.}}{81}{figure.4.17}}
-\newlabel{fig:yielddiagnos}{{4.17}{81}{Observations versus predictions for the LP model (upper panel) and QP model (lower panel), with population predictions on the left and individual predictions on the right}{figure.4.17}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.18}{\ignorespaces Fits for the LP model (left) and QP model (right) for the first 4 subjects.}}{82}{figure.4.18}}
-\newlabel{fig:yieldindiv}{{4.18}{82}{Fits for the LP model (left) and QP model (right) for the first 4 subjects}{figure.4.18}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.19}{\ignorespaces Graphs of the estimated (individual) parameters versus covariate.}}{83}{figure.4.19}}
-\newlabel{fig:yieldparcov}{{4.19}{83}{Graphs of the estimated (individual) parameters versus covariate}{figure.4.19}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.14}{\ignorespaces Fit for the first four subjects in the {\sf  cow} dataset.}}{78}{figure.4.14}}
+\newlabel{fig:cow.individual}{{4.14}{78}{Fit for the first four subjects in the {\sf cow} dataset}{figure.4.14}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.4}Height of Oxford boys}{78}{section.4.4}}
+\newlabel{sec:exampleoxboys}{{4.4}{78}{Height of Oxford boys}{section.4.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.15}{\ignorespaces Evolution with age of the height of boys from Oxford.}}{79}{figure.4.15}}
+\newlabel{fig:oxboysdata}{{4.15}{79}{Evolution with age of the height of boys from Oxford}{figure.4.15}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.5}A yield model}{80}{section.4.5}}
+\newlabel{sec:exampleyield}{{4.5}{80}{A yield model}{section.4.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.16}{\ignorespaces Yield from 37 winter wheat experiments.}}{81}{figure.4.16}}
+\newlabel{fig:yielddata}{{4.16}{81}{Yield from 37 winter wheat experiments}{figure.4.16}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.17}{\ignorespaces Observations versus predictions for the LP model (upper panel) and QP model (lower panel), with population predictions on the left and individual predictions on the right.}}{83}{figure.4.17}}
+\newlabel{fig:yielddiagnos}{{4.17}{83}{Observations versus predictions for the LP model (upper panel) and QP model (lower panel), with population predictions on the left and individual predictions on the right}{figure.4.17}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.18}{\ignorespaces Fits for the LP model (left) and QP model (right) for the first 4 subjects.}}{84}{figure.4.18}}
+\newlabel{fig:yieldindiv}{{4.18}{84}{Fits for the LP model (left) and QP model (right) for the first 4 subjects}{figure.4.18}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.19}{\ignorespaces Graphs of the estimated (individual) parameters versus covariate.}}{85}{figure.4.19}}
+\newlabel{fig:yieldparcov}{{4.19}{85}{Graphs of the estimated (individual) parameters versus covariate}{figure.4.19}{}}
 \citation{debacker_toenail}
 \citation{lesaffre2001effect}
 \citation{lin2011goodness}
 \citation{hedeker1994random}
-\@writefile{toc}{\contentsline {section}{\numberline {4.6}Discrete data}{84}{section.4.6}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.6.1}Binary data}{84}{subsection.4.6.1}}
-\newlabel{sec:toenail}{{4.6.1}{84}{Binary data}{subsection.4.6.1}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.6}Discrete data}{86}{section.4.6}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.6.1}Binary data}{86}{subsection.4.6.1}}
+\newlabel{sec:toenail}{{4.6.1}{86}{Binary data}{subsection.4.6.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.20}{\ignorespaces Toenail data. Left: number of events at each visit; right: proportion of infected subjects at each visit.}}{87}{figure.4.20}}
+\newlabel{fig:toenailData}{{4.20}{87}{Toenail data. Left: number of events at each visit; right: proportion of infected subjects at each visit}{figure.4.20}{}}
 \citation{Riviere16}
 \citation{Ueckert16}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.6.2}Categorical data}{86}{subsection.4.6.2}}
-\newlabel{sec:knee}{{4.6.2}{86}{Categorical data}{subsection.4.6.2}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.6.3}Count data}{86}{subsection.4.6.3}}
-\@writefile{toc}{\contentsline {section}{\numberline {4.7}Time-to-event data}{86}{section.4.7}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.7.1}Single event}{86}{subsection.4.7.1}}
-\newlabel{sec:lungtte}{{4.7.1}{86}{Single event}{subsection.4.7.1}{}}
-\newlabel{weibullmodel}{{4.9}{86}{Single event}{equation.4.7.9}{}}
-\newlabel{indivtte}{{4.10}{86}{Single event}{equation.4.7.10}{}}
-\@writefile{toc}{\contentsline {paragraph}{}{87}{section*.18}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.7.2}Repeated time-to-event}{87}{subsection.4.7.2}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4.20}{\ignorespaces Time-to-event data modelling: convergence of the empirical quantiles of order 0.1, 0.5 and 0.9 of $\texttt  {p}(\psi _i | y_i ; \theta )$ for a single individual. The reference MH algorithm is in blue and the nlme-IMH is in red.}}{89}{figure.4.20}}
-\newlabel{fig:popTTE}{{4.20}{89}{Time-to-event data modelling: convergence of the empirical quantiles of order 0.1, 0.5 and 0.9 of $\dens (\psi _i | y_i ; \theta )$ for a single individual. The reference MH algorithm is in blue and the nlme-IMH is in red}{figure.4.20}{}}
+\@writefile{toc}{\contentsline {paragraph}{Diagnostics:}{88}{section*.18}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.21}{\ignorespaces Proportion of expected events compared to the observed proportion across time, for the model fit to the toenail data.}}{89}{figure.4.21}}
+\newlabel{fig:toenailPropVPC}{{4.21}{89}{Proportion of expected events compared to the observed proportion across time, for the model fit to the toenail data}{figure.4.21}{}}
+\citation{catdata}
+\citation{Tutz12}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.6.2}Categorical data}{91}{subsection.4.6.2}}
+\newlabel{sec:kneeCat}{{4.6.2}{91}{Categorical data}{subsection.4.6.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.22}{\ignorespaces Barplot of the evolution of pain scores with time in the {\sf  knee.saemix} dataset.}}{91}{figure.4.22}}
+\newlabel{fig:kneeData}{{4.22}{91}{Barplot of the evolution of pain scores with time in the {\sf knee.saemix} dataset}{figure.4.22}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.23}{\ignorespaces VPC of the mean value of pain score in the model adjusted to the {\sf  knee.saemix} dataset.}}{93}{figure.4.23}}
+\newlabel{fig:kneeMedScoreVPC}{{4.23}{93}{VPC of the mean value of pain score in the model adjusted to the {\sf knee.saemix} dataset}{figure.4.23}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.6.3}Count data}{94}{subsection.4.6.3}}
+\@writefile{toc}{\contentsline {subsubsection}{Epilepsy data}{94}{section*.19}}
+\newlabel{sec:epilepsyCount}{{4.6.3}{94}{Epilepsy data}{section*.19}{}}
+\citation{Atkins13}
+\citation{White89}
+\citation{Atkins13}
+\@writefile{toc}{\contentsline {subsubsection}{RAPI data}{95}{section*.20}}
+\newlabel{sec:RAPICount}{{4.6.3}{95}{RAPI data}{section*.20}{}}
+\@writefile{toc}{\contentsline {paragraph}{Poisson model:}{95}{section*.21}}
+\citation{Atkins13}
+\@writefile{toc}{\contentsline {paragraph}{Handling overdispersion:}{97}{section*.22}}
+\citation{Atkins13}
+\citation{Loprinzi94}
+\citation{survivalPkg}
+\@writefile{toc}{\contentsline {paragraph}{Diagnostics:}{99}{section*.23}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.24}{\ignorespaces Proportion of subjects without drinking problems versus time, for men and women, observed and expected for the Poisson, ZIP and hurdle models, for the RAPI data.}}{99}{figure.4.24}}
+\newlabel{fig:rapiCompareProp0}{{4.24}{99}{Proportion of subjects without drinking problems versus time, for men and women, observed and expected for the Poisson, ZIP and hurdle models, for the RAPI data}{figure.4.24}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.7}Time-to-event data}{100}{section.4.7}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.7.1}Single event}{100}{subsection.4.7.1}}
+\newlabel{sec:lungtte}{{4.7.1}{100}{Single event}{subsection.4.7.1}{}}
+\newlabel{weibullmodel}{{4.12}{100}{Single event}{equation.4.7.12}{}}
+\newlabel{indivtte}{{4.13}{100}{Single event}{equation.4.7.13}{}}
+\citation{Cerou18}
+\@writefile{toc}{\contentsline {paragraph}{Diagnostics:}{101}{section*.24}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.7.2}Repeated time-to-event}{101}{subsection.4.7.2}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.25}{\ignorespaces Survival function, as a Kaplan-Meier estimate (black) and fitted by a Weibull model with {\sf  saemix} (red).}}{102}{figure.4.25}}
+\newlabel{fig:lungcompareKM}{{4.25}{102}{Survival function, as a Kaplan-Meier estimate (black) and fitted by a Weibull model with {\sf saemix} (red)}{figure.4.25}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4.26}{\ignorespaces Convergence plot obtained for the RTTE data}}{104}{figure.4.26}}
+\newlabel{fig:popTTE}{{4.26}{104}{Convergence plot obtained for the RTTE data}{figure.4.26}{}}
 \bibdata{docsaem}
-\@writefile{toc}{\contentsline {chapter}{{\bf  Bibliography}}{90}{figure.4.20}}
 \bibcite{Bertrand09}{1}
 \bibcite{CometsCMPB08}{2}
 \bibcite{Comets07}{3}
@@ -271,6 +308,7 @@
 \bibcite{Genolini}{10}
 \bibcite{page05c}{11}
 \bibcite{hedeker1994random}{12}
+\@writefile{toc}{\contentsline {chapter}{{\bf  Bibliography}}{105}{figure.4.26}}
 \bibcite{Jaffrezic06}{13}
 \bibcite{Kuhn01}{14}
 \bibcite{Kuhn05}{15}
