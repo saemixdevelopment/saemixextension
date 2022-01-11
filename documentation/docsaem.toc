@@ -2,7 +2,7 @@
 \contentsline {section}{\numberline {1.1}The objectives}{5}{section.1.1}
 \contentsline {section}{\numberline {1.2}Installation and legalese}{7}{section.1.2}
 \contentsline {subsection}{\numberline {1.2.1}Installation}{7}{subsection.1.2.1}
-\contentsline {subsection}{\numberline {1.2.2}Citing {\sc SAEMIX}}{7}{subsection.1.2.2}
+\contentsline {subsection}{\numberline {1.2.2}Citing {\sf saemix}}{7}{subsection.1.2.2}
 \contentsline {section}{\numberline {1.3}The non-linear mixed effects model}{8}{section.1.3}
 \contentsline {subsection}{\numberline {1.3.1}Model for the observations}{8}{subsection.1.3.1}
 \contentsline {subsubsection}{Longitudinal outcome}{8}{section*.2}
@@ -15,7 +15,7 @@
 \contentsline {subsubsection}{Examples of transformations}{11}{section*.9}
 \contentsline {subsubsection}{Example of continuous covariate model}{12}{section*.10}
 \contentsline {subsubsection}{Example of categorical covariate model}{13}{section*.11}
-\contentsline {subsection}{\numberline {1.3.3}General form of the model}{13}{subsection.1.3.3}
+\contentsline {subsection}{\numberline {1.3.3}General form of the non-linear mixed effect model (NLMEM)}{13}{subsection.1.3.3}
 \contentsline {chapter}{\numberline {2}Methodology and algorithms}{15}{chapter.2}
 \contentsline {section}{\numberline {2.1}Estimation of the parameters}{15}{section.2.1}
 \contentsline {subsection}{\numberline {2.1.1}The SAEM algorithm}{15}{subsection.2.1.1}
@@ -36,36 +36,42 @@
 \contentsline {subsection}{\numberline {2.6.1}Population Weighted Residuals}{27}{subsection.2.6.1}
 \contentsline {subsection}{\numberline {2.6.2}Individual Weighted Residuals}{27}{subsection.2.6.2}
 \contentsline {subsection}{\numberline {2.6.3}Normalised Prediction Distribution Errors}{28}{subsection.2.6.3}
-\contentsline {chapter}{\numberline {3}The {\sf saemix} package}{31}{chapter.3}
-\contentsline {section}{\numberline {3.1}Inputs and outputs}{31}{section.3.1}
-\contentsline {subsection}{\numberline {3.1.1}The inputs}{31}{subsection.3.1.1}
-\contentsline {subsection}{\numberline {3.1.2}The outputs}{35}{subsection.3.1.2}
-\contentsline {subsection}{\numberline {3.1.3}Plots}{40}{subsection.3.1.3}
-\contentsline {section}{\numberline {3.2}Classes in the saemix package}{46}{section.3.2}
-\contentsline {subsection}{\numberline {3.2.1}A very short introduction to S4 classes}{46}{subsection.3.2.1}
-\contentsline {subsection}{\numberline {3.2.2}S4 classes used in {\sc SAEMIX}}{47}{subsection.3.2.2}
-\contentsline {subsubsection}{Visible S4 objects}{47}{section*.12}
-\contentsline {subsubsection}{Hidden S4 objects}{48}{section*.13}
-\contentsline {subsection}{\numberline {3.2.3}Methods for S4 objects in {\sc SAEMIX}}{49}{subsection.3.2.3}
-\contentsline {subsubsection}{Generic methods}{49}{section*.14}
-\contentsline {subsubsection}{Specific methods}{50}{section*.15}
-\contentsline {subsection}{\numberline {3.2.4}Accessing S4 objects in {\sc SAEMIX}}{51}{subsection.3.2.4}
-\contentsline {subsubsection}{Help for S4 objects and methods}{51}{section*.16}
-\contentsline {subsubsection}{Elements for S4 objects defined in {\sc SAEMIX}}{52}{section*.17}
-\contentsline {chapter}{\numberline {4}Examples}{53}{chapter.4}
-\contentsline {section}{\numberline {4.1}Theophylline pharmacokinetics}{53}{section.4.1}
-\contentsline {subsection}{\numberline {4.1.1}One-compartment model}{53}{subsection.4.1.1}
-\contentsline {subsection}{\numberline {4.1.2}One-compartment model at steady-state}{66}{subsection.4.1.2}
-\contentsline {section}{\numberline {4.2}Simulated pharmacodynamic model}{67}{section.4.2}
+\contentsline {chapter}{\numberline {3}The {\sf saemix} package}{29}{chapter.3}
+\contentsline {section}{\numberline {3.1}Inputs and outputs}{29}{section.3.1}
+\contentsline {subsection}{\numberline {3.1.1}The inputs}{29}{subsection.3.1.1}
+\contentsline {subsection}{\numberline {3.1.2}The outputs}{33}{subsection.3.1.2}
+\contentsline {subsection}{\numberline {3.1.3}Plots}{38}{subsection.3.1.3}
+\contentsline {section}{\numberline {3.2}Classes in the saemix package}{44}{section.3.2}
+\contentsline {subsection}{\numberline {3.2.1}A very short introduction to S4 classes}{44}{subsection.3.2.1}
+\contentsline {subsection}{\numberline {3.2.2}S4 classes used in {\sf saemix}}{45}{subsection.3.2.2}
+\contentsline {subsubsection}{Visible S4 objects}{45}{section*.12}
+\contentsline {subsubsection}{Hidden S4 objects}{46}{section*.13}
+\contentsline {subsection}{\numberline {3.2.3}Methods for S4 objects in {\sf saemix}}{47}{subsection.3.2.3}
+\contentsline {subsubsection}{Generic methods}{47}{section*.14}
+\contentsline {subsubsection}{Specific methods}{48}{section*.15}
+\contentsline {subsection}{\numberline {3.2.4}Accessing S4 objects in {\sf saemix}}{49}{subsection.3.2.4}
+\contentsline {subsubsection}{Help for S4 objects and methods}{49}{section*.16}
+\contentsline {subsubsection}{Elements for S4 objects defined in {\sf saemix}}{50}{section*.17}
+\contentsline {chapter}{\numberline {4}Examples}{51}{chapter.4}
+\contentsline {section}{\numberline {4.1}Theophylline pharmacokinetics}{51}{section.4.1}
+\contentsline {subsection}{\numberline {4.1.1}One-compartment model}{51}{subsection.4.1.1}
+\contentsline {subsection}{\numberline {4.1.2}One-compartment model at steady-state}{65}{subsection.4.1.2}
+\contentsline {section}{\numberline {4.2}Simulated pharmacodynamic model}{66}{section.4.2}
 \contentsline {section}{\numberline {4.3}Weight gain of cows}{73}{section.4.3}
 \contentsline {section}{\numberline {4.4}Height of Oxford boys}{76}{section.4.4}
 \contentsline {section}{\numberline {4.5}A yield model}{78}{section.4.5}
 \contentsline {section}{\numberline {4.6}Discrete data}{84}{section.4.6}
 \contentsline {subsection}{\numberline {4.6.1}Binary data}{84}{subsection.4.6.1}
-\contentsline {subsection}{\numberline {4.6.2}Categorical data}{86}{subsection.4.6.2}
-\contentsline {subsection}{\numberline {4.6.3}Count data}{86}{subsection.4.6.3}
-\contentsline {section}{\numberline {4.7}Time-to-event data}{86}{section.4.7}
-\contentsline {subsection}{\numberline {4.7.1}Single event}{86}{subsection.4.7.1}
-\contentsline {paragraph}{}{87}{section*.18}
-\contentsline {subsection}{\numberline {4.7.2}Repeated time-to-event}{87}{subsection.4.7.2}
-\contentsline {chapter}{{\bf Bibliography}}{90}{figure.4.20}
+\contentsline {paragraph}{Diagnostics:}{86}{section*.18}
+\contentsline {subsection}{\numberline {4.6.2}Categorical data}{89}{subsection.4.6.2}
+\contentsline {subsection}{\numberline {4.6.3}Count data}{92}{subsection.4.6.3}
+\contentsline {subsubsection}{Epilepsy data}{92}{section*.19}
+\contentsline {subsubsection}{RAPI data}{93}{section*.20}
+\contentsline {paragraph}{Poisson model:}{93}{section*.21}
+\contentsline {paragraph}{Handling overdispersion:}{95}{section*.22}
+\contentsline {paragraph}{Diagnostics:}{97}{section*.23}
+\contentsline {section}{\numberline {4.7}Time-to-event data}{98}{section.4.7}
+\contentsline {subsection}{\numberline {4.7.1}Single event}{98}{subsection.4.7.1}
+\contentsline {paragraph}{Diagnostics:}{99}{section*.24}
+\contentsline {subsection}{\numberline {4.7.2}Repeated time-to-event}{99}{subsection.4.7.2}
+\contentsline {chapter}{{\bf Bibliography}}{103}{figure.4.26}

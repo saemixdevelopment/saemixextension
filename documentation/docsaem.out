@@ -2,11 +2,11 @@
 \BOOKMARK [1][-]{section.1.1}{The objectives}{chapter.1}% 2
 \BOOKMARK [1][-]{section.1.2}{Installation and legalese}{chapter.1}% 3
 \BOOKMARK [2][-]{subsection.1.2.1}{Installation}{section.1.2}% 4
-\BOOKMARK [2][-]{subsection.1.2.2}{Citing SAEMIX}{section.1.2}% 5
+\BOOKMARK [2][-]{subsection.1.2.2}{Citing saemix}{section.1.2}% 5
 \BOOKMARK [1][-]{section.1.3}{The non-linear mixed effects model}{chapter.1}% 6
 \BOOKMARK [2][-]{subsection.1.3.1}{Model for the observations}{section.1.3}% 7
 \BOOKMARK [2][-]{subsection.1.3.2}{The statistical model for the individual parameters}{section.1.3}% 8
-\BOOKMARK [2][-]{subsection.1.3.3}{General form of the model}{section.1.3}% 9
+\BOOKMARK [2][-]{subsection.1.3.3}{General form of the non-linear mixed effect model \(NLMEM\)}{section.1.3}% 9
 \BOOKMARK [0][-]{chapter.2}{Methodology and algorithms}{}% 10
 \BOOKMARK [1][-]{section.2.1}{Estimation of the parameters}{chapter.2}% 11
 \BOOKMARK [2][-]{subsection.2.1.1}{The SAEM algorithm}{section.2.1}% 12
@@ -34,9 +34,9 @@
 \BOOKMARK [2][-]{subsection.3.1.3}{Plots}{section.3.1}% 34
 \BOOKMARK [1][-]{section.3.2}{Classes in the saemix package}{chapter.3}% 35
 \BOOKMARK [2][-]{subsection.3.2.1}{A very short introduction to S4 classes}{section.3.2}% 36
-\BOOKMARK [2][-]{subsection.3.2.2}{S4 classes used in SAEMIX}{section.3.2}% 37
-\BOOKMARK [2][-]{subsection.3.2.3}{Methods for S4 objects in SAEMIX}{section.3.2}% 38
-\BOOKMARK [2][-]{subsection.3.2.4}{Accessing S4 objects in SAEMIX}{section.3.2}% 39
+\BOOKMARK [2][-]{subsection.3.2.2}{S4 classes used in saemix}{section.3.2}% 37
+\BOOKMARK [2][-]{subsection.3.2.3}{Methods for S4 objects in saemix}{section.3.2}% 38
+\BOOKMARK [2][-]{subsection.3.2.4}{Accessing S4 objects in saemix}{section.3.2}% 39
 \BOOKMARK [0][-]{chapter.4}{Examples}{}% 40
 \BOOKMARK [1][-]{section.4.1}{Theophylline pharmacokinetics}{chapter.4}% 41
 \BOOKMARK [2][-]{subsection.4.1.1}{One-compartment model}{section.4.1}% 42
@@ -52,4 +52,4 @@
 \BOOKMARK [1][-]{section.4.7}{Time-to-event data}{chapter.4}% 52
 \BOOKMARK [2][-]{subsection.4.7.1}{Single event}{section.4.7}% 53
 \BOOKMARK [2][-]{subsection.4.7.2}{Repeated time-to-event}{section.4.7}% 54
-\BOOKMARK [0][-]{figure.4.20}{Bibliography}{}% 55
+\BOOKMARK [0][-]{figure.4.26}{Bibliography}{}% 55

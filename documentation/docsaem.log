@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/Debian) (preloaded format=latex 2019.9.7)  25 OCT 2021 16:20
+This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/Debian) (preloaded format=latex 2019.9.7)  5 JAN 2022 16:09
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -389,9 +389,6 @@ LaTeX Font Info:    Try loading font information for U+msb on input line 161.
 (/usr/share/texlive/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
-Underfull \vbox (badness 10000) has occurred while \output is active []
-
-
 
 Package Fancyhdr Warning: \headheight is too small (12.0pt): 
  Make it at least 13.59999pt.
@@ -400,18 +397,14 @@ Package Fancyhdr Warning: \headheight is too small (12.0pt):
 
 [1
 
-] [2] (./docsaem.toc [3
+] [2
 
-])
+] (./docsaem.toc [3])
 \tf@toc=\write4
 \openout4 = `docsaem.toc'.
 
  [4] (./intro_saem.tex
 Chapter 1.
-
-LaTeX Warning: Citation `LavielleMonolix' on page 5 undefined on input line 23.
-
-
 [5
 
 ]
@@ -431,11 +424,8 @@ dels using saemix, an {R} implementation of the {SAEM} algorithm},[]
 Missing character: There is no â in font cmr10!
 Missing character: There is no € in font cmr10!
 Missing character: There is no ¦ in font cmr10!
- [10]
-
-LaTeX Warning: Citation `Lavielle14' on page 11 undefined on input line 130.
-
-[11] [12]) [13] (./methodo_saem.tex [14
+ [10] [11] [12]) [13] (./methodo_saem.tex
+[14
 
 ]
 Chapter 2.
@@ -447,14 +437,14 @@ Underfull \vbox (badness 10000) has occurred while \output is active []
 Underfull \vbox (badness 4217) has occurred while \output is active []
 
  [25]
-Underfull \vbox (badness 1033) has occurred while \output is active []
+Underfull \vbox (badness 1776) has occurred while \output is active []
 
  [26]
-[27] [28]) [29] (./library_saemix.tex [30
-
-]
+[27]) [28] (./library_saemix.tex
 Chapter 3.
-[31] [32]
+[29
+
+] [30]
 Overfull \hbox (36.86163pt too wide) in alignment at lines 74--77
  [] [] [] [] 
  []
@@ -484,33 +474,33 @@ Overfull \hbox (36.86163pt too wide) in alignment at lines 107--113
  [] [] [] [] 
  []
 
-[33] [34] [35
+[31] [32] [33
 
-] [36] [37] [38]
-Overfull \hbox (19.06741pt too wide) in paragraph at lines 282--283
+] [34] [35] [36]
+Overfull \hbox (19.06741pt too wide) in paragraph at lines 291--292
 []\OT1/cmr/m/n/10.95 The Pop-u-la-tion Weighted Resid-u-als $(\OML/cmm/m/it/10.
 95 PWRES[]\OT1/cmr/m/n/10.95 )$, the In-di-vid-ual Weighted Resid-u-als $(\OML/
 cmm/m/it/10.95 IWRES[]\OT1/cmr/m/n/10.95 )$
  []
 
-[39] [40] [41] [42]
-Overfull \hbox (38.16402pt too wide) in paragraph at lines 417--418
+[37] [38] [39] [40]
+Overfull \hbox (38.16402pt too wide) in paragraph at lines 426--427
 []|\OT1/cmr/m/n/10.95 c("res.vs.x","res.vs.pred",| 
  []
 
 
-Overfull \hbox (33.4494pt too wide) in paragraph at lines 418--419
+Overfull \hbox (33.4494pt too wide) in paragraph at lines 427--428
 []|\OT1/cmr/m/n/10.95 "dist.qqplot","dist.hist")| 
  []
 
-[43] [44] [45]) (./classS4.tex [46] [47] [48]
+[41] [42] [43]) (./classS4.tex [44] [45] [46]
 Overfull \hbox (1.8553pt too wide) in paragraph at lines 73--74
 []\OT1/cmr/m/n/10.95 The fol-low-ing generic meth-ods have been de-fined for \O
 T1/cmss/m/n/10.95 Saemix-Data\OT1/cmr/m/n/10.95 , \OT1/cmss/m/n/10.95 Saemix-Mo
 del \OT1/cmr/m/n/10.95 and \OT1/cmss/m/n/10.95 SaemixOb-
  []
 
-[49] [50] [51]
+[47] [48] [49]
 Overfull \hbox (33.39438pt too wide) in paragraph at lines 153--153
 []\OT1/cmtt/m/n/10.95 name.group=c("Id"),name.predictors=c("Dose","Time"),name.
 response=c("Concentration"),[] 
@@ -522,9 +512,9 @@ Overfull \hbox (33.39438pt too wide) in paragraph at lines 153--153
 /L",covariates=c("kg","-")),[] 
  []
 
-) [52] (./examples_saem.tex
+) [50] (./examples_saem.tex
 Chapter 4.
-[53
+[51
 
 ]
 File: figs/theo_rawdata.eps Graphic file (type eps)
@@ -533,46 +523,47 @@ Overfull \hbox (37.05035pt too wide) in paragraph at lines 56--57
  [] 
  []
 
-[54]
-Overfull \hbox (33.39438pt too wide) in paragraph at lines 89--89
-[]\OT1/cmtt/m/n/10.95 name.group=c("Id"),name.predictors=c("Dose","Time"),name.
-response=c("Concentration"),[] 
+[52]
+Overfull \hbox (50.64044pt too wide) in paragraph at lines 73--73
+[]  \OT1/cmtt/m/n/10.95 name.group=c("Id"),name.predictors=c("Dose", "Time"),na
+me.response=c("Concentration"),[] 
  []
 
 
-Overfull \hbox (33.39438pt too wide) in paragraph at lines 89--89
-[]\OT1/cmtt/m/n/10.95 name.covariates=c("Weight","Sex"),units=list(x="hr",y="mg
-/L",covariates=c("kg","-")),[] 
+Overfull \hbox (44.89175pt too wide) in paragraph at lines 73--73
+[]  \OT1/cmtt/m/n/10.95 name.covariates=c("Weight","Sex"),units=list(x="hr",y="
+mg/L",covariates=c("kg","-")),[] 
  []
 
 
-Overfull \hbox (16.14832pt too wide) in paragraph at lines 89--89
-[]\OT1/cmtt/m/n/10.95 omega.init=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE)
-, error.model="constant")[] 
+Overfull \hbox (4.65094pt too wide) in paragraph at lines 95--95
+[]  \OT1/cmtt/m/n/10.95 covariate.model=matrix(c(0,0,1,0,0,0),ncol=3,byrow=TRUE
+),fixed.estim=c(1,1,1),[] 
  []
 
-[55]
-Overfull \hbox (16.14832pt too wide) in paragraph at lines 105--105
-[]\OT1/cmtt/m/n/10.95 psi0=matrix(c(1.,20,0.5,0,0.1,0.1,0,0,-0.1),ncol=3, byrow
-=TRUE,dimnames=list(NULL,[] 
+
+Overfull \hbox (27.64569pt too wide) in paragraph at lines 95--95
+[]  \OT1/cmtt/m/n/10.95 omega.init=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRU
+E), error.model="constant")[] 
  []
 
-[56]
+[53] [54]
+Underfull \vbox (badness 1824) has occurred while \output is active []
+
+ [55]
 Underfull \vbox (badness 10000) has occurred while \output is active []
 
- [57]
-Underfull \vbox (badness 10000) has occurred while \output is active []
-
- [58]
-[59]
-File: figs/theo_convergence.eps Graphic file (type eps)
- <figs/theo_convergence.eps>
-File: figs/theo_llis.eps Graphic file (type eps)
- <figs/theo_llis.eps>
+ [56]
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
+[57]
+File: figs/theo_convergence.eps Graphic file (type eps)
+ <figs/theo_convergence.eps>
+File: figs/theo_llis.eps Graphic file (type eps)
+ <figs/theo_llis.eps> [58]
 File: figs/theo_diagnos.eps Graphic file (type eps)
+
 <figs/theo_diagnos.eps>
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
@@ -580,96 +571,96 @@ LaTeX Warning: `!h' float specifier changed to `!ht'.
 File: figs/theo_individualfits_smooth.eps Graphic file (type eps)
 <figs/theo_individualfits_smooth.eps>
 
-LaTeX Warning: Float too large for page by 11.68689pt on input line 299.
+LaTeX Warning: Float too large for page by 11.68689pt on input line 305.
 
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-[60] [61] [62]
+[59] [60] [61]
 File: figs/theo_individualfits_smoothlog.eps Graphic file (type eps)
  <figs/theo_individualfits_smoothlog.eps>
-Overfull \hbox (16.53346pt too wide) in paragraph at lines 308--309
+Overfull \hbox (16.53346pt too wide) in paragraph at lines 314--315
  [] 
  []
 
 
-Overfull \hbox (16.14832pt too wide) in paragraph at lines 320--320
+Overfull \hbox (16.14832pt too wide) in paragraph at lines 326--326
 []\OT1/cmtt/m/n/10.95 plot(saemix.fit,plot.type="individual.fit",new=FALSE,ilis
 t=1:4,smooth=TRUE,ylog=T,[] 
  []
 
-[63
+[62
 
 ]
 File: figs/theo_VPC.eps Graphic file (type eps)
  <figs/theo_VPC.eps>
-Overfull \hbox (16.53346pt too wide) in paragraph at lines 333--334
+Overfull \hbox (16.53346pt too wide) in paragraph at lines 339--340
  [] 
  []
 
-[64]
+[63]
 File: figs/theo_residscatter.eps Graphic file (type eps)
  <figs/theo_residscatter.eps>
-Overfull \hbox (16.53346pt too wide) in paragraph at lines 352--353
+Overfull \hbox (16.53346pt too wide) in paragraph at lines 358--359
  [] 
  []
 
 
-Overfull \hbox (16.14832pt too wide) in paragraph at lines 367--367
+Overfull \hbox (16.14832pt too wide) in paragraph at lines 373--373
 []\OT1/cmtt/m/n/10.95 omega.init=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE)
 , error.model="constant")[] 
  []
 
-[65]
-Overfull \hbox (4.65094pt too wide) in paragraph at lines 404--404
+[64]
+Overfull \hbox (4.65094pt too wide) in paragraph at lines 410--410
 []  \OT1/cmtt/m/n/10.95 description="One-compartment model with first-order abs
 orption, Steady-state",[] 
  []
 
-[66]
-LaTeX Font Info:    Try loading font information for OMS+cmss on input line 417
+[65]
+LaTeX Font Info:    Try loading font information for OMS+cmss on input line 423
 .
-LaTeX Font Info:    No file OMScmss.fd. on input line 417.
+LaTeX Font Info:    No file OMScmss.fd. on input line 423.
 
 
 LaTeX Font Warning: Font shape `OMS/cmss/m/n' undefined
 (Font)              using `OMS/cmsy/m/n' instead
-(Font)              for symbol `textbullet' on input line 417.
+(Font)              for symbol `textbullet' on input line 423.
 
 File: figs/PD_rawdata.eps Graphic file (type eps)
 <figs/PD_rawdata.eps>
-Overfull \hbox (37.05035pt too wide) in paragraph at lines 440--441
+Overfull \hbox (37.05035pt too wide) in paragraph at lines 446--447
  [] 
  []
 
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-[67]
-Overfull \hbox (16.14832pt too wide) in paragraph at lines 486--486
+[66]
+Overfull \hbox (16.14832pt too wide) in paragraph at lines 484--484
 []\OT1/cmtt/m/n/10.95 saemix.data1<-saemixData(name.data=PD1.saemix,header=TRUE
 ,name.group=c("subject"),[] 
  []
 
 
-Overfull \hbox (16.14832pt too wide) in paragraph at lines 486--486
+Overfull \hbox (16.14832pt too wide) in paragraph at lines 484--484
 []\OT1/cmtt/m/n/10.95 name.predictors=c("dose"),name.response=c("response"),nam
 e.covariates=c("gender"),[] 
  []
 
 
-Overfull \hbox (16.14832pt too wide) in paragraph at lines 486--486
+Overfull \hbox (16.14832pt too wide) in paragraph at lines 484--484
 []\OT1/cmtt/m/n/10.95 saemix.data2<-saemixData(name.data=PD2.saemix,header=TRUE
 ,name.group=c("subject"),[] 
  []
 
 
-Overfull \hbox (16.14832pt too wide) in paragraph at lines 486--486
+Overfull \hbox (16.14832pt too wide) in paragraph at lines 484--484
 []\OT1/cmtt/m/n/10.95 name.predictors=c("dose"),name.response=c("response"),nam
 e.covariates=c("gender"),[] 
  []
 
-[68]
+[67] [68]
 File: figs/PD1_convergence.eps Graphic file (type eps)
  <figs/PD1_convergence.eps>
 
@@ -694,19 +685,19 @@ LaTeX Warning: `!h' float specifier changed to `!ht'.
 [73
 
 ]
-Overfull \hbox (4.65094pt too wide) in paragraph at lines 609--609
+Overfull \hbox (4.65094pt too wide) in paragraph at lines 626--626
 []\OT1/cmtt/m/n/10.95 dimnames=list(NULL,c("A","B","k"))),transform.par=c(1,1,1
 ),fixed.estim=c(1,1,1),[] 
  []
 
 
-Overfull \hbox (10.39963pt too wide) in paragraph at lines 609--609
+Overfull \hbox (10.39963pt too wide) in paragraph at lines 626--626
 []\OT1/cmtt/m/n/10.95 omega.init=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE)
 ,error.model="constant")[] 
  []
 
 [74]
-Overfull \hbox (30.72351pt too wide) in paragraph at lines 640--641
+Overfull \hbox (30.72351pt too wide) in paragraph at lines 657--658
 \OT1/cmss/m/n/10.95 First, de-fault plot op-tions are set in a list called saem
 ix.plot.options us-ing the func-tion saemix.plot.setoptions.
  []
@@ -716,7 +707,7 @@ File: figs/cow_indivfit4.eps Graphic file (type eps)
  <figs/cow_indivfit4.eps> [76]
 File: figs/oxboys_rawdata.eps Graphic file (type eps)
  <figs/oxboys_rawdata.eps>
-Overfull \hbox (10.39963pt too wide) in paragraph at lines 710--710
+Overfull \hbox (10.39963pt too wide) in paragraph at lines 727--727
 []\OT1/cmtt/m/n/10.95 saemix.data<-saemixData(name.data=oxboys.saemix,header=T,
 name.group=c("Subject"),[] 
  []
@@ -724,7 +715,7 @@ name.group=c("Subject"),[]
 [77]
 File: figs/yield_rawdata.eps Graphic file (type eps)
  <figs/yield_rawdata.eps>
-Overfull \hbox (16.53346pt too wide) in paragraph at lines 724--725
+Overfull \hbox (16.53346pt too wide) in paragraph at lines 741--742
  [] 
  []
 
@@ -732,49 +723,49 @@ Overfull \hbox (16.53346pt too wide) in paragraph at lines 724--725
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
 [78]
-Overfull \hbox (4.65094pt too wide) in paragraph at lines 798--798
+Overfull \hbox (4.65094pt too wide) in paragraph at lines 815--815
 []\OT1/cmtt/m/n/10.95 saemix.data<-saemixData(name.data=yield.saemix,header=TRU
 E,name.group=c("site"),[] 
  []
 
 
-Overfull \hbox (44.89175pt too wide) in paragraph at lines 798--798
+Overfull \hbox (44.89175pt too wide) in paragraph at lines 815--815
 []\OT1/cmtt/m/n/10.95 name.predictors=c("dose"),name.response=c("yield"), name.
 covariates=c("soil.nitrogen"),[] 
  []
 
 [79]
-Overfull \hbox (16.14832pt too wide) in paragraph at lines 798--798
+Overfull \hbox (16.14832pt too wide) in paragraph at lines 815--815
 []\OT1/cmtt/m/n/10.95 psi0=matrix(c(8,100,0.2,0,0,0),ncol=3,byrow=T, dimnames=l
 ist(NULL,c("Ymax","Xmax",[] 
  []
 
 
-Overfull \hbox (27.64569pt too wide) in paragraph at lines 798--798
+Overfull \hbox (27.64569pt too wide) in paragraph at lines 815--815
 []\OT1/cmtt/m/n/10.95 transform.par=c(0,0,0),covariance.model=matrix(c(1,0,0,0,
 1,0,0,0,1),ncol=3,byrow=T),[] 
  []
 
 
-Overfull \hbox (16.14832pt too wide) in paragraph at lines 798--798
+Overfull \hbox (16.14832pt too wide) in paragraph at lines 815--815
 []\OT1/cmtt/m/n/10.95 saemix.model2<-saemixModel(model=yield.QP,description="Qu
 adratic + plateau model",[] 
  []
 
 
-Overfull \hbox (33.39438pt too wide) in paragraph at lines 798--798
+Overfull \hbox (33.39438pt too wide) in paragraph at lines 815--815
 []\OT1/cmtt/m/n/10.95 psi0=matrix(c(10,120,0.005,0,0,0),ncol=3,byrow=T, dimname
 s=list(NULL,c("Ymax","Xmax",[] 
  []
 
 
-Overfull \hbox (27.64569pt too wide) in paragraph at lines 798--798
+Overfull \hbox (27.64569pt too wide) in paragraph at lines 815--815
 []\OT1/cmtt/m/n/10.95 "slope"))), covariate.model=matrix(c(0,0,0),ncol=3,byrow=
 T), transform.par=c(0,0,0),[] 
  []
 
 
-Overfull \hbox (27.64569pt too wide) in paragraph at lines 798--798
+Overfull \hbox (27.64569pt too wide) in paragraph at lines 815--815
 []\OT1/cmtt/m/n/10.95 covariance.model=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow
 =T),error.model="constant")[] 
  []
@@ -791,13 +782,13 @@ LaTeX Warning: `!h' float specifier changed to `!ht'.
 [81] [82]
 File: figs/yield_parvscov.eps Graphic file (type eps)
  <figs/yield_parvscov.eps>
-Overfull \hbox (16.14832pt too wide) in paragraph at lines 862--862
+Overfull \hbox (16.14832pt too wide) in paragraph at lines 879--879
 []\OT1/cmtt/m/n/10.95 psi0=matrix(c(8,100,0.2,0,0,0),ncol=3,byrow=T, dimnames=l
 ist(NULL,c("Ymax","Xmax",[] 
  []
 
 
-Overfull \hbox (27.64569pt too wide) in paragraph at lines 862--862
+Overfull \hbox (27.64569pt too wide) in paragraph at lines 879--879
 []\OT1/cmtt/m/n/10.95 transform.par=c(0,0,0),covariance.model=matrix(c(1,0,0,0,
 1,0,0,0,1),ncol=3,byrow=T),[] 
  []
@@ -805,105 +796,168 @@ Overfull \hbox (27.64569pt too wide) in paragraph at lines 862--862
 [83
 
 ]
-Overfull \hbox (21.897pt too wide) in paragraph at lines 862--862
+Overfull \hbox (21.897pt too wide) in paragraph at lines 879--879
 []  \OT1/cmtt/m/n/10.95 cat("     without covariate, -2xLL=",(saemix.fit1["resu
 lts"]["ll.is"])*(-2),"\n")[] 
  []
 
 
-Overfull \hbox (4.65094pt too wide) in paragraph at lines 862--862
+Overfull \hbox (4.65094pt too wide) in paragraph at lines 879--879
 []  \OT1/cmtt/m/n/10.95 cat("     with covariate, -2xLL=",(saemix.fit3["results
 "]["ll.is"])*(-2),"\n")[] 
  []
 
+) (./examples_discretesaem.tex
+File: figs/toenail_barplotData.eps Graphic file (type eps)
+ <figs/toenail_barplotData.eps>
+File: figs/toenail_rawdata.eps Graphic file (type eps)
 
-Underfull \vbox (badness 5711) has occurred while \output is active []
+<figs/toenail_rawdata.eps>
 
- [84]
-Overfull \hbox (44.89175pt too wide) in paragraph at lines 878--878
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+[84]
+Overfull \hbox (44.89175pt too wide) in paragraph at lines 29--29
 []\OT1/cmtt/m/n/10.95 saemix.data<-saemixData(name.data=toe,name.group=c("id"),
 name.predictors=c("time","y"),[] 
  []
 
-
-Overfull \hbox (96.62994pt too wide) in paragraph at lines 899--899
-[]\OT1/cmtt/m/n/10.95 saemix.model<-saemixModel(model=binary.model,description=
-"Binary model", modeltype="likelihood",[] 
+[85] [86]
+File: figs/toenail_globalVPC.eps Graphic file (type eps)
+ <figs/toenail_globalVPC.eps> [87]
+Overfull \hbox (4.65094pt too wide) in paragraph at lines 133--133
+[]  \OT1/cmtt/m/n/10.95 geom_line(data=gtab, aes(x=visit, y=median), linetype=2
+, colour='lightblue') +[] 
  []
 
 
-Overfull \hbox (142.61945pt too wide) in paragraph at lines 899--899
-[]                 \OT1/cmtt/m/n/10.95 psi0=matrix(c(0,-.5,0,0.5),ncol=2,byrow=
-TRUE,dimnames=list(NULL,c("theta1","theta2"))),[] 
+Overfull \hbox (21.897pt too wide) in paragraph at lines 133--133
+[]  \OT1/cmtt/m/n/10.95 geom_ribbon(data=gtab,aes(ymin=lower, ymax=upper), alph
+a=0.5, fill='lightblue') +[] 
+ []
+
+[88]
+File: figs/knee_barplotData.eps Graphic file (type eps)
+ <figs/knee_barplotData.eps>
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [89
+
+]
+Overfull \hbox (73.6352pt too wide) in paragraph at lines 203--203
+[]  \OT1/cmtt/m/n/10.95 pobs<-(y==1)*pge1+(y==2)*(pge2-pge1)+(y==3)*(pge3-pge2)
++(y==4)*(pge4-pge3)+(y==5)*(1-pge4)[] 
+ []
+
+[90]
+File: figs/knee_medianScoreVPC.eps Graphic file (type eps)
+ <figs/knee_medianScoreVPC.eps> [91]
+Overfull \hbox (33.39438pt too wide) in paragraph at lines 236--236
+[]  \OT1/cmtt/m/n/10.95 ysim<-1+as.integer(x>pge1)+as.integer(x>pge2)+as.intege
+r(x>pge3)+as.integer(x>pge4)[] 
+ []
+
+[92] [93]
+Overfull \hbox (27.64569pt too wide) in paragraph at lines 308--308
+[]\OT1/cmtt/m/n/10.95 saemix.model.poi<-saemixModel(model=count.poisson,descrip
+tion="Count model Poisson",[] 
  []
 
 
-Overfull \hbox (182.86026pt too wide) in paragraph at lines 906--906
-[]\OT1/cmtt/m/n/10.95 saemix.options<-list(seed=1234567,save=FALSE,save.graphs=
-FALSE, displayProgress=FALSE, fim=FALSE, nb.chains=10)[] 
- []
-
-[85] [86] [87]
-Overfull \hbox (464.54596pt too wide) in paragraph at lines 1014--1014
-[]\OT1/cmtt/m/n/10.95 saemix.data<-saemixData(name.data=tte.saemix,header=TRUE,
-sep=" ",na=NA, name.group=c("id"),name.response=c("y"),name.predictors=c("time"
-,"y"), name.X=c("time"))[] 
+Overfull \hbox (85.13257pt too wide) in paragraph at lines 308--308
+[]    \OT1/cmtt/m/n/10.95 psi0=matrix(c(log(5),0.01),ncol=2,byrow=TRUE,dimnames
+=list(NULL, c("intercept","slope"))),[] 
  []
 
 
-Overfull \hbox (4.65094pt too wide) in paragraph at lines 1014--1014
+Overfull \hbox (33.39438pt too wide) in paragraph at lines 308--308
+[]\OT1/cmtt/m/n/10.95 saemix.options<-list(seed=632545,save=FALSE,save.graphs=F
+ALSE, displayProgress=FALSE)[] 
+ []
+
+[94]
+Overfull \hbox (56.38913pt too wide) in paragraph at lines 348--348
+[]\OT1/cmtt/m/n/10.95 yfit1<-simulateDiscreteSaemix(poisson.fit.cov2, simulate.
+function=saemix.simulatePoisson,[] 
+ []
+
+
+Overfull \hbox (27.64569pt too wide) in paragraph at lines 348--348
+[]     \OT1/cmtt/m/n/10.95 length(yfit1@data@data$rapi[yfit1@data@data$rapi==0]
+)/yfit1@data@ntot.obs,"\n")[] 
+ []
+
+[95] [96]
+File: figs/rapi_comparePropNoDrinking.eps Graphic file (type eps)
+ <figs/rapi_comparePropNoDrinking.eps>
+Underfull \vbox (badness 2359) has occurred while \output is active []
+
+ [97]
+[98]
+File: figs/lung_compareKM.eps Graphic file (type eps)
+ <figs/lung_compareKM.eps>
+Overfull \hbox (37.05035pt too wide) in paragraph at lines 459--460
+ [] 
+ []
+
+
+LaTeX Warning: `!h' float specifier changed to `!ht'.
+
+[99]
+Overfull \hbox (67.8865pt too wide) in paragraph at lines 507--507
+[]   \OT1/cmtt/m/n/10.95 name.group=c("id"),name.response=c("y"),name.predictor
+s=c("time","y"), name.X=c("time"))[] 
+ []
+
+[100]
+Overfull \hbox (4.65094pt too wide) in paragraph at lines 507--507
 []   \OT1/cmtt/m/n/10.95 psi0=matrix(c(2,1),ncol=2,byrow=TRUE,dimnames=list(NUL
 L,c("lambda","beta"))),[] 
  []
 
 
-Overfull \hbox (251.84451pt too wide) in paragraph at lines 1014--1014
+Overfull \hbox (251.84451pt too wide) in paragraph at lines 507--507
 []\OT1/cmtt/m/n/10.95 saemix.options<-list(map=F,fim=F,ll.is=F, nb.chains = 1, 
 nbiter.saemix =c(200,100), displayProgress=TRUE,save.graphs=FALSE)[] 
  []
 
-[88]
-File: figs/popparam_tte.eps Graphic file (type eps)
- <figs/popparam_tte.eps>) [89] (./docsaem.bbl [90
-
-]
+[101]) [102] (./docsaem.bbl
 
 LaTeX Font Warning: Font shape `OT1/cmss/m/it' in size <10.95> not available
 (Font)              Font shape `OT1/cmss/m/sl' tried instead on input line 7.
 
-[91] [92]
+[103
+
+] [104] [105]
 Missing character: There is no â in font cmss10!
 Missing character: There is no € in font cmss10!
 Missing character: There is no “ in font cmss10!
 )
 Package atveryend Info: Empty hook `BeforeClearDocument' on input line 259.
- [93]
+ [106]
 Package atveryend Info: Empty hook `AfterLastShipout' on input line 259.
  (./docsaem.aux)
 Package atveryend Info: Empty hook `AtVeryEndDocument' on input line 259.
 Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 259.
 Package rerunfilecheck Info: File `docsaem.out' has not changed.
-(rerunfilecheck)             Checksum: CF5BF434BDDE8B06636207CF40A825E9;4091.
+(rerunfilecheck)             Checksum: C9095DC75BE8B5863A0705EA700A5C63;4125.
 
 
 LaTeX Font Warning: Some font shapes were not available, defaults substituted.
-
-
-LaTeX Warning: There were undefined references.
 
 Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 259.
  )
 (\end occurred inside a group at level 1)
 
-### simple group (level 1) entered at line 251 ({)
+### simple group (level 1) entered at line 257 ({)
 ### bottom level 
 Here is how much of TeX's memory you used:
- 6512 strings out of 492983
- 92630 string characters out of 6134923
- 203643 words of memory out of 5000000
- 9947 multiletter control sequences out of 15000+600000
- 19878 words of font info for 74 fonts, out of 8000000 for 9000
+ 6547 strings out of 492983
+ 93464 string characters out of 6134923
+ 204816 words of memory out of 5000000
+ 9972 multiletter control sequences out of 15000+600000
+ 19282 words of font info for 72 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 32i,16n,45p,1175b,506s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 32i,16n,45p,1175b,512s stack positions out of 5000i,500n,10000p,200000b,80000s
 
-Output written on docsaem.dvi (93 pages, 374816 bytes).
+Output written on docsaem.dvi (106 pages, 425084 bytes).
