@@ -27,9 +27,9 @@ respectively. Selection is made among the covariates as such specified in the Sa
 Only uncorrelated random effects structures are considered.
 }
 \references{
-Delattre, M., Lavielle, M. and Poursat, M.A. (2014) A note on BIC in mixed effects models.
+M Delattre, M Lavielle, MA Poursat (2014) A note on BIC in mixed effects models.
 Electronic Journal of Statistics 8(1) p. 456-475
-Delattre, M. and Poursat, M.A. (2017) BIC strategies for model choice in a population approach.
+M Delattre, MA Poursat (2017) BIC strategies for model choice in a population approach.
 (arXiv:1612.02405)
 }
 \author{

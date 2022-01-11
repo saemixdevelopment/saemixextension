@@ -95,13 +95,14 @@ latter only applies to data.
 
 }
 \references{
-Comets  E, Lavenu A, Lavielle M. Parameter estimation in nonlinear mixed effect models using saemix, an R implementation of the SAEM algorithm. Journal of Statistical Software 80, 3 (2017), 1-41.
+E Comets, A Lavenu, M Lavielle M (2017). Parameter estimation in nonlinear mixed effect models using saemix,
+an R implementation of the SAEM algorithm. Journal of Statistical Software, 80(3):1-41.
 
-Kuhn E, Lavielle M. Maximum likelihood estimation in nonlinear mixed effects models. Computational Statistics and Data Analysis 49, 4 (2005), 1020-1038.
+E Kuhn, M Lavielle (2005). Maximum likelihood estimation in nonlinear mixed effects models.
+Computational Statistics and Data Analysis, 49(4):1020-1038.
 
-Comets E, Lavenu A, Lavielle M. SAEMIX, an R version of the SAEM algorithm.
-20th meeting of the Population Approach Group in Europe, Athens, Greece
-(2011), Abstr 2173.
+E Comets, A Lavenu, M Lavielle (2011). SAEMIX, an R version of the SAEM algorithm. 20th meeting of the
+Population Approach Group in Europe, Athens, Greece, Abstr 2173.
 }
 \seealso{
 \code{\link{SaemixObject}},\code{\link{saemix}},
@@ -109,7 +110,8 @@ Comets E, Lavenu A, Lavielle M. SAEMIX, an R version of the SAEM algorithm.
 \code{\link{saemix.plot.llis}}, \code{\link{saemix.plot.randeff}},
 \code{\link{saemix.plot.obsvspred}}, \code{\link{saemix.plot.fits}},
 \code{\link{saemix.plot.parcov}}, \code{\link{saemix.plot.distpsi}},
-\code{\link{saemix.plot.scatterresiduals}}, \code{\link{saemix.plot.vpc}}
+\code{\link{saemix.plot.scatterresiduals}}, \code{\link{saemix.plot.vpc}},
+\code{\link{saemix.plot.mirror}}
 }
 \author{
 Emmanuelle Comets \email{emmanuelle.comets@inserm.fr}, Audrey Lavenu, Marc Lavielle.

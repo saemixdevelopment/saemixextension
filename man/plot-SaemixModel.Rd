@@ -7,22 +7,45 @@
 \alias{plot-SaemixModel}
 \title{Plot model predictions using an SaemixModel object}
 \usage{
-\S4method{plot}{SaemixModel,ANY}(x, y, range = c(0, 1), psi, predictors, ...)
+\S4method{plot}{SaemixModel,ANY}(x, y, range = c(0, 1), psi = NULL, predictors = NULL, ...)
 }
 \arguments{
 \item{x}{an SaemixData object or an SaemixSimData object}
 
 \item{y}{unused, present for compatibility with base plot function}
 
-\item{range}{range of X over which the model is to be plotted}
+\item{range}{range of X over which the model is to be plotted. Important note: the \emph{first} predictor will be used for the X-axis, the other
+predictors when present need to be passed sequentially in the predictors argument, in the order in which they appear in the model
+Less important note: please use explicitely range=XXX where XXX is of the form c(a,b) to pass the plotting range on the X-axis)}
 
 \item{psi}{parameters of the model}
 
 \item{predictors}{additional predictors needed to pass on to the model}
 
-\item{...}{additional arguments to be passed on to plot (titles, legends, ...)}
+\item{...}{additional arguments to be passed on to plot (titles, legends, ...). Use verbose=TRUE to print some messages
+concerning the characteristics of the plot}
 }
 \description{
 This function will plot predictions obtained from an SaemixModel object over a given range of X. Additional predictors may be passed on to the function using the predictors argument.
+}
+\examples{
+# Note that we have written the PK model so that time is the first predictor (xidep[,1]) 
+# and dose the second
+model1cpt<-function(psi,id,xidep) { 
+     tim<-xidep[,1]  
+     dose<-xidep[,2]
+     ka<-psi[id,1]
+     V<-psi[id,2]
+     CL<-psi[id,3]
+     k<-CL/V
+     ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
+     return(ypred)
+     }
+ x<-saemixModel(model=model1cpt,description="One-compartment model with first-order absorption", 
+               psi0=matrix(c(1.5,30,1), ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))))
+ # Plot the model over 0-24h, using the parameters given in psi0 and a dose of 300
+ plot(x, range=c(0,24), predictors=300, verbose=TRUE)
+ # Plot the model over 0-24h, using another set of parameters and a dose of 350
+ plot(x, range=c(0,24), psi=c(1.5,20,2), predictors=350, verbose=TRUE)
 }
 \keyword{methods}

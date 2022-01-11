@@ -72,9 +72,9 @@ res.stepwise <- step.saemix(saemix.fit1, direction="both")
 }
 }
 \references{
-Delattre, M., Lavielle, M. and Poursat, M.A. (2014) A note on BIC in mixed effects models.
+M Delattre, M Lavielle, MA Poursat (2014) A note on BIC in mixed effects models.
 Electronic Journal of Statistics 8(1) p. 456-475
-Delattre, M. and Poursat, M.A. (2017) BIC strategies for model choice in a population approach.
+M Delattre, MA Poursat (2017) BIC strategies for model choice in a population approach.
 (arXiv:1612.02405)
 }
 \author{

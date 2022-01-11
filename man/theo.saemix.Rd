@@ -17,7 +17,7 @@ by time at which the observation was made.  }
 \item{Sex}{ gender (simulated, 0=male, 1=female} }
 }
 \source{
-Boeckmann AJ, Sheiner LB, Beal SL (1994),
+AJ Boeckmann, LB Sheiner, SL Beal (1994),
 \emph{NONMEM Users Guide: Part V}, NONMEM Project Group, University of
 California, San Francisco.
 }
@@ -71,7 +71,7 @@ saemix.model<-saemixModel(model=model1cpt,
        dimnames=list(NULL, c("ka","V","CL"))),transform.par=c(1,1,1))
  # Note: remove the options save=FALSE and save.graphs=FALSE 
  # to save the results and graphs
- saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE)
+ saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
  \donttest{
  # Not run (strict time constraints for CRAN)
  saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
@@ -85,7 +85,7 @@ saemix.model<-saemixModel(model=model1cpt,
       covariance.model=matrix(c(1,0,0,0,1,1,0,1,1),ncol=3,byrow=TRUE),
       omega.init=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE),error.model="combined")
       
- saemix.options<-list(seed=39546,save=FALSE,save.graphs=FALSE)
+ saemix.options<-list(seed=39546,save=FALSE,save.graphs=FALSE,displayProgress=FALSE)
  \donttest{
  # Not run (strict time constraints for CRAN)
  saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
@@ -93,11 +93,11 @@ saemix.model<-saemixModel(model=model1cpt,
  
 }
 \references{
-Davidian M, Giltinan DM (1995) \emph{Nonlinear Models for Repeated
+M Davidian, DM Giltinan (1995) \emph{Nonlinear Models for Repeated
 Measurement Data}, Chapman & Hall (section 5.5, p. 145 and section 6.6, p.
 176)
 
-Pinheiro JC, Bates DM (2000) \emph{Mixed-effects Models in S and
+JC Pinheiro, DM Bates (2000) \emph{Mixed-effects Models in S and
 S-PLUS}, Springer (Appendix A.29)
 }
 \keyword{datasets}
