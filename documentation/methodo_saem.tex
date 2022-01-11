@@ -177,6 +177,64 @@ These large values of the variances make the conditional distribution $p(\phi|y;
 
 \noindent {\bf Remark 2:} We can use two different coefficients $\tau_1$ and $\tau_2$ for $\IIV$ and $\ag^2$ in \monolix. It is possible, for example, to choose $\tau_1<1$ and $\tau_2>1$, with a small initial residual variance and large initial inter-subject variances. In this case, SAEM tries to obtain the best possible fit during the first iterations, allowing a large inter-subject variability. During the next iterations, this variability is reduced and the residual variance increases until reaching the best possible trade-off between these two criteria.
 
+\subsection{The MCMC-SAEM algorithm for non continuous data models}
+
+As presented Section~\ref{sec:longitudinal}, the model between some measured observations noted $y_{ij}$, the individual parameters $\psi_i$ and the design variables $x_{ij}$ can either be defined by a structural model, for \emph{continuous} data models, i.e. when $y_{ij}$ are continuous, noted $f(x_{ij}, \psi_i)$, or defined by a conditional probability $\prob(y_{ij}=c_k|\psi_i)$ for \emph{non continuous} data models, i.e. when $y_{ij}$ takes discrete values $\{c_1, c_2,\ldots , c_K\}$. Such models are presented Section~\ref{sec:longitudinal} and include for instance count or categorical models.
+
+For both cases, the MCMC-SAEM algorithm described in the previous sections remain unchanged, the only difference lies on the way the model is defined: using a structural and continuous function for the former and a conditional probability for the latter. From an implementation perspective while using saemix, this plays an important role as the user needs to define the model itself.
+
+\subsection{A fast variant of the MCMC-SAEM algorithm for general data models}
+
+We propose in this section a variant of the MCMC-SAEM algorithm, called f-SAEM, see \cite{Karimi19}, and derived for both continuous and non continuous data models.
+According to the definition of the model, the algorithm presents a slight variation.
+The whole purpose of the f-SAEM is to accelerate the convergence of the MLE estimation leveraging a simple and efficient new MCMC proposal.
+This proposal is obtained via two different techniques depending on the nature of the model.
+
+\textbf{For continuous data models}, we linearize the structural model $f(x_{i}, \psi_i)$ around a particular point, $\hat{\psi}_i$, which is the MAP (Maximum A Posteriori) of the conditional distributions of the individual parameters $\psi_i$ given the observations noted $p(\psi_i|y_i) $. This particular point is tractable since we have the following identity, by Bayes rule:
+
+\begin{equation}
+\arg \max \limits_{\psi_i \in \mathbb{R}^p} p(\psi_i|y_i) = \arg \max \limits_{\psi_i \in \mathbb{R}^p} p(y_i|\psi_i)p(\psi_i) \eqs.
+\end{equation}
+
+The Taylor expansion of $f(x_{i},\cdot)$ around the MAP yields:
+
+\begin{equation}
+f(x_{i},\psi_i) \approx f(x_{i},\hat{\psi}_i) + J_{f(x_{i},\hat{\psi}_i)}(\psi_i - \hat{\psi}_i)\eqs,
+\end{equation}
+where $J_{f(x_{i},\hat{\psi}_i)} \in \mathbb{R}^{n_i \times p}$ is the Jacobian of $f$ evaluated at $\hat{\psi}_i$. 
+
+Remark that the conditional distribution of the individual parameters given the observations under this linearized model is tractable and is a Gaussian distribution of covariance:
+
+
+\begin{equation}
+\Gamma_i =\left(\frac{ J_{f(x_{i},\hat{\psi}_i)}^T J_{f(x_{i},\hat{\psi}_i)} }{\sigma^2} + \Omega^{-1}\right)^{-1} \eqs,
+\end{equation}
+where $\sigma$ is the residual error of the continuous data model and $\Omega$ is the covariance of the prior distribution $p(\psi_i)$.
+
+Hence, the f-SAEM algorithm uses the Gaussian proposal of mean $\hat{\psi}_i$ and covariance $\left(\frac{ J_{f(x_{i},\hat{\psi}_i)}^T J_{f(x_{i},\hat{\psi}_i)} }{\sigma^2} + \Omega^{-1}\right)^{-1}$, as an approximation of the true conditional distribution, in the MCMC sampler for continuous data models.
+
+
+\textbf{For non continuous data models}, we use a Laplace approximation of the conditional distribution obtained via a Taylor expansion of the complete log-likelihood $\log p(y_i,\psi_i)$ of the observations $y_i$ and individual parameters $\psi_i$.
+A few derivation of this expansion leads to the following approximation:
+
+$$
+-2\log p(y_i,\psi_i)  \approx -p\log2\pi - 2\log p(y_i,\hat{\psi}_i) + \log \left(\left|-\nabla^2 \log p(y_i,\hat{\psi}_i)\right|\right)\eqs.
+$$
+
+and finally:
+
+ $$
+\log p(\hat{\psi}_i|y_i) \approx -\frac{p}{2}\log2\pi  -\frac{1}{2}\log \left(\left|-\nabla^2 \log p(y_i,\hat{\psi}_i) \right|\right)\eqs,
+$$
+which is precisely the log-pdf of a multivariate Gaussian distribution with mean $\hat{\psi}_i$ and  variance-covariance $-\nabla^2 \log p(y_i,\hat{\psi}_i)^{-1}$ where:
+
+\begin{align}
+\nabla^2 \log p(y_i,\hat{\psi}_i) &= \nabla^2 \log p(y_i|\hat{\psi}_i) + \nabla^2 \log p(\hat{\psi}_i) \\ \notag
+&= \nabla^2 \log p(y_i|\hat{\psi}_i) + \Omega^{-1}\eqs.\notag
+\end{align}
+
+Hence, the f-SAEM algorithm uses the Gaussian proposal of mean $\hat{\psi}_i$ and covariance $\left( \nabla^2 \log p(y_i|\hat{\psi}_i) + \Omega^{-1}\right)^{-1}$, as an approximation of the true conditional distribution, in the MCMC sampler for non continuous data models.
+
 \section{Estimation of the Fisher Information matrix} \label{sec_fish} Let $\thes$ be the true unknown value of $\theta$, and let $\hthetag$ be the maximum likelihood estimate of $\theta$. If the observed likelihood function $\ell$ is sufficiently smooth, asymptotic theory for maximum-likelihood estimation holds and
 
 \begin{equation}
