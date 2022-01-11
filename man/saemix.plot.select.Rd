@@ -70,9 +70,9 @@ of individual random effects. Defaults to FALSE}
 \item{marginal.distribution}{if TRUE, produce plots of the marginal
 distribution of the random effects. Defaults to FALSE}
 
-\item{vpc}{if TRUE, produce Visual Predictive Check plots. Defaults to FALSE}
+\item{vpc}{if TRUE, produce Visual Predictive Check plots. Defaults to FALSE (we suggest to use \code{\link{npdeSaemix}} instead)}
 
-\item{npde}{if TRUE, produce plots of the npde. Defaults to FALSE}
+\item{npde}{if TRUE, produce plots of the npde. Defaults to FALSE (deprecated in 3.0, please use \code{\link{npdeSaemix}} instead)}
 
 \item{\dots}{optional arguments passed to the plots}
 }
@@ -107,8 +107,8 @@ individual and population residuals, as well as for npde when they are available
 \item{parameters.versus.covariates}{Plots of the estimate of the individual parameters versus the covariates, using scatterplot for continuous covariates, boxplot for categorical covariates}
 \item{randeff.versus.covariates}{Plots of the estimate of the individual random effects versus the covariates, using scatterplot for continuous covariates, boxplot for categorical covariates}
 \item{marginal.distribution}{Distribution of each parameter in the model (conditional on covariates when some are included in the model)}
-\item{npde}{Plot of npde as in package npde}
-\item{vpc}{Visual Predictive Check}
+\item{npde}{Plot of npde as in package npde (deprecated in 3.0, please use \code{\link{npdeSaemix}} instead)}
+\item{vpc}{Visual Predictive Check (we suggest to use \code{\link{npdeSaemix}} instead)}
 }
 }
 \examples{
@@ -152,13 +152,14 @@ saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE)
 
 }
 \references{
-Comets  E, Lavenu A, Lavielle M. Parameter estimation in nonlinear mixed effect models using saemix, an R implementation of the SAEM algorithm. Journal of Statistical Software 80, 3 (2017), 1-41.
+E Comets, A Lavenu, M Lavielle M (2017). Parameter estimation in nonlinear mixed effect models using saemix,
+an R implementation of the SAEM algorithm. Journal of Statistical Software, 80(3):1-41.
 
-Kuhn E, Lavielle M. Maximum likelihood estimation in nonlinear mixed effects models. Computational Statistics and Data Analysis 49, 4 (2005), 1020-1038.
+E Kuhn, M Lavielle (2005). Maximum likelihood estimation in nonlinear mixed effects models.
+Computational Statistics and Data Analysis, 49(4):1020-1038.
 
-Comets E, Lavenu A, Lavielle M. SAEMIX, an R version of the SAEM algorithm.
-20th meeting of the Population Approach Group in Europe, Athens, Greece
-(2011), Abstr 2173.
+E Comets, A Lavenu, M Lavielle (2011). SAEMIX, an R version of the SAEM algorithm. 20th meeting of the
+Population Approach Group in Europe, Athens, Greece, Abstr 2173.
 }
 \seealso{
 \code{\link{SaemixObject}},\code{\link{saemix}},
@@ -167,7 +168,7 @@ Comets E, Lavenu A, Lavielle M. SAEMIX, an R version of the SAEM algorithm.
 \code{\link{saemix.plot.llis}}, \code{\link{saemix.plot.randeff}},
 \code{\link{saemix.plot.obsvspred}}, \code{\link{saemix.plot.fits}},
 \code{\link{saemix.plot.parcov}}, \code{\link{saemix.plot.randeffcov}},
-\code{\link{saemix.plot.distpsi}},
+\code{\link{saemix.plot.distpsi}}, \code{\link{npdeSaemix}}
 \code{\link{saemix.plot.scatterresiduals}},
 \code{\link{saemix.plot.distribresiduals}}, \code{\link{saemix.plot.vpc}}
 }

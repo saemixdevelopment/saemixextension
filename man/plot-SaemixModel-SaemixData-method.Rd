@@ -3,7 +3,7 @@
 \name{plot,SaemixModel,SaemixData-method}
 \alias{plot,SaemixModel,SaemixData-method}
 \alias{plot.SaemixModel}
-\title{Plot model predictions for a new dataset}
+\title{Plot model predictions for a new dataset. If the dataset is large, only the first 20 subjects (id's) will be shown.}
 \usage{
 \S4method{plot}{SaemixModel,SaemixData}(x, y, ...)
 }
@@ -20,7 +20,7 @@ defined by the psi element of x) (see details)}
 a ggplot object
 }
 \description{
-Plot model predictions for a new dataset
+Plot model predictions for a new dataset. If the dataset is large, only the first 20 subjects (id's) will be shown.
 }
 \details{
 The function uses the model slot of the SaemixModel object to obtain predictions, using the dataset contained in the

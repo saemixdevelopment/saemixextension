@@ -2,12 +2,12 @@
 % Please edit documentation in R/func_simulations.R
 \name{simulate.SaemixObject}
 \alias{simulate.SaemixObject}
-\title{Perform simulations under the model}
+\title{Perform simulations under the model for an saemixObject object}
 \usage{
 \method{simulate}{SaemixObject}(
-  saemixObject,
-  nsim = saemixObject["options"]$nb.sim,
-  seed = NULL,
+  object,
+  nsim,
+  seed,
   predictions = TRUE,
   res.var = TRUE,
   uncertainty = FALSE,
@@ -15,15 +15,15 @@
 )
 }
 \arguments{
-\item{saemixObject}{an object returned by the \code{\link{saemix}} function}
+\item{object}{an saemixObject object returned by the \code{\link{saemix}} function}
 
 \item{nsim}{Number of simulations to perform. Defaults to the nb.simpred
 element in options}
 
-\item{seed}{unused (included for compatibility with the generic)}
+\item{seed}{if non-null, seed used to initiate the random number generator (defaults to NULL)}
 
 \item{predictions}{Whether the simulated parameters should be used to
-compute predictions. Defaults to TRUE}
+compute predictions. Defaults to TRUE. If FALSE, only individual parameters are simulated.}
 
 \item{res.var}{Whether residual variability should be added to the
 predictions. Defaults to TRUE}
@@ -33,14 +33,11 @@ predictions. Defaults to TRUE}
 \item{\dots}{additional arguments, unused (included for compatibility with the generic)}
 }
 \description{
-This function is used to simulate from the model. It can be called with the
-estimated parameters (the default), the initial parameters, or with a set of
-parameters. The original design can be used in the simulations, or a
-different dataset may be used with the same structure (covariates) as the
-original design. This function is not yet implemented.
+This function is used to simulate data under the empirical design,
+using the model and estimated parameters from a fit.
 }
 \details{
-This function is used to produce Visual Predictive Check graphs, as well as
+The simulated data can then be used to produce Visual Predictive Check graphs, as well as
 to compute the normalised prediction distribution errors (npde).
 }
 \references{

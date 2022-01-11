@@ -36,9 +36,9 @@ and has been reformatted here for use in saemix (see details).
 }
 \details{
 The data in the \code{lung.saemix} was reformatted from the lung cancer dataset (see data(cancer, package="survival")).
-Patients with missing age, sex, institution or physician assessments were removed from the dataset. Status was recoded as 1 for death and 0 for
-censored event, and a censoring column was added to denote whether the patient was dead or alive at the time of the last observation.
-For saemix, a line at time=0 was added for all subjects. Finally, subjects were numbered consecutively from 0 to 1.
+Patients with missing age, sex, institution or physician assessments were removed from the dataset. Status was recoded as 1 for death
+and 0 for a censored event, and a censoring column was added to denote whether the patient was dead or alive at the time of
+the last observation. For saemix, a line at time=0 was added for all subjects. Finally, subjects were numbered consecutively from 0 to 1.
 }
 \examples{
 data(lung.saemix)
@@ -86,7 +86,7 @@ library(survival)
 }
 }
 \references{
-Loprinzi CL, Laurie JA, Wieand HS, Krook JE, Novotny PJ, Kugler JW, et al. (1994).
+CL Loprinzi, JA Laurie, HS Wieand, JE Krook, PJ Novotny, JW Kugler, et al. (1994).
 Prospective evaluation of prognostic variables from patient-completed questionnaires.
 North Central Cancer Treatment Group. Journal of Clinical Oncology. 12(3):601-7.
 }

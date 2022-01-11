@@ -161,7 +161,11 @@ or covariances (off-diagonal elements). Defaults to the identity matrix}
 
 \item{omega.init}{a square matrix of size equal to the number of parameters
 in the model, giving the initial estimate for the variance-covariance matrix
-of the model. Defaults to the identity matrix}
+of the model. The current default is a diagonal matrix with ones for all
+transformed parameters as well as for all untransformed parameters with an
+absolute value smaller than one.  For untransformed parameters greater or
+equal to one, their squared value is used as the corresponding diagonal
+element.}
 
 \item{error.init}{a vector of size 2 giving the initial value of a and b in
 the error model. Defaults to 1 for each estimated parameter in the error model}

@@ -47,13 +47,13 @@ saemix.model<-saemixModel(model=growth.linear,description="Linear model",
       error.model="constant")
 
 saemix.options<-list(algorithms=c(1,1,1),nb.chains=1,seed=201004,
-      save=FALSE,save.graphs=FALSE)
+      save=FALSE,save.graphs=FALSE,displayProgress=FALSE)
 \donttest{
 saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
 }
 
 }
 \references{
-Pinheiro JC, Bates DM (2000) \emph{Mixed-effects Models in S and S-PLUS}, Springer, New York (Appendix A.19)
+JC Pinheiro, DM Bates (2000) \emph{Mixed-effects Models in S and S-PLUS}, Springer, New York (Appendix A.19)
 }
 \keyword{datasets}

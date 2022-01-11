@@ -74,7 +74,7 @@ model2<-saemixModel(model=modelemax,description="Emax growth model",
 
 # SE not computed as not needed for the test
 saemix.options<-list(algorithms=c(0,1,1),nb.chains=3,seed=765754, 
-       nbiter.saemix=c(500,300),save=FALSE,save.graphs=FALSE)
+       nbiter.saemix=c(500,300),save=FALSE,save.graphs=FALSE,displayProgress=FALSE)
 
 fit1<-saemix(model1,saemix.data,saemix.options)
 fit2<-saemix(model2,saemix.data,saemix.options)
@@ -84,6 +84,6 @@ cat("LRT test for covariate effect on EC50: p-value=",1-pchisq(wstat,1),"\n")
 }
 }
 \references{
-Girard P, Mentre F (2004). Comparison of Algorithms Using Simulated Data Sets and Blind Analysis workshop, Lyon, France.
+P Girard, F Mentre (2004). Comparison of Algorithms Using Simulated Data Sets and Blind Analysis workshop, Lyon, France.
 }
 \keyword{datasets}

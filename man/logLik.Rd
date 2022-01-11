@@ -38,11 +38,14 @@ If the requested likelihood is not present in the object, it will be computed an
 BIC.covariate implements the computation of the BIC from Delattre et al. 2014.
 }
 \references{
-Comets  E, Lavenu A, Lavielle M. Parameter estimation in nonlinear mixed effect models using saemix, an R implementation of the SAEM algorithm. Journal of Statistical Software 80, 3 (2017), 1-41.
+E Comets, A Lavenu, M Lavielle M (2017). Parameter estimation in nonlinear mixed effect models using saemix,
+an R implementation of the SAEM algorithm. Journal of Statistical Software, 80(3):1-41.
 
-Kuhn E, Lavielle M. Maximum likelihood estimation in nonlinear mixed effects models. Computational Statistics and Data Analysis 49, 4 (2005), 1020-1038.
+E Kuhn, M Lavielle (2005). Maximum likelihood estimation in nonlinear mixed effects models.
+Computational Statistics and Data Analysis, 49(4):1020-1038.
 
-Delattre M. Lavielle M. Poursat MA. A note on BIC in mixed-effects models. Electronic Journal of Statistics (2014) 8, 456-475.
+E Comets, A Lavenu, M Lavielle (2011). SAEMIX, an R version of the SAEM algorithm. 20th meeting of the
+Population Approach Group in Europe, Athens, Greece, Abstr 2173.
 }
 \seealso{
 \code{\link{AIC}},\code{\link{BIC}}, \code{\link{saemixControl}}, \code{\link{saemix}}

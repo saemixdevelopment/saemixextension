@@ -4,10 +4,14 @@
 \alias{saemix.predict}
 \title{Compute model predictions after an saemix fit}
 \usage{
-saemix.predict(object)
+saemix.predict(object, type = c("ipred", "ypred", "ppred", "icpred"))
 }
 \arguments{
 \item{object}{an SaemixObject object}
+
+\item{type}{the type of predictions (ipred= individual, ppred=population predictions obtained with the population estimates,
+ypred=mean of the population predictions, icpred=conditional predictions).
+By default, computes all the predictions and residuals, along with the corresponding parameter estimates}
 }
 \value{
 an updated SaemixObject object
@@ -16,5 +20,9 @@ an updated SaemixObject object
 In nonlinear mixed effect models, different types of predictions may be obtained, including individual predictions and population predictions.
 This function takes an SaemixObject and adds any missing predictions for maximum a posteriori and conditional mean estimations of the individual
 parameters, and for the different types of individual and population predictions for the response variable.
+}
+\details{
+This function is used internally by saemix to automatically compute a number of elements needed for diagnostic plots.
+It is normally executed directly during a call to saemix() but can be called to add residuals
 }
 \keyword{methods}

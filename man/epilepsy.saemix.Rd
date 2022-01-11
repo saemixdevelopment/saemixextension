@@ -8,7 +8,10 @@
 MASS package in R
 }
 \description{
-In this example we use
+The epilepsy data from Thall and Vail (1990), available from the MASS package, records two-week seizure counts for 59 epileptics.
+The number of seizures was recorded for a baseline period of 8 weeks, and then patients were randomly assigned to a treatment group
+or a control group. Counts were then recorded for four successive two-week periods. The subject's age is the only covariate. See the
+documentation for epil in the MASS package for details on the dataset.
 }
 \examples{
 # You need to have MASS installed to successfully run this example
@@ -19,23 +22,22 @@ if (requireNamespace("MASS")) {
      name.predictors=c("period","y"),name.response=c("y"),
      name.covariates=c("trt","base", "age"), units=list(x="2-week",y="",covariates=c("","","yr")))
   ## Poisson model with one parameter
-  countmodel.poisson<-function(psi,id,xidep) { 
+  countPoi<-function(psi,id,xidep) { 
     y<-xidep[,2]
     lambda<-psi[id,1]
     logp <- -lambda + y*log(lambda) - log(factorial(y))
     return(logp)
     }
-  saemix.model.poi<-saemixModel(model=countmodel.poisson,description="count model Poisson",
-      modeltype="likelihood", psi0=matrix(c(0.5),ncol=1,byrow=TRUE,dimnames=list(NULL, c("lambda"))), 
-      transform.par=c(1))
-  \donttest{
+ saemix.model<-saemixModel(model=countPoi,description="Count model Poisson",modeltype="likelihood", 
+   psi0=matrix(c(0.5),ncol=1,byrow=TRUE,dimnames=list(NULL, c("lambda"))), transform.par=c(1))
+ \donttest{
   saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
-  poisson.fit<-saemix(saemix.model.poi,saemix.data,saemix.options)
+  poisson.fit<-saemix(saemix.model,saemix.data,saemix.options)
   }
 }
   
 }
 \references{
-Thall P, Vail S (1990). Some covariance models for longitudinal count data with overdispersion. Biometrics 46(3):657-71.
+P Thall, S Vail (1990). Some covariance models for longitudinal count data with overdispersion. Biometrics 46(3):657-71.
 }
 \keyword{datasets}

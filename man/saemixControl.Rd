@@ -18,8 +18,9 @@ saemixControl(
   nu.is = 4,
   print.is = FALSE,
   nbdisplay = 100,
-  displayProgress = TRUE,
+  displayProgress = FALSE,
   nbiter.burn = 5,
+  nbiter.map = 5,
   nbiter.mcmc = c(2, 2, 2, 0),
   proba.mcmc = 0.4,
   stepsize.rw = 0.4,
@@ -84,9 +85,13 @@ sampling is produced and updated every 500 samples. Defaults to FALSE}
 \item{displayProgress}{when TRUE, the convergence plots are plotted after
 every nbdisplay iteration, and a dot is written in the terminal window to
 indicate progress. When FALSE, plots are not shown and the algorithm runs
-silently. Defaults to TRUE}
+silently. Defaults to FALSE}
 
 \item{nbiter.burn}{nb of iterations for burning}
+
+\item{nbiter.map}{nb of iterations of the MAP kernel (4th kernel) to run at the beginning
+of the estimation process (defaults to nbiter.saemix[1]/10 if nbiter.mcmc[4] is more than 0)
+(EXPERIMENTAL, see Karimi et al. 2019 for details)}
 
 \item{nbiter.mcmc}{nb of iterations in each kernel during the MCMC step}
 
@@ -159,16 +164,19 @@ saemix.options<-saemixControl()
 # All default options, changing seed
 saemix.options<-saemixControl(seed=632545)
 
-
 }
 \references{
-Comets  E, Lavenu A, Lavielle M. Parameter estimation in nonlinear mixed effect models using saemix, an R implementation of the SAEM algorithm. Journal of Statistical Software 80, 3 (2017), 1-41.
+E Comets, A Lavenu, M Lavielle M (2017). Parameter estimation in nonlinear mixed effect models using saemix,
+an R implementation of the SAEM algorithm. Journal of Statistical Software, 80(3):1-41.
 
-Kuhn E, Lavielle M. Maximum likelihood estimation in nonlinear mixed effects models. Computational Statistics and Data Analysis 49, 4 (2005), 1020-1038.
+E Kuhn, M Lavielle (2005). Maximum likelihood estimation in nonlinear mixed effects models.
+Computational Statistics and Data Analysis, 49(4):1020-1038.
 
-Comets E, Lavenu A, Lavielle M. SAEMIX, an R version of the SAEM algorithm.
-20th meeting of the Population Approach Group in Europe, Athens, Greece
-(2011), Abstr 2173.
+E Comets, A Lavenu, M Lavielle (2011). SAEMIX, an R version of the SAEM algorithm. 20th meeting of the
+Population Approach Group in Europe, Athens, Greece, Abstr 2173.
+
+B Karimi, M Lavielle , E Moulines E  (2019). f-SAEM: A fast Stochastic Approximation of the EM algorithm for nonlinear mixed effects models.
+Computational Statistics & Data Analysis, 141:123-38
 }
 \seealso{
 \code{\link{SaemixData}},\code{\link{SaemixModel}},
