@@ -25,6 +25,7 @@ The only mandatory elements for a \monolix~fit are:
 \item a model object, defined by at least:
    \begin{itemize}
    \item the name of a valid model function
+   \item the nature \texttt{modeltype} of the model function. By default assigned to 'structural' when the model defines a regression function $f$ (continuous observations) and 'likelihood' if it defines a conditional probability (non continuous observations).
    \item the matrix of starting values \texttt{psi0}
       \begin{itemize}
       \item if no covariates are present in the model, a single line is sufficient, which will contain the starting values for the fixed effects $\mu$ in the model

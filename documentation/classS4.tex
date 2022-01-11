@@ -46,6 +46,7 @@ The constructor functions for the first two objects are respectively {\sf saemix
 \begin{itemize}
 \item {\sf saemixData()}: the {\sf saemixData()} function requires one mandatory argument, the name of a dataframe in \R or of a file on disk containing the data. If the file has a header (or if the dataframe has column names), the program will attempt to recognise suitable names for the grouping, predictor and response variables. These may also be specified by the user, either as names or column numbers (see help page for {\sf SaemixData}).
 \item {\sf saemixModel()}: the {\sf saemixModel()} function requires two mandatory arguments: the name of a \R function computing the model in the \monolix~format (see details and examples) and a matrix giving the initial estimates of the fixed parameters in the model. This matrix should contain at least one row, with the values of the initial estimates for the population mean parameters; if covariates are present in the data and enter the model, a second row should contain  the values of the initial estimates for the covariate effects.
+An additional argument noted \texttt{modeltype}, taking as values 'structural' or 'likelihood', allows the user to consider either models for continuous or noncontinuous observations. This value is tied to the definition of the \R function computing the model.
 \end{itemize}
 There is no constructor function for an {\sf SaemixObject} object, since such an object should be returned by the {\sf saemix()} function.
 
