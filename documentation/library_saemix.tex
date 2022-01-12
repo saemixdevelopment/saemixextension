@@ -89,8 +89,9 @@ In the \R~implementation of \monolix, most of these parameters, as well as other
 $L$ & number of Markov Chains & {\sf nb.chains} & 1$^*$ \\
 $K_1, K_2$ & Number of iterations during the two periods & {\sf nbiter.saemix} & c(300,100)\\
 $K_b$ & Number of burning iterations & {\sf nbiter.burn} & 5 \\
-$m_1, m_2, m_3$ & Number of iterations of kernels $q^{(2)}$, $q^{(3)}$ and $q^{(4)}$ at each iteration of SAEM& {\sf nbiter.mcmc} & c(2,2,2)\\
+$m_1, m_2, m_3$ & Number of iterations of kernels $q^{(2)}$, $q^{(3)}$, $q^{(4)}$ and $q^{(5)}$ at each iteration of SAEM& {\sf nbiter.mcmc} & c(2,2,2,0)\\
  & Number of iterations during which simulated annealing is performed & {\sf nbiter.sa} &  \\
+ & Number of iterations during which kernel $q^{(5)}$ is used & {\sf nbiter.map} &  0$^{**}$\\
 $\rho$ & Probability of acceptance for kernels $q^{(2)}$ and $q^{(3)}$ & {\sf proba.mcmc} & 0.4 \\
  & Stepsize for kernels $q^{(2)}$ and $q^{(3)}$ & {\sf stepsize.rw} & 0.4 \\
  & Initial variance parameters for kernels $q^{(2)}$ and $q^{(3)}$ & {\sf rw.init} & 0.5\\
@@ -113,6 +114,7 @@ $\rho_{mcmc}$ & Confidence interval for the conditional mean and variance & {\sf
 \caption{Parameters set as options in the {\sf options} list. To set an option, one would define it as an element of this list (see examples), and any option not defined by the user is automatically set to its default value.} \label{tab:options}
 \end{longtable} 
 \par \kern -1cm{\itshape $^*$ the default number of chains is 1, except when the number of subjects is smaller than 50, where it defaults to $n_c$ where $n_c$ is the smallest integer such that $n_c\;N \geq 50$}
+\par {\itshape $^{**}$ the kernel $q^{(5)}$ implementing the independent proposal of the f-SAEM algorithm, described in Subsection~\ref{subsec:fsaem} is optional and experimental. It has empirically be shown to be effective during the first {\sf nbiter.map} iterations.}
 \end{center}
 
 

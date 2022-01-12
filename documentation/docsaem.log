@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.19 (TeX Live 2018) (preloaded format=pdflatex 2018.7.23)  11 JAN 2022 15:06
+This is pdfTeX, Version 3.14159265-2.6-1.40.19 (TeX Live 2018) (preloaded format=pdflatex 2018.7.23)  12 JAN 2022 10:09
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -465,15 +465,15 @@ Underfull \vbox (badness 10000) has occurred while \output is active []
 LaTeX Warning: Citation `Karimi19' on page 21 undefined on input line 188.
 
 [21]
-Overfull \hbox (87.85861pt too wide) in paragraph at lines 214--215
+Overfull \hbox (23.79852pt too wide) in paragraph at lines 214--215
 []\OT1/cmr/m/n/10.95 Hence, the f-SAEM al-go-rithm uses the Gaus-sian pro-posal
- of mean $[]$ and co-vari-ance $[][]$,
+ of co-vari-ance $[][]$
  []
 
 [22]
-Overfull \hbox (84.55931pt too wide) in paragraph at lines 236--237
+Overfull \hbox (20.49922pt too wide) in paragraph at lines 236--237
 []\OT1/cmr/m/n/10.95 Hence, the f-SAEM al-go-rithm uses the Gaus-sian pro-posal
- of mean $[]$ and co-vari-ance $[][]$,
+ of co-vari-ance $[][]$
  []
 
 [23] [24] [25] [26] [27] [28] [29]) [30] (./library_saemix.tex
@@ -506,46 +506,46 @@ Overfull \hbox (36.86163pt too wide) in alignment at lines 86--108
  []
 
 
-Overfull \hbox (36.86163pt too wide) in alignment at lines 108--114
+Overfull \hbox (36.86163pt too wide) in alignment at lines 108--115
  [] [] [] [] 
  []
 
-[33] [34] [35
+[33] [34] [35] [36
 
-] [36] [37]
+] [37] [38]
 
-LaTeX Warning: Citation `DelattrePoursatLavielle2014' on page 38 undefined on i
-nput line 268.
+LaTeX Warning: Citation `DelattrePoursatLavielle2014' on page 39 undefined on i
+nput line 270.
 
 
-LaTeX Warning: Citation `DelattrePoursat2020' on page 38 undefined on input lin
-e 274.
+LaTeX Warning: Citation `DelattrePoursat2020' on page 39 undefined on input lin
+e 276.
 
-[38]
-Overfull \hbox (19.06741pt too wide) in paragraph at lines 292--293
+[39]
+Overfull \hbox (19.06741pt too wide) in paragraph at lines 294--295
 []\OT1/cmr/m/n/10.95 The Pop-u-la-tion Weighted Resid-u-als $(\OML/cmm/m/it/10.
 95 PWRES[]\OT1/cmr/m/n/10.95 )$, the In-di-vid-ual Weighted Resid-u-als $(\OML/
 cmm/m/it/10.95 IWRES[]\OT1/cmr/m/n/10.95 )$
  []
 
-[39] [40] [41] [42]
-Overfull \hbox (38.16402pt too wide) in paragraph at lines 427--428
+[40] [41] [42] [43]
+Overfull \hbox (38.16402pt too wide) in paragraph at lines 429--430
 []|\OT1/cmr/m/n/10.95 c("res.vs.x","res.vs.pred",| 
  []
 
 
-Overfull \hbox (33.4494pt too wide) in paragraph at lines 428--429
+Overfull \hbox (33.4494pt too wide) in paragraph at lines 430--431
 []|\OT1/cmr/m/n/10.95 "dist.qqplot","dist.hist")| 
  []
 
-[43] [44] [45]) (./classS4.tex [46] [47] [48]
+[44] [45] [46]) (./classS4.tex [47] [48] [49]
 Overfull \hbox (1.8553pt too wide) in paragraph at lines 74--75
 []\OT1/cmr/m/n/10.95 The fol-low-ing generic meth-ods have been de-fined for \O
 T1/cmss/m/n/10.95 Saemix-Data\OT1/cmr/m/n/10.95 , \OT1/cmss/m/n/10.95 Saemix-Mo
 del \OT1/cmr/m/n/10.95 and \OT1/cmss/m/n/10.95 SaemixOb-
  []
 
-[49] [50] [51]
+[50] [51] [52]
 Overfull \hbox (33.39438pt too wide) in paragraph at lines 154--154
 []\OT1/cmtt/m/n/10.95 name.group=c("Id"),name.predictors=c("Dose","Time"),name.
 response=c("Concentration"),[] 
@@ -557,11 +557,11 @@ Overfull \hbox (33.39438pt too wide) in paragraph at lines 154--154
 /L",covariates=c("kg","-")),[] 
  []
 
-) [52] (./examples_saem.tex
-Chapter 4.
-[53
+) [53] (./examples_saem.tex [54
 
 ]
+Chapter 4.
+[55]
 Package epstopdf Info: Source file: <figs/theo_rawdata.eps>
 (epstopdf)                    date: 2021-10-21 15:44:45
 (epstopdf)                    size: 8534 bytes
@@ -577,7 +577,7 @@ Package epstopdf Info: Output file is already uptodate.
 pdfTeX warning: /Library/TeX/texbin/pdflatex (file ./figs/theo_rawdata-eps-conv
 erted-to.pdf): PDF inclusion: found PDF version <1.7>, but at most version <1.5
 > allowed
-<figs/theo_rawdata-eps-converted-to.pdf, id=730, 561.09625pt x 809.0225pt>
+<figs/theo_rawdata-eps-converted-to.pdf, id=740, 561.09625pt x 809.0225pt>
 File: figs/theo_rawdata-eps-converted-to.pdf Graphic file (type pdf)
 <use figs/theo_rawdata-eps-converted-to.pdf>
 Package pdftex.def Info: figs/theo_rawdata-eps-converted-to.pdf  used on input 
@@ -588,7 +588,7 @@ Overfull \hbox (37.04916pt too wide) in paragraph at lines 56--57
  [] 
  []
 
-[54 <./figs/theo_rawdata-eps-converted-to.pdf>]
+[56 <./figs/theo_rawdata-eps-converted-to.pdf>]
 Overfull \hbox (50.64044pt too wide) in paragraph at lines 73--73
 []  \OT1/cmtt/m/n/10.95 name.group=c("Id"),name.predictors=c("Dose", "Time"),na
 me.response=c("Concentration"),[] 
@@ -612,17 +612,17 @@ Overfull \hbox (27.64569pt too wide) in paragraph at lines 95--95
 E), error.model="constant")[] 
  []
 
-[55] [56]
+[57] [58]
 Underfull \vbox (badness 1824) has occurred while \output is active []
 
- [57]
+ [59]
 Underfull \vbox (badness 10000) has occurred while \output is active []
 
- [58]
+ [60]
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-[59]
+[61]
 Package epstopdf Info: Source file: <figs/theo_convergence.eps>
 (epstopdf)                    date: 2021-10-21 15:44:45
 (epstopdf)                    size: 57657 bytes
@@ -639,7 +639,7 @@ Package epstopdf Info: Output file is already uptodate.
 pdfTeX warning: /Library/TeX/texbin/pdflatex (file ./figs/theo_convergence-eps-
 converted-to.pdf): PDF inclusion: found PDF version <1.7>, but at most version 
 <1.5> allowed
-<figs/theo_convergence-eps-converted-to.pdf, id=773, 561.09625pt x 809.0225pt>
+<figs/theo_convergence-eps-converted-to.pdf, id=783, 561.09625pt x 809.0225pt>
 File: figs/theo_convergence-eps-converted-to.pdf Graphic file (type pdf)
 <use figs/theo_convergence-eps-converted-to.pdf>
 Package pdftex.def Info: figs/theo_convergence-eps-converted-to.pdf  used on in
@@ -660,13 +660,13 @@ Package epstopdf Info: Output file is already uptodate.
 pdfTeX warning: /Library/TeX/texbin/pdflatex (file ./figs/theo_llis-eps-convert
 ed-to.pdf): PDF inclusion: found PDF version <1.7>, but at most version <1.5> a
 llowed
-<figs/theo_llis-eps-converted-to.pdf, id=777, 561.09625pt x 809.0225pt>
+<figs/theo_llis-eps-converted-to.pdf, id=787, 561.09625pt x 809.0225pt>
 File: figs/theo_llis-eps-converted-to.pdf Graphic file (type pdf)
 <use figs/theo_llis-eps-converted-to.pdf>
 Package pdftex.def Info: figs/theo_llis-eps-converted-to.pdf  used on input lin
 e 283.
 (pdftex.def)             Requested size: 256.0748pt x 369.21684pt.
-[60 <./figs/theo_convergence-eps-converted-to.pdf>]
+[62 <./figs/theo_convergence-eps-converted-to.pdf>]
 Package epstopdf Info: Source file: <figs/theo_diagnos.eps>
 (epstopdf)                    date: 2021-10-21 15:44:45
 (epstopdf)                    size: 10910 bytes
@@ -682,7 +682,7 @@ Package epstopdf Info: Output file is already uptodate.
 pdfTeX warning: /Library/TeX/texbin/pdflatex (file ./figs/theo_diagnos-eps-conv
 erted-to.pdf): PDF inclusion: found PDF version <1.7>, but at most version <1.5
 > allowed
-<figs/theo_diagnos-eps-converted-to.pdf, id=794, 561.09625pt x 809.0225pt>
+<figs/theo_diagnos-eps-converted-to.pdf, id=804, 561.09625pt x 809.0225pt>
 File: figs/theo_diagnos-eps-converted-to.pdf Graphic file (type pdf)
 <use figs/theo_diagnos-eps-converted-to.pdf>
 Package pdftex.def Info: figs/theo_diagnos-eps-converted-to.pdf  used on input 
@@ -707,7 +707,7 @@ Package epstopdf Info: Output file is already uptodate.
 pdfTeX warning: /Library/TeX/texbin/pdflatex (file ./figs/theo_individualfits_s
 mooth-eps-converted-to.pdf): PDF inclusion: found PDF version <1.7>, but at mos
 t version <1.5> allowed
-<figs/theo_individualfits_smooth-eps-converted-to.pdf, id=795, 561.09625pt x 80
+<figs/theo_individualfits_smooth-eps-converted-to.pdf, id=805, 561.09625pt x 80
 9.0225pt>
 File: figs/theo_individualfits_smooth-eps-converted-to.pdf Graphic file (type p
 df)
@@ -721,8 +721,8 @@ LaTeX Warning: Float too large for page by 11.68544pt on input line 305.
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-[61 <./figs/theo_llis-eps-converted-to.pdf>] [62 <./figs/theo_diagnos-eps-conve
-rted-to.pdf>] [63 <./figs/theo_individualfits_smooth-eps-converted-to.pdf>]
+[63 <./figs/theo_llis-eps-converted-to.pdf>] [64 <./figs/theo_diagnos-eps-conve
+rted-to.pdf>] [65 <./figs/theo_individualfits_smooth-eps-converted-to.pdf>]
 Package epstopdf Info: Source file: <figs/theo_individualfits_smoothlog.eps>
 (epstopdf)                    date: 2021-10-21 15:44:45
 (epstopdf)                    size: 13736 bytes
@@ -739,7 +739,7 @@ Package epstopdf Info: Output file is already uptodate.
 pdfTeX warning: /Library/TeX/texbin/pdflatex (file ./figs/theo_individualfits_s
 moothlog-eps-converted-to.pdf): PDF inclusion: found PDF version <1.7>, but at 
 most version <1.5> allowed
-<figs/theo_individualfits_smoothlog-eps-converted-to.pdf, id=838, 561.09625pt x
+<figs/theo_individualfits_smoothlog-eps-converted-to.pdf, id=847, 561.09625pt x
  809.0225pt>
 File: figs/theo_individualfits_smoothlog-eps-converted-to.pdf Graphic file (typ
 e pdf)
@@ -758,7 +758,7 @@ Overfull \hbox (16.14832pt too wide) in paragraph at lines 326--326
 t=1:4,smooth=TRUE,ylog=T,[] 
  []
 
-[64
+[66
 
  <./figs/theo_individualfits_smoothlog-eps-converted-to.pdf>]
 Package epstopdf Info: Source file: <figs/theo_VPC.eps>
@@ -776,7 +776,7 @@ Package epstopdf Info: Output file is already uptodate.
 pdfTeX warning: /Library/TeX/texbin/pdflatex (file ./figs/theo_VPC-eps-converte
 d-to.pdf): PDF inclusion: found PDF version <1.7>, but at most version <1.5> al
 lowed
-<figs/theo_VPC-eps-converted-to.pdf, id=853, 561.09625pt x 809.0225pt>
+<figs/theo_VPC-eps-converted-to.pdf, id=862, 561.09625pt x 809.0225pt>
 File: figs/theo_VPC-eps-converted-to.pdf Graphic file (type pdf)
 <use figs/theo_VPC-eps-converted-to.pdf>
 Package pdftex.def Info: figs/theo_VPC-eps-converted-to.pdf  used on input line
@@ -787,7 +787,7 @@ Overfull \hbox (16.5323pt too wide) in paragraph at lines 339--340
  [] 
  []
 
-[65 <./figs/theo_VPC-eps-converted-to.pdf>]
+[67 <./figs/theo_VPC-eps-converted-to.pdf>]
 Package epstopdf Info: Source file: <figs/theo_residscatter.eps>
 (epstopdf)                    date: 2021-10-21 15:44:45
 (epstopdf)                    size: 29082 bytes
@@ -804,7 +804,7 @@ Package epstopdf Info: Output file is already uptodate.
 pdfTeX warning: /Library/TeX/texbin/pdflatex (file ./figs/theo_residscatter-eps
 -converted-to.pdf): PDF inclusion: found PDF version <1.7>, but at most version
  <1.5> allowed
-<figs/theo_residscatter-eps-converted-to.pdf, id=869, 561.09625pt x 809.0225pt>
+<figs/theo_residscatter-eps-converted-to.pdf, id=879, 561.09625pt x 809.0225pt>
 
 File: figs/theo_residscatter-eps-converted-to.pdf Graphic file (type pdf)
 <use figs/theo_residscatter-eps-converted-to.pdf>
@@ -822,13 +822,13 @@ Overfull \hbox (16.14832pt too wide) in paragraph at lines 373--373
 , error.model="constant")[] 
  []
 
-[66 <./figs/theo_residscatter-eps-converted-to.pdf>]
+[68 <./figs/theo_residscatter-eps-converted-to.pdf>]
 Overfull \hbox (4.65094pt too wide) in paragraph at lines 410--410
 []  \OT1/cmtt/m/n/10.95 description="One-compartment model with first-order abs
 orption, Steady-state",[] 
  []
 
-[67]
+[69]
 LaTeX Font Info:    Try loading font information for OMS+cmss on input line 423
 .
 LaTeX Font Info:    No file OMScmss.fd. on input line 423.
@@ -853,7 +853,7 @@ Package epstopdf Info: Output file is already uptodate.
 pdfTeX warning: /Library/TeX/texbin/pdflatex (file ./figs/PD_rawdata-eps-conver
 ted-to.pdf): PDF inclusion: found PDF version <1.7>, but at most version <1.5> 
 allowed
-<figs/PD_rawdata-eps-converted-to.pdf, id=886, 561.09625pt x 809.0225pt>
+<figs/PD_rawdata-eps-converted-to.pdf, id=895, 561.09625pt x 809.0225pt>
 File: figs/PD_rawdata-eps-converted-to.pdf Graphic file (type pdf)
 <use figs/PD_rawdata-eps-converted-to.pdf>
 Package pdftex.def Info: figs/PD_rawdata-eps-converted-to.pdf  used on input li
@@ -867,7 +867,7 @@ Overfull \hbox (37.04916pt too wide) in paragraph at lines 446--447
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-[68]
+[70]
 Overfull \hbox (16.14832pt too wide) in paragraph at lines 484--484
 []\OT1/cmtt/m/n/10.95 saemix.data1<-saemixData(name.data=PD1.saemix,header=TRUE
 ,name.group=c("subject"),[] 
@@ -891,7 +891,7 @@ Overfull \hbox (16.14832pt too wide) in paragraph at lines 484--484
 e.covariates=c("gender"),[] 
  []
 
-[69 <./figs/PD_rawdata-eps-converted-to.pdf>] [70]
+[71 <./figs/PD_rawdata-eps-converted-to.pdf>] [72]
 Package epstopdf Info: Source file: <figs/PD1_convergence.eps>
 (epstopdf)                    date: 2021-10-21 15:44:45
 (epstopdf)                    size: 53122 bytes
@@ -908,7 +908,7 @@ Package epstopdf Info: Output file is already uptodate.
 pdfTeX warning: /Library/TeX/texbin/pdflatex (file ./figs/PD1_convergence-eps-c
 onverted-to.pdf): PDF inclusion: found PDF version <1.7>, but at most version <
 1.5> allowed
-<figs/PD1_convergence-eps-converted-to.pdf, id=914, 561.09625pt x 809.0225pt>
+<figs/PD1_convergence-eps-converted-to.pdf, id=923, 561.09625pt x 809.0225pt>
 File: figs/PD1_convergence-eps-converted-to.pdf Graphic file (type pdf)
 <use figs/PD1_convergence-eps-converted-to.pdf>
 Package pdftex.def Info: figs/PD1_convergence-eps-converted-to.pdf  used on inp
@@ -917,7 +917,7 @@ ut line 529.
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-[71] [72 <./figs/PD1_convergence-eps-converted-to.pdf>]
+[73] [74 <./figs/PD1_convergence-eps-converted-to.pdf>]
 Package epstopdf Info: Source file: <figs/PD2_convergence.eps>
 (epstopdf)                    date: 2021-10-21 15:44:45
 (epstopdf)                    size: 52930 bytes
@@ -934,7 +934,7 @@ Package epstopdf Info: Output file is already uptodate.
 pdfTeX warning: /Library/TeX/texbin/pdflatex (file ./figs/PD2_convergence-eps-c
 onverted-to.pdf): PDF inclusion: found PDF version <1.7>, but at most version <
 1.5> allowed
-<figs/PD2_convergence-eps-converted-to.pdf, id=934, 561.09625pt x 809.0225pt>
+<figs/PD2_convergence-eps-converted-to.pdf, id=944, 561.09625pt x 809.0225pt>
 File: figs/PD2_convergence-eps-converted-to.pdf Graphic file (type pdf)
 <use figs/PD2_convergence-eps-converted-to.pdf>
 Package pdftex.def Info: figs/PD2_convergence-eps-converted-to.pdf  used on inp
@@ -956,7 +956,7 @@ Package epstopdf Info: Output file is already uptodate.
 pdfTeX warning: /Library/TeX/texbin/pdflatex (file ./figs/PD1_individualfits-ep
 s-converted-to.pdf): PDF inclusion: found PDF version <1.7>, but at most versio
 n <1.5> allowed
-<figs/PD1_individualfits-eps-converted-to.pdf, id=936, 561.09625pt x 809.0225pt
+<figs/PD1_individualfits-eps-converted-to.pdf, id=946, 561.09625pt x 809.0225pt
 >
 File: figs/PD1_individualfits-eps-converted-to.pdf Graphic file (type pdf)
 <use figs/PD1_individualfits-eps-converted-to.pdf>
@@ -966,9 +966,9 @@ input line 551.
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-[73
+[75
 
- <./figs/PD2_convergence-eps-converted-to.pdf>] [74 <./figs/PD1_individualfits-
+ <./figs/PD2_convergence-eps-converted-to.pdf>] [76 <./figs/PD1_individualfits-
 eps-converted-to.pdf>]
 Package epstopdf Info: Source file: <figs/weightcow_rawdata.eps>
 (epstopdf)                    date: 2021-10-21 15:44:45
@@ -986,7 +986,7 @@ Package epstopdf Info: Output file is already uptodate.
 pdfTeX warning: /Library/TeX/texbin/pdflatex (file ./figs/weightcow_rawdata-eps
 -converted-to.pdf): PDF inclusion: found PDF version <1.7>, but at most version
  <1.5> allowed
-<figs/weightcow_rawdata-eps-converted-to.pdf, id=967, 561.09625pt x 809.0225pt>
+<figs/weightcow_rawdata-eps-converted-to.pdf, id=976, 561.09625pt x 809.0225pt>
 
 File: figs/weightcow_rawdata-eps-converted-to.pdf Graphic file (type pdf)
 <use figs/weightcow_rawdata-eps-converted-to.pdf>
@@ -996,7 +996,7 @@ nput line 585.
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-[75
+[77
 
 ]
 Overfull \hbox (4.65094pt too wide) in paragraph at lines 626--626
@@ -1010,13 +1010,13 @@ Overfull \hbox (10.39963pt too wide) in paragraph at lines 626--626
 ,error.model="constant")[] 
  []
 
-[76 <./figs/weightcow_rawdata-eps-converted-to.pdf>]
+[78 <./figs/weightcow_rawdata-eps-converted-to.pdf>]
 Overfull \hbox (30.72351pt too wide) in paragraph at lines 657--658
 \OT1/cmss/m/n/10.95 First, de-fault plot op-tions are set in a list called saem
 ix.plot.options us-ing the func-tion saemix.plot.setoptions.
  []
 
-[77]
+[79]
 Package epstopdf Info: Source file: <figs/cow_indivfit4.eps>
 (epstopdf)                    date: 2021-10-21 15:44:45
 (epstopdf)                    size: 13453 bytes
@@ -1032,13 +1032,13 @@ Package epstopdf Info: Output file is already uptodate.
 pdfTeX warning: /Library/TeX/texbin/pdflatex (file ./figs/cow_indivfit4-eps-con
 verted-to.pdf): PDF inclusion: found PDF version <1.7>, but at most version <1.
 5> allowed
-<figs/cow_indivfit4-eps-converted-to.pdf, id=992, 561.09625pt x 809.0225pt>
+<figs/cow_indivfit4-eps-converted-to.pdf, id=1002, 561.09625pt x 809.0225pt>
 File: figs/cow_indivfit4-eps-converted-to.pdf Graphic file (type pdf)
 <use figs/cow_indivfit4-eps-converted-to.pdf>
 Package pdftex.def Info: figs/cow_indivfit4-eps-converted-to.pdf  used on input
  line 665.
 (pdftex.def)             Requested size: 312.9803pt x 451.27188pt.
-[78 <./figs/cow_indivfit4-eps-converted-to.pdf>]
+[80 <./figs/cow_indivfit4-eps-converted-to.pdf>]
 Package epstopdf Info: Source file: <figs/oxboys_rawdata.eps>
 (epstopdf)                    date: 2021-10-21 15:44:45
 (epstopdf)                    size: 12588 bytes
@@ -1054,7 +1054,7 @@ Package epstopdf Info: Output file is already uptodate.
 pdfTeX warning: /Library/TeX/texbin/pdflatex (file ./figs/oxboys_rawdata-eps-co
 nverted-to.pdf): PDF inclusion: found PDF version <1.7>, but at most version <1
 .5> allowed
-<figs/oxboys_rawdata-eps-converted-to.pdf, id=1009, 561.09625pt x 809.0225pt>
+<figs/oxboys_rawdata-eps-converted-to.pdf, id=1019, 561.09625pt x 809.0225pt>
 File: figs/oxboys_rawdata-eps-converted-to.pdf Graphic file (type pdf)
 <use figs/oxboys_rawdata-eps-converted-to.pdf>
 Package pdftex.def Info: figs/oxboys_rawdata-eps-converted-to.pdf  used on inpu
@@ -1066,7 +1066,7 @@ Overfull \hbox (10.39963pt too wide) in paragraph at lines 727--727
 name.group=c("Subject"),[] 
  []
 
-[79 <./figs/oxboys_rawdata-eps-converted-to.pdf>]
+[81 <./figs/oxboys_rawdata-eps-converted-to.pdf>]
 Package epstopdf Info: Source file: <figs/yield_rawdata.eps>
 (epstopdf)                    date: 2021-10-21 15:44:45
 (epstopdf)                    size: 7043 bytes
@@ -1082,7 +1082,7 @@ Package epstopdf Info: Output file is already uptodate.
 pdfTeX warning: /Library/TeX/texbin/pdflatex (file ./figs/yield_rawdata-eps-con
 verted-to.pdf): PDF inclusion: found PDF version <1.7>, but at most version <1.
 5> allowed
-<figs/yield_rawdata-eps-converted-to.pdf, id=1023, 561.09625pt x 809.0225pt>
+<figs/yield_rawdata-eps-converted-to.pdf, id=1032, 561.09625pt x 809.0225pt>
 File: figs/yield_rawdata-eps-converted-to.pdf Graphic file (type pdf)
 <use figs/yield_rawdata-eps-converted-to.pdf>
 Package pdftex.def Info: figs/yield_rawdata-eps-converted-to.pdf  used on input
@@ -1096,7 +1096,7 @@ Overfull \hbox (16.5323pt too wide) in paragraph at lines 741--742
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-[80]
+[82]
 Overfull \hbox (4.65094pt too wide) in paragraph at lines 815--815
 []\OT1/cmtt/m/n/10.95 saemix.data<-saemixData(name.data=yield.saemix,header=TRU
 E,name.group=c("site"),[] 
@@ -1108,7 +1108,7 @@ Overfull \hbox (44.89175pt too wide) in paragraph at lines 815--815
 covariates=c("soil.nitrogen"),[] 
  []
 
-[81 <./figs/yield_rawdata-eps-converted-to.pdf>]
+[83 <./figs/yield_rawdata-eps-converted-to.pdf>]
 Overfull \hbox (16.14832pt too wide) in paragraph at lines 815--815
 []\OT1/cmtt/m/n/10.95 psi0=matrix(c(8,100,0.2,0,0,0),ncol=3,byrow=T, dimnames=l
 ist(NULL,c("Ymax","Xmax",[] 
@@ -1144,7 +1144,7 @@ Overfull \hbox (27.64569pt too wide) in paragraph at lines 815--815
 =T),error.model="constant")[] 
  []
 
-[82]
+[84]
 Package epstopdf Info: Source file: <figs/yield_comparemodels_diagnos.eps>
 (epstopdf)                    date: 2021-10-21 15:44:45
 (epstopdf)                    size: 29034 bytes
@@ -1161,7 +1161,7 @@ Package epstopdf Info: Output file is already uptodate.
 pdfTeX warning: /Library/TeX/texbin/pdflatex (file ./figs/yield_comparemodels_d
 iagnos-eps-converted-to.pdf): PDF inclusion: found PDF version <1.7>, but at mo
 st version <1.5> allowed
-<figs/yield_comparemodels_diagnos-eps-converted-to.pdf, id=1046, 561.09625pt x 
+<figs/yield_comparemodels_diagnos-eps-converted-to.pdf, id=1055, 561.09625pt x 
 809.0225pt>
 File: figs/yield_comparemodels_diagnos-eps-converted-to.pdf Graphic file (type 
 pdf)
@@ -1185,7 +1185,7 @@ Package epstopdf Info: Output file is already uptodate.
 pdfTeX warning: /Library/TeX/texbin/pdflatex (file ./figs/yield_comparemodels_i
 ndiv-eps-converted-to.pdf): PDF inclusion: found PDF version <1.7>, but at most
  version <1.5> allowed
-<figs/yield_comparemodels_indiv-eps-converted-to.pdf, id=1048, 561.09625pt x 80
+<figs/yield_comparemodels_indiv-eps-converted-to.pdf, id=1057, 561.09625pt x 80
 9.0225pt>
 File: figs/yield_comparemodels_indiv-eps-converted-to.pdf Graphic file (type pd
 f)
@@ -1196,7 +1196,7 @@ sed on input line 840.
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-[83 <./figs/yield_comparemodels_diagnos-eps-converted-to.pdf>] [84 <./figs/yiel
+[85 <./figs/yield_comparemodels_diagnos-eps-converted-to.pdf>] [86 <./figs/yiel
 d_comparemodels_indiv-eps-converted-to.pdf>]
 Package epstopdf Info: Source file: <figs/yield_parvscov.eps>
 (epstopdf)                    date: 2021-10-21 15:44:45
@@ -1213,7 +1213,7 @@ Package epstopdf Info: Output file is already uptodate.
 pdfTeX warning: /Library/TeX/texbin/pdflatex (file ./figs/yield_parvscov-eps-co
 nverted-to.pdf): PDF inclusion: found PDF version <1.7>, but at most version <1
 .5> allowed
-<figs/yield_parvscov-eps-converted-to.pdf, id=1072, 561.09625pt x 809.0225pt>
+<figs/yield_parvscov-eps-converted-to.pdf, id=1083, 561.09625pt x 809.0225pt>
 File: figs/yield_parvscov-eps-converted-to.pdf Graphic file (type pdf)
 <use figs/yield_parvscov-eps-converted-to.pdf>
 Package pdftex.def Info: figs/yield_parvscov-eps-converted-to.pdf  used on inpu
@@ -1231,7 +1231,7 @@ Overfull \hbox (27.64569pt too wide) in paragraph at lines 879--879
 1,0,0,0,1),ncol=3,byrow=T),[] 
  []
 
-[85
+[87
 
  <./figs/yield_parvscov-eps-converted-to.pdf>]
 Overfull \hbox (21.897pt too wide) in paragraph at lines 879--879
@@ -1262,7 +1262,7 @@ Package epstopdf Info: Output file is already uptodate.
 pdfTeX warning: /Library/TeX/texbin/pdflatex (file ./figs/toenail_barplotData-e
 ps-converted-to.pdf): PDF inclusion: found PDF version <1.7>, but at most versi
 on <1.5> allowed
-<figs/toenail_barplotData-eps-converted-to.pdf, id=1087, 844.15375pt x 597.2312
+<figs/toenail_barplotData-eps-converted-to.pdf, id=1096, 844.15375pt x 597.2312
 5pt>
 File: figs/toenail_barplotData-eps-converted-to.pdf Graphic file (type pdf)
 <use figs/toenail_barplotData-eps-converted-to.pdf>
@@ -1285,7 +1285,7 @@ Package epstopdf Info: Output file is already uptodate.
 pdfTeX warning: /Library/TeX/texbin/pdflatex (file ./figs/toenail_rawdata-eps-c
 onverted-to.pdf): PDF inclusion: found PDF version <1.7>, but at most version <
 1.5> allowed
-<figs/toenail_rawdata-eps-converted-to.pdf, id=1088, 844.15375pt x 597.23125pt>
+<figs/toenail_rawdata-eps-converted-to.pdf, id=1097, 844.15375pt x 597.23125pt>
 
 File: figs/toenail_rawdata-eps-converted-to.pdf Graphic file (type pdf)
 <use figs/toenail_rawdata-eps-converted-to.pdf>
@@ -1295,14 +1295,14 @@ ut line 13.
 
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
-[86]
+[88]
 Overfull \hbox (44.89175pt too wide) in paragraph at lines 29--29
 []\OT1/cmtt/m/n/10.95 saemix.data<-saemixData(name.data=toe,name.group=c("id"),
 name.predictors=c("time","y"),[] 
  []
 
-[87 <./figs/toenail_barplotData-eps-converted-to.pdf> <./figs/toenail_rawdata-e
-ps-converted-to.pdf>] [88]
+[89 <./figs/toenail_barplotData-eps-converted-to.pdf> <./figs/toenail_rawdata-e
+ps-converted-to.pdf>] [90]
 Package epstopdf Info: Source file: <figs/toenail_globalVPC.eps>
 (epstopdf)                    date: 2022-01-10 08:45:32
 (epstopdf)                    size: 481327 bytes
@@ -1319,14 +1319,14 @@ Package epstopdf Info: Output file is already uptodate.
 pdfTeX warning: /Library/TeX/texbin/pdflatex (file ./figs/toenail_globalVPC-eps
 -converted-to.pdf): PDF inclusion: found PDF version <1.7>, but at most version
  <1.5> allowed
-<figs/toenail_globalVPC-eps-converted-to.pdf, id=1129, 844.15375pt x 597.23125p
+<figs/toenail_globalVPC-eps-converted-to.pdf, id=1138, 844.15375pt x 597.23125p
 t>
 File: figs/toenail_globalVPC-eps-converted-to.pdf Graphic file (type pdf)
 <use figs/toenail_globalVPC-eps-converted-to.pdf>
 Package pdftex.def Info: figs/toenail_globalVPC-eps-converted-to.pdf  used on i
 nput line 84.
 (pdftex.def)             Requested size: 312.9803pt x 221.43686pt.
-[89 <./figs/toenail_globalVPC-eps-converted-to.pdf>]
+[91 <./figs/toenail_globalVPC-eps-converted-to.pdf>]
 Overfull \hbox (4.65094pt too wide) in paragraph at lines 133--133
 []  \OT1/cmtt/m/n/10.95 geom_line(data=gtab, aes(x=visit, y=median), linetype=2
 , colour='lightblue') +[] 
@@ -1338,9 +1338,9 @@ Overfull \hbox (21.897pt too wide) in paragraph at lines 133--133
 a=0.5, fill='lightblue') +[] 
  []
 
-[90]
+[92]
 
-LaTeX Warning: Citation `catdata' on page 91 undefined on input line 141.
+LaTeX Warning: Citation `catdata' on page 93 undefined on input line 141.
 
 Package epstopdf Info: Source file: <figs/knee_barplotData.eps>
 (epstopdf)                    date: 2022-01-10 08:45:32
@@ -1358,7 +1358,7 @@ Package epstopdf Info: Output file is already uptodate.
 pdfTeX warning: /Library/TeX/texbin/pdflatex (file ./figs/knee_barplotData-eps-
 converted-to.pdf): PDF inclusion: found PDF version <1.7>, but at most version 
 <1.5> allowed
-<figs/knee_barplotData-eps-converted-to.pdf, id=1149, 844.15375pt x 597.23125pt
+<figs/knee_barplotData-eps-converted-to.pdf, id=1159, 844.15375pt x 597.23125pt
 >
 File: figs/knee_barplotData-eps-converted-to.pdf Graphic file (type pdf)
 <use figs/knee_barplotData-eps-converted-to.pdf>
@@ -1366,12 +1366,12 @@ Package pdftex.def Info: figs/knee_barplotData-eps-converted-to.pdf  used on in
 put line 145.
 (pdftex.def)             Requested size: 312.9803pt x 221.43686pt.
 
-LaTeX Warning: Citation `Tutz12' on page 91 undefined on input line 155.
+LaTeX Warning: Citation `Tutz12' on page 93 undefined on input line 155.
 
 
 Underfull \vbox (badness 10000) has occurred while \output is active []
 
- [91
+ [93
 
  <./figs/knee_barplotData-eps-converted-to.pdf>]
 Overfull \hbox (73.6352pt too wide) in paragraph at lines 203--203
@@ -1379,7 +1379,7 @@ Overfull \hbox (73.6352pt too wide) in paragraph at lines 203--203
 +(y==4)*(pge4-pge3)+(y==5)*(1-pge4)[] 
  []
 
-[92]
+[94]
 Package epstopdf Info: Source file: <figs/knee_medianScoreVPC.eps>
 (epstopdf)                    date: 2022-01-10 08:45:32
 (epstopdf)                    size: 380600 bytes
@@ -1396,30 +1396,30 @@ Package epstopdf Info: Output file is already uptodate.
 pdfTeX warning: /Library/TeX/texbin/pdflatex (file ./figs/knee_medianScoreVPC-e
 ps-converted-to.pdf): PDF inclusion: found PDF version <1.7>, but at most versi
 on <1.5> allowed
-<figs/knee_medianScoreVPC-eps-converted-to.pdf, id=1167, 844.15375pt x 597.2312
+<figs/knee_medianScoreVPC-eps-converted-to.pdf, id=1176, 844.15375pt x 597.2312
 5pt>
 File: figs/knee_medianScoreVPC-eps-converted-to.pdf Graphic file (type pdf)
 <use figs/knee_medianScoreVPC-eps-converted-to.pdf>
 Package pdftex.def Info: figs/knee_medianScoreVPC-eps-converted-to.pdf  used on
  input line 208.
 (pdftex.def)             Requested size: 312.9803pt x 221.43686pt.
-[93 <./figs/knee_medianScoreVPC-eps-converted-to.pdf>]
+[95 <./figs/knee_medianScoreVPC-eps-converted-to.pdf>]
 Overfull \hbox (33.39438pt too wide) in paragraph at lines 236--236
 []  \OT1/cmtt/m/n/10.95 ysim<-1+as.integer(x>pge1)+as.integer(x>pge2)+as.intege
 r(x>pge3)+as.integer(x>pge4)[] 
  []
 
-[94]
+[96]
 
-LaTeX Warning: Citation `Atkins13' on page 95 undefined on input line 275.
-
-
-LaTeX Warning: Citation `White89' on page 95 undefined on input line 275.
+LaTeX Warning: Citation `Atkins13' on page 97 undefined on input line 275.
 
 
-LaTeX Warning: Citation `Atkins13' on page 95 undefined on input line 275.
+LaTeX Warning: Citation `White89' on page 97 undefined on input line 275.
 
-[95]
+
+LaTeX Warning: Citation `Atkins13' on page 97 undefined on input line 275.
+
+[97]
 Overfull \hbox (27.64569pt too wide) in paragraph at lines 308--308
 []\OT1/cmtt/m/n/10.95 saemix.model.poi<-saemixModel(model=count.poisson,descrip
 tion="Count model Poisson",[] 
@@ -1438,9 +1438,9 @@ ALSE, displayProgress=FALSE)[]
  []
 
 
-LaTeX Warning: Citation `Atkins13' on page 96 undefined on input line 322.
+LaTeX Warning: Citation `Atkins13' on page 98 undefined on input line 322.
 
-[96]
+[98]
 Overfull \hbox (56.38913pt too wide) in paragraph at lines 348--348
 []\OT1/cmtt/m/n/10.95 yfit1<-simulateDiscreteSaemix(poisson.fit.cov2, simulate.
 function=saemix.simulatePoisson,[] 
@@ -1452,9 +1452,9 @@ Overfull \hbox (27.64569pt too wide) in paragraph at lines 348--348
 )/yfit1@data@ntot.obs,"\n")[] 
  []
 
-[97] [98]
+[99] [100]
 
-LaTeX Warning: Citation `Atkins13' on page 99 undefined on input line 394.
+LaTeX Warning: Citation `Atkins13' on page 101 undefined on input line 394.
 
 Package epstopdf Info: Source file: <figs/rapi_comparePropNoDrinking.eps>
 (epstopdf)                    date: 2022-01-10 08:45:32
@@ -1472,7 +1472,7 @@ Package epstopdf Info: Output file is already uptodate.
 pdfTeX warning: /Library/TeX/texbin/pdflatex (file ./figs/rapi_comparePropNoDri
 nking-eps-converted-to.pdf): PDF inclusion: found PDF version <1.7>, but at mos
 t version <1.5> allowed
-<figs/rapi_comparePropNoDrinking-eps-converted-to.pdf, id=1209, 844.15375pt x 5
+<figs/rapi_comparePropNoDrinking-eps-converted-to.pdf, id=1218, 844.15375pt x 5
 97.23125pt>
 File: figs/rapi_comparePropNoDrinking-eps-converted-to.pdf Graphic file (type p
 df)
@@ -1481,15 +1481,15 @@ Package pdftex.def Info: figs/rapi_comparePropNoDrinking-eps-converted-to.pdf
 used on input line 402.
 (pdftex.def)             Requested size: 398.33858pt x 281.82874pt.
 
-LaTeX Warning: Citation `Loprinzi94' on page 99 undefined on input line 413.
+LaTeX Warning: Citation `Loprinzi94' on page 101 undefined on input line 413.
 
 
-LaTeX Warning: Citation `survivalPkg' on page 99 undefined on input line 413.
+LaTeX Warning: Citation `survivalPkg' on page 101 undefined on input line 413.
 
 
 Underfull \vbox (badness 2359) has occurred while \output is active []
 
- [99 <./figs/rapi_comparePropNoDrinking-eps-converted-to.pdf>] [100]
+ [101 <./figs/rapi_comparePropNoDrinking-eps-converted-to.pdf>] [102]
 Package epstopdf Info: Source file: <figs/lung_compareKM.eps>
 (epstopdf)                    date: 2022-01-10 08:45:32
 (epstopdf)                    size: 20257 bytes
@@ -1505,7 +1505,7 @@ Package epstopdf Info: Output file is already uptodate.
 pdfTeX warning: /Library/TeX/texbin/pdflatex (file ./figs/lung_compareKM-eps-co
 nverted-to.pdf): PDF inclusion: found PDF version <1.7>, but at most version <1
 .5> allowed
-<figs/lung_compareKM-eps-converted-to.pdf, id=1242, 561.09625pt x 809.0225pt>
+<figs/lung_compareKM-eps-converted-to.pdf, id=1251, 561.09625pt x 809.0225pt>
 File: figs/lung_compareKM-eps-converted-to.pdf Graphic file (type pdf)
 <use figs/lung_compareKM-eps-converted-to.pdf>
 Package pdftex.def Info: figs/lung_compareKM-eps-converted-to.pdf  used on inpu
@@ -1520,15 +1520,15 @@ Overfull \hbox (37.04916pt too wide) in paragraph at lines 459--460
 LaTeX Warning: `!h' float specifier changed to `!ht'.
 
 
-LaTeX Warning: Citation `Cerou18' on page 101 undefined on input line 465.
+LaTeX Warning: Citation `Cerou18' on page 103 undefined on input line 465.
 
-[101]
+[103]
 Overfull \hbox (67.8865pt too wide) in paragraph at lines 507--507
 []   \OT1/cmtt/m/n/10.95 name.group=c("id"),name.response=c("y"),name.predictor
 s=c("time","y"), name.X=c("time"))[] 
  []
 
-[102 <./figs/lung_compareKM-eps-converted-to.pdf>]
+[104 <./figs/lung_compareKM-eps-converted-to.pdf>]
 Overfull \hbox (4.65094pt too wide) in paragraph at lines 507--507
 []   \OT1/cmtt/m/n/10.95 psi0=matrix(c(2,1),ncol=2,byrow=TRUE,dimnames=list(NUL
 L,c("lambda","beta"))),[] 
@@ -1540,16 +1540,16 @@ Overfull \hbox (251.84451pt too wide) in paragraph at lines 507--507
 nbiter.saemix =c(200,100), displayProgress=TRUE,save.graphs=FALSE)[] 
  []
 
-[103]) [104] (./docsaem.bbl
+[105]) [106] (./docsaem.bbl
 
 LaTeX Font Warning: Font shape `OT1/cmss/m/it' in size <10.95> not available
 (Font)              Font shape `OT1/cmss/m/sl' tried instead on input line 7.
 
-[105
+[107
 
-] [106])
+] [108])
 Package atveryend Info: Empty hook `BeforeClearDocument' on input line 259.
- [107]
+ [109]
 Package atveryend Info: Empty hook `AfterLastShipout' on input line 259.
  (./docsaem.aux)
 Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 259.
@@ -1570,10 +1570,10 @@ Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 259.
 ### simple group (level 1) entered at line 257 ({)
 ### bottom level 
 Here is how much of TeX's memory you used:
- 7238 strings out of 492649
- 105469 string characters out of 6129622
- 209934 words of memory out of 5000000
- 10629 multiletter control sequences out of 15000+600000
+ 7241 strings out of 492649
+ 105499 string characters out of 6129622
+ 211035 words of memory out of 5000000
+ 10630 multiletter control sequences out of 15000+600000
  19282 words of font info for 72 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  32i,16n,45p,1175b,520s stack positions out of 5000i,500n,10000p,200000b,80000s
@@ -1602,10 +1602,10 @@ l/texlive/2018/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/local
 texlive/2018/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb></usr/local/t
 exlive/2018/texmf-dist/fonts/type1/public/amsfonts/symbols/msam10.pfb></usr/loc
 al/texlive/2018/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb>
-Output written on docsaem.pdf (107 pages, 1955921 bytes).
+Output written on docsaem.pdf (109 pages, 1960056 bytes).
 PDF statistics:
- 1442 PDF objects out of 1728 (max. 8388607)
- 1206 compressed objects within 13 object streams
- 338 named destinations out of 1000 (max. 500000)
+ 1453 PDF objects out of 1728 (max. 8388607)
+ 1215 compressed objects within 13 object streams
+ 340 named destinations out of 1000 (max. 500000)
  587 words of extra memory for PDF output out of 10000 (max. 10000000)
 
