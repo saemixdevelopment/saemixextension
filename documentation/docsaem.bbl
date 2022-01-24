@@ -1,11 +1,23 @@
 \begin{thebibliography}{10}
 
+\bibitem{Atkins13}
+{\sc Atkins, D., Baldwin, S., Zheng, C., Gallop, R., and Neighbors, C.}
+\newblock A tutorial on count regression and zero-altered count models for
+  longitudinal substance use data.
+\newblock {\em Psychology of Addictive Behaviors 27}, 1 (2013), 166--77.
+
 \bibitem{Bertrand09}
 {\sc Bertrand, J., Comets, E., Laffont, C., Chenel, M., and Mentr{\'e}, F.}
 \newblock Pharmacogenetics and population pharmacokinetics: impact of the
   design on three tests using the {SAEM} algorithm.
 \newblock {\em Journal of Pharmacokinetics and Pharmacodynamics 36\/} (2009),
   317--39.
+
+\bibitem{Cerou18}
+{\sc Cerou, M., Lavielle, M., Brendel, K., Chenel, M., and Comets, E.}
+\newblock Development and performance of npde for the evaluation of
+  time-to-event models.
+\newblock {\em Pharmaceutical Research 35\/} (2018), 30.
 
 \bibitem{CometsCMPB08}
 {\sc Comets, E., Brendel, K., and Mentr{\'e}, F.}
@@ -39,6 +51,17 @@
   mg/day versus itraconazole 200 mg/day.
 \newblock {\em Journal of the American Academy of Dermatology 38}, 5 (1998),
   S57--S63.
+
+\bibitem{DelattrePoursatLavielle2014}
+{\sc Delattre, M., Lavielle, M., and Poursat, M.}
+\newblock A note on bic in mixed effects models.
+\newblock {\em Electronic Journal of Statistics 8}, 1 (2014), 456--475.
+
+\bibitem{DelattrePoursat2020}
+{\sc Delattre, M., and Poursat, M.}
+\newblock An iterative algorithm for joint covariate and random effect
+  selection in mixed effects models.
+\newblock {\em The International Journal of Biostatistics 16}, 2 (2020).
 
 \bibitem{Delyon}
 {\sc Delyon, B., Lavielle, M., and Moulines, E.}
@@ -80,6 +103,13 @@
   studies.
 \newblock {\em Genetics Selection Evolution 38\/} (2006), 583--600.
 
+\bibitem{Karimi19}
+{\sc Karimi, B., Lavielle, M., and Moulines, E.}
+\newblock F-saem: a fast stochastic approximation of the em algorithm for
+  nonlinear mixed effects models.
+\newblock {\em Computational Statistics \& Data Analysis 141\/} (2020),
+  123--38.
+
 \bibitem{Kuhn01}
 {\sc Kuhn, E., and Lavielle, M.}
 \newblock {Coupling a stochastic approximation version of EM with a MCMC
@@ -92,10 +122,11 @@
 \newblock {\em Computational Statistics and Data Analysis 49\/} (2005),
   1020--1038.
 
-\bibitem{MonolixUserGuide}
+\bibitem{LavielleMonolix}
 {\sc Lavielle, M.}
-\newblock {\em MONOLIX (MOd\`eles NOn LIn\'eaires \`a effets miXtes)}.
-\newblock {MONOLIX} group, Orsay, France, 2005.
+\newblock {\em Mixed effects models for the population approach: models, tasks,
+  methods and tools}.
+\newblock Chapman \& Hall CRC Biostatistics Series, Boca Raton, FL, 2014.
 
 \bibitem{page03}
 {\sc Lavielle, M., and Kuhn, E.}
@@ -129,6 +160,13 @@
   smoothing method.
 \newblock {\em Journal of statistical planning and inference 141}, 2 (2011),
   1069--1076.
+
+\bibitem{Loprinzi94}
+{\sc Loprinzi, C., Laurie, J., Wieand, H., Krook, J., Novotny, P., Kugler, J.,
+  and {et al.}}
+\newblock Prospective evaluation of prognostic variables from patient-completed
+  questionnaires. north central cancer treatment group.
+\newblock {\em Journal of Clinical Oncology 12}, 3 (1994), 601--7.
 
 \bibitem{Louis82}
 {\sc Louis, T.~A.}
@@ -216,10 +254,25 @@
   models (poster).
 \newblock {\em PAGE, Pamplona\/} (2005).
 
+\bibitem{catdata}
+{\sc Schauberger, G., and Tutz, G.}
+\newblock {\em catdata: Categorical Data}, 2020.
+\newblock R package version 1.2.2.
+
 \bibitem{NONMEM}
 {\sc Sheiner, L., and Beal, S.}
 \newblock {\em NONMEM Version 5.1}.
 \newblock University of California, NONMEM Project Group, San Francisco, 1998.
+
+\bibitem{survivalPkg}
+{\sc Therneau, T.~M.}
+\newblock {\em A Package for Survival Analysis in R}, 2021.
+\newblock R package version 3.2-13.
+
+\bibitem{Tutz12}
+{\sc Tutz, G.}
+\newblock {\em Regression for Categorical Data}.
+\newblock Cambridge University Press, 2012.
 
 \bibitem{Ueckert16}
 {\sc Ueckert, S., and Mentr\'{e}, F.}
@@ -228,6 +281,11 @@
   {G}aussian quadrature.
 \newblock {\em Computational Statistics \& Data Analysis 111\/} (2016),
   203–--19.
+
+\bibitem{White89}
+{\sc White, H.~R., and Labouvie, E.~W.}
+\newblock Towards the assessment of adolescent problem drinking.
+\newblock {\em Journal of Studies on Alcohol 50\/} (1989), 30--7.
 
 \bibitem{Wu83}
 {\sc Wu, C.-F.~J.}

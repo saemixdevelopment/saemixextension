@@ -118,19 +118,19 @@ $\phig_{i,p} =  \phig_{i,p-1}$ with probability $1- \alpha( \phig_{i,p-1} ,  \ti
 \item let $\phig_i^{(k)} =  \phig_{i,m}$.
  \end{itemize}
 
-Several transition kernels, associated to different proposals can be successively used. We use the four following proposal kernels:
+Several transition kernels, associated to different proposals can be successively used. We use the following three proposal kernels:
 
 \begin{enumerate}
 \item $q_{\theta_k}^{(1)}$  is the prior distribution of $\phig_i$ at iteration $k$, that is the Gaussian distribution \\
 ${\cal N}(C_i\fixed_effect_k,\IIV_k)$ and then
 $$ \alpha( \phig_{i,p-1} ,  \tilde{\phig}_{i,p} ) = \min \left(1, \frac{ p( y_i|\tilde{\phig}_{i,p};\theta_k) } { p( y_i|\phig_{i,p-1};\theta_k) } \right)$$
-\item $q_{\theta_k}^{(2)}$ is a random permutation of the $\phig_i$: generate a random permutation $\sigma$ of $\{1,2,\ldots,N\}$ and set $\tilde{\phig}_{i,p}=\phig_{\sigma(i),p-1}$.
+\item $q_{\theta_k}^{(2)}$ is a succession of $d$ unidimensional Gaussian random walks ${\cal N}( \phig^l_{i,p-1} , \kappa\IIV^l_k)$ where $\kappa=1$: each component of $\phig_i$, $\phig^l_i$, is successively updated.
 \item $q_{\theta_k}^{(3)}$ is the multidimensional random walk ${\cal N}( \phig_{i,p-1} , \kappa\IIV_k)$. This kernel is symmetric and then 
 $$ \alpha( \phig_{i,p-1} ,  \tilde{\phig}_{i,p} ) = \min \left(1, \frac{ p( y_i,\tilde{\phig}_{i,p};\theta_k) } { p( y_i,\phig_{i,p-1};\theta_k) } \right)$$
-\item $q_{\theta_k}^{(4)}$ is a succession of $d$ unidimensional Gaussian random walks: each component of $\phig_i$ are successively updated.
 \end{enumerate}
 Then, the simulation-step at iteration $k$ consists in running $m_1$ iterations of the Hasting-Metropolis with proposal $q_{\theta_k}^{(1)}$, $m_2$ iterations with proposal $q_{\theta_k}^{(2)}$, $m_3$ iterations with proposal $q_{\theta_k}^{(3)}$ and $m_4$ iterations with proposal $q_{\theta_k}^{(4)}$.
 
+An additional kernel was proposed for the early versions of the SAEM algorithm but has been deprecated since: $q_{\theta_k}^{(')}$ is a random permutation of the $\phig_i$: generate a random permutation $\sigma$ of $\{1,2,\ldots,N\}$ and set $\tilde{\phig}_{i,p}=\phig_{\sigma(i),p-1}$.
 
 \noindent {\bf Remark 1 : \ } During the first $K_b$ iterations ("burning" iterations) of SAEM, we only run the MCMC algorithm but the parameters are not updated.
 
@@ -211,7 +211,7 @@ Remark that the conditional distribution of the individual parameters given the 
 \end{equation}
 where $\sigma$ is the residual error of the continuous data model and $\Omega$ is the covariance of the prior distribution $p(\psi_i)$.
 
-Hence, the f-SAEM algorithm uses the Gaussian proposal of mean $\hat{\psi}_i$ and covariance $\left(\frac{ J_{f(x_{i},\hat{\psi}_i)}^T J_{f(x_{i},\hat{\psi}_i)} }{\sigma^2} + \Omega^{-1}\right)^{-1}$, as an approximation of the true conditional distribution, in the MCMC sampler for continuous data models.
+Hence, the f-SAEM algorithm uses the Gaussian proposal of mean $\hat{\psi}_i$ and covariance \\ $\left(\frac{ J_{f(x_{i},\hat{\psi}_i)}^T J_{f(x_{i},\hat{\psi}_i)} }{\sigma^2} + \Omega^{-1}\right)^{-1}$, as an approximation of the true conditional distribution, in the MCMC sampler for continuous data models.
 
 
 \textbf{For non continuous data models}, we use a Laplace approximation of the conditional distribution obtained via a Taylor expansion of the complete log-likelihood $\log p(y_i,\psi_i)$ of the observations $y_i$ and individual parameters $\psi_i$.
@@ -233,7 +233,7 @@ which is precisely the log-pdf of a multivariate Gaussian distribution with mean
 &= \nabla^2 \log p(y_i|\hat{\psi}_i) + \Omega^{-1}\eqs.\notag
 \end{align}
 
-Hence, the f-SAEM algorithm uses the Gaussian proposal of mean $\hat{\psi}_i$ and covariance $\left( \nabla^2 \log p(y_i|\hat{\psi}_i) + \Omega^{-1}\right)^{-1}$, as an approximation of the true conditional distribution, in the MCMC sampler for non continuous data models.
+Hence, the f-SAEM algorithm uses the Gaussian proposal of mean $\hat{\psi}_i$ and covariance \\ $\left( \nabla^2 \log p(y_i|\hat{\psi}_i) + \Omega^{-1}\right)^{-1}$, as an approximation of the true conditional distribution, in the MCMC sampler for non continuous data models.
 
 \section{Estimation of the Fisher Information matrix} \label{sec_fish} Let $\thes$ be the true unknown value of $\theta$, and let $\hthetag$ be the maximum likelihood estimate of $\theta$. If the observed likelihood function $\ell$ is sufficiently smooth, asymptotic theory for maximum-likelihood estimation holds and
 

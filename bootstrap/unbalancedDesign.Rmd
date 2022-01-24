@@ -1,0 +1,540 @@
+---
+title: "Bootstrap with unbalanced design in saemix"
+author: "Emmanuelle Comets"
+date: "14/04/2021"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+## Contents
+
+Investigating unbalanced designs with different bootstraps
+
+
+In addition, several libraries need to be installed to run the present code:
+
+- ggplot2 and its dependencies
+- MASS
+
+The full set of simulated data and bootstrap distributions used for the paper have been uploaded to the Zenodo archive system <https://doi.org/10.5281/zenodo.4059718>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+## If required, set your working directory, otherwise will run in the current directory
+## workDir<-"/my/path/to/saemixextension-master"
+workDir<-"."
+
+workDir<-"/home/eco/work/saemix/saemixextension"
+knitr::opts_chunk$set(root.dir = workDir)
+progDir<-file.path(workDir,"R")
+```
+
+```{r loadLibFct}
+# Libraries
+library(ggplot2)
+library(MASS)
+
+# Sourcing saemix functions
+{
+  source(file.path(progDir,"aaa_generics.R"))
+  #source(file.path(progDir,"global.R"))
+  source(file.path(progDir,"SaemixData.R"))
+  source(file.path(progDir,"SaemixRes.R"))
+  source(file.path(progDir,"SaemixModel.R"))
+  source(file.path(progDir,"SaemixObject.R"))
+  source(file.path(progDir,"main.R"))
+  source(file.path(progDir,"func_aux.R"))
+  source(file.path(progDir,"main_initialiseMainAlgo.R"))
+  source(file.path(progDir,"main_estep.R"))
+  source(file.path(progDir,"main_mstep.R"))
+  source(file.path(progDir,"func_FIM.R"))
+  source(file.path(progDir,"func_plots.R"))
+  source(file.path(progDir,"func_distcond.R"))
+  source(file.path(progDir,"func_simulations.R"))
+  source(file.path(progDir,"compute_LL.R"))
+  source(file.path(progDir,"func_estimParam.R"))
+}
+
+# Bootstrap functions
+source(file.path(workDir,"bootstrap","saemix_bootstrap.R"))
+
+# Toggle simulation, estimation
+simData<-FALSE # simulate data (if FALSE, reads data)
+estimPar<-FALSE # estimate parameters (if FALSE, reads results from files)
+hascorr<-FALSE # if TRUE, simulate a correlation between ED50 and Emax
+modelSim<-"emax" # simulations for Emax model or for Hill model
+```
+
+## Simulated dataset
+
+### Settings
+
+- Model
+  - sigmoid Emax model with $\gamma=1$ as used in the paper
+- Designs with N=200 subjects
+  - full design: 6 doses
+  - sparse design: 2 doses (corresponding to S${\rm Emax,S}$)
+  - unbalanced design: subset of full dataset with 40 subjects contributing 6 samples, 40 with 2 samples and 120 with 1 sample
+
+```{r setupModel, echo=FALSE}
+# PD models, Emax and Hill
+modelemax<-function(psi,id,xidep) {
+  dose<-xidep[,1]
+  e0<-psi[id,1]
+  emax<-psi[id,2]
+  e50<-psi[id,3]
+  f<-e0+emax*dose/(e50+dose)
+  return(f)
+}
+
+modelhill<-function(psi,id,xidep) {
+  dose<-xidep[,1]
+  e0<-psi[id,1]
+  emax<-psi[id,2]
+  e50<-psi[id,3]
+  gamma<-psi[id,4]
+  f<-e0+emax*dose**gamma/(e50**gamma+dose**gamma)
+  return(f)
+}
+
+# Model parameters E0, Emax, gamma, ED50, followed by variances, correlation (0.245) and error variance (10%)
+mod.par<-c(E0=5,Emax=30,ED50=500,gamma=3)
+mod.iiv<-c(E0=0.09,Emax=0.49,ED50=0.49,gamma=0)
+omega<-diag(mod.iiv)
+if(hascorr) omega[3,2]<-omega[2,3]<-0.245
+sigm<-0.1
+respar<-c(0,sigm)
+
+# Designs
+nsuj<-200
+## Rich
+simdos.rich<-c(0,100,300, 500, 1000,2000)
+xidep<-data.frame(id=rep(1:nsuj,each=length(simdos.rich)), dose=rep(simdos.rich,nsuj))
+xidep.rich<-xidep
+
+## Sparse
+simdos<-c(0,100,300,1000) # Sparse
+xidep<-data.frame(id=rep(1:(nsuj/4),each=2), dose=rep(c(0,1000),(nsuj/4)))
+xidep<-rbind(xidep,
+             data.frame(id=rep((nsuj/4+1):(nsuj/2),each=2), dose=rep(c(100,1000),(nsuj/4))),
+             data.frame(id=rep((nsuj/2+1):(3*nsuj/4),each=2), dose=rep(c(0,300),(nsuj/4))),
+             data.frame(id=rep((3*nsuj/4+1):nsuj,each=2), dose=rep(c(100,300),(nsuj/4))))
+xidep.sparse<-xidep
+
+## Unbalanced
+xidep<-xidep.rich[xidep.rich$id<41,] # First 40 subjects with 6 doses
+xidep<-rbind(xidep, # Next 40 subjects with 2 doses, same repartition as sparse design
+             xidep.rich[(xidep.rich$id %in% c(41:50)) & (xidep.rich$dose %in% c(0,1000)) ,],
+             xidep.rich[(xidep.rich$id %in% c(51:60)) & (xidep.rich$dose %in% c(100,1000)) ,],
+             xidep.rich[(xidep.rich$id %in% c(61:70)) & (xidep.rich$dose %in% c(0,300)) ,],
+             xidep.rich[(xidep.rich$id %in% c(71:80)) & (xidep.rich$dose %in% c(100,300)) ,])
+for(i in 1:6) { # Last 120 subjects with only one dose
+  isuj1<-81+(i-1)*20
+  xidep<-rbind(xidep, 
+            xidep.rich[(xidep.rich$id %in% c(isuj1:(isuj1+19)))  & (xidep.rich$dose == simdos.rich[i]) ,])
+}
+xidep.unb<-xidep
+```
+
+### Simulating data
+
+```{r dataSimulation, echo=FALSE}
+if(hascorr) {
+  library(mvtnorm)
+}
+
+simetas<-function(nsuj, omega, hascorr=FALSE) {
+  if(hascorr) {
+      etas<-rmvnorm(nsuj, mean=c(0,0), sigma=omega[2:3,2:3])
+      etas<-cbind(rnorm(nsuj,mean=0,sd=sqrt(omega[1,1])),etas)
+  } else {
+      etas<-matrix(c(rnorm(nsuj, mean=0, sd=sqrt(omega[1,1])), rnorm(nsuj, mean=0, sd=sqrt(omega[2,2])), rnorm(nsuj, mean=0, sd=sqrt(omega[3,3]))), ncol=3)
+  }
+  return(etas)
+}
+parsuj<-cbind(simetas(nsuj, omega),rep(mod.par[4],nsuj))
+for(i in 1:3) parsuj[,i]<-mod.par[i]*exp(parsuj[,i])
+colnames(parsuj)<-names(mod.par)
+
+if(modelSim=="emax") {
+  psiM<-parsuj[,1:3]
+  modfun<-modelemax
+  }
+if(modelSim=="emax") {
+  psiM<-parsuj
+  modfun<-modelhill
+  }
+nampar<-colnames(parsuj)
+
+xidep<-xidep.unb
+
+    idM<-xidep[,1]
+    xiM<-xidep[,2,drop=FALSE]
+    fpred<-modfun(psiM,idM,xiM)
+    gpred<-(respar[1]+fpred*respar[2])*rnorm(length(idM),mean=0,sd=1)
+    xsim<-data.frame(id=idM,dose=xiM,y=fpred+gpred)
+    xpar<-data.frame(id=1:nsuj,psiM)
+#    colnames(xpar)[-c(1)]<-nampar
+datsim.unb<-xsim
+simpar.unb<-xpar   
+```
+
+### Conditional distribution
+
+```{r condDistUnbalanced, echo=FALSE}
+xsim<-datsim.unb
+simpar<-simpar.unb
+
+saemix.data<-saemixData(name.data=xsim, name.group=c("id"),name.predictors=c("dose"),name.response=c("y"), units=list(x="h",y="-"))
+cov1<-diag(3)
+smx.modEmax<-saemixModel(model=modelemax,description="Emax model", 
+                          psi0=matrix(mod.par[1:3],ncol=3, byrow=TRUE,dimnames=list(NULL, c("E0","Emax","ED50"))),transform.par=c(1,1,1),
+                          covariance.model=cov1,error.model="proportional", error.init = c(0,0.5))
+smx.modHillcov<-saemixModel(model=modelhill,description="Hill model", 
+                          psi0=matrix(mod.par,ncol=4, byrow=TRUE,dimnames=list(NULL, c("E0","Emax","ED50","Gamma"))),transform.par=c(1,1,1,1),
+                          covariance.model=matrix(c(1,0,0,0,0,1,1,0,0,1,1,0,0,0,0,0),ncol=4,byrow=TRUE),omega.init = omega,error.model="proportional", error.init = c(0,0.5))
+
+saemix.options<-list(fix.seed=F,directory="current",displayProgress=FALSE, save.graphs=FALSE,print=FALSE)
+saemix.fit<-saemix(smx.modEmax,saemix.data,saemix.options)
+
+print(saemix.fit@results)
+
+saemix.fit<-conddist.saemix(saemix.fit, nsamp=200)
+simpar<-simpar[,-c(5)]
+
+# Conditional distributions for a few subjects
+tab<-tabphi<-NULL
+zesuj<-unique(saemix.data@data$id)
+for(irep in 1:dim(saemix.fit@results@psi.samp)[3]) {
+  tab<-rbind(tab,
+             cbind(isamp=irep,id=zesuj,saemix.fit@results@psi.samp[,,irep]))
+  tabphi<-rbind(tabphi,
+             cbind(isamp=irep,id=zesuj,saemix.fit@results@phi.samp[,,irep]))
+}
+tab<-as.data.frame(tab)
+tabphi<-as.data.frame(tabphi)
+colnames(tab)[-c(1:2)]<-colnames(tabphi)[-c(1:2)]<-saemix.fit@model@name.modpar
+for(icol in 1:length(saemix.fit@results@betas))
+    tabphi[,(icol+2)]<-tabphi[,(icol+2)]-saemix.fit@results@betas[icol] # no covariate
+
+par(mfrow=c(3,3))
+for(isuj in 1:3) {
+  hist(tab[tab[,2]==isuj,3])
+  abline(v=simpar[isuj,2],lwd=2,col="red")
+  hist(tab[tab[,2]==isuj,4])
+  abline(v=simpar[isuj,3],lwd=2,col="red")
+  hist(tab[tab[,2]==isuj,5])
+  abline(v=simpar[isuj,4],lwd=2,col="red")
+}
+
+parname<-saemix.fit@model@name.modpar
+npar<-length(parname)
+ypl.par<-data.frame(id=rep(zesuj,npar),
+                    par=unlist(simpar[,-c(1)]),
+                    parnam=rep(parname, each=length(zesuj)), origin=rep("Simulated",npar*length(zesuj)))
+ypl.par1<-data.frame(id=rep(zesuj,npar),par=unlist(c(saemix.fit@results@cond.mean.psi)),
+                         parnam=rep(parname, each=length(zesuj)), origin=rep("Cond. mean",npar*length(zesuj)))
+ypl.par<-rbind(ypl.par, ypl.par1)
+
+ypl.cdist<-data.frame(id=rep(tab$id,npar), par=unlist(c(tab[,-c(1,2)])),  parnam=rep(parname, each=dim(tab)[1]))
+
+whichsuj<-c(1:4)
+ggplot(data = ypl.cdist[ypl.cdist$id %in% whichsuj,], aes(group=id)) +
+  geom_density(aes(par, fill=TRUE), alpha=0.5, show.legend = FALSE) +
+  geom_vline(data = ypl.par[ypl.par$id %in% whichsuj,], aes(xintercept = par, colour=origin),size = 1.2) + #the initial values
+#  geom_vline(data = ypl.est[ypl.est$id %in% whichsuj,], aes(xintercept = par), colour = "blue", size = 1.2) + #the estimations by saemix
+  theme_bw() + 
+  theme(axis.title.x = element_blank(), axis.text.x = element_text(size = 9, angle = 30, hjust = 1)) + 
+  scale_fill_manual(values = c("darkred")) +  scale_colour_manual(values = c("red","blue")) + labs(colour = "Parameters") +
+  facet_wrap(id~parnam, scales="free", ncol=npar) 
+
+# Comparing conditional distributions for different amount of information
+if(FALSE)
+  tapply(saemix.data@data$id,saemix.data@data$id, length)
+
+whichsuj<-c(1,41,183)
+ggplot(data = ypl.cdist[ypl.cdist$id %in% whichsuj,], aes(group=id)) +
+  geom_density(aes(par, fill=TRUE), alpha=0.5, show.legend = FALSE) +
+  geom_vline(data = ypl.par[ypl.par$id %in% whichsuj,], aes(xintercept = par, colour=origin),size = 1.2) + #the initial values
+#  geom_vline(data = ypl.est[ypl.est$id %in% whichsuj,], aes(xintercept = par), colour = "blue", size = 1.2) + #the estimations by saemix
+  theme_bw() + 
+  theme(axis.title.x = element_blank(), axis.text.x = element_text(size = 9, angle = 30, hjust = 1)) + 
+  scale_fill_manual(values = c("darkred")) +  scale_colour_manual(values = c("red","blue")) + labs(colour = "Parameters") +
+  facet_wrap(id~parnam, scales="free", ncol=npar) 
+
+# Computing SD and plotting it coloured according to the amount of information
+sdcond<-meancond<-data.frame(id=zesuj)
+for(icol in 3:(2+npar)) {
+  sdcond<-cbind(sdcond,tapply( tab[,icol], tab$id,sd))
+  meancond<-cbind(meancond,tapply( tab[,icol], tab$id,mean))
+}
+colnames(sdcond)[-c(1)] <- paste("CondSD.",parname,sep="")
+colnames(meancond)[-c(1)] <- paste("CondMean.",parname,sep="")
+sdcond<-cbind(sdcond, nobs=tapply(saemix.data@data$id,saemix.data@data$id, length))
+
+cvcond<-cbind(id=sdcond[,1],sdcond[,2:4]/meancond[,2:4])
+colnames(cvcond)[2:4]<-paste("CVCond.",parname,sep="")
+
+# transform to ggplot (need tidyverse/dplyr/something)
+ypl.info<-data.frame(id=sdcond$id, par=cvcond[,2], parnam=colnames(cvcond)[2], nobs=sdcond$nobs)
+for(icol in 2:npar)
+  ypl.info<-rbind(ypl.info,
+                  data.frame(id=sdcond$id, par=cvcond[,(icol+1)], parnam=colnames(cvcond)[(icol+1)], nobs=sdcond$nobs))
+
+ggplot(data=ypl.info, aes(x=id, y=par, group=nobs)) + 
+  geom_point(aes(colour=as.factor(nobs))) +
+  theme_bw() + theme(axis.title.x = element_blank(), axis.text.x = element_text(size = 9, angle = 30, hjust = 1), legend.position = "top", legend.title=element_text("Number of observations")) + 
+  scale_colour_manual(values = c("darkred","red","blue")) +
+  facet_wrap(.~parnam, scales="free", ncol=npar) 
+
+ggplot(data=ypl.info, aes(x=nobs, y=par, group=nobs)) + 
+  geom_boxplot() +
+  theme_bw() + theme(axis.title.x = element_blank(), axis.text.x = element_text(size = 9, angle = 30, hjust = 1), legend.position = "none") +       
+  facet_wrap(.~parnam, scales="free", ncol=npar) 
+
+# Shrinkage
+
+# Shrinkage on conditional means
+cond.shrink<-NULL
+for(inobs in unique(sdcond$nobs)) {
+  idobs<-unique(sdcond$id[sdcond$nobs==inobs])
+  tabos<-saemix.fit@results@cond.mean.eta[sdcond$id %in% idobs,]
+  l2<-apply(tabos, 2, var)
+  l2<-1-l2/diag(saemix.fit@results@omega)
+  l2<-c(inobs, l2*100)
+  cond.shrink<-rbind(cond.shrink, l2)
+}
+
+# Shrinkage on conditional samples
+samp.shrink<-samp.true<-NULL
+for(inobs in unique(sdcond$nobs)) {
+  idobs<-unique(sdcond$id[sdcond$nobs==inobs])
+  tabos<-tab[tab$id %in% idobs,]
+  l1<-c(apply(tabos, 2,sd)[-c(1,2)])
+  tabos<-tabphi[tabphi$id %in% idobs,]
+  l2<-c(apply(tabos, 2, var)[-c(1,2)])
+  l3<-1-l2/mod.iiv[1:npar]
+  l2<-1-l2/diag(saemix.fit@results@omega)
+  l2<-c(inobs, l2*100)
+  l3<-c(inobs, l3*100)
+  samp.shrink<-rbind(samp.shrink, l2)
+  samp.true<-rbind(samp.true, l3)
+}
+
+cat("Global shrinkage:",saemix.fit@results@cond.shrinkage,"\n")
+cat("    shrinkage on conditional means, by number of observations:\n")
+print(cond.shrink)
+cat("    shrinkage on samples from the conditional distribution, by number of observations:\n")
+print(samp.shrink)
+cat("Simulated IIV:",mod.iiv[1:3],"\n")
+cat("Estimated IIV:",diag(saemix.fit@results@omega)[1:3],"\n")
+
+```
+
+Shrinkage on conditional estimates behaves as expected, with higher shrinkage when less observations, except for the shrinkage on on Emax which is unexpectedly low in the group with only one observation.
+
+Estimated IIV was higher than simulated for ED50 (0.78 instead of 0.49) and lower than simulated for Emax (0.31 instead of 0.49). Tried to compute 
+
+**TODO** check in the different groups with only one observation (maybe due to the dose itself whether it is more or less informative)
+
+Shrinkage on conditional estimates however does not quite match what we expect. There *is* a reduction of the shrinkage when compared to the shrinkage on the conditional means for all groups, but the decrease is much more apparent in the groups with less observations than in the group with 6 observations, with only ED50 decreasing in a sizeable proportion (16% versus 38%); the shrinkage on Emax does not decrease (says at 45M). The reduction in shrinkage is most marked in the group with only one observation.
+
+**TODO** check in Marc and Benjamin's paper if these results make sense.
+
+**TODO** compare also with true simulated $\omega$
+
+## Bootstrap distributions for one simulated dataset
+
+### Plot of simulated data for one simulation in each scenario
+
+Below, we load the simulated data for the 6 scenarios presented in the paper (we randomly sampled one of the 200 simulations used to evaluate the performances of the different bootstrap approaches, simulation 87) and plot it using the *ggplot2* package (Supplemental material Figure 12).
+
+```{r simData87, echo=FALSE}
+datDir<-file.path(workDir,"bootstrap","data")
+isim<-87
+
+ypd<-NULL
+for(myloop in 1:6) {
+  if(myloop==1) {namscen<-"pdemax.rich";iscenar<-"Hill2";namsimdat<-"data_pdemax";name.scenario<-"SEmax,R"}
+  if(myloop==2) {namscen<-"pdemax.sparse";iscenar<-"Hill2";namsimdat<-"data_pdemax";name.scenario<-"SEmax,S"}
+  if(myloop==3) {namscen<-"pdhillhigh.rich";iscenar<-"Hill3";namsimdat<-"data_pdhillhigh";name.scenario<-"SHill,R"}
+  if(myloop==4) {namscen<-"pdhillhigh.sparse";iscenar<-"Hill4";namsimdat<-"data_pdhillhigh";name.scenario<-"SHill,S"}
+  if(myloop==5) {namscen<-"pdhillhigh.rich";iscenar<-"Hill12";namsimdat<-"data_pdhillhigh";name.scenario<-"SHill,smallR"}
+  if(myloop==6) {namscen<-"pdhillhigh.sparse";iscenar<-"Hill11";namsimdat<-"data_pdhillhigh";name.scenario<-"SHill,smallS"}
+  namfile<-file.path(datDir,paste("data_",namscen,"_sim",isim,".tab",sep=""))
+  xdat<-read.csv(namfile,header=T,sep=" ")
+  if(myloop>4) {
+    if(myloop==5) nsuj<-20 else nsuj<-80
+    zesuj<-unique(xdat[,1])
+    ifirst<-rep(1:(nsuj/4),4)+rep(c(0:3)*length(zesuj)/4,each=(nsuj/4)) # First nsuj/4 subjects in each group
+    xdat<-xdat[xdat$id %in% ifirst,]
+  }
+  ypd<-rbind(ypd,cbind(xdat,scenario=name.scenario))
+}
+  
+plot.data<-ggplot(data=ypd,aes(x=dose,y=y, group=id)) + geom_point(col="red4",alpha=0.6)+geom_line(col="red4",alpha=0.6) + 
+    xlab("Dose") + ylab("Response") + theme_bw() +
+    theme(axis.title.x = element_blank(),axis.text.x = element_text(size=9, angle=30, hjust=1), legend.position = "none") + 
+    facet_wrap(~scenario, ncol=2)
+
+print(plot.data)
+```
+
+### Fitting the simulated data in replication 87, scenario SHill,R, with saemix
+
+```{r saemixFit87.rich, echo=FALSE, warning=FALSE}
+isim<-87
+nboot<-100
+namscen<-"pdhillhigh.rich"
+iscenar<-"Hill3"
+
+mod.par<-c(E0=5,Emax=30,ED50=500,gamma=3)
+mod.iiv<-c(E0=0.09,Emax=0.49,ED50=0.49,gamma=0)
+omega<-diag(mod.iiv)
+omega[3,2]<-omega[2,3]<-0.245
+sigm<-0.1
+modelhill<-function(psi,id,xidep) {
+  # input:
+  #   psi : matrix of parameters (4 columns, E0, Emax, E50, gamma)
+  #   id : vector of indices 
+  #   xidep : dependent variables (same nb of rows as length of id)
+  # returns:
+  #   a vector of predictions of length equal to length of id
+  dose<-xidep[,1]
+  e0<-psi[id,1]
+  emax<-psi[id,2]
+  e50<-psi[id,3]
+  gamma<-psi[id,4]
+  f<-e0+emax*dose**gamma/(e50**gamma+dose**gamma)
+  return(f)
+}
+
+namfile<-file.path(datDir,paste("data_",namscen,"_sim",isim,".tab",sep=""))
+saemix.data<-saemixData(name.data=namfile, header=T,
+                        name.group=c("id"),name.predictors=c("time","amt"),
+                        name.response=c("conc"),name.covariates=NULL,
+                        units=list(x="hr",y="mg/L",covariates=c()))
+saemix.model<-saemixModel(model=modelhill,description="Hill model", 
+                          psi0=matrix(mod.par,ncol=4, byrow=TRUE,dimnames=list(NULL, c("E0","Emax","ED50","Gamma"))),transform.par=c(1,1,1,1),
+                          covariance.model=matrix(c(1,0,0,0,0,1,1,0,0,1,1,0,0,0,0,0),ncol=4,byrow=TRUE),omega.init = omega,error.model="proportional", error.init = c(0,sigm))
+
+saemix.options<-list(fix.seed=F,directory="current",displayProgress=FALSE, save.graphs=FALSE,print=FALSE)
+saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
+ print(saemix.fit@results)
+
+om.estim<-c(diag(saemix.fit@results@omega)[1:3], saemix.fit@results@omega[2,3], saemix.fit@results@respar[2])
+par.estim<-c(saemix.fit@results@fixed.effects,om.estim)
+```
+
+### Bootstrap distributions for the simulated data in replication 87, scenario SHill,R
+
+The following code loads the bootstrap distributions obtained by the four tested bootstraps for the simulated data in replication 87 (shown the first plot of the second line in the previous figure) from the result files, and plots these for each parameter. This corresponds to Figure 1 in the paper (estimated values may slightly vary due to the stochastic nature of the SAEM algorithm).
+
+Note: 500 bootstrap samples were generated for each of the first 4 scenarios, but in the paper we harmonise across the different scenarios to 100 samples through the *nboot<-100* command in the code below.
+
+```{r bootstrapDistributions87.rich, echo=FALSE}
+resDir<-file.path(workDir,"bootstrap","results")
+isim<-87
+nboot<-100
+namscen<-"pdhillhigh.rich"
+iscenar<-"Hill3"
+namsimdat<-"data_pdemax"
+
+modpar2<-c(mod.par,mod.iiv[1:3],0.245,sigm)
+ypd1<-NULL
+for(typeboot in c("Case","NP","NPc","Par")) {
+  namfile<-file.path(resDir,paste("scenario",iscenar,"_bootstrap",typeboot,"_sim",isim,".res",sep=""))
+  resboot1<-read.table(namfile,header=T)
+  resboot1<-resboot1[1:nboot,] 
+  for(icol in 1:9) {
+    ypd1<-rbind(ypd1,data.frame(rep=resboot1[,1],Param=colnames(resboot1)[(icol+1)],value=resboot1[,(icol+1)], Bootstrap=typeboot,stringsAsFactors=FALSE))
+  }
+}
+nampar<-colnames(resboot1)[2:10]
+ypd1$Param<-factor(ypd1$Param,levels = nampar)
+ypd1$Bootstrap<-factor(ypd1$Bootstrap, levels=unique(ypd1$Bootstrap))
+levels(ypd1$Bootstrap)[levels(ypd1$Bootstrap)=="NPc"]<-"cNP"
+ypd1.fix<-ypd1[ypd1$Param %in% unique(ypd1$Param)[1:4],]
+ypd1.iiv<-ypd1[ypd1$Param %in% unique(ypd1$Param)[5:9],]
+
+df<-data.frame(Param=factor(nampar), value=modpar2, value2=par.estim) 
+
+plot.density<-ggplot(data=ypd1) + geom_density(aes(value,fill=Bootstrap), alpha=0.5) + 
+  geom_vline(data=df,aes(xintercept=value),colour="red",size=1.2) + geom_vline(data=df,aes(xintercept=value2),colour="blue",size=1.2) +
+  theme_bw() + theme(axis.title.x = element_blank(),axis.text.x = element_text(size=9, angle=30, hjust=1), legend.position = "top") + 
+  scale_fill_manual(values = c("red4", "darkblue", "steelblue1","seagreen4","snow4")) +  facet_wrap(~Param, ncol=3, scales = 'free')
+
+print(plot.density)
+
+# Saving to a PDF file (requires cairo)
+cairo_pdf(file.path(workDir,"bootstrap","fig1_paper.pdf"),width = 11, height=8)
+print(plot.density)
+dev.off()
+
+```
+
+## Running bootstrap methods on one dataset (replication 87, scenario SHill,R)
+
+In the following we estimate bootstrap distributions with 100 samples using the different bootstrap methods through the *saemix.bootstrap()* function, and recreate the previous figure. Due to stochastic variability the bootstrap distributions are different from before but their shape and amplitude is similar.
+
+**Warning:** this code may take some time to execute. My Rstudio tends to run out of memory and crash before rendering, so I generated the pdf using the command *rmarkdown::render("./comets_condBoostrapSaemix.Rmd")* in a plain R window.
+
+
+```{r bootstrapRuns87, echo=FALSE, warning=FALSE, results='hide'}
+saemix.bootOpt<-list(fix.seed=F,directory="current",displayProgress=F, save.graphs=F, map=F, ll.is=F, print=FALSE)
+nboot<-100
+
+start_time <- Sys.time()
+boot.case<-saemix.bootstrap(saemix.fit, nboot=nboot, method="case")
+boot.cNP<-saemix.bootstrap(saemix.fit, nboot=nboot, method="conditional")
+boot.NP<-saemix.bootstrap(saemix.fit, nboot=nboot, method="residual")
+boot.Par<-saemix.bootstrap(saemix.fit, nboot=nboot, method="parametric")
+end_time <- Sys.time()
+```
+
+```{r bootstrapRuns87.res, echo=FALSE, warning=FALSE}
+# Summarising the results
+res<-data.frame(Case=colMeans(boot.case[,2:dim(boot.case)[2]]), NP=colMeans(boot.NP[,2:dim(boot.case)[2]]),cNP=colMeans(boot.cNP[,2:dim(boot.case)[2]]), Par=colMeans(boot.Par[,2:dim(boot.case)[2]]))
+sdres<-data.frame(Case=apply(boot.case[,2:dim(boot.case)[2]],2,sd), NP=apply(boot.NP[,2:dim(boot.case)[2]],2,sd), cNP=apply(boot.cNP[,2:dim(boot.case)[2]],2,sd), Par=apply(boot.Par[,2:dim(boot.case)[2]],2,sd))
+
+boot.est<-cbind(True=df$value,res[1:dim(df)[1],])
+for(icol in 2:5) {
+  boot.est[,icol]<-format(boot.est[,icol],nsmall=2, digits=1, scientific=FALSE)
+  sdres[,(icol-1)]<-format(sdres[,(icol-1)],nsmall=1, digits=1, scientific=FALSE)
+  boot.est[,icol]<-paste(boot.est[,icol]," (",sdres[1:dim(df)[1],(icol-1)],")",sep="")
+}
+cat("Bootstrap estimates (SD)\n")
+print(boot.est)
+cat("Run time:",end_time - start_time,"\n")
+
+# Recreating previous plot
+ypd2<-NULL
+for(typeboot in c("Case","NP","NPc","Par")) {
+  if(typeboot=="Case") resboot1<-boot.case
+  if(typeboot=="NP") resboot1<-boot.NP
+  if(typeboot=="NPc") resboot1<-boot.cNP
+  if(typeboot=="Par") resboot1<-boot.Par
+  colnames(resboot1)[2:10]<-nampar
+  for(icol in 1:9) {
+    ypd2<-rbind(ypd2,data.frame(rep=resboot1[,1],Param=colnames(resboot1)[(icol+1)],value=resboot1[,(icol+1)], Bootstrap=typeboot, stringsAsFactors=FALSE))
+  }
+}
+ypd2$Param<-factor(ypd2$Param, levels = nampar)
+ypd2$Bootstrap<-factor(ypd2$Bootstrap, levels=unique(ypd2$Bootstrap))
+levels(ypd2$Bootstrap)[levels(ypd2$Bootstrap)=="NPc"]<-"cNP"
+ypd2.fix<-ypd2[ypd2$Param %in% unique(ypd2$Param)[1:4],]
+ypd2.iiv<-ypd2[ypd2$Param %in% unique(ypd2$Param)[5:9],]
+
+plot.density2<-ggplot(data=ypd2) + geom_density(aes(value,fill=Bootstrap), alpha=0.5) + 
+  geom_vline(data=df,aes(xintercept=value),colour="red",size=1.2) + geom_vline(data=df,aes(xintercept=value2),colour="blue",size=1.2) +
+  theme_bw() + theme(axis.title.x = element_blank(),axis.text.x = element_text(size=9, angle=30, hjust=1), legend.position = "top") + 
+  scale_fill_manual(values = c("red4", "darkblue", "steelblue1","seagreen4","snow4")) +  facet_wrap(~Param, ncol=3, scales = 'free')
+
+print(plot.density2)
+
+cairo_pdf(file.path(workDir,"bootstrap","fig1_interactive.pdf"),width = 11, height=8)
+print(plot.density2)
+dev.off()
+
+```

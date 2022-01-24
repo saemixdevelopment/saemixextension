@@ -1018,8 +1018,13 @@ NULL
 #' 
 #' @source David Atkins, University of Washington
 #' 
-#' @references D Atkins, S Baldwin, C Zheng, R Gallop, C Neighbors C (2013). A tutorial on count regression and zero-altered count models
+#' @references D Atkins, S Baldwin, C Zheng, R Gallop, C Neighbors C (2013). 
+#' A tutorial on count regression and zero-altered count models
 #' for longitudinal substance use data. Psychology of Addictive Behaviors, 27(1):166–177. 
+#' 
+#' C Neighbors, Lewis MA, Atkins D, Jensen MM, Walter T, Fossos N, Lee C, Larimer M (2010). 
+#' Efficacy of web-based personalized normative feedback: A two-year randomized controlled trial.
+#' Journal of Consulting and Clinical Psychology 78(6):898-911.
 #' 
 #' C Neighbors, N Barnett, D Rohsenow, S Colby, P Monti (2010). Cost-Effectiveness of a Motivational lntervention for 
 #' Alcohol-Involved Youth in a Hospital Emergency Department. Journal of Studies on Alcohol and Drugs 71(3):384-394.
