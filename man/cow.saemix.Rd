@@ -49,7 +49,7 @@ saemix.model<-saemixModel(model=growthcow,
       omega.init=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE),error.model="constant")
 
 saemix.options<-list(algorithms=c(1,1,1),nb.chains=1,nbiter.saemix=c(200,100), 
-             seed=4526,save=FALSE,save.graphs=FALSE)
+             seed=4526,save=FALSE,save.graphs=FALSE,displayProgress=FALSE)
 
 # Plotting the data
 plot(saemix.data,xlab="Time (day)",ylab="Weight of the cow (kg)")
@@ -59,6 +59,6 @@ saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
 
 }
 \references{
-Pinheiro JC, Bates DM (2000) \emph{Mixed-effects Models in S and S-PLUS}, Springer, New York (Appendix A.19)
+JC Pinheiro, DM Bates (2000) \emph{Mixed-effects Models in S and S-PLUS}, Springer, New York (Appendix A.19)
 }
 \keyword{datasets}

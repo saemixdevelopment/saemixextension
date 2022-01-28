@@ -66,7 +66,7 @@ parameters in the model, giving the variance-covariance matrix of the model:
 
 \item{omega.init}{a square matrix of size equal to the number of parameters
 in the model, giving the initial estimate for the variance-covariance matrix
-of the model. Defaults to the identity matrix}
+of the model.}
 
 \item{error.init}{a vector of size 2 giving the initial value of a and b in
 the error model. Defaults to 1 for each estimated parameter in the error
@@ -114,13 +114,14 @@ saemix.model<-saemixModel(model=model1cpt,
 
 }
 \references{
-Comets  E, Lavenu A, Lavielle M. Parameter estimation in nonlinear mixed effect models using saemix, an R implementation of the SAEM algorithm. Journal of Statistical Software 80, 3 (2017), 1-41.
+E Comets, A Lavenu, M Lavielle M (2017). Parameter estimation in nonlinear mixed effect models using saemix,
+an R implementation of the SAEM algorithm. Journal of Statistical Software, 80(3):1-41.
 
-Kuhn E, Lavielle M. Maximum likelihood estimation in nonlinear mixed effects models. Computational Statistics and Data Analysis 49, 4 (2005), 1020-1038.
+E Kuhn, M Lavielle (2005). Maximum likelihood estimation in nonlinear mixed effects models.
+Computational Statistics and Data Analysis, 49(4):1020-1038.
 
-Comets E, Lavenu A, Lavielle M. SAEMIX, an R version of the SAEM algorithm.
-20th meeting of the Population Approach Group in Europe, Athens, Greece
-(2011), Abstr 2173.
+E Comets, A Lavenu, M Lavielle (2011). SAEMIX, an R version of the SAEM algorithm. 20th meeting of the
+Population Approach Group in Europe, Athens, Greece, Abstr 2173.
 }
 \seealso{
 \code{\link{SaemixData}},\code{\link{SaemixModel}},

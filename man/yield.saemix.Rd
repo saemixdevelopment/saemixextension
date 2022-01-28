@@ -58,7 +58,7 @@ saemix.model<-saemixModel(model=yield.LP,description="Linear plus plateau model"
             byrow=TRUE),error.model="constant")
 
 saemix.options<-list(algorithms=c(1,1,1),nb.chains=1,seed=666, 
-       save=FALSE,save.graphs=FALSE)
+       save=FALSE,save.graphs=FALSE,displayProgress=FALSE)
 
 # Plotting the data
 plot(saemix.data,xlab="Fertiliser dose (kg/ha)", ylab="Wheat yield (t/ha)")

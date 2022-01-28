@@ -27,22 +27,49 @@ The \code{toenail.saemix} data are from a multicenter study comparing two oral t
 \details{
 The data in the \code{toenail.saemix} was copied from the Toenail dataset provided by the prLogistic package. Different models
 and analyses have been performed to describe this dataset in Molenberg and Verbeke (2000).
+Please refer to the PDF documentation (chapter 4, section 4.6) for more details on the analysis, including how to obtain diagnostic plots.
+}
+\examples{
+
+data(toenail.saemix)
+saemix.data<-saemixData(name.data=toenail.saemix,name.group=c("id"), name.predictors=c("time","y"), 
+ name.response="y", name.covariates=c("treatment"),name.X=c("time"))
+binary.model<-function(psi,id,xidep) {
+  tim<-xidep[,1]
+  y<-xidep[,2]
+  inter<-psi[id,1]
+  slope<-psi[id,2]
+  logit<-inter+slope*tim
+  pevent<-exp(logit)/(1+exp(logit))
+  pobs = (y==0)*(1-pevent)+(y==1)*pevent
+  logpdf <- log(pobs)
+  return(logpdf)
+}
+
+saemix.model<-saemixModel(model=binary.model,description="Binary model",
+     modeltype="likelihood",
+     psi0=matrix(c(-5,-.1,0,0),ncol=2,byrow=TRUE,dimnames=list(NULL,c("theta1","theta2"))),
+     transform.par=c(0,0), covariate.model=c(0,1),
+     covariance.model=matrix(c(1,0,0,1),ncol=2))
+\donttest{
+saemix.options<-list(seed=1234567,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, 
+   nb.chains=10, fim=FALSE)
+binary.fit<-saemix(saemix.model,saemix.data,saemix.options)
+plot(binary.fit, plot.type="convergence")
+}
+ 
 }
 \references{
-De Backer M, De Vroey C, Lesaffre E, Scheys I, De Keyser P (1998).
+M De Backer, C De Vroey, E Lesaffre, I Scheys, P De Keyser (1998).
 Twelve weeks of continuous oral therapy for toenail onychomycosis caused by dermatophytes:
 A double-blind comparative trial of terbinafine 250 mg/day versus itraconazole 200 mg/day.
-Journal of the American Academy of Dermatology, 38, 57-63.
+Journal of the American Academy of Dermatology, 38:57-63.
 
-Lesaffre E, Spiessens B (2001). On the effect of the number of quadrature points in a logistic random-effects model: An example.
-Journal of the Royal Statistical Society, Series C, 50, 325-335.
+E Lesaffre, B Spiessens (2001). On the effect of the number of quadrature points in a logistic random-effects model: An example.
+Journal of the Royal Statistical Society, Series C, 50:325-335.
 
-Verbeke G, Molenberghs G (2000). Linear mixed models for longitudinal data, Springer, New York.
+G Verbeke, G Molenberghs (2000). Linear mixed models for longitudinal data, Springer, New York.
 
-Rabe-Hesketh S, Skrondal A (2008). Multilevel and Longitudinal Modeling Using Stata. Mahwah, NJ: Lawrence Erlbaum Associates. Second Edition.
-
-#' @examples
-data(toenail.saemix)
-
-#' @keywords datasets
+S Rabe-Hesketh, A Skrondal (2008). Multilevel and Longitudinal Modeling Using Stata. Mahwah, NJ: Lawrence Erlbaum Associates. Second Edition.
 }
+\keyword{datasets}

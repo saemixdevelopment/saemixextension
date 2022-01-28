@@ -35,9 +35,12 @@ catdata package (see data(knee, package="catdata")). A time column was added rep
 of the measurement (with 0 being the baseline value) and each observation corresponds to a different
 line in the dataset. Treatment was recoded as 0/1 (placebo/treatment), gender as 0/1 (male/female)
 and Age2 represents the squared of centered Age.
+
+Please refer to the PDF documentation (chapter 4, section 4.6) for more details on the analysis,
+including examples of diagnostic plots.
 }
 \references{
-Tutz G (2012), Regression for Categorical Data, Cambridge University Press.
+G Tutz (2012), Regression for Categorical Data, Cambridge University Press.
 
 #' @examples
 data(knee.saemix)
