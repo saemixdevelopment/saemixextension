@@ -725,7 +725,6 @@ setMethod("readSaemix",
   			object@units$covariates<-object@units$covariates[object@name.covariates %in% colnames(dat)]
   			object@name.covariates<-object@name.covariates[object@name.covariates %in% colnames(dat)]
   		}
-  		if(object@messages) print(object@name.covariates)
     }
     if(nchar(object@name.group)*length(object@name.predictors)*nchar(object@name.response)<=0) {
       stop("Please check the structure of the data file and provide information concerning which columns specify the group structure (ID), the predictors (eg dose, time) and the response (eg Y, conc). See documentation for automatic recognition of column names for these elements.\n")
