@@ -19,7 +19,7 @@
 #' @author Maud Delattre
 #' @references M Delattre, M Lavielle, MA Poursat (2014) A note on BIC in mixed effects models. 
 #' Electronic Journal of Statistics 8(1) p. 456-475
-#' @keywords model comparison, AIC, BIC
+#' @keywords model AIC BIC
 #' @examples
 #' data(theo.saemix)
 #'

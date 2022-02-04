@@ -26,6 +26,9 @@ system(cmd)
 dir.create(workDir)
 dir.create(file.path(workDir,"saemix"))
 
+cmd<-paste("cp -rp ",file.path(saemixDir,"documentation","docsaem.pdf")," ",file.path(saemixDir,"inst","userguide_saemix3.pdf"),sep="")
+system(cmd)
+
 cmd<-paste("cp -rp ",file.path(saemixDir,"R")," ", file.path(workDir,"saemix","/"),sep="")
 system(cmd)
 cmd<-paste("cp -rp ",file.path(saemixDir,"data")," ", file.path(workDir,"saemix","/"),sep="")
@@ -44,6 +47,30 @@ system(cmd)
 
 ## Compilation
 
+- building on win-ftp
+  - to specify when submitting
+Possibly mis-spelled words in DESCRIPTION:
+  IAME (17:930)
+  al (17:663)
+  et (17:660)
+  github (17:954)
+  saemix (17:965)
+
+  - removed:
+Found the following (possibly) invalid URLs:
+  URL: http://group.monolix.org/
+    From: DESCRIPTION
+    Status: 403
+    Message: Forbidden
+
+  - to change: no commas between keywords in R (maybe for vignettes)
+Found the following \keyword or \concept entries
+which likely give several index terms:
+  File 'backward.procedure.Rd':
+    \keyword{backward,}
+    \keyword{selection,}
+... (others)
+
 ```{r compilation}
 # Reduce size of viral load simulation data (to 500 simulations) for CRAN
 knitr::opts_chunk$set(root.dir = file.path(workDir,"saemix"))
@@ -58,20 +85,22 @@ system("R CMD build saemix")
 testExamples<-TRUE
 # Test examples
 if(testExamples) system("R CMD check --as-cran --run-donttest saemix_3.0.tar.gz") else system("R CMD check --as-cran saemix_3.0.tar.gz")
+
+if(FALSE)
+  system("R CMD check --as-cran saemix_3.0.tar.gz")
 ```
 
 
 #### Examples on CRAN
 
 Examples with CPU or elapsed time > 5s
-              user system elapsed
-rapi.saemix    37.043  0.148  37.203
-cow.saemix     17.601  0.096  17.698
-toenail.saemix 13.748  0.020  13.769
-PD1.saemix     12.040  0.040  12.083
-compare.saemix  6.702  0.012   6.716
-theo.saemix     5.675  0.040   5.715
-yield.saemix    4.980  0.041   5.021
+                 user system elapsed
+rapi.saemix    32.510  0.092  32.602
+cow.saemix     17.020  0.072  17.093
+toenail.saemix 13.531  0.000  13.532
+PD1.saemix     12.789  0.035  12.910
+compare.saemix  6.331  0.016   6.347
+theo.saemix     5.171  0.000   5.172
 
 ### Warnings
 

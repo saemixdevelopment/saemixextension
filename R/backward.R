@@ -1,5 +1,7 @@
 ###########  Choose a model for covariates and random effects simultaneously by BIC in a backward algorithm  ###########
 
+#' Backward procedure for joint selection of covariates and random effects
+#' 
 #' Joint selection of covariates and random effects in a nonlinear mixed effects model by a backward-type
 #' algorithm based on two different versions of BIC for covariate selection and random effects selection
 #' respectively. Selection is made among the covariates as such specified in the SaemixData object.
@@ -14,7 +16,7 @@
 #' Electronic Journal of Statistics 8(1) p. 456-475
 #' M Delattre, MA Poursat (2017) BIC strategies for model choice in a population approach. 
 #' (arXiv:1612.02405)
-#' @keywords joint covariate and random effects selection, backward, BIC.covariate
+#' @keywords selection backward covariate
 
 backward.procedure <- function(saemixObject, trace = TRUE) {
   warning("Likelihood computed by importance sampling.")

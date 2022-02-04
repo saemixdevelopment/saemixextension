@@ -3,44 +3,44 @@ Capacity: max_strings=100000, hash_size=100000, hash_prime=85009
 The top-level auxiliary file: docsaem.aux
 The style file: acm.bst
 Database file #1: docsaem.bib
-You've used 48 entries,
+You've used 50 entries,
             2253 wiz_defined-function locations,
-            828 strings with 12223 characters,
-and the built_in function-call counts, 14879 in all, are:
-= -- 1461
-> -- 726
+            844 strings with 12808 characters,
+and the built_in function-call counts, 15805 in all, are:
+= -- 1546
+> -- 795
 < -- 0
-+ -- 312
-- -- 252
-* -- 1213
-:= -- 2507
-add.period$ -- 146
-call.type$ -- 48
-change.case$ -- 260
++ -- 340
+- -- 278
+* -- 1306
+:= -- 2666
+add.period$ -- 153
+call.type$ -- 50
+change.case$ -- 279
 chr.to.int$ -- 0
-cite$ -- 48
-duplicate$ -- 454
-empty$ -- 1156
-format.name$ -- 252
-if$ -- 2986
+cite$ -- 50
+duplicate$ -- 472
+empty$ -- 1210
+format.name$ -- 278
+if$ -- 3165
 int.to.chr$ -- 0
-int.to.str$ -- 48
-missing$ -- 46
-newline$ -- 245
-num.names$ -- 96
-pop$ -- 213
+int.to.str$ -- 50
+missing$ -- 48
+newline$ -- 256
+num.names$ -- 100
+pop$ -- 227
 preamble$ -- 1
-purify$ -- 222
+purify$ -- 239
 quote$ -- 0
-skip$ -- 258
+skip$ -- 268
 stack$ -- 0
-substring$ -- 955
-swap$ -- 102
+substring$ -- 1011
+swap$ -- 106
 text.length$ -- 0
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 184
+type$ -- 192
 warning$ -- 0
-while$ -- 154
-width$ -- 50
-write$ -- 484
+while$ -- 161
+width$ -- 52
+write$ -- 506

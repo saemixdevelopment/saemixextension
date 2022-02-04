@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/Debian) (preloaded format=latex 2019.9.7)  28 JAN 2022 18:14
+This is pdfTeX, Version 3.14159265-2.6-1.40.18 (TeX Live 2017/Debian) (preloaded format=latex 2019.9.7)  1 FEB 2022 14:59
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -862,14 +862,7 @@ Overfull \hbox (33.39438pt too wide) in paragraph at lines 236--236
 r(x>pge3)+as.integer(x>pge4)[] 
  []
 
-[96]
-
-LaTeX Warning: Citation `Neighbors10a' on page 97 undefined on input line 276.
-
-
-LaTeX Warning: Citation `Neighbors10b' on page 97 undefined on input line 276.
-
-[97]
+[96] [97]
 Overfull \hbox (27.64569pt too wide) in paragraph at lines 309--309
 []\OT1/cmtt/m/n/10.95 saemix.model.poi<-saemixModel(model=count.poisson,descrip
 tion="Count model Poisson",[] 
@@ -961,9 +954,6 @@ Package rerunfilecheck Info: File `docsaem.out' has not changed.
 
 LaTeX Font Warning: Some font shapes were not available, defaults substituted.
 
-
-LaTeX Warning: There were undefined references.
-
 Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 259.
  )
 (\end occurred inside a group at level 1)
@@ -973,10 +963,10 @@ Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 259.
 Here is how much of TeX's memory you used:
  6553 strings out of 492983
  93552 string characters out of 6134923
- 206230 words of memory out of 5000000
+ 206300 words of memory out of 5000000
  9978 multiletter control sequences out of 15000+600000
  19282 words of font info for 72 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  32i,16n,45p,1297b,512s stack positions out of 5000i,500n,10000p,200000b,80000s
 
-Output written on docsaem.dvi (110 pages, 440736 bytes).
+Output written on docsaem.dvi (110 pages, 442316 bytes).

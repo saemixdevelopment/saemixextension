@@ -37,7 +37,7 @@ testMode<-TRUE
 # Loading library
 if(testMode) {
   dev_mode()
-  install.packages("saemix3.0.tar.gz",repos=NULL)
+  install.packages("/home/eco/work/saemix/versions/saemix3.0/saemix_3.0.tar.gz",repos=NULL)
   library(saemix)
 }
 ```
@@ -68,9 +68,10 @@ ylab="Theophylline concentration (mg/L)")
 
 saemix.data<-saemixData(name.data=theo.saemix,header=TRUE,sep=" ",na=NA, 
   name.group=c("Id"),name.predictors=c("Dose","Time"),
-  name.response=c("Concentration"),name.covariates=c("Weight","Sex"),
+  name.response=c("Concentration"), name.covariates=c("Weight","Sex"),
   units=list(x="hr",y="mg/L",covariates=c("kg","-")), name.X="Time")
-  model1cpt<-function(psi,id,xidep) { 
+ 
+ model1cpt<-function(psi,id,xidep) { 
     dose<-xidep[,1]
     tim<-xidep[,2]  
     ka<-psi[id,1]

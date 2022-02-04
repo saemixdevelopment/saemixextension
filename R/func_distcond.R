@@ -1,6 +1,5 @@
 #######################	Conditional means - estimates of PSI_i ########################
 
-
 #' Estimate conditional mean and variance of individual parameters using the
 #' MCMC algorithm
 #' 
@@ -39,7 +38,7 @@
 #' where var(eta_i) is the empirical variance of the estimates of the
 #' individual random effects, and omega(eta) is the estimated variance.
 #' 
-#' When the option displayProgress is set to TRUE, convergence graphs are produced
+#' When the plot argument is set to TRUE, convergence graphs are produced
 #' They can be used assess whether the mean of the individual estimates (on the scale of the parameters) 
 #' and the mean of the SD of the random effects have stabilised over the ipar.lmcmc (defaults to 50) iterations. 
 #' The evolution of these variables for each parameter is shown as a continuous line
@@ -70,25 +69,31 @@
 #' @param max.iter Maximum number of iterations for the computation of the
 #' conditional estimates. Defaults to twice the total number of iterations
 #' (see above)
+#' @param plot a boolean indicating whether to display convergence plots (defaults to FALSE)
 #' @param \dots optional arguments passed to the plots. Plots will appear if
-#' the option displayProgress in the saemixObject object is TRUE
+#' the argument plot is set to TRUE
 #' 
-#' @author Emmanuelle Comets <emmanuelle.comets@@inserm.fr>, Audrey Lavenu,
-#' Marc Lavielle.
 #' @seealso \code{\link{SaemixData}},\code{\link{SaemixModel}},
 #' \code{\link{SaemixObject}},\code{\link{saemixControl}},\code{\link{saemix}}
-#' @references Comets  E, Lavenu A, Lavielle M. Parameter estimation in nonlinear mixed effect models 
-#' using saemix, an R implementation of the SAEM algorithm. Journal of Statistical Software 80, 3 (2017), 1-41.
 #' 
-#' Kuhn E, Lavielle M. Maximum likelihood estimation in nonlinear mixed effects models. 
-#' Computational Statistics and Data Analysis 49, 4 (2005), 1020-1038.
+#' @references E Comets, A Lavenu, M Lavielle M (2017). Parameter estimation in nonlinear mixed effect models using saemix,
+#' an R implementation of the SAEM algorithm. Journal of Statistical Software, 80(3):1-41.
 #' 
-#' Comets E, Lavenu A, Lavielle M. SAEMIX, an R version of the SAEM algorithm.
-#' 20th meeting of the Population Approach Group in Europe, Athens, Greece (2011), Abstr 2173.
+#' E Kuhn, M Lavielle (2005). Maximum likelihood estimation in nonlinear mixed effects models. 
+#' Computational Statistics and Data Analysis, 49(4):1020-1038.
+#' 
+#' E Comets, A Lavenu, M Lavielle (2011). SAEMIX, an R version of the SAEM algorithm. 20th meeting of the 
+#' Population Approach Group in Europe, Athens, Greece, Abstr 2173.
+#' 
+#' @author Emmanuelle Comets \email{emmanuelle.comets@@inserm.fr}
+#' @author Audrey Lavenu
+#' @author Marc Lavielle
+#' 
 #' @keywords model
 #' @examples
-#'  
 #' 
+#' \donttest{
+#' # Not run (strict time constraints for CRAN)
 #' data(theo.saemix)
 #' 
 #' saemix.data<-saemixData(name.data=theo.saemix,header=TRUE,sep=" ",na=NA,
@@ -117,27 +122,27 @@
 #' 
 #' saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE)
 #' 
-#' # Not run (strict time constraints for CRAN)
-#' # saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
-#' # saemix.fit<-conddist.saemix(saemix.fit,nsamp=3)
+#' saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
+#' saemix.fit<-conddist.saemix(saemix.fit,nsamp=3, plot=TRUE)
 #' 
 #' # First sample from the conditional distribution 
 #' # (a N (nb of subject) by nb.etas (nb of parameters) matrix)
-#' # saemix.fit["results"]["phi.samp"][,,1]
+#' print(head(saemix.fit["results"]["phi.samp"][,,1]))
 #' 
 #' # Second sample
-#' # saemix.fit["results"]["phi.samp"][,,2]
-#' 
+#' print(head(saemix.fit["results"]["phi.samp"][,,2]))
+#' }
 #' 
 #' @export conddist.saemix
 
-conddist.saemix<-function(saemixObject,nsamp=1,max.iter=NULL,...) {
+conddist.saemix<-function(saemixObject, nsamp=1, max.iter=NULL, plot=FALSE, ...) {
   # Estimate conditional means and estimates for the individual parameters PSI_i using the MCMC algorithm
   # nsamp= number of MCMC samples
   # max.iter= max nb of iterations
   # returns an array 
   saemix.data<-saemixObject["data"]
   saemix.model<-saemixObject["model"]
+  displayPlot<-plot
   N<-saemix.data["N"]
   nb.parameters<-saemixObject["model"]["nb.parameters"]
   if(is.null(max.iter)) kmax<-sum(saemixObject["options"]$nbiter.saemix)*2 else kmax<-max.iter
@@ -169,27 +174,28 @@ conddist.saemix<-function(saemixObject,nsamp=1,max.iter=NULL,...) {
   pres<-saemixObject["results"]["respar"]
   args<-list(ind.ioM=ind.ioM)
   
-  # # Preparing plots
-  # if(saemixObject["options"]$displayProgress) {
-  #   plot.opt<-saemixObject["prefs"]
-  #   plot.opt$xlab<-"Iteration"
-  #   plot.opt<-replace.plot.options(plot.opt,...)
-  #   change.ylab<-FALSE
-  #   if(plot.opt$ylab!=saemixObject["prefs"]$ylab & length(plot.opt$which.par)==1) change.ylab<-TRUE
-  #   change.main<-FALSE
-  #   if(plot.opt$main!=saemixObject["prefs"]$main & length(plot.opt$which.par)==1) change.main<-TRUE
-  #   np<-nb.etas
-  #   if(length(plot.opt$mfrow)==0) {
-  #     n1<-round(sqrt(np))
-  #     n2<-ceiling(np/n1)
-  #     if(n1>5 | n2>5) {
-  #       n1<-3
-  #       n2<-4
-  #       #      cat("Changing the plot layout\n")
-  #     }
-  #     plot.opt$mfrow<-c(n1,n2)
-  #   }
-  # }
+  # Preparing plots
+  if(displayPlot) {
+    plot.opt<-saemixObject["prefs"]
+    plot.opt$xlab<-"Iteration"
+    plot.opt<-replace.plot.options(plot.opt,...)
+    change.ylab<-FALSE
+    if(plot.opt$ylab!=saemixObject["prefs"]$ylab & length(plot.opt$which.par)==1) change.ylab<-TRUE
+    change.main<-FALSE
+    if(plot.opt$main!=saemixObject["prefs"]$main & length(plot.opt$which.par)==1) change.main<-TRUE
+    np<-nb.etas
+    if(length(plot.opt$mfrow)==0) {
+      n1<-round(sqrt(np))
+      n2<-ceiling(np/n1)
+      if(n1>5 | n2>5) {
+        n1<-3
+        n2<-4
+        cat("Changing the plot layout\n")
+      }
+      plot.opt$mfrow<-c(n1,n2)
+    }
+  }
+
   # Simulation MCMC
   # initialisation a phiM=estimation des parametres individuels
   mean.phiM<-do.call(rbind,rep(list(saemixObject["results"]["mean.phi"]),nsamp))
@@ -326,7 +332,7 @@ conddist.saemix<-function(saemixObject,nsamp=1,max.iter=NULL,...) {
     }
     if(k>50 & k%%50==1) {
       if(saemixObject["options"]$warnings) cat(".")
-      #       if(saemixObject["options"]$displayProgress) {
+      #       if(displayPlot) {
       #         #        par(mfrow=plot.opt$mfrow,ask=plot.opt$ask)
       #         par(mfrow=plot.opt$mfrow)
       #         limy<-cbind(apply(cbind(apply(ebar[,1:k,],1,min),ekmin),1,min), apply(cbind(apply(ebar[,1:k,],1,max),ekmax),1,max))
@@ -349,18 +355,20 @@ conddist.saemix<-function(saemixObject,nsamp=1,max.iter=NULL,...) {
     else cat("Convergence achieved in",k,"iterations\n")
     
   }
-  if(saemixObject["options"]$displayProgress) {
+  if(displayPlot) {
     ibeg<-1
     nitr<-(k-ibeg)
     if(FALSE) { # phi-scale
       ebarbar<-apply(ebar[,ibeg:(k-1),],c(1,2),mean) # mean across the samples => npar x nitr
       sdbarbar<-apply(sdbar[,ibeg:(k-1),],c(1,2),mean) # mean across the samples => npar x nitr
       #      sdbarbar<-apply(sdbar,3,mean)
-      ypl1<-data.frame(Iteration=rep((ibeg:(k-1)),nb.parameters),condMean=c(t(ebarbar)),par=rep(saemixObject["model"]["name.modpar"],each=nitr),ymin=rep(ekmin,each=nitr),ymax=rep(ekmax,each=nitr),type="mean")
-      ypl2<-data.frame(Iteration=rep((ibeg:(k-1)),nb.parameters),condMean=c(t(sdbarbar)),par=rep(saemixObject["model"]["name.modpar"],each=nitr),ymin=rep(sdkmin,each=nitr),ymax=rep(sdkmax,each=nitr),type="SD")
-      ypl<-rbind(ypl1,ypl2)
-      # gpl<-ggplot(data=ypl,aes(x=Iteration,y=condMean)) +geom_line() + facet_wrap(as.factor(type)~as.factor(par), scales="free") + geom_ribbon(aes(ymin=ymin,ymax=ymax),alpha=0.2,fill="darkcyan")
-      # print(gpl)
+      if(displayPlot) {
+        ypl1<-data.frame(Iteration=rep((ibeg:(k-1)),nb.parameters),condMean=c(t(ebarbar)),par=rep(saemixObject["model"]["name.modpar"],each=nitr),ymin=rep(ekmin,each=nitr),ymax=rep(ekmax,each=nitr),type="mean")
+        ypl2<-data.frame(Iteration=rep((ibeg:(k-1)),nb.parameters),condMean=c(t(sdbarbar)),par=rep(saemixObject["model"]["name.modpar"],each=nitr),ymin=rep(sdkmin,each=nitr),ymax=rep(sdkmax,each=nitr),type="SD")
+        ypl<-rbind(ypl1,ypl2)
+        gpl<-ggplot(data=ypl,aes(x=.data$Iteration,y=.data$condMean)) +geom_line() + facet_wrap(as.factor(.data$type)~as.factor(.data$par), scales="free") + geom_ribbon(aes(ymin=.data$ymin,ymax=.data$ymax),alpha=0.2,fill="darkcyan")
+        print(gpl)
+      }
     } else { # psi-scale
       nitr<-(k-ibeg+1)
       for(i in 1:nsamp) {
@@ -386,11 +394,13 @@ conddist.saemix<-function(saemixObject,nsamp=1,max.iter=NULL,...) {
       ebarbar<-apply(ebar[,ibeg:k,],c(1,2),mean) # mean across the samples => npar x nitr
       sdbarbar<-apply(sdbar[,ibeg:k,],c(1,2),mean) # mean across the samples => npar x nitr
       #      sdbarbar<-apply(sdbar,3,mean)
-      ypl1<-data.frame(Iteration=rep(c(ibeg:k),nb.parameters),condMean=c(t(ebarbar)),par=rep(saemixObject["model"]["name.modpar"],each=nitr),ymin=rep(tekmin,each=nitr),ymax=rep(tekmax,each=nitr),type="mean")
-      ypl2<-data.frame(Iteration=rep(c(ibeg:k),nb.parameters),condMean=c(t(sdbarbar)),par=rep(saemixObject["model"]["name.modpar"],each=nitr),ymin=rep(tsdkmin,each=nitr),ymax=rep(tsdkmax,each=nitr),type="SD")
-      ypl<-rbind(ypl1,ypl2)
-      # gpl<-ggplot(data=ypl,aes(x=Iteration,y=condMean)) +geom_line() + facet_wrap(as.factor(type)~as.factor(par), scales="free") + geom_ribbon(aes(ymin=ymin,ymax=ymax),alpha=0.2,fill="darkcyan")
-      # print(gpl)
+      if(displayPlot) {
+        ypl1<-data.frame(Iteration=rep(c(ibeg:k),nb.parameters),condMean=c(t(ebarbar)),par=rep(saemixObject["model"]["name.modpar"],each=nitr),ymin=rep(tekmin,each=nitr),ymax=rep(tekmax,each=nitr),type="mean")
+        ypl2<-data.frame(Iteration=rep(c(ibeg:k),nb.parameters),condMean=c(t(sdbarbar)),par=rep(saemixObject["model"]["name.modpar"],each=nitr),ymin=rep(tsdkmin,each=nitr),ymax=rep(tsdkmax,each=nitr),type="SD")
+        ypl<-rbind(ypl1,ypl2)
+        gpl<-ggplot(data=ypl,aes(x=.data$Iteration,y=.data$condMean)) +geom_line() + facet_wrap(as.factor(.data$type)~as.factor(.data$par), scales="free") + geom_ribbon(aes(ymin=.data$ymin,ymax=.data$ymax),alpha=0.2,fill="darkcyan")
+        print(gpl)
+      }
     }
   }
   

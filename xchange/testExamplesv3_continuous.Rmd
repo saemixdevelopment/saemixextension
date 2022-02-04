@@ -31,8 +31,8 @@ figDir<-file.path(saemixDir,"documentation","figs")
 # Libraries
 library(MASS)
 library(rlang)
-# library(ggplot2)
-# library(gridExtra)
+library(ggplot2)
+library(gridExtra)
 # library(tidyverse)
 
 # testMode TRUE => tests the compiled package in dev_mode()
@@ -138,6 +138,9 @@ saemix.model<-saemixModel(model=model1cpt,
 
 saemix.options<-list(seed=39546,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
 saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
+
+saemix.fit<-conddist.saemix(saemix.fit)
+saemix.fit<-conddist.saemix(saemix.fit, plot=TRUE)
 
 ```
 

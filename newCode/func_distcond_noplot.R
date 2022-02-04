@@ -72,8 +72,6 @@
 #' @param \dots optional arguments passed to the plots. Plots will appear if
 #' the option displayProgress in the saemixObject object is TRUE
 #' 
-#' @author Emmanuelle Comets <emmanuelle.comets@@inserm.fr>, Audrey Lavenu,
-#' Marc Lavielle.
 #' @seealso \code{\link{SaemixData}},\code{\link{SaemixModel}},
 #' \code{\link{SaemixObject}},\code{\link{saemixControl}},\code{\link{saemix}}
 #' 
@@ -85,6 +83,10 @@
 #' 
 #' E Comets, A Lavenu, M Lavielle (2011). SAEMIX, an R version of the SAEM algorithm. 20th meeting of the 
 #' Population Approach Group in Europe, Athens, Greece, Abstr 2173.
+#' 
+#' @author Emmanuelle Comets \email{emmanuelle.comets@@inserm.fr}
+#' @author Audrey Lavenu
+#' @author Marc Lavielle
 #' 
 #' @keywords model
 #' @examples
@@ -135,7 +137,7 @@
 conddist.saemix<-function(saemixObject, nsamp=1, max.iter=NULL,...) {
   # Estimate conditional means and estimates for the individual parameters PSI_i using the MCMC algorithm
   # nsamp= number of MCMC samples
-  # kmax= max nb of iterations
+  # max.iter= max nb of iterations
   # returns an array 
   saemix.data<-saemixObject["data"]
   saemix.model<-saemixObject["model"]
