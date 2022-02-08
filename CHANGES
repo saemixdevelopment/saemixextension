@@ -1,8 +1,8 @@
-Version 3.0 -  January 2022
+Version 3.0 - February 2022
 
 o Extension to noncontinuous data models
-   * New argument in saemixModel to differentiate between continuous (type = structural) and noncontinuous (type = likelihood)
-   * New examples have been included in the package to showcase discrete response models (see the online documentation for more information on lung.saemix, toenail.saemix, knee.saemix)
+   * New argument in saemixModel to differentiate between continuous (modelType = "structural") and noncontinuous (modelType = "likelihood")
+   * New examples have been included in the package to showcase discrete response models (see the userguide  for more information on lung.saemix, toenail.saemix, knee.saemix, rapi.saemix)
 
 o Verbosity
    * displayProgress is now set to FALSE by default, which suppresses the convergence plots previously shown during the fit
@@ -14,7 +14,8 @@ o Plot functions for models
    * both these functions can be used to check the starting values before a fit
 
 o Updated user guide (PDF)
-   * available from https://github.com/saemixdevelopment/saemixextension/blob/master/documentation/userguide_saemix3.pdf
+   * available from https://github.com/iame-researchCenter/saemix/blob/7638e1b09ccb01cdff173068e01c266e906f76eb/docsaem.pdf
+   * distributed in the inst folder of the package
    
 o Covariate model building
    * new statistical criterion taking into account the fixed or random nature of estimated parameters in the weighting of the BIC (element BIC.covariate in the results component of a fitted object) [Delattre et al. 2014]
@@ -31,6 +32,7 @@ o Changes
 o Dependencies
    * saemix now depends on npde (3.2), ggplot2, grid and gridExtra
    
+
 Version 2.4 -  February 2021
 
 o Minor modifications following a change in the R compiler for 4.4.0

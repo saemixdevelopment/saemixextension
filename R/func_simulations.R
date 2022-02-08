@@ -19,6 +19,11 @@
 #' @param uncertainty Uses uncertainty (currently not implemented). Defaults to FALSE
 #' @param \dots additional arguments, unused (included for compatibility with the generic)
 #' 
+#' @details This function replaces the previous function (simul.saemix), which will be deprecated in future versions
+#' but can still be called as previously for compatibility purposes.
+#' 
+#' @aliases simul.saemix
+#' 
 #' @author Emmanuelle Comets <emmanuelle.comets@@inserm.fr>, Audrey Lavenu,
 #' Marc Lavielle.
 #' 
@@ -98,6 +103,12 @@ simulate.SaemixObject<-function(object, nsim, seed, predictions=TRUE,res.var=TRU
   return(object)
 }
 
+#' @export 
+
+simul.saemix<-function(object, nsim, seed, predictions=TRUE,res.var=TRUE,uncertainty=FALSE,...) {
+  simulate.SaemixObject(object=object, nsim=nsim, seed=seed, predictions=predictions,res.var=res.var,uncertainty=uncertainty,...)
+}
+  
 #######################	Simulations for models defined through their probability ########################
 
 #' Perform simulations under the model for an saemixObject object defined by its log-likelihood

@@ -12,6 +12,7 @@ html_document: default
 knitr::opts_chunk$set(echo = TRUE)
 library(devtools)
 library(roxygen2)
+library(tools) # check reverse dependencies
 saemixDir<-"/home/eco/work/saemix/saemixextension"
 workDir<-"/home/eco/work/saemix/versions/saemix3.0"
 knitr::opts_chunk$set(root.dir = workDir)
@@ -88,6 +89,22 @@ if(testExamples) system("R CMD check --as-cran --run-donttest saemix_3.0.tar.gz"
 
 if(FALSE)
   system("R CMD check --as-cran saemix_3.0.tar.gz")
+
+# Reverse dependencies
+cmd<-paste("cp ",file.path("/home/eco/work/saemix/versions/reverseDependencies/varTestnlme_1.3.0.tar.gz")," ", file.path(workDir),sep="")
+system(cmd)
+
+if(FALSE) {
+  # Check which packages depend on saemix
+  package_dependencies(packages="saemix", reverse=TRUE)
+  # TODO download these packages into workDir
+  
+  # install saemix current version and check packages
+  install.packages("saemix_3.0.tar.gz")
+  result <- check_packages_in_dir(workDir, revdep = list() )
+  #result <- check_packages_in_dir(workDir, revdep = list("varTestnlme") )
+  summary(result)
+}
 ```
 
 
@@ -164,6 +181,19 @@ print(saemix.fit)
 
 # Outputs the estimates of individual parameters
 psi(saemix.fit)
+
+# legacy
+sim1<-simul.saemix(saemix.fit, seed=12345)
+# no simulated data
+saemix.fit@sim.data
+# simulated data
+sim1@sim.data
+
+# New function, same seed, same results
+sim2<-simulate.SaemixObject(saemix.fit, seed=12345)
+sim2@sim.data
+
+identical(sim1@sim.data, sim2@sim.data)
 ```
 
 Plot results:
