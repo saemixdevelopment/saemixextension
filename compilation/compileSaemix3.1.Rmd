@@ -1,0 +1,213 @@
+---
+title: "Package compilation for saemix 3.0 and basic run"
+author: "Emmanuelle Comets"
+date: "18/10/2021"
+output:
+  pdf_document:
+  latex_engine: xelatex
+html_document: default
+---
+  
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(devtools)
+library(roxygen2)
+library(tools) # check reverse dependencies
+saemixDir<-"/home/eco/work/saemix/saemixextension"
+workDir<-"/home/eco/work/saemix/versions/saemix3.1"
+knitr::opts_chunk$set(root.dir = workDir)
+```
+
+## Copy files
+
+```{r copyFileDev}
+cmd<-paste("rm -r ",file.path(workDir,"*"),sep="")
+system(cmd)
+
+dir.create(workDir)
+dir.create(file.path(workDir,"saemix"))
+
+cmd<-paste("cp -rp ",file.path(saemixDir,"documentation","docsaem.pdf")," ",file.path(saemixDir,"inst","userguide_saemix3.pdf"),sep="")
+system(cmd)
+
+cmd<-paste("cp -rp ",file.path(saemixDir,"R")," ", file.path(workDir,"saemix","/"),sep="")
+system(cmd)
+cmd<-paste("cp -rp ",file.path(saemixDir,"data")," ", file.path(workDir,"saemix","/"),sep="")
+system(cmd)
+cmd<-paste("cp -rp ",file.path(saemixDir,"inst")," ", file.path(workDir,"saemix","/"),sep="")
+system(cmd)
+for(ifile in c("CHANGES","DESCRIPTION")) {
+  cmd<-paste("cp ",file.path(saemixDir,ifile)," ", file.path(workDir,"saemix"),sep="")
+  system(cmd)
+}
+cmd<-paste("cp ",file.path(saemixDir,"inst","CITATION")," ", file.path(workDir,"saemix","inst"),sep="")
+system(cmd)
+
+
+```
+
+## Compilation
+
+- building on win-ftp
+  - to specify when submitting
+Possibly mis-spelled words in DESCRIPTION:
+  IAME (17:930)
+  al (17:663)
+  et (17:660)
+  github (17:954)
+  saemix (17:965)
+
+  - removed:
+Found the following (possibly) invalid URLs:
+  URL: http://group.monolix.org/
+    From: DESCRIPTION
+    Status: 403
+    Message: Forbidden
+
+  - to change: no commas between keywords in R (maybe for vignettes)
+Found the following \keyword or \concept entries
+which likely give several index terms:
+  File 'backward.procedure.Rd':
+    \keyword{backward,}
+    \keyword{selection,}
+... (others)
+
+```{r compilation}
+# Reduce size of viral load simulation data (to 500 simulations) for CRAN
+knitr::opts_chunk$set(root.dir = file.path(workDir,"saemix"))
+setwd(file.path(workDir,"saemix"))
+
+devtools::document(file.path(workDir,"saemix"))
+roxygenise()
+setwd(workDir)
+system("R CMD build saemix")
+
+
+testExamples<-TRUE
+# Test examples
+if(testExamples) system("R CMD check --as-cran --run-donttest saemix_3.1.tar.gz") else system("R CMD check --as-cran saemix_3.1.tar.gz")
+
+if(FALSE)
+  system("R CMD check --as-cran saemix_3.1.tar.gz")
+
+# Reverse dependencies
+cmd<-paste("cp ",file.path("/home/eco/work/saemix/versions/reverseDependencies/varTestnlme_1.3.0.tar.gz")," ", file.path(workDir),sep="")
+system(cmd)
+
+if(FALSE) {
+  # Check which packages depend on saemix
+  package_dependencies(packages="saemix", reverse=TRUE)
+  # TODO download these packages into workDir
+  
+  # install saemix current version and check packages
+  install.packages("saemix_3.0.tar.gz")
+  result <- check_packages_in_dir(workDir, revdep = list() )
+  #result <- check_packages_in_dir(workDir, revdep = list("varTestnlme") )
+  summary(result)
+}
+```
+
+
+#### Examples on CRAN
+
+Examples with CPU or elapsed time > 5s
+                 user system elapsed
+rapi.saemix    32.510  0.092  32.602
+cow.saemix     17.020  0.072  17.093
+toenail.saemix 13.531  0.000  13.532
+PD1.saemix     12.789  0.035  12.910
+compare.saemix  6.331  0.016   6.347
+theo.saemix     5.171  0.000   5.172
+
+### Warnings
+
+## Check
+
+### Install package in development mode
+  
+```{r devModeInstall}
+dev_mode() # development mode
+install.packages(pkgs=file.path(workDir,"saemix_3.0.tar.gz"),repos=NULL)
+library(saemix)
+library(testthat)
+```
+
+### Running theopp example
+
+Documentation not found
+
+```{r helpTheo}
+?theo.saemix
+?saemix
+```
+
+Run on the theophylline example
+
+```{r runTheo, echo=FALSE}
+data(theo.saemix)
+
+saemix.data<-saemixData(name.data=theo.saemix,header=TRUE,sep=" ",na=NA,
+   name.group=c("Id"),name.predictors=c("Dose","Time"),
+   name.response=c("Concentration"),name.covariates=c("Weight","Sex"),
+   units=list(x="hr",y="mg/L", covariates=c("kg","-")), name.X="Time", verbose=FALSE)
+print(saemix.data)
+
+model1cpt<-function(psi,id,xidep) { 
+	  dose<-xidep[,1]
+	  tim<-xidep[,2]  
+	  ka<-psi[id,1]
+	  V<-psi[id,2]
+	  CL<-psi[id,3]
+	  k<-CL/V
+	  ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
+	  return(ypred)
+}
+
+saemix.model<-saemixModel(model=model1cpt,
+  description="One-compartment model with first-order absorption", 
+  psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3, byrow=TRUE,
+  dimnames=list(NULL, c("ka","V","CL"))),transform.par=c(1,1,1),
+  covariate.model=matrix(c(0,1,0,0,0,0),ncol=3,byrow=TRUE),fixed.estim=c(1,1,1),
+  covariance.model=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE),
+  omega.init=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE),error.model="constant", verbose=FALSE)
+print(saemix.model)
+
+saemix.fit<-saemix(model=saemix.model,
+                   data=saemix.data,
+                   control=list(seed=632545,directory="newtheo", save=FALSE,save.graphs=FALSE, warnings=FALSE))
+
+# Prints a summary of the results
+print(saemix.fit)
+
+# Outputs the estimates of individual parameters
+psi(saemix.fit)
+
+# legacy
+sim1<-simul.saemix(saemix.fit, seed=12345)
+# no simulated data
+saemix.fit@sim.data
+# simulated data
+sim1@sim.data
+
+# New function, same seed, same results
+sim2<-simulate.SaemixObject(saemix.fit, seed=12345)
+sim2@sim.data
+
+identical(sim1@sim.data, sim2@sim.data)
+```
+
+Plot results:
+
+```{r plotTheo, echo=FALSE}
+# Shows some diagnostic plots to evaluate the fit
+plot(saemix.fit)
+plot(saemix.fit, plot.type="vpc")
+plot(saemix.fit, plot.type="npde")
+ynpde<-npdeSaemix(saemix.fit)
+plot(saemix.fit, plot.type="individual")
+```
+
+```{r deactivateDevMode, echo=FALSE, hide=T}
+dev_mode()
+```
+

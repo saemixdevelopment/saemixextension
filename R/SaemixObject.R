@@ -1172,7 +1172,7 @@ setMethod(f="plot",
       saemix.plot.distpsi(x,...)
     },
     "vpc"={
-      if(x@options$warnings) message("Plotting VPC\n")
+      if(x@options$warnings) message("Direct call to VPC will soon be deprecated, please use npdeSaemix for VPC\n")
       saemix.plot.vpc(x,...)
     },
     "npde"={

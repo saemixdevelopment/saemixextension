@@ -1,7 +1,7 @@
 ---
-title: "Moving to saemix 3.0"
+title: "Saemix 4.0 - multiple responses"
 author: "Emmanuelle"
-date: "05/10/2020"
+date: "07/02/2022"
 output:
   pdf_document: default
   html_document: default
@@ -9,42 +9,7 @@ output:
 
 # TODO list
 
-- **DONE** kompare files with 2.4 to take into account changes made for the CRAN compiler
-- **DONE** error models
-  - combined 2 versus combined 1
-- **TODO** bugfixes
-  - **DONE** simulated annealing
-  - **DONE** ypred/ppred (changed in documentation, online help, and definitions in code)
-- **TODO** testthat functions
-  - SaemixData class
-    - **DONE** class structure, reading data
-    - validate names
-    - covariates
-  - SaemixModel class
-    - **DONE** class structure, defining model
-    - **DONE** validate covariance model
-  - SaemixObject class
-      - **DONE** class structure
-      - computation of BIC, AIC (Maud)
-      - summary function
-  - plots
-  - computations ?
-  - display options
-    - displayProgress=FALSE by default ? **DONE**
-    - verbose=FALSE ? **DONE**
-    - or indicate how to suppress all messages ? (maybe not a good idea)
-- examples
-  - **DONE** continuous response models
-  - **DONE** binary data
-  - **DONE** categorical data, TTE data
-    - **DONE*** add a section example of use with donttest to the online page
-  - **DONE** RTTE data, count data (maybe count data=salamander data $\Rightarrow$ RAPI data)
-- documentation
-  - error models
-  - **DONE** new models from Belhal for responses defined by their likelihood
-  - new references
-  - new defaults: no plot for conditional distribution
-- **TODO** next version
+- **TODO** 
   - interface to mkin ?
   - error messages to solve better ?
     - unable to find starting parameter values
@@ -55,40 +20,16 @@ output:
       - simulate using R instead of mlx
     - move online or keep pdf/tex version ?
       - if move completely online, need to transform the LaTeX guide into a bookdown
-      - **DONE** copy on iame github
-- **DONE** dependencies
-  - ggplot2 in Depends for 3.0
-  - npde 3.2: 
-    - Suggests for ggplot2
-    - @importFrom statements in roxygen documentation for all objects from ggplot2 that are needed (ex: geom_bar,...)
-
-# Comparing 2.4 and 3.0
-
-## Function list
-
-### 2.4
-
-aaa_generics.R  func_diagnostics.R  func_FIM.R          main_estep.R               main.R         SaemixObject.R
-compute_LL.R    func_distcond.R     func_plots.R        main_initialiseMainAlgo.R  SaemixData.R   SaemixRes.R
-func_aux.R      func_estimParam.R   func_simulations.R  main_mstep.R               SaemixModel.R  zzz.R
-
-### 3.0
-
-aaa_generics.R  func_aux.R              func_estimParam.R   func_stepwise.R            main.R          SaemixRes.R
-backward.R      func_compare.R          func_FIM.R          main_estep.R               SaemixData.R    stepwise.R
-compute_LL.R    func_distcond_noplot.R  func_plots.R        main_initialiseMainAlgo.R  SaemixModel.R   zzz.R
-forward.R       func_distcond.R         func_simulations.R  main_mstep.R               SaemixObject.R
-
-### functions in 3.0 not in 2.4
-
-- covariate selection algorithm (Maud)
-  - forward.R, backward.R, stepwise.R, func_stepwise.R,  func_compare.R
-  - func_diagnostics.R (? Maud or something else ?)
-- version without plots of func_distcond.R 
-
-## Function comparison
-
-See **changes2.4to3.0.ods** for side-by-side comparison of functions tracing the changes between 2.4 and 3.0, as well as the changes carried over from 2.4 immediately.
+      - copy on iame github
+- examples
+  - real example with TTE and RTTE data
+  - real example with competitive risks
+  - joint models
+- documentation
+  - error models
+  - new defaults: no plot for conditional distribution
+- github
+  - get the hang of branches...
 
 ### Loading
 
@@ -224,5 +165,3 @@ See **changes2.4to3.0.ods** for side-by-side comparison of functions tracing the
 ### HMM
 
 $\square$ TODO: check status with Maud
-
-  

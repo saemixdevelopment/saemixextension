@@ -1,3 +1,8 @@
+Version 3.1 - March 2022
+
+o Bugfixes
+   * corrected a minor bug causing the simulation to step to fail in the call to npdeSaemix when the data didn't have any covariate
+
 Version 3.0 - February 2022
 
 o Extension to noncontinuous data models

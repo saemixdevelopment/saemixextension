@@ -1,0 +1,185 @@
+---
+title: "saemix with npde"
+author: "Emmanuelle"
+date: "27/03/2022"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+## Objective
+
+Use npde functions directly in saemix
+
+# Setup
+
+- load libraries
+- run theophylline example
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Libraries
+library(MASS)
+library(rlang)
+library(ggplot2)
+library(gridExtra)
+library(npde)
+library(saemix)
+
+saemixDir<-"/home/eco/work/saemix/saemixextension"
+```
+
+```{r runTheoExample}
+data(theo.saemix)
+
+#Plotting the theophylline data
+plot(Concentration~Time,data=theo.saemix,xlab="Time after dose (hr)",
+ylab="Theophylline concentration (mg/L)")
+
+saemix.data<-saemixData(name.data=theo.saemix,header=TRUE,sep=" ",na=NA, 
+  name.group=c("Id"),name.predictors=c("Dose","Time"),
+  name.response=c("Concentration"),name.covariates=c("Weight","Sex"),
+  units=list(x="hr",y="mg/L",covariates=c("kg","-")), name.X="Time")
+  model1cpt<-function(psi,id,xidep) { 
+    dose<-xidep[,1]
+    tim<-xidep[,2]  
+    ka<-psi[id,1]
+    V<-psi[id,2]
+    CL<-psi[id,3]
+    k<-CL/V
+    ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
+    return(ypred)
+    }
+# Default model, no covariate
+saemix.model<-saemixModel(model=model1cpt,
+       description="One-compartment model with first-order absorption",
+       psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3,byrow=TRUE, 
+       dimnames=list(NULL, c("ka","V","CL"))),transform.par=c(1,1,1))
+ # Note: remove the options save=FALSE and save.graphs=FALSE 
+ # to save the results and graphs
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
+
+saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
+plot(saemix.fit)
+
+ynpde1<-npdeSaemix(saemix.fit)
+```
+
+# Using npde directly
+
+```{r useNpde}
+# Passing options: doesn't work :-/
+plot(saemix.fit, plot.type="vpc",ylim=c(0,20))
+
+y<-npdeSaemix(saemix.fit)
+plot(y, plot.type="vpc", ylim=c(0.01,20), main="VPC with options changed", ylog=TRUE)
+
+```
+
+# Problem when the fit doesn't have covariates 
+
+Debugged
+
+```{r}
+saemix.data<-saemixData(name.data=theo.saemix,header=TRUE,sep=" ",na=NA, 
+  name.group=c("Id"),name.predictors=c("Dose","Time"),
+  name.response=c("Concentration"),name.X="Time")
+  model1cpt<-function(psi,id,xidep) { 
+    dose<-xidep[,1]
+    tim<-xidep[,2]  
+    ka<-psi[id,1]
+    V<-psi[id,2]
+    CL<-psi[id,3]
+    k<-CL/V
+    ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
+    return(ypred)
+    }
+# Default model, no covariate
+saemix.model.nocov<-saemixModel(model=model1cpt,
+       description="One-compartment model with first-order absorption",
+       psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3,byrow=TRUE, 
+       dimnames=list(NULL, c("ka","V","CL"))),transform.par=c(1,1,1))
+ # Note: remove the options save=FALSE and save.graphs=FALSE 
+ # to save the results and graphs
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
+
+saemix.fit.nocov<-saemix(saemix.model.nocov,saemix.data,saemix.options)
+# With library function - fails
+y1<-try(npdeSaemix(saemix.fit.nocov))
+
+# sourcing corrected new function
+source(file.path(saemixDir, "R","func_npde.R"))
+y1<-npdeSaemix(saemix.fit.nocov)
+
+```
+
+
+# Simulation indices
+
+```{r simIndices}
+# Messing with indices
+theo.saemix$Id[theo.saemix$Id==2]<-100
+theo.saemix$Id[theo.saemix$Id==4]<-20
+
+saemix.data<-saemixData(name.data=theo.saemix,header=TRUE,sep=" ",na=NA, 
+  name.group=c("Id"),name.predictors=c("Dose","Time"),
+  name.response=c("Concentration"),name.covariates=c("Weight","Sex"),
+  units=list(x="hr",y="mg/L",covariates=c("kg","-")), name.X="Time")
+  model1cpt<-function(psi,id,xidep) { 
+    dose<-xidep[,1]
+    tim<-xidep[,2]  
+    ka<-psi[id,1]
+    V<-psi[id,2]
+    CL<-psi[id,3]
+    k<-CL/V
+    ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
+    return(ypred)
+    }
+# Default model, no covariate
+saemix.model<-saemixModel(model=model1cpt,
+       description="One-compartment model with first-order absorption",
+       psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3,byrow=TRUE, 
+       dimnames=list(NULL, c("ka","V","CL"))),transform.par=c(1,1,1))
+ # Note: remove the options save=FALSE and save.graphs=FALSE 
+ # to save the results and graphs
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
+
+saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
+plot(saemix.fit, plot.type="individual")
+plot(saemix.fit, plot.type="vpc")
+
+# Simulations
+saemix.fit<-simulate(saemix.fit, nsim=1000) 
+summary(saemix.fit@sim.data@datasim)
+# should fail with library function (replacement...)
+y1<-try(npdeSaemix(saemix.fit))
+
+# Directly through plot.type (doesn't work anymore, suggests to call npdeSaemix)
+# plot(saemix.fit, plot.type="npde")
+
+# sourcing corrected new function
+source(file.path(saemixDir, "R","func_simulations.R"))
+
+# Checking indices now match 
+saemix.fit<-simulate(saemix.fit, nsim=1000) 
+summary(saemix.fit@sim.data@datasim)
+
+# Through npdeSaemix 
+# note: here we need to use simulate() before as the function within npdeSaemix is still the old function from the library
+y1<-npdeSaemix(saemix.fit)
+plot(y1, plot.type="vpc")
+
+
+l1<-plot(y1, plot.type="ecdf")
+l2<-plot(y1, plot.type="x.scatter")
+l3<-plot(ynpde1, plot.type="ecdf")
+l4<-plot(ynpde1, plot.type="x.scatter")
+
+# user waffle to compare before and after meddling with indices
+grid.arrange(grobs=list(l2,l1,l4,l3), nrow=2, ncol=2)
+
+```
+
+
+

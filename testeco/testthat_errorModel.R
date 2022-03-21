@@ -13,3 +13,9 @@ print(y5)
 show(y3)
 showall(y3)
 
+# Creating a list of outcomes in Data
+
+vec<-c(y1="continuous", y2="categorical")
+names(vec)
+
+
