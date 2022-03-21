@@ -146,13 +146,15 @@ compute.sres<-function(saemixObject) {
 # ECO TODO: maybe here be more clever and use simulations if available (adding some if not enough, truncating if too much ?)  
   ysim<-saemixObject["sim.data"]["datasim"]$ysim
   idsim<-saemixObject["sim.data"]["datasim"]$idsim
-  idy<-saemixObject["data"]["data"][,"index"]
+  idy<-saemixObject["data"]["data"][,saemixObject["data"]["name.group"]]
   yobsall<-saemixObject["data"]["data"][,saemixObject["data"]["name.response"]]
   ypredall<-pd<-npde<-wres<-c()
 #  pde<-c()
   cat("Computing WRES and npde ")
-  for(isuj in 1:saemixObject["data"]["N"]) {
-    if(isuj%%10==1) cat(".")
+  isuj1<-1
+  for(isuj in unique(saemixObject["data"]["data"][,saemixObject["data"]["name.group"]])) {
+    if(isuj1%%10==1) cat(".")
+    isuj1<-isuj1+1
     ysimi<-matrix(ysim[idsim==isuj],ncol=nsim)
 #    ysimi.pred<-ysimi[,1:saemixObject["options"]$nb.simpred]
     yobs<-yobsall[idy==isuj]

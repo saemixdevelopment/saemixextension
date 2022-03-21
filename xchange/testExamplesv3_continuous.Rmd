@@ -24,6 +24,7 @@ Check saemix for continuous data models
 knitr::opts_chunk$set(echo = TRUE)
 # Directories
 saemixDir<-"/home/eco/work/saemix/saemixextension"
+versionDir<-"/home/eco/work/saemix/versions"
 progDir<-file.path(saemixDir,"R")
 datDir<-file.path(saemixDir,"data")
 figDir<-file.path(saemixDir,"documentation","figs")
@@ -33,11 +34,12 @@ library(MASS)
 library(rlang)
 library(ggplot2)
 library(gridExtra)
+library(devtools)
 # library(tidyverse)
 
 # testMode TRUE => tests the compiled package in dev_mode()
 # testMode FALSE => tests the library functions by loading them
-testMode<-FALSE
+testMode<-TRUE
 
 # Whether to save the plots for the documentation
 saveForDocs<-FALSE
@@ -79,7 +81,7 @@ if(!testMode) {
 # Loading library
 if(testMode) {
   dev_mode()
-  install.packages("saemix3.0.tar.gz",repos=NULL)
+  install.packages(file.path(versionDir,"saemix3.1","saemix_3.1.tar.gz"),repos=NULL)
   library(saemix)
 }
 ```
@@ -138,6 +140,15 @@ saemix.model<-saemixModel(model=model1cpt,
 
 saemix.options<-list(seed=39546,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
 saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
+
+# Warning message
+plot(saemix.fit, plot.type="npde")
+ynpde<-npdeSaemix(saemix.fit)
+plot(ynpde)
+
+# VPC
+plot(saemix.fit, plot.type="vpc")
+plot(ynpde, plot.type="vpc")
 
 saemix.fit<-conddist.saemix(saemix.fit)
 saemix.fit<-conddist.saemix(saemix.fit, plot=TRUE)
@@ -233,6 +244,10 @@ saemix.model<-saemixModel(model=growth.linear,description="Linear model",
 saemix.options<-list(algorithms=c(1,1,1),nb.chains=1,seed=201004,
       save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
 saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
+
+ynpde<-npdeSaemix(saemix.fit)
+
+plot(ynpde, plot.type="vpc")
 ```
 
 ### Cow

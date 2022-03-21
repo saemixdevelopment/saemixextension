@@ -1,0 +1,159 @@
+---
+title: "saemix with npde"
+author: "Emmanuelle"
+date: "27/03/2022"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+## Objective
+
+Use npde functions directly in saemix
+
+# Setup
+
+- load libraries
+- run theophylline example
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Libraries
+library(MASS)
+library(rlang)
+library(ggplot2)
+library(gridExtra)
+library(npde)
+library(saemix)
+```
+
+```{r runTheoExample}
+data(theo.saemix)
+
+#Plotting the theophylline data
+plot(Concentration~Time,data=theo.saemix,xlab="Time after dose (hr)",
+ylab="Theophylline concentration (mg/L)")
+
+saemix.data<-saemixData(name.data=theo.saemix,header=TRUE,sep=" ",na=NA, 
+  name.group=c("Id"),name.predictors=c("Dose","Time"),
+  name.response=c("Concentration"),name.covariates=c("Weight","Sex"),
+  units=list(x="hr",y="mg/L",covariates=c("kg","-")), name.X="Time")
+  model1cpt<-function(psi,id,xidep) { 
+    dose<-xidep[,1]
+    tim<-xidep[,2]  
+    ka<-psi[id,1]
+    V<-psi[id,2]
+    CL<-psi[id,3]
+    k<-CL/V
+    ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
+    return(ypred)
+    }
+# Default model, no covariate
+saemix.model<-saemixModel(model=model1cpt,
+       description="One-compartment model with first-order absorption",
+       psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3,byrow=TRUE, 
+       dimnames=list(NULL, c("ka","V","CL"))),transform.par=c(1,1,1))
+ # Note: remove the options save=FALSE and save.graphs=FALSE 
+ # to save the results and graphs
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
+
+saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
+plot(saemix.fit)
+
+```
+
+# Using npde directly
+
+```{r useNpde}
+# Passing options: doesn't work :-/
+plot(saemix.fit, plot.type="vpc",ylim=c(0,20))
+
+y<-npdeSaemix(saemix.fit)
+plot(y, plot.type="vpc", ylim=c(0.01,20), main="VPC with options changed", ylog=TRUE)
+
+```
+
+# Problem when the fit doesn't have covariates 
+
+Debugged
+
+```{r}
+saemix.data<-saemixData(name.data=theo.saemix,header=TRUE,sep=" ",na=NA, 
+  name.group=c("Id"),name.predictors=c("Dose","Time"),
+  name.response=c("Concentration"),name.X="Time")
+  model1cpt<-function(psi,id,xidep) { 
+    dose<-xidep[,1]
+    tim<-xidep[,2]  
+    ka<-psi[id,1]
+    V<-psi[id,2]
+    CL<-psi[id,3]
+    k<-CL/V
+    ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
+    return(ypred)
+    }
+# Default model, no covariate
+saemix.model.nocov<-saemixModel(model=model1cpt,
+       description="One-compartment model with first-order absorption",
+       psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3,byrow=TRUE, 
+       dimnames=list(NULL, c("ka","V","CL"))),transform.par=c(1,1,1))
+ # Note: remove the options save=FALSE and save.graphs=FALSE 
+ # to save the results and graphs
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
+
+saemix.fit.nocov<-saemix(saemix.model.nocov,saemix.data,saemix.options)
+y1<-npdeSaemix(saemix.fit.nocov)
+
+```
+
+
+# Simulation indices
+
+```{r simIndices}
+# Messing with indices
+theo.saemix$Id[theo.saemix$Id==2]<-100
+theo.saemix$Id[theo.saemix$Id==4]<-20
+
+saemix.data<-saemixData(name.data=theo.saemix,header=TRUE,sep=" ",na=NA, 
+  name.group=c("Id"),name.predictors=c("Dose","Time"),
+  name.response=c("Concentration"),name.covariates=c("Weight","Sex"),
+  units=list(x="hr",y="mg/L",covariates=c("kg","-")), name.X="Time")
+  model1cpt<-function(psi,id,xidep) { 
+    dose<-xidep[,1]
+    tim<-xidep[,2]  
+    ka<-psi[id,1]
+    V<-psi[id,2]
+    CL<-psi[id,3]
+    k<-CL/V
+    ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
+    return(ypred)
+    }
+# Default model, no covariate
+saemix.model<-saemixModel(model=model1cpt,
+       description="One-compartment model with first-order absorption",
+       psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3,byrow=TRUE, 
+       dimnames=list(NULL, c("ka","V","CL"))),transform.par=c(1,1,1))
+ # Note: remove the options save=FALSE and save.graphs=FALSE 
+ # to save the results and graphs
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
+
+saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
+plot(saemix.fit, plot.type="individual")
+
+# Simulations
+saemix.fit<-simulate(saemix.fit, nsim=1000) 
+summary(saemix.fit@sim.data@datasim)
+
+# Directly through plot.type (doesn't work anymore ??)
+plot(saemix.fit, plot.type="vpc")
+plot(saemix.fit, plot.type="npde")
+
+# Through npdeSaemix
+y1<-npdeSaemix(saemix.fit)
+plot(y1, plot.type="vpc")
+plot(y1, plot.type="x.scatter")
+ 
+```
+
+
+

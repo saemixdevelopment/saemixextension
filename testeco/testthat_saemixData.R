@@ -1,3 +1,32 @@
+context("Creating a SaemixData object through its class")
+
+test_that("Creating an object via its class", {
+  x<-new(Class="SaemixData",name.data=file.path(datDir,"theo.saemix.tab"), header=T,na=".", name.group="wrongid",name.predictors=c("Dose","Time"), name.response="Concentration", name.covariates=c("gender"),units=list(x="mg",y="-",covariates="-"),verbose=F)
+  x@outcome<-c(y1="continuous")
+  names(x@outcome)<-x@name.response
+  expect_equal(x@outcome,c(Concentration="continuous"))
+})
+
+test_that("Testing readSaemix", {
+  x<-new(Class="SaemixData",name.data=file.path(datDir,"theo.saemix.tab"), header=T,na=".", name.group="wrongid",name.predictors=c("Dose","Time"), name.response="Concentration", name.covariates=c("gender"),units=list(x="mg",y="-",covariates="-"),verbose=F)
+  x1<-readSaemix(x)
+  verbose<-TRUE
+  x<-x1
+  if(length(unique(x@data$ytype))==1) { # Only one response
+    if(length(unique(x@data[,x@name.response]))>2) {
+      x@outcome<-c(y1="continuous")
+      names(x@outcome)<-x@name.response
+      if(verbose) message("Assuming response is continuous\n")
+    } else {
+      x@outcome<-c(y1="categorical")
+      names(x@outcome)<-x@name.response
+      if(verbose) message("Only two modalities in the response, assuming the response is binary\n")
+    }
+  }
+  expect_equal(x@outcome,c(Concentration="continuous"))
+})
+
+
 context("Creating a SaemixData object through saemixData")
 
 test_that("Errors in creating saemixData - no data", {
@@ -144,4 +173,48 @@ test_that("Errors in creating saemixData - Wrong group name, but automatic recog
   expect_equal(x@N,12)
   expect_equal(x@ntot.obs,120)
 })
+
+# Multiple responses
+# From a data frame instead of a file on disk (doesn't work within test_that)
+pkpd.saemix<-read.table(file.path(datDir,"../","data40","warfarinPKPD.tab"),header=T,na=".")
+pkrtte.saemix<-read.table(file.path(datDir,"../","data40","pkRTTE.tab"),header=T,na=".")
+pkcount.saemix<-read.table(file.path(datDir,"../","data40","jointCount.tab"),header=T,na=".")
+pkcat.saemix<-read.table(file.path(datDir,"../","data40","warfarinCatPD.tab"),header=T,na=".")
+
+context("Multiple responses")
+
+test_that("Deriving outcomes automatically, no outcome given or types only", {
+  x1<-saemixData(name.data=pkpd.saemix, header=T,na=".", name.group=c("id"), name.predictors=c("time","amt"), name.response=c("dv"), name.ytype = "dvid", name.covariates=c("sex", "wt", "age"), units=list(x="hr",y="mg/L"), verbose=TRUE)
+  expect_equal(x1@outcome,c(y1="continuous", y2="continuous"))
+  x2<-saemixData(name.data=pkpd.saemix, header=T,na=".", name.group=c("id"), name.predictors=c("time","amt"), name.response=c("dv"), name.ytype = "dvid", name.covariates=c("sex", "wt", "age"), units=list(x="hr",y="mg/L"), verbose=TRUE, outcome=c("continuous", "categorical"))
+  expect_equal(x2@outcome,c(y1="continuous", y2="categorical"))
+})
+
+test_that("Using explicit outcomes, possibly incomplete or oversized", {
+  x1<-saemixData(name.data=pkpd.saemix, header=T,na=".", name.group=c("id"), name.predictors=c("time","amt"), name.response=c("dv"), name.ytype = "dvid", name.covariates=c("sex", "wt", "age"), units=list(x="hr",y="mg/L"), verbose=TRUE, outcome=c(conc="continuous", PCA="continuous"))
+  expect_equal(x1@outcome,c(conc="continuous", PCA="continuous"))
+  x2<-saemixData(name.data=pkpd.saemix, header=T,na=".", name.group=c("id"), name.predictors=c("time","amt"), name.response=c("dv"), name.ytype = "dvid", name.covariates=c("sex", "wt", "age"), units=list(x="hr",y="mg/L"), verbose=TRUE, outcome=c(conc="continuous", "categorical"))
+  expect_equal(x2@outcome,c(conc="continuous",y2="categorical"))
+  x2<-saemixData(name.data=pkpd.saemix, header=T,na=".", name.group=c("id"), name.predictors=c("time","amt"), name.response=c("dv"), name.ytype = "dvid", name.covariates=c("sex", "wt", "age"), units=list(x="hr",y="mg/L"), verbose=TRUE, outcome=c(conc="continuous"))
+  expect_equal(x2@outcome,c(conc="continuous",y2="continuous"))
+  x1<-saemixData(name.data=pkpd.saemix, header=T,na=".", name.group=c("id"), name.predictors=c("time","amt"), name.response=c("dv"), name.ytype = "dvid", name.covariates=c("sex", "wt", "age"), units=list(x="hr",y="mg/L"), verbose=TRUE, outcome=c(conc="continuous", PCA="continuous", bleeding="event"))
+  expect_equal(x1@outcome,c(conc="continuous", PCA="continuous"))
+})
+
+context("Multiple responses, categorical and event")
+
+test_that("Using explicit outcomes", {
+  x1<-saemixData(name.data=pkrtte.saemix, header=T,na=".", name.group=c("id"), name.predictors=c("time","dose","ii"), name.response=c("y"), name.ytype = "ytype", units=list(x="hr",y="mg/L"), verbose=TRUE , outcome=c(conc="continuous", event="event"))
+  expect_equal(x1@outcome,c(conc="continuous", event="event"))
+  expect_equal(length(unique(x1@data$ytype)), 2)
+  
+  x2<-saemixData(name.data=pkcount.saemix, header=T,na=".", name.group=c("id"), name.predictors=c("time","dose","ii","ndoses"), name.response=c("y"), name.ytype = "ytype", units=list(x="hr",y="mg/L"), verbose=TRUE , outcome=c(conc="continuous", counts="categorical"))
+  expect_equal(x2@outcome,c(conc="continuous", counts="categorical"))
+  expect_equal(length(unique(x2@data$ytype)), 2)
+  
+  x3<-saemixData(name.data=pkcat.saemix, header=T,na=".", name.group=c("id"), name.predictors=c("time","amt"), name.response=c("dv"), name.ytype = "dvid", name.covariates=c("sex", "wt", "age"), units=list(x="hr",y="mg/L"), verbose=TRUE , outcome=c(conc="continuous", catPCA="categorical"))
+  expect_equal(x3@outcome,c(conc="continuous", catPCA="categorical"))
+  expect_equal(length(unique(x3@data$ytype)), 2)
+})
+
 

@@ -95,7 +95,8 @@ npdeSaemix<-function(saemixObject, nsim=1000) {
                      xsim=rep(namobs[,saemixObject@data@name.X],saemixObject@sim.data@nsim),
                      ysim=saemixObject@sim.data@datasim[,"ysim"])
   npdeObject<-autonpde(namobs=namobs, namsim=namsim, iid=saemixObject@data@name.group, ix=saemixObject@data@name.X, 
-                       iy=saemixObject@data@name.response, icens="cens", imdv="mdv", icov=saemixObject@data@name.covariates,
+                       iy=saemixObject@data@name.response, icens="cens", imdv="mdv", 
+                       icov=ifelse(length(saemixObject@data@name.covariates)==0,0,saemixObject@data@name.covariates),
                        units=list(x=saemixObject@data@units$x, y=saemixObject@data@units$y))
   
   return(npdeObject)

@@ -429,9 +429,13 @@ saemix.plot.select<-function(saemixObject,data=FALSE,convergence=FALSE, likeliho
   if(parameters.vs.covariates) plot(saemixObject,plot.type="parameters.vs.covariates", ...)
   if(randeff.vs.covariates) plot(saemixObject,plot.type="randeff.vs.covariates",...)
   if(marginal.distribution) plot(saemixObject,plot.type="marginal.distribution",...)
-  if(vpc) plot(saemixObject,plot.type="vpc",...)
+  if(vpc) {
+    message("Direct call to VPC will soon be deprecated, please use npdeSaemix for VPC\n")
+    plot(saemixObject,plot.type="vpc",...)
     #message("Please use npdeSaemix to obtain VPC and npde\n")
-  if(npde) message("Please use npdeSaemix to obtain VPC and npde\n")
+  }
+  if(npde) message("Please use npdeSaemix to obtain npde\n")
+#  message("Please use npdeSaemix to obtain VPC and npde\n")
     # plot(saemixObject,plot.type="npde",...)
 }
 
@@ -1438,7 +1442,7 @@ compute.vpc.pi<-function(ysim,xgrp,idrep,nbin,vpc.pi=0.95) {
     obs.bnd<-cbind(tapply(ydat,xgrp,quantile,alpha),tapply(ydat,xgrp,mean), tapply(ydat,xgrp,quantile,1-alpha))
 #  }
   if(plot.opt$vpc.pi) {
-    idsim<-saemixObject["sim.data"]["datasim"]$idsim
+#    idsim<-saemixObject["sim.data"]["datasim"]$idsim
     idrep<-saemixObject["sim.data"]["datasim"]$irep
     isamp<-sample(1:saemixObject["options"]$nb.sim, saemixObject["options"]$nb.simpred)
     idx<-match(idrep,isamp,nomatch=0)>0

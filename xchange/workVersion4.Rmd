@@ -1,0 +1,490 @@
+---
+title: "Test individual functions in saemix extension to multiple responses (4.0)"
+author: "Emmanuelle"
+date: "08/02/2022"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+# Setup
+
+- set up work directories
+  - functions from version 3.0 in R
+  - modified functinos in Rext
+- two versions toggled by testMode
+  - if testMode is FALSE, load the functions in R and Rext (modified)
+  - if testMode is TRUE, use testthat functions
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# Directories
+saemixDir<-"/home/eco/work/saemix/saemixextension"
+progDir<-file.path(saemixDir,"R")
+progDirExt<-file.path(saemixDir,"Rext")
+datDir<-file.path(saemixDir,"data")
+datDir4<-file.path(saemixDir,"data40")
+ecoDir<-file.path(saemixDir,"testeco")
+belDir<-file.path(saemixDir,"testbelhal")
+
+# Libraries
+library(ggplot2)
+library(MASS)
+
+testMode<-FALSE
+
+```
+
+```{r sourceSaemixFunctions, include=FALSE}
+# Sourcing saemix functions
+if(!testMode) {
+  # Unchanged from version 3.0
+  source(file.path(progDir,"aaa_generics.R"))
+  
+  # Extension
+  source(file.path(progDirExt,"SaemixData.R"))
+  source(file.path(progDir,"SaemixModel.R"))
+  
+  # Unchanged from version 3.0
+  #source(file.path(progDir,"global.R"))
+  source(file.path(progDir,"SaemixRes.R"))
+  source(file.path(progDir,"SaemixObject.R"))
+  source(file.path(progDir,"main.R"))
+  source(file.path(progDir,"func_aux.R"))
+  source(file.path(progDir,"main_initialiseMainAlgo.R"))
+  source(file.path(progDir,"main_estep.R"))
+  source(file.path(progDir,"main_mstep.R"))
+  source(file.path(progDir,"func_FIM.R"))
+  source(file.path(progDir,"func_plots.R"))
+  source(file.path(progDir,"func_distcond.R"))
+  source(file.path(progDir,"func_simulations.R"))
+  source(file.path(progDir,"compute_LL.R"))
+  source(file.path(progDir,"func_estimParam.R"))
+}
+```
+
+# Classes
+
+## Data: SaemixData object
+
+### Changes and TODO list
+
+- SaemixData class
+  - added a slot 'outcome'
+  - **TODO**
+    - silence the warnings "NA introduits"
+    - [ ] problem reading binary data "Column name(s)  do(es) not exist in the dataset, please check" (doesn't appear for TTE data)
+- functions
+  - read
+    - added outcome (either automatically derived or specified by user)
+    - [ ] trap errors before they occur when trying to select a column that doesn't exist * `[.data.frame`(dat, , object@name.ytype) でエラー: 
+  undefined columns selected*
+    - [ ] also check what happens when na is given incorrectly (it seems to make eg dv into a factor, which causes problems later)
+  - print, show
+    - [ ] allow several units for the different responses
+    - [ ] print the responses with their units
+  - plots
+    - [ ] plot for binary data, across X-predictor
+    - [ ] plot for categorical data across X-predictor
+    - [ ] KM-plot for event data
+    - stratification ? (eg across covariates)
+  - covariates
+    - [ ] add transformation options for covariates (some of which exist but haven't been properly tested yet)
+        - functions to center continuous covariates
+        - functions to transform using a formula
+        - functions to set a reference for categorical covariates and/or regroup
+      - corresponding testthat functions
+- testthat functions **TODO** check they still work now
+  - **TODO** fix problems with testthat (probably call with helper functions)
+    - normally should run through automatedTests_eco.R but doesn't work => look at how to set up automated testthat files
+  - testthat for classes
+    - testeco/testthat_saemixData-class.R: works interactively (running tests one by one)
+    - testbelhal/testthat_saemixData-class.R: works interactively
+  - testthat for read function (?)
+    - testeco/testthat_saemixData-read.R: works interactively (running tests one by one)
+    - testbelhal/testthat_saemixData-read.R: works interactively
+  - update testeco/testthat_saemixData-covariates.R 
+  - update testeco/testthat_replaceData-cont.R (tested, works, but needs for theo.fit3 or theo.fit2 to be created before)
+- summary function in testthat_summary.R works
+
+#### Creating additional datasets for saemix
+
+Using datasets in the Monolix library for :
+
+- warfarin PK/PD
+  - single dose, covariates, different time points for PK and PD
+  - PD as categorical data (PD of warfarin discretised)
+- a longitudinal marker + count data
+  - either 24 or 48 hour dosing interval; those on 24 II received 9 doses while those on 48h II received 5 doses
+  - see if there is a case-study
+  - **TODO** try using the RAPI data for that ?
+- joint models
+  - pk + RTTE from the Monolix demos (see if there is a case-study)
+
+```{r createDatasetsMultipleResponse, messages=FALSE, echo=FALSE, hide=TRUE}
+if(FALSE) { # do it only once
+  # PK/PD
+  warfPKPD<-read.table("/home/eco/monolix/MonolixSuite2020R1/resources/demos/monolix/1.creating_and_using_models/1.1.libraries_of_models/data/warfarin_data.txt", header=TRUE, na=".")
+  for(i in 2:nrow(warfPKPD)) 
+    if(is.na(warfPKPD$amt[i])) warfPKPD$amt[i]<-warfPKPD$amt[i-1]
+  warfPKPD<-warfPKPD[!is.na(warfPKPD$dv),]
+  write.table(warfPKPD,file.path(datDir4,"warfarinPKPD.tab"),row.names=FALSE, col.names=TRUE, quote=F)
+  
+  # PK/PD as categorical
+  warfcat<-read.table("/home/eco/lixoft/monolix/monolix2020R1/demos/4.joint_models/4.2.continuous_noncontinuous/data/warfarin_cat_data.txt", header=TRUE, na=".")
+  head(warfcat[!is.na(warfcat$amt),])
+  for(i in 2:nrow(warfcat)) 
+    if(is.na(warfcat$amt[i])) warfcat$amt[i]<-warfcat$amt[i-1]
+  warfcat<-warfcat[!is.na(warfcat$dv),]
+  warfcat<-warfcat[,-c(4)]
+  write.table(warfcat,file.path(datDir4,"warfarinCatPD.tab"),row.names=FALSE, col.names=TRUE, quote=F)
+
+  # PK+count data, repeated dosing (same dose during treatment period, but not the same number for each subject, between 5 (II=48) and 9 doses (II=24))
+  jointCount<-read.table("/home/eco/lixoft/monolix/monolix2020R1/demos/4.joint_models/4.2.continuous_noncontinuous/data/PKcount_data.txt", header=TRUE, na=".")
+  head(jointCount[!is.na(jointCount$AMT),])
+  doses<-jointCount[!is.na(jointCount$AMT),]
+  summary(tapply(doses$AMT, doses$ID, function(x) length(unique(x)))) # same dose throughout
+  summary(tapply(doses$TIME, doses$ID, function(x) length(unique(x)))) # different number of doses
+  dostimes<-tapply(doses$TIME, doses$ID, function(x) sort(unique(x)))
+  idos<-data.frame(id=unique(jointCount$ID), ii=24)
+  idos$dose<-doses$AMT[match(idos$id, doses$ID)]
+  i1<-which(tapply(doses$TIME, doses$ID, function(x) length(unique(x)))==5)
+  summary(as.integer(names(dostimes))-idos$id)
+  idos[i1,2]<-48
+  jointCount<-jointCount[!is.na(jointCount$Y),-c(3)]
+  jointCount<-cbind(jointCount, idos[match(jointCount$ID, idos$id),2:3])
+  colnames(jointCount)<-tolower(colnames(jointCount))
+  jointCount$ndoses<-5+as.integer(jointCount$ii==24)*4
+  write.table(jointCount,file.path(datDir4,"jointCount.tab"),row.names=FALSE, col.names=TRUE, quote=F)
+    
+  # Joint longitudinal + event, repeated dosing (same dose during treatment period, but not the same number for each subject, between 3 (II=48) and 5 doses (II=24))
+  pkRTTE<-read.table("/home/eco/lixoft/monolix/monolix2020R1/demos/4.joint_models/4.2.continuous_noncontinuous/data/PKrtte_data.txt", header=TRUE, na=".")
+  head(pkRTTE[!is.na(pkRTTE$AMT),])
+  doses<-pkRTTE[!is.na(pkRTTE$AMT),]
+  summary(tapply(doses$AMT, doses$ID, function(x) length(unique(x)))) # same dose throughout
+  summary(tapply(doses$TIME, doses$ID, function(x) length(unique(x)))) # different number of doses
+  dostimes<-tapply(doses$TIME, doses$ID, function(x) sort(unique(x)))
+  idos<-data.frame(id=unique(pkRTTE$ID), ii=24)
+  idos$dose<-doses$AMT[match(idos$id, doses$ID)]
+  i1<-which(tapply(doses$TIME, doses$ID, function(x) length(unique(x)))==3)
+  summary(as.integer(names(dostimes))-idos$id)
+  idos[i1,2]<-48
+  pkRTTE<-pkRTTE[!is.na(pkRTTE$Y),-c(3)]
+  pkRTTE<-cbind(pkRTTE, idos[match(pkRTTE$ID, idos$id),2:3])
+  colnames(pkRTTE)<-tolower(colnames(pkRTTE))
+  pkRTTE$ndoses<-3+as.integer(pkRTTE$ii==24)*2
+  write.table(pkRTTE,file.path(datDir4,"pkRTTE.tab"),row.names=FALSE, col.names=TRUE, quote=F)
+
+  # Longitudinal+categorical+event
+  # TODO
+}
+
+
+```
+
+#### Reading the datasets
+
+Now the data can include several responses.
+
+```{r saemixDataClass, messages=FALSE}
+namtest<-"Creating SaemixData object from file on disk, two longitudinal outcomes \n"
+cat(namtest)
+x<-try(pkpd.saemix<-saemixData(name.data=file.path(datDir4,"warfarinPKPD.tab"), header=T,na=".", name.group=c("id"), name.predictors=c("time","amt"), name.response=c("dv"), name.ytype = "dvid", name.covariates=c("sex", "wt", "age"), units=list(x="hr",y="mg/L"), verbose=TRUE, outcome=c(conc="continuous", PCA="continuous")))
+if(is(x, "try-error")) cat("Problem in",namtest)
+
+namtest<-"Creating SaemixData object from file on disk, longitudinal+RTTE \n"
+cat(namtest)
+x<-try(pkrtte.saemix<-saemixData(name.data=file.path(datDir4,"pkRTTE.tab"), header=T,na=".", name.group=c("id"), name.predictors=c("time","dose","ii","ndoses"), name.response=c("y"), name.ytype = "ytype", units=list(x="hr",y="mg/L"), verbose=TRUE , outcome=c(conc="continuous", event="event")))
+if(is(x, "try-error")) cat("Problem in",namtest)
+
+namtest<-"Creating SaemixData object from file on disk, longitudinal+count \n"
+cat(namtest)
+x<-try(pkcount.saemix<-saemixData(name.data=file.path(datDir4,"jointCount.tab"), header=T,na="NA", name.group=c("id"), name.predictors=c("time","dose","ii","ndoses"), name.response=c("y"), name.ytype = "ytype", units=list(x="hr",y="mg/L"), verbose=TRUE , outcome=c(conc="continuous", counts="categorical")))
+if(is(x, "try-error")) cat("Problem in",namtest)
+
+namtest<-"Creating SaemixData object from file on disk, longitudinal+categorical \n"
+cat(namtest)
+x<-try(pkcat.saemix<-saemixData(name.data=file.path(datDir4,"warfarinCatPD.tab"), header=T, na="NA", name.group=c("id"), name.predictors=c("time","amt"), name.response=c("dv"), name.ytype = "dvid", name.covariates=c("sex", "wt", "age"), units=list(x="hr",y="mg/L"), verbose=TRUE , outcome=c(conc="continuous", catPCA="categorical")))
+if(is(x, "try-error")) cat("Problem in",namtest)
+
+# SaemixData class
+## From data on disk
+namtest<-"Creating SaemixData object from file on disk\n"
+cat(namtest)
+x<-try(saemixData(name.data=file.path(datDir,"theo.saemix.tab"),header=TRUE,sep=" ",na=NA, name.group=c("Id"),name.predictors=c("Dose","Time"),name.response=c("Concentration"),name.covariates=c("Weight","Sex"),units=list(x="hr",y="mg/L", covariates=c("kg","-")), name.X="Time"))
+if(is(x, "try-error")) cat("Problem in",namtest)
+
+## From data as a dataframe in the environment
+namtest<-"Creating SaemixData object from dataframe\n"
+cat(namtest)
+theo.saemix<-read.table(file.path(datDir,"theo.saemix.tab"),header=T,na=".")
+x<-try(saemixData(name.data=theo.saemix,header=TRUE,sep=" ",na=NA, name.group=c("Id"),name.predictors=c("Dose","Time"),name.response=c("Concentration"),name.covariates=c("Weight","Sex"),units=list(x="hr",y="mg/L", covariates=c("kg","-")), name.X="Time"))
+if(is(x, "try-error")) cat("Problem in",namtest)
+
+# SaemixRepData class
+namtest<-"Creating SaemixRepData object\n"
+cat(namtest)
+xrep<-new(Class="SaemixRepData",data=x)
+print(xrep)
+if(is(x, "try-error")) cat("Problem in",namtest)
+  
+# SaemixSimData class
+namtest<-"Creating SaemixSimData object\n"
+cat(namtest)
+xrep<-new(Class="SaemixSimData",data=x)
+print(xrep)
+if(is(x, "try-error")) cat("Problem in",namtest)
+  
+```
+
+## Model: model function
+
+- model functions now need to return
+  - in the program, we will need to add the ytype column to the predictors
+- simple cases
+  - 2 responses such as PK/PD: here use a direct response model to avoid ODE's
+    - predictions consistent with parameters, ok
+  - longitudinal + categorical when considered as punctual (ie P(Y/time) is independent of the history of the longitudinal marker, it depends only on time and the value of the parameters)
+    - how to assess ?
+    - simulations could be used (eg compare predicted categories to observed categories) but then we need to predict the different levels (not just the observed ones) $\Rightarrow$ maybe add a binary response to simplify the comparison
+  - longitudinal + count
+    - same issue with assessment of predicted counts
+- [ ] complex cases
+  - one of the response needs an ODE $\Rightarrow$ solver needed, considerably slower
+  - joint models as the survival needs to be integrated and that is generally non-trivial
+    - [ ] find a case where we can get an explicit form for the survival ?
+  - [ ] **TODO** Alexandra on solver ?
+
+```{r jointModelFunctions}
+# PKPD
+model1cptdirect<-function(psi,id,xidep) { 
+    tim<-xidep[,1]
+    dose<-xidep[,2]
+    ytype<-xidep$ytype
+    ka<-psi[id,1]
+    V<-psi[id,2]
+    CL<-psi[id,3]
+    ic50<-psi[id, 4]
+    k<-CL/V
+    ypk<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
+    ypd<-100*(1-ypk/(ypk+ic50))
+    ypk[ytype==2]<-ypd[ytype==2]
+    return(ypk)
+  }
+
+## Test the function
+xidep<-pkpd.saemix@data[,c(pkpd.saemix@name.predictors, "ytype")]
+id1<-pkpd.saemix@data$index
+psi0<-c(ka=1, vd=5, cl=0.1, ic50=5)
+psi1<-do.call(rbind, rep(list(psi0), pkpd.saemix@N))
+ypred<-model1cptdirect(psi1, id1, xidep)
+
+plmat2<-plmat1<-cbind(pkpd.saemix@data[,c("id","time","dv","ytype")], type="observed")
+plmat2$dv<-ypred
+plmat2$type <- "predCI"
+plmat<-rbind(plmat1, plmat2)
+
+### PK profiles
+zesuj<-unique(pkpd.saemix@data$id)
+ggplot(data=plmat[plmat$ytype==1 & plmat$id %in% zesuj[1:12] & plmat$type=="observed",], aes(x=time, y=dv)) + geom_point() + geom_line(data=plmat[plmat$ytype==1 & plmat$id %in% zesuj[1:12] & plmat$type=="predCI",],aes(x=time, y=dv), colour="red") + facet_wrap(.~id, ncol=4)
+
+### PD profiles (ugly but this is because we're using a direct response model without effect compartment :-/ )
+ggplot(data=plmat[plmat$ytype==2 & plmat$id %in% zesuj[1:12] & plmat$type=="observed",], aes(x=time, y=dv)) + geom_point() + geom_line(data=plmat[plmat$ytype==2 & plmat$id %in% zesuj[1:12] & plmat$type=="predCI",],aes(x=time, y=dv), colour="red") + facet_wrap(.~id, ncol=4)
+
+# PK+count
+# Joint longitudinal + count, with multiple doses
+longCount<-function(psi,id,xidep) {
+  y<-xidep[,1]
+  tim<-xidep[,2]
+  dose<-xidep[,3]
+  ii<-xidep[,4]
+  ndoses<-xidep[,5] # maximum number of doses per subject
+  ytype<-xidep$ytype
+  
+  # longitudinal outcome
+  ka<-psi[id,1]
+  V<-psi[id,2]
+  CL<-psi[id,3]
+  # count outcome
+  lambda0<-psi[id,4]
+  # link
+  ic50<-psi[id,5]
+  
+  k<-CL/V
+  ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
+  # repeated dose
+  tndose<- trunc(tim/ii) # how many doses received before time "tim"
+  maxdose<-max(ndoses) # maximum number of doses received in total
+  for(i in 1:(maxdose-1))
+    ypred<-ypred+as.integer(ndoses>=i & tndose>=i)*dose*ka/(V*(ka-k))*(exp(-k*(tim-i*ii))-exp(-ka*(tim-i*ii)))
+  
+  lambda = lambda0*(1 - ypred/(ic50+ypred))
+  logp <- -lambda[ytype==2] + y[ytype==2]*log(lambda[ytype==2]) - log(factorial(y[ytype==2]))
+  ypred[ytype==2]<-logp
+  
+  return(ypred)
+}
+
+## Test the function
+
+xidep<-pkcount.saemix@data[,c(pkcount.saemix@name.response,pkcount.saemix@name.predictors, "ytype")]
+id1<-pkcount.saemix@data$index
+psi0<-c(ka=1, vd=8, cl=0.1, lambda=5, ic50=10)
+psi1<-do.call(rbind, rep(list(psi0), pkcount.saemix@N))
+ypred<-longCount(psi1, id1, xidep)
+
+plmat2<-plmat1<-cbind(pkcount.saemix@data[,c("id","time","y","ytype")], type="observed")
+plmat2$y<-ypred
+plmat2$type <- "predCI"
+plmat<-rbind(plmat1, plmat2)
+plmat1<-plmat[plmat$ytype==1,]
+
+### PK profiles
+zesuj<-unique(pkcount.saemix@data$id)
+ggplot(data=plmat1[plmat1$id %in% zesuj[c(1:8,24:31)] & plmat1$type=="observed",], aes(x=time, y=y)) + geom_point() + geom_line(data=plmat1[plmat1$id %in% zesuj[c(1:8,24:31)] & plmat1$type=="predCI",],aes(x=time, y=y), colour="red") + facet_wrap(.~id, ncol=4)
+
+### Counts - hard to assess
+
+# PK+categorical
+longCat<-function(psi,id,xidep) {
+  y<-xidep[,1]
+  tim<-xidep[,2]
+  dose<-xidep[,3]
+  ytype<-xidep$ytype
+  
+  # longitudinal outcome
+  ka<-psi[id,1]
+  V<-psi[id,2]
+  CL<-psi[id,3]
+  # categorical outcome
+  alp1<-psi[id,4]
+  alp2<-psi[id,5]
+  # link
+  beta<-psi[id,6]
+
+  k<-CL/V
+  ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
+  logit1<-alp1 + beta*ypred
+  logit2<-logit1+alp2
+  pge1<-exp(logit1)/(1+exp(logit1))
+  pge2<-exp(logit2)/(1+exp(logit2))
+  pobs <- (y==1)*pge1+(y==2)*(pge2 - pge1)+(y==3)*(1 - pge2)
+  logpdf <- log(pobs)
+  ypred[ytype==2]<-logpdf[ytype==2]
+  
+  return(ypred)
+}
+
+## Test the function
+xidep<-pkcat.saemix@data[,c(pkcat.saemix@name.response,pkcat.saemix@name.predictors, "ytype")]
+id1<-pkcat.saemix@data$index
+psi0<-c(ka=1.4, vd=8, cl=0.1, alp1=-19.5, alp2=6.1, beta=5.5)
+psi1<-do.call(rbind, rep(list(psi0), pkcat.saemix@N))
+ypred<-longCat(psi1, id1, xidep)
+
+plmat2<-plmat1<-cbind(pkcat.saemix@data[,c("id","time","dv","ytype")], type="observed")
+plmat2$dv<-ypred
+plmat2$type <- "predCI"
+plmat<-rbind(plmat1, plmat2)
+plmat1<-plmat[plmat$ytype==1,]
+
+### PK profiles
+zesuj<-unique(pkcat.saemix@data$id)
+ggplot(data=plmat1[plmat1$id %in% zesuj[1:12] & plmat1$type=="observed",], aes(x=time, y=dv)) + geom_point() + geom_line(data=plmat1[plmat1$id %in% zesuj[1:12] & plmat1$type=="predCI",],aes(x=time, y=dv), colour="red") + facet_wrap(.~id, ncol=4)
+
+### Categorical outcome - doesn't really make sense (we predict (log-)P(Y_ij)) but maybe we want probabilities close to 1 with a good model ?
+plmat2<-plmat[plmat$ytype==2,]
+plmat2$dv[plmat2$type=="predCI"]<-exp(plmat2$dv[plmat2$type=="predCI"]) # Pobs(Y)
+head(plmat2[plmat2$type=="predCI",])
+summary(plmat2$dv[plmat2$type=="predCI"])
+
+# Joint longitudinal+event
+## TODO
+
+```
+
+
+## Model: SaemixModel object
+
+### Changes for multiple responses
+
+- objective
+  - clarify the distinction between the model itself and the indices used in the various computations
+- deprecated slots
+  - modelType: used to distinguish between models defined in terms of log-likelihood and models defined through f and g (structural and residual)
+  - error.model: used to specify the error model
+    - or could keep it but would become a list
+- new slots
+  - outcome 
+    - used to match the data and the model
+    - used to pass the residual error model
+  - fixed.omega
+    - if we want to fix some parameters of the IIV variance matrix
+    - then also fixed.iov if we add iov to the mix (see below)
+  - [ ] (maybe) iov or omega.iov or iov.model (inter-occasion variability), and associated initial value
+  - [ ] (maybe) priors
+- modified slots
+- **to think about**
+  - simulation for the non-continuous outcome
+    - associate a simulation model to the model itself ?
+      - would be necessary to simulate
+    - should we add a distribution for the non-continuous outcome ? (eg Weibull, ...)
+      - not necessarily sufficient to be able to simulate
+    - should we add a 'gaussian' distribution for continuous outcome, and then could we think about changing that (heavy-tailed distributions, bounded distribution, etc...)
+      - implication for the algorithm ?
+
+### Implementation
+
+Testing simple models
+
+- Changes made
+  - define modelType at the beginning of initialize to allow empty objects to be printed out
+  - added a test for empty models in print to print out an appropriate message
+- summary function in testthat_summary.R works
+- split testthat file for SaemixModel to separate classes and methods
+- check if function to validate covariance model works
+  - changed name for consistency (no underscore)
+  - added 3 quick tests in the testthat for SaemixModel
+- predict function
+  - predict from SaemixModel for psi taken from model object and for psi given as a vector
+  - predict for different values of psi and predictors given to the function
+  - added tests to testthat_saemixModel-function.R
+- plot function to get predictions for a dataset based on a model and parameters (either from the model or a different set)
+  - only works for continuous responses
+  - uses ggplot so will need to add this as a dependency
+- Belhal fixed the problem of the model needing at least 2 parameters to work with
+- **TODO**
+  - print function for empty models returns NULL, would rather it returned nothing
+  - testthat function for the original plot function + documentation
+
+```{r SaemixModelClass, warnings=FALSE}
+# Empty model
+namtest<-"Creating empty SaemixModel object\n"
+cat(namtest)
+xmod<-new(Class="SaemixModel")
+print(xmod)
+if(is(xmod, "try-error")) cat("Problem in",namtest)
+
+# Minimal model
+namtest<-"Creating minimal SaemixModel object\n"
+cat(namtest)
+model1cpt<-function(psi,id,xidep) { 
+    dose<-xidep[,1]
+    tim<-xidep[,2]  
+    ka<-psi[id,1]
+    V<-psi[id,2]
+    CL<-psi[id,3]
+    k<-CL/V
+    ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
+    return(ypred)
+  }
+xmod<-saemixModel(model=model1cpt, psi0=matrix(c(1.,20,0.5), ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))), modeltype="structural")
+if(is(xmod, "try-error")) cat("Problem in",namtest)
+
+# Model with all elements
+namtest<-"Creating full SaemixModel object\n"
+cat(namtest)
+xmod<-saemixModel(model=model1cpt,description="One-compartment model with first-order absorption", psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))), transform.par=c(1,1,1), covariate.model=matrix(c(0,0,1,0,0,0),ncol=3,byrow=TRUE), fixed.estim=c(1,1,1), covariance.model=matrix(c(1,0,0,0,1,1,0,1,1),ncol=3,byrow=TRUE), omega.init=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE), error.model="combined",error.init=c(1,0.5))
+if(is(xmod, "try-error")) cat("Problem in",namtest)
+
+```

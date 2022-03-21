@@ -89,10 +89,10 @@ simulate.SaemixObject<-function(object, nsim, seed, predictions=TRUE,res.var=TRU
       eps<-rnorm(length(fpred))
       sim.data<-fpred+gpred*eps
     }
-    datasim<-data.frame(idsim=rep(index,nsim),irep=rep(1:nsim, each=saemix.data["ntot.obs"]),ypred=sim.pred,ysim=sim.data)
+    datasim<-data.frame(idsim=rep(saemix.data@data[,saemix.data@name.group],nsim),irep=rep(1:nsim, each=saemix.data["ntot.obs"]),ypred=sim.pred,ysim=sim.data)
   } else {
     sim.pred<-sim.data<-IdM<-c()
-    datasim<-data.frame(idsim=rep(index,nsim),irep=rep(1:nsim, each=saemix.data["ntot.obs"]))
+    datasim<-data.frame(idsim=rep(saemix.data@data[,saemix.data@name.group],nsim),irep=rep(1:nsim, each=saemix.data["ntot.obs"]))
   }
   sim.psi<-data.frame(id=rep(unique(saemix.data["data"][, saemix.data["name.group"]]),nsim),psiM)
   colnames(sim.psi)<-c(saemix.data["name.group"],saemix.model["name.modpar"])
@@ -153,7 +153,8 @@ simulateDiscreteSaemix <- function(object, simulate.function, nsim, seed, uncert
   
   # Simulate observations using these parameters and the simulate.function to simulate from the same model
   xidep<-object@data@data[,object@data@name.predictors]
-  id1<-object@data@data[,"index"]
+#  id1<-object@data@data[,"index"]
+  id1<-object@data@data[,object@data@name.group]
   nsuj<-object@data@N
   datasim<-object@sim.data@datasim
   datasim$ysim<-NA

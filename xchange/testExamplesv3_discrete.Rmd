@@ -24,6 +24,7 @@ Check saemix for discrete data models
 knitr::opts_chunk$set(echo = TRUE)
 # Directories
 saemixDir<-"/home/eco/work/saemix/saemixextension"
+versionDir<-"/home/eco/work/saemix/versions"
 progDir<-file.path(saemixDir,"R")
 datDir<-file.path(saemixDir,"data")
 figDir<-file.path(saemixDir,"documentation","figs")
@@ -34,10 +35,12 @@ library(MASS)
 library(rlang)
 library(gridExtra)
 library(tidyverse)
+library(devtools)
+
 
 # testMode TRUE => tests the compiled package in dev_mode()
 # testMode FALSE => tests the library functions by loading them
-testMode<-FALSE
+testMode<-TRUE
 
 # Whether to save the plots for the documentation
 saveForDocs<-FALSE
@@ -83,7 +86,7 @@ if(!testMode) {
 # Loading library
 if(testMode) {
   dev_mode()
-  install.packages("saemix3.0.tar.gz",repos=NULL)
+  install.packages(file.path(versionDir,"saemix3.1","saemix_3.1.tar.gz"),repos=NULL)
   library(saemix)
 }
 ```
