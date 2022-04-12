@@ -11,7 +11,7 @@ output:
 
 - set up work directories
   - functions from version 3.0 in R
-  - modified functinos in Rext
+  - modified functions in Rext
 - two versions toggled by testMode
   - if testMode is FALSE, load the functions in R and Rext (modified)
   - if testMode is TRUE, use testthat functions
@@ -43,7 +43,7 @@ if(!testMode) {
   
   # Extension
   source(file.path(progDirExt,"SaemixData.R"))
-  source(file.path(progDir,"SaemixModel.R"))
+  source(file.path(progDirExt,"SaemixModel.R"))
   
   # Unchanged from version 3.0
   #source(file.path(progDir,"global.R"))
