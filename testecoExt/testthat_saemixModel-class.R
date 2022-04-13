@@ -360,7 +360,7 @@ test_that("Missing elements, model or parameters", {
 })
 
 
-test_that("Minimal creation, only model and parameter", {
+test_that("Minimal creation, only model and parameter, check defaults", {
   model1cpt<-function(psi,id,xidep) { 
     dose<-xidep[,1]
     tim<-xidep[,2]  
@@ -374,9 +374,22 @@ test_that("Minimal creation, only model and parameter", {
   x1<-saemixModel(model=model1cpt, parameter=c("ka","V","CL"))
   x2<-saemixModel(model=model1cpt, parameter=c(ka=1, V=20, CL=0.5))
   expect_equal(x1@npar, 3)
+  expect_equal(x1@name.outcome, "y")
   expect_equal(x1@mu.start,rep(1,3))
+  expect_equal(x1@mu.fix,rep(0,3))
+  expect_equal(x1@transform.par,rep(0,3))
+  expect_equal(x1@var.model[[1]]@omega, diag(3))
+  expect_equal(x1@var.model[[1]]@omega.model, diag(3))
+  expect_equal(x1@covariate.model, matrix(data=0,nrow=0, ncol=0))
+  expect_equal(x1@covariate.model.fix, matrix(data=0,nrow=0, ncol=0))
+  expect_equal(x1@name.modpar,c("ka","V","CL"))
+  expect_equal(length(x1@name.thetas),0)
+  expect_equal(length(x1@name.X),0)
+  expect_equal(length(x1@name.cov),0)
+  expect_equal(length(x1@name.predictors),0)
   expect_equal(x2@npar, 3)
   expect_equal(x2@mu.start,c(1,20,0.5))
+  expect_equal(x2@transform.par,rep(0,3))
 })
 
 test_that("Full model", {
@@ -467,5 +480,20 @@ test_that("Full model, mismatch between covariate model size (3 columns) and nb 
   expect_equal(length(x@covariate.model.fix), 0)
 })
 
+test_that("Legacy saemix from 3.0 - check same as new saemixModel", {
+  model1cpt<-function(psi,id,xidep) { 
+    dose<-xidep[,1]
+    tim<-xidep[,2]  
+    ka<-psi[id,1]
+    V<-psi[id,2]
+    CL<-psi[id,3]
+    k<-CL/V
+    ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
+    return(ypred)
+  }
+  x1<-saemixModel(model=model1cpt, c(ka=1, V=20, CL=0.5, IC50=5))
+  x2<-saemixModel.legacy(model=model1cpt,psi0=matrix(c(1, 20, 0.5), ncol=3, dimnames=list(NULL,c("ka","V","CL"))))
+  expect_identical(x1, x2)
+})
 
 

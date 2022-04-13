@@ -154,21 +154,21 @@ setMethod(
     .Object <- callNextMethod(.Object, outcome=outcome, model=model, description=description, verbose=verbose)
     # Model parameters: names, initial values, distribution, fixed parameters
     npar<-length(parameter)
-    if(missing(mu.start)) {
+    if(missing(mu.start) || length(mu.start)==0) {
       mu.start<-rep(1,npar)
     } else {
       if(length(mu.start)!=npar & verbose) message("Size mismatch, resizing mu.start")
       length(mu.start)<-npar
       mu.start[is.na(mu.start)]<-1
     }
-    if(missing(transform.par)) {
+    if(missing(transform.par) || length(transform.par)==0) {
       transform.par<-rep(0,npar)
     } else {
       if(length(transform.par)!=npar & verbose) message("Size mismatch, resizing transform.par")
       length(transform.par)<-npar
       transform.par[is.na(transform.par)]<-0
     }
-    if(missing(mu.fix)) {
+    if(missing(mu.fix) || length(mu.fix)==0) {
       mu.fix<-rep(0,npar)
     } else {
       if(length(mu.fix)!=npar & verbose) message("Size mismatch, resizing mu.fix")
@@ -415,128 +415,3 @@ setReplaceMethod(
   }
 )
 
-########################################################  Auxiliary functions
-# Redefining diag function, too many problems with the R version
-
-#' Matrix diagonal
-#' 
-#' Extract or replace the diagonal of a matrix, or construct a diagonal matrix (replace diag function from R-base)
-#' 
-#' @param x	a matrix, vector or 1D array, or missing.
-#' @param nrow Optional number of rows for the result when x is not a matrix. 
-#' @param ncol Optional number of columns for the result when x is not a matrix. 
-#' 
-#' @return If x is a matrix then diag(x) returns the diagonal of x. The resulting vector will have names if the matrix x has matching column and rownames.
-#' @seealso \code{diag}
-#' @author Emmanuelle Comets <emmanuelle.comets@@inserm.fr>, Audrey Lavenu,
-#' Marc Lavielle.
-#' @keywords models
-#' @examples
-#' 
-#' mydiag(1)
-#' mydiag(c(1,2))
-#' 
-#' @export mydiag
-
-mydiag <- function (x = 1, nrow, ncol) {
-  if (is.matrix(x)) {
-    if (nargs() > 1L) 
-      stop("'nrow' or 'ncol' cannot be specified when 'x' is a matrix")
-    if ((m <- min(dim(x))) == 0L) 
-      return(vector(typeof(x), 0L))
-    y <- c(x)[1L + 0L:(m - 1L) * (dim(x)[1L] + 1L)]
-    nms <- dimnames(x)
-    if (is.list(nms) && !any(sapply(nms, is.null)) && identical((nm <- nms[[1L]][seq_len(m)]), 
-                                                                nms[[2L]][seq_len(m)])) 
-      names(y) <- nm
-    return(y)
-  }
-  if (is.array(x) && length(dim(x)) != 1L) 
-    stop("'x' is an array, but not 1D.")
-  if (missing(x)) 
-    n <- nrow
-  else n <- length(x)
-  if (!missing(nrow)) 
-    n <- nrow
-  if (missing(ncol)) 
-    ncol <- n
-  p <- ncol
-  y <- array(0, c(n, p))
-  if ((m <- min(n, p)) > 0L) 
-    y[1L + 0L:(m - 1L) * (n + 1L)] <- x
-  y
-}
-
-# Testing the Validity of covariance model
-
-#' Validate the structure of the covariance model
-#' 
-#' Check that a matrix corresponds to a structure defining a covariance model for a non-linear mixed effect model.
-#' Such a matrix should be composed of only 0s and 1s, with at least one element set to 1, and should be square and symmetrical.
-#' 1s on the diagonal indicate that the corresponding parameter has interindividual variability and that its variance will be estimated.
-#' 1s as off-diagonal elements indicate that a covariance between the two corresponding parameters will be estimated.
-#' 
-#' @param x	a matrix
-#' @param verbose	a boolean indicating whether warnings should be output if x is not a valid covariance model
-#' 
-#' @return a boolean, TRUE if x is an acceptable structure and FALSE if not. Messages will be output to describe why x isn't a valid covariance model if the argument verbose is TRUE.
-#' @seealso \code{SaemixModel}
-#' @author Emmanuelle Comets <emmanuelle.comets@@inserm.fr>, Belhal Karimi
-#' @keywords models
-#' @examples
-#' 
-#' covarmodel<-diag(c(1,1,0))
-#' validate.covariance.model(covarmodel) # should return TRUE
-#' 
-#' @export validate.covariance.model
-#' 
-validate.covariance.model <- function(x, verbose=TRUE){
-  #non-square matrix
-  if(dim(x)[1]!=dim(x)[2]) {
-    if(verbose) message("Error initialising SaemixModel object:\n   The covariance model needs to be a square matrix, please check dimensions.\n")
-    return(FALSE)
-  }
-  # only 0s
-  s <- sum(abs(x))
-  if(s==0) {
-    if(verbose) message("At least one parameter should have IIV in the model, the covariance model may not be only 0s.")
-    #   return(FALSE)
-  }
-  
-  #values other than 1 or 0
-  s <- sum(x[x!=1 & x!=0])
-  if (s>0){
-    if(verbose) message("Error initialising SaemixModel object:\n  Invalid covariance model, only 0 or 1 values accepted, please change covariance model.\n")
-    return(FALSE)
-  }
-  
-  #asymmetrical
-  if (!all(t(x)==x)){
-    if(verbose) message("Error initialising SaemixModel object:\n  The matrix defining the covariance model is not symmetrical, please change covariance model.\n")
-    return(FALSE)
-  }
-  
-  #values other than 0 when diagonal number is 0
-  for (i in 1:nrow(x)){
-    for(j in 1:ncol(x)){
-      if (x[i,j]!=0){
-        if(x[i,i]==0 |x[j,j]==0){
-          if(verbose) message("Error initialising SaemixModel object:\n  Covariances can only be included between 2 parameters with variances.\n")
-          return(FALSE)
-        }
-      }
-    }
-  }
-  # Check that the matrix has a block structure - doesn't work, fails for simple block :-/
-  # indx1<-which(diag(x)==0)
-  # if(length(indx1)>0) x1<-x[-c(indx1),-c(indx1)] else x1<-x # removing the lines without variances
-  # could maybe work by changing the off-diagonal elements to 0.5 instead of 1...
-  # xchol<-try(chol(x1))
-  # if(is(xchol, 'try-error')) {
-  #   if(verbose) message("Error initialising SaemixModel object:\n  Covariance matrices should be block-diagonal.\n")
-  #   return(FALSE)
-  # }
-  return(TRUE)
-}
-
-# TODO: a function to make sure levels of variability are nested and compatible with one another

@@ -397,10 +397,11 @@ setMethod(
 
 ############ Create outcomes from a list
 
-createSaemixOutcome<-function(response) {
+createSaemixOutcome<-function(response, name="") {
   if(response$type=="continuous") saemix.outcome<-new(Class="SaemixContinuousOutcome", error.model=response$error.model, error.npar=outcome$error.npar, error.function=response$error.function, error.parameters=response$start, error.fix=response$error.fix)
   if(response$type %in% c("binary","categorical")) saemix.outcome<-new(Class="SaemixDiscreteOutcome", levels=response$levels, distribution=response$distribution, type=response$type)
   if(response$type=="event") saemix.outcome<-new(Class="SaemixEventOutcome", distribution=response$distribution, maxEvents=response$maxEvents, intervalCensored=response$intervalCensored, intervalLength=response$intervalLength)
+  if(name!="") saemix.outcome@name<-name
   return(saemix.outcome)
 }
 
