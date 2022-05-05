@@ -1,84 +1,176 @@
-context("Creating SaemixCovariate objects")
+# Check class definitions and initialisation from SaemixCovariate.R
 
-test_that("Creating covariates", {
-  cov1<-saemixCov()
-  cov2<-saemixCov(name="cov2")
-  age<-saemixCov("age", unit="yr")
-  comorb1<-saemixCov(name="diabetes", type="binary")
-  expect_equal(cov1@name, "")
-  expect_equal(cov2@name, "cov2")
-  expect_equal(age@type, "continuous")
-  expect_equal(comorb1@type, "binary")
-})
+context("Creating covariate model using Class")
 
-context("Creating SaemixCovariate objects and applying transformation")
-
-test_that("Transforming continuous covariate ", {
-  weight<-rnorm(10, mean=60, sd=10)
-  cov.wt<-new(Class="SaemixContinuousCovariate", name="Weight")
-  cov.wt2<-new(Class="SaemixContinuousCovariate", name="Weight", transform.function=log, centering.function=mean)
-  cov.wt3<-new(Class="SaemixContinuousCovariate", name="Weight", transform.function=log, centering.function=median)
-  cov.wt4<-new(Class="SaemixContinuousCovariate", name="Weight", transform.function=log, centering.value=60)
-  expect_equal(unique(transformCovariate(cov.wt, weight)-weight), 0)
-  expect_equal(unique(transformCovariate(cov.wt2, weight) - log(weight/mean(weight))), 0)
-  expect_equal(unique(transformCovariate(cov.wt3, weight) - log(weight/median(weight))), 0)
-  expect_equal(unique(transformCovariate(cov.wt4, weight) - log(weight/60)), 0)
-})
-
-test_that("Transforming binary covariate - from 0/1", {
-  gender<-sample(c("F","M"), 20, replace=TRUE)
-  gender<-as.integer(gender=="M")
-  cov.gender<-new(Class="SaemixDiscreteCovariate", name="gender")
-  gender.trans<-transformCovariate(cov.gender, gender)
-  expect_equal(sum(gender.trans), sum(gender))
+test_that("Simple continuous covariate model", {
+  x1<-new(Class="SaemixCovariate", name="wt")
+  expect_equal(x1@covariate.transform@name, x1@name)
+  expect_equal(x1@covariate.transform@name.orig, "wt")
+  expect_equal(x1@covariate.transform@type.orig, "continuous")
+  expect_equal(x1@type, "continuous")
+  expect_equal(x1@covariate.transform@transform.function(1:5), 1:5)
+  expect_equal(x1@covariate.transform@centering.function(1:5), 1)
 })
 
 
-test_that("Transforming binary covariate - from character", {
-  gender<-sample(c("F","M"), 20, replace=TRUE)
-  cov.gender<-new(Class="SaemixDiscreteCovariate", name="gender", reference="F")
-  gender.trans<-transformCovariate(cov.gender, gender)
-  expect_equal(sum(gender.trans), sum(gender=="M"))
+test_that("Simple continuous covariate model", {
+  covmodel<-new(Class="covmodelCont2Cont", name="lwt", name.orig="wt", transform.function=log, centering.value=60)
+  x1<-new(Class="SaemixCovariate", name="lwt", unit="kg", beta=0.75, beta.fix=1, covariate.transform=covmodel)
+  expect_equal(x1@covariate.transform@name, x1@name)
+  expect_equal(x1@covariate.transform@name, "lwt")
+  expect_equal(x1@covariate.transform@name.orig, "wt")
+  expect_equal(x1@covariate.transform@type.orig, "continuous")
+  expect_equal(x1@type, "continuous")
+  expect_equal(x1@beta, 0.75)
+  expect_equal(x1@beta.fix, 1)
 })
 
-test_that("Transforming binary covariate - from factor", {
-  gender<-sample(c("F","M"), 10, replace=TRUE)
-  genderF<-factor(gender, labels=c("F","M"))
-  cov.gender<-new(Class="SaemixDiscreteCovariate", name="gender", reference="F")
-  gender.trans<-transformCovariate(cov.gender, genderF)
-  expect_equal(sum(gender.trans), sum(genderF=="M"))
+test_that("Simple categorical covariate model", {
+  x2<-new(Class="SaemixCovariate", name="pgp", type="categorical")
+  expect_equal(x2@covariate.transform@name, x2@name)
+  expect_equal(x2@covariate.transform@name.orig, "pgp")
+  expect_equal(x2@covariate.transform@type.orig, "categorical")
+  expect_equal(length(x2@covariate.transform@ncat), 0)
+  expect_equal(x2@type, "categorical")
+})
+
+test_that("Categorical covariate model with 3 classes", {
+  covmodel<-new(Class="covmodelCat2Cat", name="pgpMut", name.orig="pgp", groups=list(c("CC"), c("CT"),c("TT")))
+  x2<-new(Class="SaemixCovariate", name="pgp2", type="categorical", beta=c(0.2, 0.5), covariate.transform=covmodel) 
+  expect_equal(x2@covariate.transform@name, x2@name)
+  expect_equal(x2@covariate.transform@name.orig, "pgp")
+  expect_equal(x2@covariate.transform@type.orig, "categorical")
+  expect_equal(x2@covariate.transform@ncat, 3)
+  expect_equal(x2@type, "categorical")
+  expect_equal(length(x2@beta), 2)
+  expect_equal(sum(x2@beta.fix), 0)
+  expect_equal(sum(x2@beta), 0.7)
+})
+
+context("Creating covariate models using constructor function - all defaults")
+
+test_that("Creating a continuous covariate model - defaults", {
+  lwt <- contCov(name="wt")
+  expect_equal(lwt@name, "wt")
+  expect_is(lwt, "SaemixCovariate")
+  expect_equal(lwt@type, "continuous")
+  expect_equal(lwt@unit, "")
+  expect_equal(lwt@covariate.transform@transform.function(c(1,2)), c(1,2))
+  expect_equal(lwt@covariate.transform@centering.function(1:10), 1)
+  expect_equal(length(lwt@covariate.transform@centering.value), 0)
+  expect_equal(lwt@beta, 0)
+  expect_equal(lwt@beta.fix, 0)
 })
 
 
-test_that("Transforming categorical covariate - character", {
-  asthma<-sample(c("none","mild","severe"), 20, replace=TRUE)
-  asthmaF<-factor(asthma, labels=c("none","mild","severe"))
-  cov<-new(Class="SaemixDiscreteCovariate", name="asthma", type="categorical",reference="none")
-  asthmaDum<-transformCovariate(cov, asthmaF)
-  expect_equal(sum(asthmaDum[,1]), sum(asthmaF=="mild"))
-  expect_equal(sum(asthmaDum[,2]), sum(asthmaF=="severe"))
-})
-
-test_that("Transforming categorical covariate to binary by regrouping 2 categories to one", {
-  asthma<-sample(c("none","mild","severe"), 20, replace=TRUE)
-  asthmaF<-factor(asthma, labels=c("none","mild","severe"))
-  covBin<-new(Class="SaemixDiscreteCovariate", name="asthma", type="categorical",reference="none",groups=list(no=c("none","mild"), yes="severe"))
-  asthmaBin<-transformCovariate(covBin, asthmaF)
-  expect_equal(sum(asthmaBin), sum(asthmaF=="severe"))
+test_that("Creating a categorical covariate model - defaults", {
+  gender <- catCov(name="gender")
+  expect_equal(gender@name, "gender")
+  expect_is(gender, "SaemixCovariate")
+  expect_equal(gender@type, "categorical")
+  expect_equal(gender@unit, "")
+  expect_equal(gender@beta, 0)
+  expect_equal(gender@beta.fix, 0)
+  expect_equal(length(gender@covariate.transform@ncat), 0)
+  expect_equal(length(gender@covariate.transform@name.cat), 0)
+  expect_equal(length(gender@covariate.transform@reference), 0)
 })
 
 
-test_that("Transforming categorical covariate to binary by regrouping 2 categories to one", {
-  asthma<-sample(c("none","mild","severe"), 20, replace=TRUE)
-  covBin<-new(Class="SaemixDiscreteCovariate", name="asthma", type="categorical",reference="none",groups=list(no=c("none","mild"), yes="severe"))
-  asthmaBin<-transformCovariate(covBin, asthma)
-  expect_equal(sum(asthmaBin), sum(asthma=="severe"))
+context("Creating covariate models using constructor function")
+
+# I want to set a full parameter model as eg
+# cl=saemixPar(distribution="lognormal", mu.start=10, omega.start=0.5,
+#              var.level=c("id","occ"),var.start=c(0.5,0.2), covariance=list(c("CL", "V"), c("CL")),
+#              covariate=c(lwt=contCov(name="wt", transform=log, centering=mean, beta=0.75, beta.fix=1), 
+#                          gender=catCov(name="sex", reference="F", beta=0.5), 
+#                          mutPgp=catCov(name="pgp", groups=list(c("CC"), c("CT","TT")), beta=c(0.2, 0.5))
+#              )
+# )
+
+# name="pgp2", type="categorical", beta=c(0.2, 0.5), covariate.transform=catCov(name="pgp", groups=list(c("CC"),c("CT"), c("TT"))))
+
+
+test_that("Creating a continuous covariate model with initial CI", {
+  lwt <- contCov(name="wt", transform=log, centering=mean, beta=0.75, beta.fix=1)
+  expect_equal(lwt@name, "wt")
+  expect_equal(lwt@covariate.transform@transform.function(c(1,2)), c(log(1), log(2)))
+  expect_equal(lwt@covariate.transform@centering.function(1:10), mean(1:10))
+  expect_equal(length(lwt@covariate.transform@centering.value), 0)
+  expect_equal(lwt@beta, 0.75)
+  expect_equal(lwt@beta.fix, 1)
 })
 
-test_that("Transforming categorical covariate - from integer scores", {
-  score<-sample(c(1:5), 20, replace=TRUE)
-  cov<-new(Class="SaemixDiscreteCovariate", name="score", type="categorical",groups=list(c(1,2),c(3,4),c(5)))
-  score3<-transformCovariate(cov, score)
-  expect_equal(sum(score3[,1]), sum(score==3)+sum(score==4))
-  expect_equal(sum(score3[,2]), sum(score==5))
+test_that("Creating a binary covariate model, just name", {
+  gender <- binCov(name="sex")
+  expect_equal(gender@name, "sex")
+  expect_equal(gender@covariate.transform@ncat,2)
+  expect_equal(gender@beta, 0)
+  expect_equal(gender@beta.fix, 0)
+  expect_equal(length(gender@covariate.transform@reference),0)
 })
+
+
+test_that("Creating a binary covariate model with catCov, just name", {
+  gender <- catCov(name="sex")
+  expect_equal(gender@name, "sex")
+  expect_equal(length(gender@covariate.transform@ncat),0)
+  expect_equal(gender@beta, 0)
+  expect_equal(gender@beta.fix, 0)
+  expect_equal(length(gender@covariate.transform@reference),0)
+})
+
+
+test_that("Creating a binary covariate model with initial CI", {
+  gender <- catCov(name="sex", reference="F", beta=0.5)
+  expect_equal(gender@name, "sex")
+  expect_equal(length(gender@covariate.transform@ncat),0)
+  expect_equal(gender@beta, 0.5)
+  expect_equal(gender@beta.fix, 0)
+  expect_equal(gender@covariate.transform@reference,"F")
+})
+
+
+test_that("Creating a binary covariate model with initial CI", {
+  gender <- binCov(name="sex", reference="F", beta=0.5)
+  expect_equal(gender@name, "sex")
+  expect_equal(gender@covariate.transform@ncat,2)
+  expect_equal(gender@beta, 0.5)
+  expect_equal(gender@beta.fix, 0)
+  expect_equal(gender@covariate.transform@reference,"F")
+})
+
+test_that("Creating a covariate model with 3 categories", {
+  pgp <- catCov(name="pgp", ncat=3)
+  expect_equal(pgp@name, "pgp")
+  expect_equal(pgp@covariate.transform@ncat,3)
+})
+
+
+test_that("Creating a covariate model with 3 categories", {
+  pgp <- catCov(name="pgp", reference="CC", name.cat=c("CC","CT","TT"), beta=c(0.5,0.3))
+  expect_equal(pgp@name, "pgp")
+  expect_equal(pgp@covariate.transform@ncat,3)
+  expect_equal(pgp@covariate.transform@name.cat,c("CC","CT","TT"))
+  expect_equal(pgp@beta, c(0.5,0.3))
+})
+
+
+context("Creating a list of covariate models using the constructors")
+
+test_that("List of covariates", {
+  lcov<-list(lwt=contCov(name="wt", transform=log, centering=mean), 
+             gender=catCov(name="sex", groups=list("F","M")), 
+             mutPgp=catCov(name="pgp", groups=list(c("CC"), c("CT","TT"))))
+  for(i in 1:length(lcov)) lcov[[i]]@name<-names(lcov)[i]
+  expect_equal(length(lcov),3)
+  expect_equal(lcov[[2]]@covariate.transform@type.orig, "categorical")
+  expect_equal(length(lcov[[2]]@covariate.transform@ncat),1)
+  expect_equal(lcov[[2]]@type, "categorical")
+  expect_equal(lcov[[2]]@name, "gender")
+  expect_equal(lcov[[2]]@covariate.transform@name.orig, "sex")
+  expect_equal(lcov[[2]]@covariate.transform@reference, "F")
+  expect_equal(lcov[[3]]@covariate.transform@reference, "CC")
+})
+
+

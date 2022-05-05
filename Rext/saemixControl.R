@@ -123,6 +123,11 @@ saemixControl<-function(map=TRUE,fim=TRUE,ll.is=TRUE,ll.gq=FALSE,nbiter.saemix=c
     ipar.lmcmc<-2
     cat("Value of L_MCMC too small, setting it to 2 (computation of the conditional means and variances of the individual parameters)\n")
   }
+  if(length(nbiter.mcmc)<4) {
+    length(nbiter.mcmc)<-4
+    nbiter.mcmc[is.na(nbiter.mcmc)]<-2
+    nbiter.mcmc[4]<-0
+  }
   if(is.na(nbiter.sa)) nbiter.sa<-nbiter.saemix[1]/2
   if(nbiter.sa>nbiter.saemix[1]) {
     if(warnings) message("The number of iterations for the simulated annealing should be lower or equal to the number of iterations in the first stage of the algorithm, setting it to K1=nbiter.saemix[1]. We advise setting it to nbiter.saemix[1]/2.\n")

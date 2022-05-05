@@ -1,38 +1,37 @@
-# Generic, move to aaa_generics.R
-setGeneric(name="transformCovariate",
-           def=function(covariateModel, x=NULL) standardGeneric("transformCovariate")
-)
-
 # Observation class - generic
-#' Class "SaemixCovariate"
+#' Class "SaemixCovariateType"
 #' 
-#' An object of the SaemixCovariate class, representing a continuous or categorical(/binary) covariate
+#' An object of the SaemixCovariateType class, representing a continuous or categorical(/binary) covariate
 #' 
-#' The SaemixCovariate is the parent class, containing only the name, type and unit of the covariate, for use 
+#' The SaemixCovariateType is the parent class, containing only the name, type and unit of the covariate, for use 
 #' in the creation of a data object in saemix.
 #' Two child classes have also been defined, for use in the model object in saemix:
 #' - SaemixContinuousCovariate for continuous covariates
 #' - SaemixDiscreteCovariate for discrete (categorical/binary) covariates
-#' These classes contain transformations for the continuous covariates, with the option to center them
-#' (for instance, to transform a covariate to the logarithm of the covariate, centering with respect to the median
-#' or to a given value), for categorical covariates, the grouping and reference values.
+#' These classes contain transformation models 
+#' - for the continuous covariates, the user can specify a function to apply to the vector of values 
+#' and either a centering function (eg median) or a value (eg 60)
+#' (example of use: transform a covariate to the logarithm of the covariate, centering with respect to the median)
+#' - for categorical covariates, the grouping and reference values 
+#' (example of use: regroup CT and TT alleles and define CC as reference category)
+#' Covariate transformations will be applied to the covariate in the dataset once combined with a data object
 #' 
-#' @name SaemixCovariate-class 
+#' @name SaemixCovariateType-class 
 #' @docType class
-#' @aliases SaemixCovariate SaemixCovariate-class 
-#' @aliases print,SaemixCovariate showall,SaemixCovariate show,SaemixCovariate
+#' @aliases SaemixCovariateType SaemixCovariateType-class 
+#' @aliases print,SaemixCovariateType showall,SaemixCovariateType show,SaemixCovariateType
 #' @aliases SaemixDiscreteCovariate SaemixDiscreteCovariate-class 
 #' @aliases print,SaemixDiscreteCovariate showall,SaemixDiscreteCovariate show,SaemixDiscreteCovariate
 #' @aliases SaemixContinuousCovariate SaemixContinuousCovariate-class 
 #' @aliases print,SaemixContinuousCovariate showall,SaemixContinuousCovariate show,SaemixContinuousCovariate
 #' 
 #' @examples
-#' showClass("SaemixCovariate")
+#' showClass("SaemixCovariateType")
 #' 
 #' @keywords classes
-#' @exportClass SaemixCovariate
+#' @exportClass SaemixCovariateType
 
-setClass(Class = "SaemixCovariate",
+setClass(Class = "SaemixCovariateType",
          representation=representation(
            name = "character", # outcome name
            type = "character", # Type: continuous, binary, categorical
@@ -49,7 +48,7 @@ setClass(Class = "SaemixCovariate",
 
 setMethod( 
   f="initialize",
-  signature="SaemixCovariate",
+  signature="SaemixCovariateType",
   definition=function(.Object, name="", type="continuous", unit=""){
     .Object@name <- name
     .Object@type <- type
@@ -62,7 +61,7 @@ setMethod(
 # Getteur
 setMethod(
   f ="[",
-  signature = "SaemixCovariate" ,
+  signature = "SaemixCovariateType" ,
   definition = function (x,i,j,drop ){
     switch (EXPR=i,
             "name"={return(x@name)},
@@ -76,7 +75,7 @@ setMethod(
 # Setteur
 setReplaceMethod(
   f ="[",
-  signature = "SaemixCovariate" ,
+  signature = "SaemixCovariateType" ,
   definition = function (x,i,j,value){
     switch (EXPR=i,
             "name"={x@name<-value},
@@ -90,41 +89,29 @@ setReplaceMethod(
 )
 
 ########################################################################
-# Continuous covariate
-setClass(Class = "SaemixContinuousCovariate",
-         contains="SaemixCovariate",
+setClass(Class = "SaemixCovariate",
+         contains="SaemixCovariateType",
          representation=representation(
-           transform.function = "function", # Transformation applied to the covariate (a function)
-           centering.function = "function", # if given, the function is applied (eg: median, mean)
-           centering.value = "numeric" # if given, 
+           covariate.transform = "SaemixCovariateTransform", # Transformation applied to the covariate (a function)
+           beta="numeric",  # covariate effect parameter
+           beta.fix="numeric" # 1 if corresponding element of beta is fixed, 0 if estimated (default)
          ),
          validity=function(object){
            return(TRUE)
          }
 )
 
-setMethod( 
-  f="initialize",
-  signature="SaemixContinuousCovariate",
-  definition=function(.Object, name="", transform.function="log", centering.function, centering.value){
-    .Object <- callNextMethod(.Object, name, type="continuous")
-    if(!missing(transform.function)) .Object@transform.function <- transform.function else .Object@transform.function<-function(x) x
-    if(!missing(centering.function)) .Object@centering.function<-centering.function else .Object@centering.function<-function(x) 1
-    if(!missing(centering.value)) .Object@centering.value<-centering.value
-    validObject(.Object)
-    return(.Object)
-  }
-)
+
 
 # Getteur
 setMethod(
   f ="[",
-  signature = "SaemixContinuousCovariate" ,
+  signature = "SaemixCovariate" ,
   definition = function (x,i,j,drop ){
     switch (EXPR=i,
-            "transform.function"={return(x@transform.function)},
-            "centering.function"={return(x@centering.function)},
-            "centering.value"={return(x@centering.value)},
+            "covariate.transform"={return(x@covariate.transform)},
+            "beta"={return(x@beta)},
+            "beta.fix"={return(x@beta.fix)},
             stop("No such attribute\n")
     )
   }
@@ -133,12 +120,12 @@ setMethod(
 # Setteur
 setReplaceMethod(
   f ="[",
-  signature = "SaemixContinuousCovariate" ,
+  signature = "SaemixCovariate" ,
   definition = function (x,i,j,value){
     switch (EXPR=i,
-            "transform.function"={x@transform.function<-value},
-            "centering.function"={x@centering.function<-value},
-            "centering.value"={x@centering.value<-value},
+            "covariate.transform"={x@covariate.transform<-value},
+            "beta"={x@beta<-value},
+            "beta.fix"={x@beta.fix<-value},
             stop("No such attribute\n")
     )
     validObject(x)
@@ -146,89 +133,53 @@ setReplaceMethod(
   }
 )
 
-# Discrete covariate
-setClass(Class = "SaemixDiscreteCovariate",
-         contains="SaemixCovariate",
-         representation=representation(
-           groups = "list", # groups for categorical category
-           reference = "character" # reference category
-         ),
-         validity=function(object){
-           return(TRUE)
-         }
-)
 
 setMethod( 
   f="initialize",
-  signature="SaemixDiscreteCovariate",
-  definition=function(.Object, name="", type="binary", reference, groups){
-    .Object <- callNextMethod(.Object, name, type)
-    if(!missing(reference)) .Object@reference <- reference else .Object@reference <- ""
-    if(!missing(groups)) .Object@groups <- groups else .Object@groups <- list()
+  signature="SaemixCovariate",
+  definition=function(.Object, name="", type="continuous", unit="", beta=1, beta.fix=0, covariate.transform){
+    .Object@name <- name
+    .Object@type <- type
+    .Object@unit <- unit
+    if(missing(covariate.transform) || !is(covariate.transform,"SaemixCovariateTransform")) {
+      if(type=="continuous") covariate.transform<-new(Class="covmodelCont2Cont",name=name) else covariate.transform<-new(Class="covmodelCat2Cat",name=name)
+    }
+    covariate.transform@name<-name
+    .Object@covariate.transform<-covariate.transform
+    .Object@type<-covariate.transform@type
+    if(covariate.transform@type=="categorical" && length(covariate.transform@ncat)>0) {
+      length(beta)<-length(beta.fix)<-(covariate.transform@ncat-1)
+      beta[is.na(beta)]<-1
+      beta.fix[is.na(beta.fix)]<-0
+    } 
+    .Object@beta<-beta
+    .Object@beta.fix<-beta.fix
+
     validObject(.Object)
     return(.Object)
   }
 )
-
-# Getteur
-setMethod(
-  f ="[",
-  signature = "SaemixDiscreteCovariate" ,
-  definition = function (x,i,j,drop ){
-    switch (EXPR=i,
-            "groups"={return(x@groups)},
-            "reference"={return(x@reference)},
-            stop("No such attribute\n")
-    )
-  }
-)
-
-# Setteur
-setReplaceMethod(
-  f ="[",
-  signature = "SaemixDiscreteCovariate" ,
-  definition = function (x,i,j,value){
-    switch (EXPR=i,
-            "groups"={x@groups<-value},
-            "reference"={x@reference<-value},
-            stop("No such attribute\n")
-    )
-    validObject(x)
-    return(x)
-  }
-)
-
-########################################################################
-
-#' Function to create a SaemixCovariate object
-#' 
-#' This function creates a continuous, categorical or binary covariate structure
-#' to be passed on to a SaemixData object.
-#' 
-#' @name saemixCov
-#' 
-#' @param name name of the covariate (defaults to empty (""))
-#' @param type possible types are continuous, categorical or binary. Defaults to continuous
-#' @param unit unit of the covariate (defaults to empty (""))
-#'  
-#' @examples
-#' age<-saemixCov(name="age", unit="yr")
-#' age
-#' age<-saemixCov("age", unit="yr") # same result
-#' age
-#' comorb1<-saemixCov(name="diabetes", type="binary")
-#' comorb1
-#' pgp<-saemixCov(name="PgP", type="categorical")
-#' pgp
-#' @export 
-
-saemixCov<-function(name="",type="continuous", unit="") {
-  new(Class="SaemixCovariate", name=name, type=type, unit=unit)
-}
 
 ########################################################################
 # Print and show methods
 
+setMethod("show","SaemixCovariateType",
+          function(object) {
+            cat(object@type,"covariate")
+            if(object@name!="") cat(": ",object@name)
+            if(object@unit!="") cat(paste0(" (unit: ",object@unit,")"))
+            cat("\n")
+          }
+)
+
+setMethod("print","SaemixCovariateType",
+          function(x,nlines=10,...) {
+            show(x)
+          }
+)
+
+
+# SaemixCovariate
 setMethod("show","SaemixCovariate",
           function(object) {
             cat(object@type,"covariate")
@@ -238,181 +189,91 @@ setMethod("show","SaemixCovariate",
           }
 )
 
+
 setMethod("print","SaemixCovariate",
           function(x,nlines=10,...) {
             show(x)
           }
 )
 
-
-setMethod("show","SaemixDiscreteCovariate",
+setMethod("showall","SaemixCovariate",
           function(object) {
-            cat(object@type,"covariate")
-            if(object@name!="") cat(": ",object@name)
-            if(object@unit!="") cat(paste0(" (unit: ",object@unit,")"))
-            cat("\n")
+            # cat(object@type,"covariate")
+            # if(object@name!="") cat(": ",object@name)
+            # if(object@unit!="") cat(paste0(" (unit: ",object@unit,")"))
+            # cat("\n")
+            showall(object@covariate.transform)
           }
 )
-
-setMethod("showall","SaemixDiscreteCovariate",
-          function(object) {
-            cat(object@type,"covariate")
-            if(object@name!="") cat(": ",object@name)
-            if(object@unit!="") cat(paste0(" (unit: ",object@unit,")"))
-            cat("\n")
-            if(length(object@groups)>0) {
-              cat("     groups: ")
-              for(i in 1:length(object@groups)) cat(paste0(i,"=(", paste(object@groups[[i]],collapse=","),")  "))
-              cat("\n")
-            }
-            cat("     reference class:", object@reference,"\n")
-          }
-)
-
-
-setMethod("print","SaemixDiscreteCovariate",
-          function(x,nlines=10,...) {
-            show(x)
-          }
-)
-
-setMethod("show","SaemixContinuousCovariate",
-          function(object) {
-            cat(object@type,"covariate")
-            if(object@name!="") cat(": ",object@name)
-            if(object@unit!="") cat(paste0(" (unit: ",object@unit,")"))
-            cat("\n")
-            if(!identical(object@transform.function, function(x) x)) {
-              cat("    transformation applied\n")
-            }
-            if(!identical(object@centering.function, function(x) 1)) {
-              cat("    centering function applied\n")
-            } else {
-              if(length(object@centering.value)>0) cat("    centering on value:",object@centering.value,"\n")
-            }
-          }
-)
-
-setMethod("showall","SaemixContinuousCovariate",
-          function(object) {
-            cat(object@type,"covariate")
-            if(object@name!="") cat(": ",object@name)
-            if(object@unit!="") cat(paste0(" (unit: ",object@unit,")"))
-            cat("\n")
-            if(!identical(object@transform.function, function(x) x)) {
-              cat("    transformation:\n")
-              print(object@transform.function)
-            }
-            if(!identical(object@centering.function, function(x) 1)) {
-              cat("    centering function:\n")
-              print(object@centering.function)
-            } else {
-              if(length(object@centering.value)>0) cat("    centering on value:",object@centering.value,"\n")
-            }
-          }
-)
-
-setMethod("print","SaemixContinuousCovariate",
-          function(x,nlines=10,...) {
-            show(x)
-          }
-)
-
 
 ########################################################################
-#' Transforming covariates
-#' 
-#' This method allows to apply the transformation contained in a SaemixContinuousCovariate or SaemixDiscreteCovariate
-#' object to a vector of covariate values in order to include the covariate in a saemix model.
-#' 
-#' @name transformCovariate-methods
-#' @aliases transformCovariate 
-#' @aliases transformCovariate,SaemixContinuousCovariate transformCovariate,SaemixContinuousCovariate-method
-#' @aliases transformCovariate,SaemixDiscreteCovariate transformCovariate,SaemixDiscreteCovariate-method
-#' 
-#' @param object an object of class SaemixDiscreteCovariate or SaemixContinuousCovariate
-#' @param x the values of the covariate to transform
-#'     
-#' @return a vector or dataframe with the transformed values
-#' 
-#' @details 
-#' For continuous covariates, the transformation contained in object is applied to the values in x.
-#' For binary covariates, x is transformed to 0 for the values corresponding to the reference value and 1 otherwise.
-#' For categorical covariates with ncat (=3 or more) categories, a dataframe is created with (ncat-1) dummy variables in columns. Each column is 1 if the corresponding value of x is in the corresponding group and 0 otherwise.
-#' 
-#' @examples 
-#' # Transforming a vector of weight to log(weight/mean(weight))
-#' weightCov<-new(Class="SaemixContinuousCovariate", name="Weight", transform.function=log, centering.function=median)
-#' print(c(60, 70, 80))
-#' transformCovariate(weightCov, c(60, 70, 80))
-#' 
-#' # Transforming a gender covariate given as Female/Male to 0/1 with Female as reference (0)
-#' sexCov<-new(Class="SaemixDiscreteCovariate", name="gender", reference="Female")
-#' transformCovariate(sexCov, c("Female","Male","Male"))
-#' # Also works with factors
-#' transformCovariate(sexCov, as.factor(c("Female","Male","Male")))
-#' 
-#' # Regrouping a covariate with 5 categories in 3 categories
-#' scoreCov<-new(Class="SaemixDiscreteCovariate", name="score", type="categorical",groups=list(c(1,2),c(3,4),c(5)))
-#' transformCovariate(scoreCov, c(1,2,3,4,5))
-#' 
-#' @exportMethod transformCovariate
+# Creator functions
+contCov <- function(name, transform, centering, beta=0, beta.fix=0, verbose=FALSE) {
+  if(missing(name)) name<-"cov"
+  if(!missing(centering)) {
+    #    if(is(centering, "character") && is(as.function(centering),"function")) centering<-as.function(centering)
+    #    if(is(centering, "character") && is(as.double(centering),"numeric")) centering<-as.double(centering)
+    if(is(centering, "function")) {
+      covmodel <- new(Class="covmodelCont2Cont", name=name, transform.function=transform, centering.function=centering, verbose=verbose)
+    } else {
+      if(is(centering,"numeric")) {
+        covmodel <- new(Class="covmodelCont2Cont", name=name, transform.function=transform, centering.value=centering, verbose=verbose)
+      } else {
+        if(verbose) message("The argument centering must be either a function or a numeric value")
+        covmodel <- new(Class="covmodelCont2Cont", name=name, transform.function=transform, verbose=verbose)
+      }
+    }
+  } else 
+    covmodel <- new(Class="covmodelCont2Cont", name=name, transform.function=transform, verbose=verbose)
+  xcov <- new(Class="SaemixCovariate", name=name, type="continuous", covariate.transform=covmodel)
+  if(!is.na(beta)) xcov@beta<-beta
+  xcov@beta.fix<-as.integer(beta.fix!=0)
+  return(xcov)
+}
 
+# special kind of catCov with ncat=2
+binCov <- function(name, breaks, groups, name.cat=character(), reference=character(),beta=0, beta.fix=0, verbose=FALSE) {
+  xcov<-catCov(name=name, ncat=2, breaks=breaks, groups=groups, name.cat=name.cat, reference=reference,beta=beta, beta.fix=beta.fix, verbose=verbose)
+  xcov@covariate.transform@name.cat<-name.cat # remove the names if none given, otherwise catCov sets them to G1, G2, ...
+  xcov@covariate.transform@reference<-reference # remove the reference if none given, otherwise catCov sets it to G1
+  return(xcov)
+}
 
-setMethod(
-  f ="transformCovariate",
-  signature = "SaemixContinuousCovariate" ,
-  definition = function (covariateModel, x=NULL){
-    if(is.null(x)) return(NULL)
-    if(length(covariateModel@centering.value)==0) 
-      covariateModel@transform.function(x/covariateModel@centering.function(x)) else 
-        covariateModel@transform.function(x/covariateModel@centering.value)
+catCov <- function(name, breaks, groups, name.cat=character(), reference=character(), ncat=0, beta=0, beta.fix=0, verbose=FALSE) {
+  if(missing(name)) name<-"cov"
+  if(!missing(breaks) & !missing(groups)) { # If both groups and breaks are given, we can't decide, return empty
+    if(verbose) message("Please specify only one of either 'groups' if the original covariate is categorical or 'breaks' if the original covariate is continuous and should be categorised")
+    return(NULL)
   }
-)
-
-setMethod(
-  f ="transformCovariate",
-  signature = "SaemixDiscreteCovariate" ,
-  definition = function (covariateModel, x=NULL){
-    if(is.null(x)) return(NULL)
-    if(covariateModel@reference=="") reference<-sort(unique(as.character(x)))[1] else reference<-as.character(covariateModel@reference)
-    if(covariateModel@type=="binary" & length(unique(x))<=2) {
-      return(1-as.integer(as.character(x)==reference))
-    } else { # type="categorical" OR x has more than 2 unique values
-      ncat<-length(unique(x))
-      if(ncat>length(x)/2) {
-        message("x may not be a categorical covariate, it seems to have too many different values")
-      }
-      # Create (ncat-1) categories
-      if(is.factor(x)) xcat<-levels(x) else xcat<-sort(unique(as.character(x)))
-      if(length(covariateModel@groups)==0) {
-        groups<-as.vector(xcat, mode="list")
-        names(groups)<-xcat
-      } else groups<-covariateModel@groups
-      if(is.null(names(groups))) {
-        l1<-c()
-        for(i in 1:length(groups)) l1<-c(l1,as.character(groups[[i]][1]))
-        names(groups)<-l1
-      }
-      idx1<-grep(reference,groups)
-      if(length(idx1)==0) {
-        message(paste("Can't find reference category ", reference,", using first category instead"))
-        reference<-groups[[1]][1]
-        idx1<-1
-      }
-      ncat<-length(groups)
-      tabcat<-NULL
-      for(i in 1:ncat) {
-        if(i!=idx1) {
-          icat<-as.integer(as.character(x) %in% groups[[i]])
-          tabcat<-cbind(tabcat, icat)
-        }
-      }
-      colnames(tabcat)<-paste0(covariateModel@name,".",names(groups)[-idx1])
-      if(dim(tabcat)[2]==1) tabcat<-c(tabcat) # regrouped to binary covariate
-      return(tabcat)
+  if(ncat==0 & length(name.cat)==0 & missing(breaks) & missing(groups)) { # nothing given, we assume a categorical covariate unchanged
+    if(verbose) message("No information given, assuming a categorical covariate unchanged")
+    covmodel<-new(Class="covmodelCat2Cat", name=name, reference=reference, verbose=verbose)
+  #  if(missing(name.cat)) name.cat<-covmodel@name.cat
+  } else {
+    if(missing(breaks) & missing(groups)) { # Again nothing given, we assume a categorical covariate
+      if(verbose) message("No information given, assuming a categorical covariate unchanged")
+#      if(!missing(name.cat) & length(name.cat)>0) ncat<-length(name.cat)
+      if(length(name.cat)==0) name.cat<-paste0("G",1:ncat)
+      covmodel<-new(Class="covmodelCat2Cat", name=name, name.cat=name.cat, reference=reference, verbose=verbose)
+    }
+    if(!missing(groups)) { # original covariate is categorical
+      covmodel<-new(Class="covmodelCat2Cat", name=name, name.cat=name.cat, groups=groups, reference=reference, verbose=verbose)
+    }
+    if(!missing(breaks)) { # original covariate is continuous
+      covmodel<-new(Class="covmodelCont2Cat", name=name, name.cat=name.cat, breaks=breaks, reference=reference, verbose=verbose)
     }
   }
-)
-
+  xcov <- new(Class="SaemixCovariate", name=name, type="categorical", covariate.transform=covmodel)
+  if(!is.na(beta[1]) & length(xcov@covariate.transform@ncat)>0) {
+    length(beta)<-xcov@covariate.transform@ncat-1
+    beta[is.na(beta)]<-1
+  }
+  xcov@beta<-beta
+  if(!is.na(beta.fix[1]) & length(xcov@covariate.transform@ncat)>0) {
+    length(beta.fix)<-xcov@covariate.transform@ncat-1
+    beta.fix[is.na(beta.fix)]<-0
+  }
+  xcov@beta.fix<-as.integer(beta.fix!=0)
+  return(xcov)
+}
 ########################################################################

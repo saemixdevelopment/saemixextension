@@ -23,6 +23,7 @@
 #' @slot index.omega.fix (internal) index of estimated elements in omega.tri that have been fixed by the user
 #' @slot index.omega.var (internal) index of elements in omega.tri corresponding to variance components
 #' @slot index.omega.covar (internal) index of elements in omega.tri corresponding to covariance components
+#' @slot index.eta (internal) index of parameters with IIV (1's in omega.model)
 #' @section Methods:
 #'   \describe{
 #'     \item{[<-}{\code{signature(x = "SaemixVarLevel")}: replace elements of object}
@@ -56,7 +57,8 @@ setClass(Class = "SaemixVarLevel",
            index.omega = "numeric", # index of estimated elements in omega.tri (=1 in omega.model)
            index.omega.fix = "numeric", # index of fixed elements in omega.tri (=1 in omega.model.fix)
            index.omega.var = "numeric", # index of variances in omega.tri
-           index.omega.covar = "numeric" # index of covariances in omega.tri
+           index.omega.covar = "numeric", # index of covariances in omega.tri
+           index.eta = "numeric" #  index of parameters with estimated variances
          ),
          validity=function(object){
            # Check all sizes are commensurate & check symmetry using validate.covariance.matrix TODO
@@ -85,6 +87,7 @@ setMethod(
     .Object@variable <- variable
     if(is.null(omega.model.fix)) .Object@omega.model.fix<-diag(x=0, nrow=size, ncol=size) else .Object@omega.model.fix<-omega.model.fix
     if(is.null(omega.model)) .Object@omega.model<-diag(x=1, nrow=size, ncol=size) else .Object@omega.model<-omega.model
+    .Object@index.eta<-which(mydiag(.Object@omega.model)>0)
     if(is.null(omega)) omega<-diag(x=1, nrow=size, ncol=size) 
     # TBD:
     # omega<-omega*.Object@omega.model
@@ -99,6 +102,7 @@ setMethod(
     # Elements corresponding to covariances
     idx<-mat1[lower.tri(mat1)]
     .Object@index.omega.covar<-intersect(.Object@index.omega,idx)
+    
     validObject(.Object)
     return(.Object)
   }
@@ -123,6 +127,7 @@ setMethod(
             "index.omega.fix"={return(x@index.omega.fix)},
             "index.omega.var"={return(x@index.omega.var)},
             "index.omega.covar"={return(x@index.omega.covar)},
+            "index.eta"={return(x@index.eta)},
             stop("No such attribute\n")
     )
   }
@@ -146,6 +151,7 @@ setReplaceMethod(
             "index.omega.fix"={x@index.omega.fix<-value},
             "index.omega.var"={x@index.omega.var<-value},
             "index.omega.covar"={x@index.omega.covar<-value},
+            "index.eta"={x@index.eta<-value},
             stop("No such attribute\n")
     )
     validObject(x)

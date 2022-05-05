@@ -154,14 +154,14 @@ setMethod(
     .Object <- callNextMethod(.Object, outcome=outcome, model=model, description=description, verbose=verbose)
     # Model parameters: names, initial values, distribution, fixed parameters
     npar<-length(parameter)
-    if(missing(mu.start) || length(mu.start)==0) {
+    if(missing(mu.start) || length(mu.start)==0 || !is.numeric(mu.start)) {
       mu.start<-rep(1,npar)
     } else {
       if(length(mu.start)!=npar & verbose) message("Size mismatch, resizing mu.start")
       length(mu.start)<-npar
       mu.start[is.na(mu.start)]<-1
     }
-    if(missing(transform.par) || length(transform.par)==0) {
+    if(missing(transform.par) || length(transform.par)==0 || !is.numeric(transform.par)) {
       transform.par<-rep(0,npar)
     } else {
       if(length(transform.par)!=npar & verbose) message("Size mismatch, resizing transform.par")
@@ -171,6 +171,8 @@ setMethod(
     if(missing(mu.fix) || length(mu.fix)==0) {
       mu.fix<-rep(0,npar)
     } else {
+      if(is.logical(mu.fix)) mu.fix<-as.integer(mu.fix)
+      mu.fix<-as.integer(mu.fix>0)
       if(length(mu.fix)!=npar & verbose) message("Size mismatch, resizing mu.fix")
       length(mu.fix)<-npar
       mu.fix[is.na(mu.fix)]<-0
@@ -238,36 +240,29 @@ setReplaceMethod(
 setCovariateModel <- function(.Object, covariate.model=NULL, covariate.model.fix=NULL, beta.start=NULL, verbose=FALSE) {
   # Covariate models: structure, fixed parameters, initial estimates
   npar<-.Object@npar
-  if(!is.null(covariate.model)) {
-    if(dim(covariate.model)[2]!=npar) {
-      if(verbose) message("Size mismatch between covariate.model and the number of parameters, ignoring")
-      covariate.model<-NULL
-    } else {
+  if(!is.null(covariate.model)) 
+    covariate.model<-validate.covariate.model(covariate.model, npar=npar, verbose=verbose)
+  if(!is.null(covariate.model)) { 
       colnames(covariate.model)<-.Object@name.modpar
       .Object@covariate.model<-covariate.model
-    }
-    
-  } else covariate.model<-NULL
-  if(!is.null(covariate.model.fix)) {
-    if(dim(covariate.model.fix)[2]!=npar) {
-      if(verbose) message("Size mismatch between covariate.model.fix and the number of parameters, ignoring")
-    } else {
-      colnames(covariate.model.fix)<-.Object@name.modpar
-      if(is.null(covariate.model)) {
-        if(verbose) message("Covariate model missing but fixed covariate parameters given, setting the same structure\n")
-        .Object@covariate.model<-covariate.model.fix
-      } else {
-        .Object@covariate.model.fix<-covariate.model.fix
-      }
-    }
   }
+  if(!is.null(covariate.model.fix)) 
+    covariate.model.fix<-validate.covariate.model(covariate.model.fix, npar=npar, verbose=verbose)
+  if(!is.null(covariate.model.fix)) {
+    colnames(covariate.model.fix)<-.Object@name.modpar
+    if(is.null(covariate.model)) {
+      if(verbose) message("covariate.model missing but covariate.model.fix given, setting the same structure\n")
+      covariate.model<-.Object@covariate.model<-covariate.model.fix
+    }
+    .Object@covariate.model.fix<-covariate.model.fix
+    }
   if(is.null(covariate.model)) {
     .Object@betaest.model<-matrix(rep(1,npar), nrow=1, dimnames=list(c("mu.psi"),.Object@name.modpar))
     beta.start<-numeric()
   } else {
     .Object@betaest.model<-rbind(rep(1,npar),covariate.model)
     colnames(.Object@betaest.model)<-.Object@name.modpar
-    nb.beta<-sum(covariate.model)
+    nb.beta<-sum(.Object@covariate.model)
     if(missing(beta.start)) beta.start<-rep(0,nb.beta)
     if(nb.beta>length(beta.start)) 
       beta.start<-c(beta.start, rep(0,nb.beta-length(beta.start)))
@@ -276,6 +271,20 @@ setCovariateModel <- function(.Object, covariate.model=NULL, covariate.model.fix
   .Object@beta.start<-beta.start
   return(.Object)
 }
+
+validate.covariate.model <- function(x, npar, verbose=TRUE){
+  if(dim(x)[2]!=npar || !(is.numeric(x))) {
+    if(verbose) message("Size mismatch between covariate model and the number of parameters, ignoring")
+    x<-NULL
+  } else {
+    if(sum(!(c(x) %in% c(0,1)))>0) {
+      if(verbose) message("covariate model must contain only 0/1, ignoring")
+      x<-NULL
+    }
+  }
+  return(x)
+}
+
 
 ########################################################################
 # Full model, adding variability levels

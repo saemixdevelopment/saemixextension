@@ -13,7 +13,9 @@ NULL
 #' Both subclasses SaemixDiscreteOutcome and SaemixEventOutcome inherit 
 #' from the SaemixOtherOutcome subclass,
 #' and the SaemixContinuousOutcome and SaemixOtherOutcome subclasses inherit from
-#' the SaemixOutcome class.
+#' the SaemixOutcome class. 
+#' The SaemixOtherOutcome regroups both discrete and survival-type outcomes and is not 
+#' intended to be used directly.
 #' 
 #' @name SaemixOutcome-class 
 #' @docType class
@@ -67,7 +69,7 @@ setClass(Class = "SaemixOutcome",
 setMethod( 
   f="initialize",
   signature="SaemixOutcome",
-  definition=function(.Object, name="y", type="continuous", distribution="normal", unit=""){
+  definition=function(.Object, name="", type="continuous", distribution="normal", unit=""){
     .Object@name <- name
     .Object@type <- type
     .Object@unit <- unit
@@ -126,7 +128,7 @@ setClass(
 # setMethod(
 #   f="initialize",
 #   signature="SaemixDiscreteOutcome",
-#   definition= function (.Object, name="y", type="categorical", distribution="binomial") {
+#   definition= function (.Object, name="", type="categorical", distribution="binomial") {
 #     #    cat ("--- initialising SaemixDiscrete Object --- \n")
 #     .Object@name<-name
 #     .Object@type<-type
@@ -163,7 +165,7 @@ setClass(
 setMethod(
   f="initialize",
   signature="SaemixDiscreteOutcome",
-  definition= function (.Object, name="y", type, distribution="", levels=NULL) {
+  definition= function (.Object, name="", type, distribution="", levels=NULL, unit="") {
     #    cat ("--- initialising SaemixDiscrete Object --- \n")
     .Object@name<-name
     if(missing(type) & distribution=="") {
@@ -191,9 +193,12 @@ setMethod(
     if(distribution %in% c("poisson", "binomial", "negativebinomial", "poissonzip")) type<-"count"
     .Object@type<-type
     .Object@distribution<-distribution
-    if(is.null(levels)) levels<-c(0,1)
+    if(is.null(levels)) {
+      if(distribution=="binary") levels<-factor(c(0,1)) else levels<-factor()
+    }
     if(!is.factor(levels)) levels<-factor(levels, levels=levels)
     .Object@levels<-levels
+    if(unit=="") .Object@unit<-"-" else .Object@unit<-unit
     return (.Object )
   }
 )
@@ -261,7 +266,7 @@ setClass(
 setMethod(
   f="initialize",
   signature="SaemixEventOutcome",
-  definition= function (.Object, name="y", distribution="constantHazard", type="event", maxEvents=1, intervalCensored=FALSE, intervalLength=0) {
+  definition= function (.Object, name="", distribution="constantHazard", type="event", maxEvents=1, intervalCensored=FALSE, intervalLength=0, unit="") {
     #    cat ("--- initialising SaemixEventOutcome Object --- \n")
     .Object@name<-name
     .Object@type<-"event"
@@ -318,7 +323,7 @@ setClass(
     error.parameters = "numeric", # value of parameters in the error model
     error.nameparameters = "character", # names of parameters in the error model
     error.function = "function",  # error model function
-    error.fix = "logical" # fixed parameters (not estimated)
+    error.fix = "numeric" # 1 for fixed (not estimated)
   ),
   validity=function(object){
     # Check error.model is one of constant, proportional, combined1, combined2, power, exponential or user
@@ -332,7 +337,7 @@ setClass(
 setMethod(
   f="initialize",
   signature="SaemixContinuousOutcome",
-  definition= function (.Object, name="y", type="continuous", distribution="normal", error.model="constant", error.npar=NULL, error.function=NULL, error.parameters=NULL, error.nameparameters=NULL, error.fix=NULL) {
+  definition= function (.Object, name="", type="continuous", distribution="normal", error.model="constant", error.npar=NULL, error.function=NULL, error.parameters=NULL, error.nameparameters=NULL, error.fix=NULL, unit="") {
     #    cat ("--- initialising SaemixDiscrete Object --- \n")
     .Object@name<-name
     .Object@type<-type
@@ -387,23 +392,15 @@ setMethod(
       .Object@error.nameparameters<-paste(error.nameparameters,.Object@name,sep=".")
       if(is.null(error.parameters)) .Object@error.parameters<-rep(1,error.npar) else .Object@error.parameters<-error.parameters[1:error.npar]
     }
-    if(length(error.fix)==0) error.fix<-rep(FALSE,.Object@error.npar) else {
+    if(length(error.fix)==0) error.fix<-rep(0,.Object@error.npar) else {
+      if(is(error.fix,"logical")) error.fix<-as.integer(error.fix)
       if(length(error.fix)!=.Object@error.npar) error.fix<-rep(error.fix, length.out=.Object@error.npar)
     }
     .Object@error.fix<-error.fix
+    if(unit=="") .Object@unit<-"-" else .Object@unit<-unit
     return (.Object )
   }
 )
-
-############ Create outcomes from a list
-
-createSaemixOutcome<-function(response, name="") {
-  if(response$type=="continuous") saemix.outcome<-new(Class="SaemixContinuousOutcome", error.model=response$error.model, error.npar=outcome$error.npar, error.function=response$error.function, error.parameters=response$start, error.fix=response$error.fix)
-  if(response$type %in% c("binary","categorical")) saemix.outcome<-new(Class="SaemixDiscreteOutcome", levels=response$levels, distribution=response$distribution, type=response$type)
-  if(response$type=="event") saemix.outcome<-new(Class="SaemixEventOutcome", distribution=response$distribution, maxEvents=response$maxEvents, intervalCensored=response$intervalCensored, intervalLength=response$intervalLength)
-  if(name!="") saemix.outcome@name<-name
-  return(saemix.outcome)
-}
 
 ################################################################################
 
@@ -513,7 +510,7 @@ setMethod("show","SaemixContinuousOutcome",
 
 setMethod("showall","SaemixContinuousOutcome",
           function(object) {
-            cat("Continuous outcome:",object@name,"\n")
+            cat("Continuous outcome:",object@name,paste0("(",object@unit,")"),"\n")
             cat("   ",object@distribution,"distribution with ")
             if(object@error.model!="user") 
               cat(paste0(object@error.model," residual error model involving ",object@error.npar," parameter",ifelse(object@error.npar>1,"s",":")),"\n") else
@@ -590,127 +587,3 @@ setMethod("print","SaemixOutcome",
           }
 )
 
-################################################################
-# functions to create continuous and discrete outcomes as lists
-
-#' @examples
-#' conc <- saemixOutcome("concentration", unit="mg/L")
-#' conc
-#' pain <- saemixOutcome("pain score",type="categorical", unit="(-)")
-#' pain
-#' resp <- saemixOutcome("response",type="binary")
-#' resp
-
-saemixOutcome<-function(name="",type="continuous", unit="") {
-  new(Class = "SaemixOutcome", name=name, type=type, unit=unit)
-}
-
-
-continuousOutcome<-function(model="constant", start=c(1), error.function=constantErrorModel, npar=1, fix=c(FALSE)) {
-  if(model=="user") {
-    ierr<-0
-    if(identical(error.function, constantErrorModel)) {
-      model<-"constant"
-      ierr<-1
-    }
-    if(identical(error.function, proportionalErrorModel)) {
-      model<-"proportional"
-      ierr<-1
-    }
-    if(identical(error.function, combined1ErrorModel)) {
-      model<-"combined1"
-      ierr<-1
-    }
-    if(identical(error.function, combined2ErrorModel)) {
-      model<-"combined2"
-      ierr<-1
-    }
-    if(identical(error.function, powerErrorModel)) {
-      model<-"power"
-      ierr<-1
-    }
-    if(ierr==1) 
-      message("User error model set to ",model," for consistency with the error.function given\n")
-  }
-  outlist<-list(type="continuous", error.model=model, start=start, error.function=error.function, error.npar=npar, error.fix=fix)
-  if(outlist$error.model=="constant" | outlist$error.model=="exponential") {
-    outlist$error.function<-constantErrorModel
-    outlist$error.npar<-1
-    outlist$error.fix<-outlist$error.fix[1]
-    outlist$start<-outlist$start[1]
-    if(length(outlist$start)==0) outlist$start<-c(1)
-    if(outlist$start<=0) {
-      outlist$start<-1
-      message("Starting value for constant error model must be positive, changed to 1\n")
-    }
-  }
-  if(outlist$error.model=="proportional") {
-    outlist$error.npar<-1
-    outlist$error.function<-proportionalErrorModel
-    outlist$start<-outlist$start[1]
-    outlist$error.fix<-outlist$error.fix[1]
-    if(length(outlist$start)==0) outlist$start<-c(0.5)
-    if(outlist$start<=0) {
-      outlist$start<-0.5
-      message("Starting value for proportional error model must be positive, changed to 0.5\n")
-    }
-  }
-  if(outlist$error.model=="combined1") {
-    outlist$error.function<-combined1ErrorModel
-    outlist$error.npar<-2
-    if(length(outlist$start)>2) outlist$start<-abs(outlist$start[1:2])
-    if(length(outlist$start)==1) outlist$start<-c(abs(outlist$start),0.5)
-    if(length(outlist$start)==0) outlist$start<-c(1,0.5)
-    if(length(outlist$error.fix)<2) outlist$error.fix<-rep(outlist$error.fix, length.out=2) else outlist$error.fix<-outlist$error.fix[1:2]
-    x<-try(outlist$error.function(c(1), outlist$start))
-    if(is.na(x)) message("Check starting value for error function, returns NA for x=1\n")
-  }
-  if(outlist$error.model=="combined2") {
-    outlist$error.function<-combined2ErrorModel
-    outlist$error.npar<-2
-    if(length(outlist$start)>2) outlist$start<-abs(outlist$start[1:2])
-    if(length(outlist$start)==1) outlist$start<-c(abs(outlist$start),0.5)
-    if(length(outlist$start)==0) outlist$start<-c(1,0.5)
-    if(length(outlist$error.fix)<2) outlist$error.fix<-rep(outlist$error.fix, length.out=2) else outlist$error.fix<-outlist$error.fix[1:2]
-    x<-try(outlist$error.function(c(1), outlist$start))
-    if(is.na(x)) message("Check starting value for error function, returns NA for x=1\n")
-  }
-  if(outlist$error.model=="power") {
-    outlist$error.function<-powerErrorModel
-    outlist$error.npar<-3
-    if(length(outlist$start)>3) outlist$start<-outlist$start[1:3]
-    if(length(outlist$start)==0) outlist$start<-c(1,0.5,2)
-    if(length(outlist$start)==1) outlist$start<-c(outlist$start,0.5,2)
-    if(length(outlist$start)==2) outlist$start<-c(outlist$start,2)
-    outlist$start[1:2]<-abs(outlist$start[1:2]) # a and b must be positive
-    if(length(outlist$error.fix)<3) outlist$error.fix<-rep(outlist$error.fix, length.out=3) else outlist$error.fix<-outlist$error.fix[1:3]
-    x<-try(outlist$error.function(c(1), outlist$start))
-    if(is.na(x)) message("Check starting value for error function, returns NA for x=1\n")
-    }
-  if(outlist$error.model=="user") {
-    if(length(start)!=npar) outlist$error.npar<-length(start)
-    x<-try(error.function(c(1), start))
-    if(length(outlist$error.fix)<outlist$error.npar) outlist$error.fix<-rep(outlist$error.fix, length.out=outlist$error.npar) else outlist$error.fix<-outlist$error.fix[1:outlist$error.npar]
-    if(is.na(x)) {
-      message("Check user-defined error function, returns NA for x=1\n")
-      return()
-    }
-  }
-  return(outlist)
-}
-
-discreteOutcome<-function(type="binary", distribution="", ncat=NULL, levels=NULL, maxEvents=NULL, intervalCensored=FALSE, intervalLength=NULL) {
-  if(is.null(levels) & !is.null(ncat)) levels<-c(1:ncat)
-  outlist<-list(type=type, distribution=distribution, levels=levels, maxEvents=maxEvents, intervalCensored=intervalCensored, intervalLength=intervalLength)
-  if(outlist$distribution=="") {
-    if(type=="categorical") outlist$distribution<-"categorical"
-    if(type=="binary") outlist$distribution<-"bernouilli"
-  }
-  if(is.null(levels) & type=="binary")
-    outlist$levels<-c(0,1)
-  if(outlist$type=="event") {
-    if(is.null(outlist$maxEvents)) outlist$maxEvents<-1
-  }
-  if(is.null(outlist$intervalLength)) outlist$intervalLength<-0
-  return(outlist)
-}

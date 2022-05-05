@@ -125,3 +125,6 @@ setMethod(
 xmod<-try(new(Class="SaemixModel", model=model, description=description, outcome=outcome, psi0=psi0, 
               name.modpar=name.modpar, transform.par=transform.par, fixed.estim=fixed.estim, covariate.model=covariate.model,
               covariance.model=covariance.model, omega.init=omega.init))
+
+
+

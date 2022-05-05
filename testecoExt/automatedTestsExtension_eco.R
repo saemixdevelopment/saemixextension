@@ -1,6 +1,7 @@
 ##################################################### Setup
 # Wiping the slate clean and positioning in the right directory
-rm(list = ls())
+if(FALSE) 
+  rm(list = ls())
 library(testthat)
 
 # Testing where we are :-)
@@ -23,19 +24,63 @@ datDir40<-file.path(saemixDir,"data40")
 source(file.path(progDir,"aaa_generics.R"))
 #source(file.path(progDir,"global.R"))
 source(file.path(progDirExt,"SaemixOutcome.R"))
+source(file.path(progDirExt,"SaemixOutcome-methods.R"))
 source(file.path(progDirExt,"SaemixData.R"))
 
+# Current status: passes
 test_file(file.path(saemixDir,"testecoExt","testthat_saemixOutcome-class.R"))
+# Current status: passes
+test_file(file.path(saemixDir,"testecoExt","testthat_saemixOutcome-methods.R"))
+
+# One error which seems appriopriately caught
+# Error in initialize(value, ...) : 
+# 'initialize' method returned an object of class “character” instead of the required class “SaemixDiscreteOutcome”
+
+# Current status: fails (work in progress, need to define constructor functions and the lot)
 test_file(file.path(saemixDir,"testecoExt","testthat_saemixData-class.R"))
 
 ##################################################### Test Model class
-# Loading library files - Model class
+# Loading library files - Covariate class
+source(file.path(progDirExt,"SaemixCovariateModel.R"))
+source(file.path(progDirExt,"SaemixCovariate.R"))
+
+# Current status: passes
+test_file(file.path(saemixDir,"testecoExt","testthat_saemixCovariateModel-class.R"))
+test_file(file.path(saemixDir,"testecoExt","testthat_saemixCovariate-class.R"))
+
+################################# OK
+# Loading library files Variability levels
 source(file.path(progDirExt,"SaemixVarLevel.R"))
+
+# Current status: passes
+test_file(file.path(saemixDir,"testecoExt","testthat_saemixVarLevel-class.R"))
+
+################################# OK
+# Loading library files Parameter
+source(file.path(progDirExt,"SaemixParameter.R"))
+source(file.path(progDirExt,"SaemixParameter-methods.R"))
+
+# Current status: passes
+test_file(file.path(saemixDir,"testecoExt","testthat_saemixParameter-class.R"))
+# currently not created, all tests in the first testthat file
+# test_file(file.path(saemixDir,"testecoExt","testthat_saemixParameter-methods.R"))
+
+################################# In progress
+# Loading library files - Model class
 source(file.path(progDirExt,"SaemixModel.R"))
 source(file.path(progDirExt,"SaemixModel-methods.R"))
 
-test_file(file.path(saemixDir,"testecoExt","testthat_saemixVarLevel-class.R"))
+# Current status: passes
 test_file(file.path(saemixDir,"testecoExt","testthat_saemixModel-class.R"))
+
+# Current status: fails (work in progress, legacy versus new model specs)
+test_file(file.path(saemixDir,"testecoExt","testthat_saemixModel-methods.R"))
+
+##################################################### Test Model + Data
+# Loading library files - Covariate transformation methods
+source(file.path(progDirExt,"SaemixCovariateTransform.R"))
+# Current status: fails (work in progress)
+test_file(file.path(saemixDir,"testecoExt","testthat_saemixCovariateTransform-class.R"))
 
 ##################################################### Test Res class
 # Loading library files - Model class

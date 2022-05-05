@@ -69,7 +69,5 @@ source(file.path(progDir,"func_simulations.R"))
 source(file.path(progDir,"compute_LL.R"))
 source(file.path(progDir,"func_estimParam.R"))
 
-
-
 # Finding initial guesses for parameters
 
