@@ -29,8 +29,6 @@ m_1cpt <- saemixModel(model = f_1cpt,
   transform.par = c(1, 1, 1),
   verbose = FALSE
 )
-saemix.options <- list(seed = 123456, save = FALSE, save.graphs = FALSE,
-  displayProgress = FALSE)
 
 m_1cpt_1_cov <- saemixModel(model = f_1cpt,
   description = "One-compartment model, clearance dependent on weight",
