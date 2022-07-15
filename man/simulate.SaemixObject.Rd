@@ -2,6 +2,7 @@
 % Please edit documentation in R/func_simulations.R
 \name{simulate.SaemixObject}
 \alias{simulate.SaemixObject}
+\alias{simul.saemix}
 \title{Perform simulations under the model for an saemixObject object}
 \usage{
 \method{simulate}{SaemixObject}(
@@ -39,6 +40,9 @@ using the model and estimated parameters from a fit.
 \details{
 The simulated data can then be used to produce Visual Predictive Check graphs, as well as
 to compute the normalised prediction distribution errors (npde).
+
+This function replaces the previous function (simul.saemix), which will be deprecated in future versions
+but can still be called as previously for compatibility purposes.
 }
 \references{
 Brendel, K, Comets, E, Laffont, C, Laveille, C, Mentre, F.
