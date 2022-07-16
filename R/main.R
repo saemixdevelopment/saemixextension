@@ -124,7 +124,6 @@ saemix<-function(model,data,control=list()) {
 #  showall(saemixObject)
 
 # Initialising random generator
-  OLDRAND<-TRUE
   set.seed(saemix.options$seed)
 
 ############################################
