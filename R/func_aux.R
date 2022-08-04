@@ -224,7 +224,7 @@ compute.sres<-function(saemixObject) {
 
 #' @rdname saemix.internal
 #' 
-#' @aliases cutoff cutoff.eps cutoff.max cutoff.res
+# #' @aliases cutoff cutoff.eps cutoff.max cutoff.res
 #' @aliases normcdf norminv
 #' @aliases error error.typ ssq
 #' @aliases transpsi transphi derivphi dtransphi
@@ -233,6 +233,7 @@ compute.sres<-function(saemixObject) {
 #' 
 #' @keywords internal
 
+# Moved these functions to SaemixOutcome.R (define error models) in Rext
 cutoff<-function(x,seuil=.Machine$double.xmin) {x[x<seuil]<-seuil; return(x)}
 cutoff.max<-function(x) max(x,.Machine$double.xmin)
 cutoff.eps<-function(x) max(x,.Machine$double.eps)

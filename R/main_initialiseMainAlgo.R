@@ -270,7 +270,7 @@ initialiseMainAlgo<-function(saemix.data,saemix.model,saemix.options) {
 	omega.eta<-omega[ind.eta,ind.eta] # IIV matrix for estimated parameters
 	varList<-list()
 	if(saemix.model["modeltype"]=="structural") varList$pres<-pres
-	varList$indind0.eta<-ind0.eta
+	varList$ind0.eta<-ind0.eta
 	varList$ind.eta<-ind.eta
 	varList$omega<-omega
 	varList$MCOV=MCOV
