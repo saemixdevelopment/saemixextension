@@ -7,14 +7,17 @@
 #' # first parameter: only name is given, defaults to a parameter with a lognormal distribution
 #' # second parameter: defined as a parameter with a normal distribution, setting options
 #' # third parameter: given as name="distribution"
+#' lpar <- list("ka",vd=normalPar(mu.start=20), cl="lognormal")
 #' lpar 
 #' @export saemixPar
 
 ########################################################################
 # General parameters creation
 
-saemixPar<-function(name="theta", distribution="lognormal", estimated=TRUE, prior=FALSE, mu.start=1, omega.start=1, omega.fix=FALSE, omega.level="id", covariate=list(), rho.param=list(), rho=list(), rho.fix=list()) {
+saemixPar<-function(name="theta", distribution="lognormal", estimated=TRUE, prior=FALSE, mu.start=1, omega.start=1, omega.fix=FALSE, omega.level="id", covariate=list(), rho.param=list(), rho=list(), rho.fix=list(), omega=1, fixed=FALSE) {
   # Tests for transformation of vectors to list here
+  if(missing(omega.level) & omega==0) omega.level<-c()
+  if(missing(estimated) & fixed) estimated<-FALSE
   if(distribution=="lognormal")
     return(lognormalPar(name=name, estimated=estimated, prior=prior, mu.start=mu.start, omega.start=omega.start, omega.fix=omega.fix, omega.level=omega.level, covariate=covariate, rho.param=rho.param, rho=rho, rho.fix=rho.fix))
   if(distribution=="normal")
@@ -122,6 +125,10 @@ getVarianceModel <- function(parameter, level="id", output="var.model") {
   omega<-diag(x=0,nrow=npar, ncol=npar)
   colnames(omega)<-rownames(omega)<-nampar
   omega.model<-omega.model.fix<-omega
+  variable<-level
+  name.level<-""
+  if(level=="id") name.level<-"iiv"
+  if(level=="occ") name.level<-"iov"
   for(ipar in 1:npar) {
     idx<-match(level,parameter[[ipar]]@omega.level)
     if(!is.na(idx)) {
@@ -142,9 +149,26 @@ getVarianceModel <- function(parameter, level="id", output="var.model") {
       }
     }
   }
+  if(npar>1) {
+    for(ipar in 1:(npar-1)) { # compute covariances from the correlations given in rho
+      for(jpar in (ipar+1):npar) {
+        if(omega[ipar, jpar]!=0) {
+          x<-omega[ipar, jpar] * sqrt(omega[ipar,ipar])*sqrt(omega[jpar, jpar])
+          omega[ipar, jpar]<-omega[jpar, ipar]<-x
+        }
+      }
+    }
+  }
   omega.model<-completeBlocks(omega.model)
-  var.model<-saemixVarModel(size=npar, omega=omega, omega.model=omega.model, omega.model.fix=omega.model.fix)
-  if(output=="list") return(list(omega=omega, omega.model=omega.model, omega.fix=omega.model.fix)) else return(var.model)
+  var.model<-saemixVarModel(size=npar, name.level=name.level, variable=variable, omega=omega, omega.model=omega.model, omega.model.fix=omega.model.fix)
+  if(!is.null(colnames(var.model@omega))) {
+    colnames(var.model@omega.model)<-rownames(var.model@omega.model)<-colnames(var.model@omega)
+    colnames(var.model@omega.model.fix)<-rownames(var.model@omega.model.fix)<-colnames(var.model@omega)
+  }
+  if(output=="list") 
+    return(list(omega=omega, omega.model=omega.model, omega.fix=omega.model.fix))
+  var.model@omega.names <- paste0("var.",nampar)
+  return(var.model)
 }
 
 #' Ensure a given covariance matrix has a block structure
@@ -196,10 +220,69 @@ completeBlocks <- function(xmat) {
 ################################################
 # Functions for covariate model
 
+#' @aliases removeDuplicateCovDef checkSameCovDef
 #' @export getCovariateModel
 
+removeDuplicateCovDef<-function(parameter) {
+  nampar<-names(parameter)
+  npar<-length(nampar)
+  # Sanitise covariate definitions for each parameter - remove duplicated covariate definitions for each parameter
+  for(ipar in 1:npar) {
+    if(length(parameter[[ipar]]@covariate)>0) {
+      idx<-duplicated(parameter[[ipar]]@covariate)
+      if(sum(idx)>0) {
+        lcov1<-list()
+        for(i in which(!idx)) lcov1<-append(lcov1, parameter[[ipar]]@covariate[[i]])
+        names(lcov1)<-names(parameter[[ipar]]@covariate)[!(idx)]
+        parameter[[ipar]]@covariate<-lcov1
+      }
+    }
+  }
+  lcov<-c()
+  lcovdef<-list()
+  # Sanitise covariates - check if similar definitions but different names, check if same names but different definitions
+  for(ipar in 1:npar) {
+    if(length(parameter[[ipar]]@covariate)>0) {
+      if(length(lcov)==0) {
+        lcov<-names(parameter[[ipar]]@covariate)
+        lcovdef<-parameter[[ipar]]@covariate
+      } else {
+        for(icov in 1:length(parameter[[ipar]]@covariate)) {
+          isamecov<-checkSameCovDef(parameter[[ipar]]@covariate[[icov]], lcovdef)
+          if(isamecov>0) { # same definition, rename if different names
+            if(names(parameter[[ipar]]@covariate)[icov] != lcov[isamecov])  names(parameter[[ipar]]@covariate)[icov] <- lcov[isamecov]
+          } else {
+            lcovdef<-append(lcovdef, parameter[[ipar]]@covariate[[icov]])
+            namcov<-names(parameter[[ipar]]@covariate)[icov]
+            idx<-match(namcov,lcov)
+            if(!is.na(idx)) { # different definitions but same name
+              namcov<-paste0(namcov,"2")
+              names(parameter[[ipar]]@covariate)[icov]<-namcov
+            }
+            lcov<-c(lcov, namcov)
+            names(lcovdef)[length(lcovdef)]<-namcov
+          }
+        }
+      }
+    }
+  }
+  return(parameter)
+}
+identicalCovariate<-function(covariate1, covariate2) {
+  i0 <- identical(covariate1@covariate.transform, covariate2@covariate.transform, ignore.environment = TRUE) +
+    identical(covariate1@name, covariate2@name)
+  if(i0<2) return(FALSE) else return(TRUE)
+}
+
+checkSameCovDef<-function(covariate, listcov) {
+  for(icov in 1:length(listcov)) {
+    if(identicalCovariate(covariate, listcov[[icov]])) return(icov)
+  }
+  return(0)
+}
+
 getCovariateModel <- function(parameter) {
-  # parameter: list of SaemixParameter objects
+  # parameter: list of SaemixParameter objects, already sanitised (check for duplicate names and duplicate covariate definitions through removeDuplicateCovDef)
   nampar<-names(parameter)
   npar<-length(nampar)
   lcov<-c()
@@ -210,14 +293,22 @@ getCovariateModel <- function(parameter) {
     }
   }
   if(length(lcov)>0) {
-    covariate.model.fix<-covariate.model<-matrix(data=0, nrow=length(lcov), ncol=npar)
-    beta.start<-c()
+    covariate.model<-matrix(data=0, nrow=length(lcov), ncol=npar)
     rownames(covariate.model)<-lcov
     colnames(covariate.model)<-nampar
+    covariate.model.fix<-covariate.model
+    covariates<-vector(mode="list", length=length(lcov))
+    names(covariates)<-lcov
+    beta.start<-c()
     for(ipar in 1:npar) {
       if(length(parameter[[ipar]]@covariate)>0) {
         for(icov in 1:length(parameter[[ipar]]@covariate)) {
           idx<-match(names(parameter[[ipar]]@covariate)[icov], lcov)
+          if(is.null(covariates[[idx]])) covariates[[idx]]<-parameter[[ipar]]@covariate[[icov]] else {
+            # check compatibility between covariate definitions
+            if(!identicalCovariate(covariates[[idx]],parameter[[ipar]]@covariate[[icov]]))
+              message(paste0("Mismatch between covariate definitions for ",lcov))
+          }
           covariate.model[idx, ipar]<-1
           if(length(parameter[[ipar]]@covariate[[icov]]@beta.fix)>0 && parameter[[ipar]]@covariate[[icov]]@beta.fix==1) covariate.model.fix[idx, ipar]<-1
           if(length(parameter[[ipar]]@covariate[[icov]]@beta)>0) beta.start<-c(beta.start, parameter[[ipar]]@covariate[[icov]]@beta) else beta.start<-c(beta.start, 0)
@@ -226,9 +317,11 @@ getCovariateModel <- function(parameter) {
     }
   } else {
     covariate.model.fix<-covariate.model<-matrix(nrow=0,ncol=npar)
+    colnames(covariate.model.fix)<-colnames(covariate.model)<-nampar
     beta.start<-c()
+    covariates<-list()
   }
-  return(list(covariate.model=covariate.model, covariate.model.fix=covariate.model.fix, beta.start=beta.start))
+  return(list(covariates=covariates, covariate.model=covariate.model, covariate.model.fix=covariate.model.fix, beta.start=beta.start))
 }
 
 

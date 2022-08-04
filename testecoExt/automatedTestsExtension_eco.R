@@ -73,7 +73,7 @@ source(file.path(progDirExt,"SaemixModel-methods.R"))
 # Current status: passes
 test_file(file.path(saemixDir,"testecoExt","testthat_saemixModel-class.R"))
 
-# Current status: fails (work in progress, legacy versus new model specs)
+# Current status: passes (work in progress, legacy versus new model specs, need to test more options)
 test_file(file.path(saemixDir,"testecoExt","testthat_saemixModel-methods.R"))
 
 ##################################################### Test Model + Data

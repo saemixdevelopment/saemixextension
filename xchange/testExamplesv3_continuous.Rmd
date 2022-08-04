@@ -153,6 +153,17 @@ plot(ynpde, plot.type="vpc")
 saemix.fit<-conddist.saemix(saemix.fit)
 saemix.fit<-conddist.saemix(saemix.fit, plot=TRUE)
 
+if(saveForDocs) {
+  namfig<-"theo_rawdata.eps"
+  cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
+  plot(saemix.data)
+  dev.off()
+  namfig<-"theo_individualfits_smooth.eps"
+  cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
+  plot(saemix.fit, plot.type="individual", smooth=TRUE, ilist=1:6)
+  dev.off()
+}
+
 ```
 
 ### Simulated PD

@@ -1,455 +1,326 @@
-%!PS-Adobe-3.0
-%%DocumentNeededResources: font Helvetica
-%%+ font Helvetica-Bold
-%%+ font Helvetica-Oblique
-%%+ font Helvetica-BoldOblique
-%%+ font Symbol
-%%DocumentMedia: a4 595 841 0 () ()
-%%Title: R Graphics Output
-%%Creator: R Software
-%%Pages: (atend)
-%%Orientation: Landscape
-%%BoundingBox: 18 18 577 824
+%!PS-Adobe-3.0 EPSF-3.0
+%%Creator: cairo 1.15.10 (http://cairographics.org)
+%%CreationDate: Mon May 16 11:58:25 2022
+%%Pages: 1
+%%DocumentData: Clean7Bit
+%%LanguageLevel: 2
+%%BoundingBox: 0 0 841 595
 %%EndComments
 %%BeginProlog
-/bp  { gs 595.00 0 translate 90 rotate gs } def
-% begin .ps.prolog
-/gs  { gsave } def
-/gr  { grestore } def
-/ep  { showpage gr gr } def
-/m   { moveto } def
-/l  { rlineto } def
-/np  { newpath } def
-/cp  { closepath } def
-/f   { fill } def
-/o   { stroke } def
-/c   { newpath 0 360 arc } def
-/r   { 4 2 roll moveto 1 copy 3 -1 roll exch 0 exch rlineto 0 rlineto -1 mul 0 exch rlineto closepath } def
-/p1  { stroke } def
-/p2  { gsave bg fill grestore newpath } def
-/p3  { gsave bg fill grestore stroke } def
-/p6  { gsave bg eofill grestore newpath } def
-/p7  { gsave bg eofill grestore stroke } def
-/t   { 5 -2 roll moveto gsave rotate
-       1 index stringwidth pop
-       mul neg 0 rmoveto show grestore } def
-/ta  { 4 -2 roll moveto gsave rotate show } def
-/tb  { 2 -1 roll 0 rmoveto show } def
-/cl  { grestore gsave newpath 3 index 3 index moveto 1 index
-       4 -1 roll lineto  exch 1 index lineto lineto
-       closepath clip newpath } def
-/rgb { setrgbcolor } def
-/s   { scalefont setfont } def
-% end   .ps.prolog
-%%IncludeResource: font Helvetica
-/Helvetica findfont
-dup length dict begin
-  {1 index /FID ne {def} {pop pop} ifelse} forall
-  /Encoding ISOLatin1Encoding def
-  currentdict
-  end
-/Font1 exch definefont pop
-%%IncludeResource: font Helvetica-Bold
-/Helvetica-Bold findfont
-dup length dict begin
-  {1 index /FID ne {def} {pop pop} ifelse} forall
-  /Encoding ISOLatin1Encoding def
-  currentdict
-  end
-/Font2 exch definefont pop
-%%IncludeResource: font Helvetica-Oblique
-/Helvetica-Oblique findfont
-dup length dict begin
-  {1 index /FID ne {def} {pop pop} ifelse} forall
-  /Encoding ISOLatin1Encoding def
-  currentdict
-  end
-/Font3 exch definefont pop
-%%IncludeResource: font Helvetica-BoldOblique
-/Helvetica-BoldOblique findfont
-dup length dict begin
-  {1 index /FID ne {def} {pop pop} ifelse} forall
-  /Encoding ISOLatin1Encoding def
-  currentdict
-  end
-/Font4 exch definefont pop
-%%IncludeResource: font Symbol
-/Symbol findfont
-dup length dict begin
-  {1 index /FID ne {def} {pop pop} ifelse} forall
-  currentdict
-  end
-/Font5 exch definefont pop
+50 dict begin
+/q { gsave } bind def
+/Q { grestore } bind def
+/cm { 6 array astore concat } bind def
+/w { setlinewidth } bind def
+/J { setlinecap } bind def
+/j { setlinejoin } bind def
+/M { setmiterlimit } bind def
+/d { setdash } bind def
+/m { moveto } bind def
+/l { lineto } bind def
+/c { curveto } bind def
+/h { closepath } bind def
+/re { exch dup neg 3 1 roll 5 3 roll moveto 0 rlineto
+      0 exch rlineto 0 rlineto closepath } bind def
+/S { stroke } bind def
+/f { fill } bind def
+/f* { eofill } bind def
+/n { newpath } bind def
+/W { clip } bind def
+/W* { eoclip } bind def
+/BT { } bind def
+/ET { } bind def
+/BDC { mark 3 1 roll /BDC pdfmark } bind def
+/EMC { mark /EMC pdfmark } bind def
+/cairo_store_point { /cairo_point_y exch def /cairo_point_x exch def } def
+/Tj { show currentpoint cairo_store_point } bind def
+/TJ {
+  {
+    dup
+    type /stringtype eq
+    { show } { -0.001 mul 0 cairo_font_matrix dtransform rmoveto } ifelse
+  } forall
+  currentpoint cairo_store_point
+} bind def
+/cairo_selectfont { cairo_font_matrix aload pop pop pop 0 0 6 array astore
+    cairo_font exch selectfont cairo_point_x cairo_point_y moveto } bind def
+/Tf { pop /cairo_font exch def /cairo_font_matrix where
+      { pop cairo_selectfont } if } bind def
+/Td { matrix translate cairo_font_matrix matrix concatmatrix dup
+      /cairo_font_matrix exch def dup 4 get exch 5 get cairo_store_point
+      /cairo_font where { pop cairo_selectfont } if } bind def
+/Tm { 2 copy 8 2 roll 6 array astore /cairo_font_matrix exch def
+      cairo_store_point /cairo_font where { pop cairo_selectfont } if } bind def
+/g { setgray } bind def
+/rg { setrgbcolor } bind def
+/d1 { setcachedevice } bind def
+/cairo_data_source {
+  CairoDataIndex CairoData length lt
+    { CairoData CairoDataIndex get /CairoDataIndex CairoDataIndex 1 add def }
+    { () } ifelse
+} def
+/cairo_flush_ascii85_file { cairo_ascii85_file status { cairo_ascii85_file flushfile } if } def
+/cairo_image { image cairo_flush_ascii85_file } def
+/cairo_imagemask { imagemask cairo_flush_ascii85_file } def
 %%EndProlog
+%%BeginSetup
+%%BeginResource: font f-0-0
+%!FontType1-1.1 f-0-0 1.0
+11 dict begin
+/FontName /f-0-0 def
+/PaintType 0 def
+/FontType 1 def
+/FontMatrix [0.001 0 0 0.001 0 0] readonly def
+/FontBBox {-8 -217 760 747                                   } readonly def
+/Encoding 256 array
+0 1 255 {1 index exch /.notdef put} for
+dup 32 /space put
+dup 40 /parenleft put
+dup 41 /parenright put
+dup 47 /slash put
+dup 48 /zero put
+dup 49 /one put
+dup 50 /two put
+dup 52 /four put
+dup 53 /five put
+dup 54 /six put
+dup 56 /eight put
+dup 67 /C put
+dup 76 /L put
+dup 84 /T put
+dup 97 /a put
+dup 99 /c put
+dup 101 /e put
+dup 103 /g put
+dup 104 /h put
+dup 105 /i put
+dup 109 /m put
+dup 110 /n put
+dup 111 /o put
+dup 114 /r put
+dup 116 /t put
+readonly def
+currentdict end
+currentfile eexec
+f983ef0097ece636fb4a96c74d26ab84185f6dfa4a16a7a1c27bbe3f1156aea698df336d20b467
+b10e7f33846656653c5ac6962759d3056cbdb3190bac614b984bf5a132dc418192443014ba63de
+800d392b6fea026574bb2535fd7bb5338f35bf15a88ea328fdaa49670c7852e3d060f3c5d6b07f
+2ef6d0f22646c5d18e19a2ae3ee120390f6dd96f76dcf1e127de5e9299077a00c17c0d71e36e5b
+9d5ec58fceda57739a6a4214d4b79d6c48d2784b60c320323c7acddddf34db833cac0cf109f799
+69d114a330d372e5c978a66acc84e3fe5557f6240856a013ffaa0199444e5c5036f775eba4a5c5
+8cde66cf604b9aca2178431127b8a1ff7ed633a65c04600af5f573483112251caf36d87fcbcc51
+7cdc80a7fdf8e3c5ced0c3bfb6f2429abb36ea69768ca4bd9f1c63b57e0a2ec0c8d64df6b8a9a9
+abf2973086e6357e6b6d791e7421871f8648c13aa08c5336e8960d9b897d33b2dc2c9a1da4a9e9
+66df35ae215665bc73ea811ee5ee58048acd1e2397341819365d027504a867d15f92ee14f304a0
+c958758db37ea0022d0650884272292089050a3d27d6e1e29b2333d7ca5dd57629c0e94586cb9f
+861f814711f571fb06694cddfe9c6dd1f8065a1a19b6543cbc648077b0fb7f7b36ac82fea56806
+7a727c70aa6e56083780b9206250de93e47865ac6118f812b2c7275928f581dd87279fee7022e3
+05a022952e98b25625a370eecc00d18273e3cd85f89b5cd0c0d9e4e864e4cbc4297e4c798269f3
+42084e0b98c1ac61c582a381c63cc438d3dfb71b016a711e7f7b4ab238587a5f487c6dc7de5a65
+5820dbbcb36f88f962c1cdce58d423cf0944e6b7e7ccbf42ddad13ee1246196868231d3d569ea2
+0dd4995a622baf5858b0686591070fdaca43e3c4f670633feb2a3122af01c181c77f1b5602904f
+08735a31ea9b2b05957c2ad58b60245006186105e49fad80f834e9bf45701a4317dfe2c0e7386e
+daa86ae726a9401d61a5fd2063b0256293f09f751118ea67e69c5f58abfbdeb6c37d1315eed0fd
+ee9f6fbd5f0709fedd26d1b87b04076f0472cb320d52efe765f1bc821dc525a4d1af1892585d9a
+7f3c0afef0b8f45f63bb2e028424e4f855107aa6385bd6382dd23bfa6d96bbbe1420707440a982
+3325df1618b508bfa0e3343cb19cd1b9c06a2b9ee0a3ad15a2355eafdcc192c9266ffe39d0d954
+588c70c2692af45caf7f38c29ba63eb4ccb970f494f951ca21c12b9800e44ab63b527a38553f57
+9244e5d2daf99f732ed24438672ce741c73285bcdf27403d704f837f499f09f41fcc0c6188c78b
+9756d4543f401e619d179a8104de534bd87d76964b561ebb480865e11f05f726794f643881dc5f
+f5bef273980d2874dc09b2aa2f173ccb196bdd5765b7d312292410a94bfe5fd40759426e861662
+683d21aa0c122d62a81a3d8680cfcfa6db124131176b40fddca981ad0685305a5ca1a91e761dcb
+c99eb07faf9f6ef458c38b530b8350a5ee1672389ef020e757a7d76c293cd5f11220bcd4709e96
+d8b3123bd1b1224b734197823a461392f9e860d70b20f6984d43d2822a1351444217dc01d42593
+c506594906c85ed7820b221fe0b71aa7b754c0801f9d38e1193803bb68ade52f06d8778e9931b2
+02789ab561624828950dec10844c592fa6de8698877607530ad8be8b9bb32ef6aecebe7714cfb7
+7520f58da748396e7e17b8d596ef27031f9934d771e1d21afb939e48e819bce05538e85bb47182
+ca87e35963a06e1132ce15cad67ea78a6e0ce119da93d809f672b5e82b38c30c559683375f542a
+fb9d57ac980c3b3af6c42bea995db34c684f3c80964bb06d54de997c3e4680b4db54fa5ef105b2
+6660632286b24ff9d13fc0e132a6eb6a18c7625a0ae760a5f167eb2ea5238979b9677911886c48
+6e50c7ef08a1749906c287feafe9a3dd2efb2c8381e13cb69a90fd523995404371cc6d05e53e85
+ad09ee97d330fd2e68a0826f7b1fa267ca624c6b561b4ea3763dfbb027bbaea7ee6a09fda652dd
+57f002db0e99b19878c13f40ea8a5c27e5b2b0c4f8b6bdde9bfad29f017675228dafdaefe7e34b
+e918b6ea74e38e144d4d792d96a70d2b2274741ff320655fd42cde51766e9cdc1da90bf29b5f22
+00b6ff4379c5916250ef8e8ef21188e1e53947aef2af3420d94859e53a305d8d427c263da4e0b8
+14965d869a6504b7b07a9de4b88fbd18fa408fc5bb368aaf1f08bdcd5d7b09b949643a705168f4
+a5d995a45240a2658f204000c52054e34b76f1965acc280f484b9bea0fdffe0741541d4d4b763a
+fe2eabd9fe0d47eaced4904da342418af9b2740e31cb1443e0009ea313efa6a78495c07bf77115
+ba3a774542a31fd3ebdf9134424a11f7c6082c1e256fc699eea51168e96e61b0482f8ff93ba587
+57f6e7057ffe980122c411976b18cbfa7152cfd6030c9daf01b7b0049dfb5f784e32f73fca3c25
+2f2cb1a0c95767ddc89f3c427238881bca4c0c88856616db7bd1398468f0df107e5fc1b66fc1c6
+8ca7fd651af1dd9151b37966cc66810cf6fea382eadd74c49d6e422f9fed5afd598e005364dada
+c32fca6770cc55764186dce2637801da518adba212bd5e5b0d20a7db68b26536ffecee0918e89a
+870690c002203ad8feb9938a6651da9f68b229f2a26bf3a37a4a4cb85805a5586dd9d46d027075
+f9e6c2067291e0e7154b64f29318ec1eca6d879f8adef8c12b417981e8a50d40702e4759972f98
+1011e7851af857b08e1f35cdb36aca6673ca90e9691daa4324b7688a70465c38e77f57a1d0e9d7
+2903453079988159d4fe0a7236c9939034b9a301bce882829b0adb45304b53de76ac0766856c1e
+8d86ba760cff9774dcf20466150ee8ee2ab5d167c327a91fd44209008d6600db8e905e84a5e922
+122b574d03ee6e4293e5f7d415f1e159ec6d880b824b922a64cdf58a665dbc4f291d8d47bf8b69
+ac9d9c29704eb5c978438cf6fd6a6d52f4d6ddf3ebc808e0c4f46534351e48b2ce1548c39a7579
+a4d46af440b1aee93a0be839ca69118dbec9ac8c167362521b100d121222eeb10b6b1b158c786b
+d047f410cd1709ffeba5faca9c4279189146d6d109c82b0079856adbb3a2187394f033054da92d
+9fb8236689638e62cb0c7a2f947d361df3da372f32ddf3068265f5aaf5973d71a6a3980fa6dfd8
+790793a0c9629428a411ceb8db8907408a3111b223fbdcac75254615a09e4ebf0e61c83a1b8d79
+bf269171bab9eda45d26cabdd5742537fff76135e2f346c674b1729cb6fb0d74d6772932852af5
+b1a37c255a759a0d1f25c3b4775b69d42cfd225753f1c125956d08e92577f1efbc0e0e0d4a913d
+80598b071ee5e83b0893e14e4e6705cd54b4b48a9e30f3e522c4b3eb05d30de0a5d0447e343d68
+35771af702c82ddc9b69011bcb141c29ba0a15dc06096255b87ca721d4bc85b339423007691146
+4e1178b3577e7c485b5b0e411eb1185e2ef0314f056e601cce14bc1b1736125b1f2b9326783705
+d20a79f79ccd6b984229be822b94729c24184cd1c0a5d1bde64e1bb4df8f251e0aa507fef21624
+a8619be5b594e8339a01b307f1733a84af0f81f15d17f3822602ddf8d4de29080434e213bcd4a2
+fc290a13288fda6bea0c0a16b6aa1f5555821a3ade56d622e5a2404fd78f9f04eac46b681045d6
+ce0107d050bf6aac39cf9c9b7cffaaaf877a2af4ea88f267d07dc3ef2889d3387a4314ec3b8962
+e3e3b5f3300847f549fe4c423b037f1bd98f67d680c6e8c06567b9133986bd9c07f66ef3964457
+c4f5ee68bb9564359dc7cac9c8f2d45468872fd7f9e467bdab29c254bc44e4233bd36fa5bb6598
+a0bd1c6c88262bac701b78e36a30988a2f6c0faf473e95ab4d376dd2660d7c75be970da22f9729
+0774955c34de6a025ed6b0d25ac2dd082f2d92c16ec83024a7c7521cf791dddbbf2bf6f6f45220
+3e06d5ab0b64cce925ff0a24275a5b96efbe87e85727e681b6ef56a2e029b6ffbcf05f5683f1be
+ba7407b1acc9edf38051d6b5c1bd906222b38aab49cf79258b16c7707ca68e40715e25f0763c1d
+9b44f65b07bae0245330052c163763e2f4a19e9dca98081e969bc9df0d4a09f8480000000000000000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000000000000000000000000000000000000
+cleartomark
+%%EndResource
+%%BeginResource: font f-1-0
+%!FontType1-1.1 f-1-0 1.0
+11 dict begin
+/FontName /f-1-0 def
+/PaintType 0 def
+/FontType 1 def
+/FontMatrix [0.001 0 0 0.001 0 0] readonly def
+/FontBBox {0 0 0 0                                           } readonly def
+/Encoding 256 array
+0 1 255 {1 index exch /.notdef put} for
+dup 32 /space put
+readonly def
+currentdict end
+currentfile eexec
+f983ef0097ece636fb4a96c74d26ab84185f6dfa4a16a7a1c27bbe3f1156aea698df336d20b467
+b10e7f33846656653c5ac6962759d3056cbdb3190bac614b984bf5a132dc418192443014ba63de
+800d392b6fea026574bb2535fd7bb5338f35bf15a88ea328fdaa49670c7852e3d060f3c5d6b07f
+2ef6d0f22646c5d18e19a2ae3ee120390f6dd96f76dcf1e127de5e9299077a00c17c0d71e36e5b
+9d5ec58fceda57739a6a4214d4b79d6c48d2784b60c320323c7acddddf34db833cac0cf109f799
+69d114a330d372e5c978a66acc84e3fe5557f6240856a013ffaa0199444e5c5036f775eba4a5c5
+8cde66cf604b9aca2178431127b8a1ff7ed633a65c04600af5f573483112251cae134058d6a192
+3c6b565d778d9618b31789d664bb543a0e576f252e8520c2d0698c337b75c6632fc7d6cc6dce2a
+99711adc4f0765c5131332daf295574ebed60605205e592cf53538f3eea1a578a579aa4c146523
+ff0ab941b701c3ad43143bef56e38471a155921982099e69a7b5d74bff42f14be46750fa50aed1
+92881ae836e7a8a6d045869db73198cce707373e0660a5044a83cc27206543523191d98e33fce6
+c08f79383be25342cf2344cc980000000000000000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000000000000000000000000000000000000
+cleartomark
+%%EndResource
+%%EndSetup
 %%Page: 1 1
-bp
-77.04 91.44 793.65 518.24 cl
-/bg { 0 setgray } def
-0 setgray
-0.75 setlinewidth
-[] 0 setdash
-1 setlinecap
-1 setlinejoin
-10.00 setmiterlimit
-103.58 181.79 1.80 c p3
-112.28 321.51 1.80 c p3
-127.24 468.72 1.80 c p3
-151.71 437.25 1.80 c p3
-200.66 396.80 1.80 c p3
-235.47 388.56 1.80 c p3
-287.95 355.22 1.80 c p3
-342.89 333.49 1.80 c p3
-426.37 297.91 1.80 c p3
-759.49 198.27 1.80 c p3
-104.12 139.84 1.80 c p3
-110.92 371.70 1.80 c p3
-123.98 386.68 1.80 c p3
-148.99 387.43 1.80 c p3
-191.96 331.99 1.80 c p3
-233.30 303.15 1.80 c p3
-287.95 277.68 1.80 c p3
-341.53 245.84 1.80 c p3
-423.11 188.16 1.80 c p3
-757.59 109.12 1.80 c p3
-104.12 240.22 1.80 c p3
-112.56 333.87 1.80 c p3
-124.52 382.56 1.80 c p3
-151.71 367.58 1.80 c p3
-195.22 356.34 1.80 c p3
-234.93 307.65 1.80 c p3
-289.04 273.94 1.80 c p3
-341.53 258.95 1.80 c p3
-427.19 214.00 1.80 c p3
-754.06 114.74 1.80 c p3
-106.30 146.20 1.80 c p3
-113.10 247.71 1.80 c p3
-125.88 397.55 1.80 c p3
-154.71 389.31 1.80 c p3
-191.96 357.84 1.80 c p3
-233.30 333.12 1.80 c p3
-287.68 291.91 1.80 c p3
-342.07 275.06 1.80 c p3
-422.56 232.36 1.80 c p3
-767.11 118.48 1.80 c p3
-104.94 151.07 1.80 c p3
-110.92 286.30 1.80 c p3
-123.98 502.43 1.80 c p3
-151.71 424.89 1.80 c p3
-191.96 402.79 1.80 c p3
-233.30 358.59 1.80 c p3
-287.68 340.98 1.80 c p3
-344.25 296.41 1.80 c p3
-423.11 239.10 1.80 c p3
-758.95 134.22 1.80 c p3
-104.12 123.73 1.80 c p3
-112.56 190.78 1.80 c p3
-128.06 316.64 1.80 c p3
-151.99 312.14 1.80 c p3
-193.86 282.55 1.80 c p3
-232.75 260.45 1.80 c p3
-287.14 225.99 1.80 c p3
-347.51 205.01 1.80 c p3
-425.83 179.54 1.80 c p3
-745.35 109.87 1.80 c p3
-103.58 107.25 1.80 c p3
-110.38 163.43 1.80 c p3
-124.52 263.45 1.80 c p3
-151.71 321.88 1.80 c p3
-191.42 340.98 1.80 c p3
-232.75 324.88 1.80 c p3
-286.60 272.06 1.80 c p3
-341.53 239.85 1.80 c p3
-424.47 207.63 1.80 c p3
-755.42 118.48 1.80 c p3
-103.58 189.65 1.80 c p3
-110.92 189.65 1.80 c p3
-123.43 349.23 1.80 c p3
-151.71 358.59 1.80 c p3
-192.78 322.26 1.80 c p3
-234.11 295.66 1.80 c p3
-291.22 252.58 1.80 c p3
-343.43 246.59 1.80 c p3
-425.83 187.78 1.80 c p3
-752.70 122.23 1.80 c p3
-104.94 351.47 1.80 c p3
-113.91 413.65 1.80 c p3
-125.34 342.86 1.80 c p3
-151.71 312.52 1.80 c p3
-192.78 287.42 1.80 c p3
-233.30 287.79 1.80 c p3
-291.76 234.23 1.80 c p3
-336.09 229.36 1.80 c p3
-412.23 193.78 1.80 c p3
-761.13 117.36 1.80 c p3
-106.84 183.66 1.80 c p3
-117.72 270.94 1.80 c p3
-124.52 315.51 1.80 c p3
-152.53 368.70 1.80 c p3
-193.32 457.85 1.80 c p3
-234.11 419.27 1.80 c p3
-289.31 375.82 1.80 c p3
-351.86 342.86 1.80 c p3
-425.83 288.17 1.80 c p3
-741.27 166.06 1.80 c p3
-103.58 257.45 1.80 c p3
-110.38 346.60 1.80 c p3
-123.43 375.07 1.80 c p3
-150.63 330.50 1.80 c p3
-194.68 295.29 1.80 c p3
-233.30 270.94 1.80 c p3
-287.95 242.10 1.80 c p3
-342.34 211.01 1.80 c p3
-426.37 176.17 1.80 c p3
-751.61 107.62 1.80 c p3
-103.58 122.23 1.80 c p3
-110.38 223.74 1.80 c p3
-123.98 368.33 1.80 c p3
-151.17 439.50 1.80 c p3
-192.50 440.62 1.80 c p3
-234.65 396.42 1.80 c p3
-289.04 322.26 1.80 c p3
-342.34 304.28 1.80 c p3
-424.47 246.59 1.80 c p3
-753.51 119.23 1.80 c p3
-18.00 18.00 823.89 577.28 cl
-0 setgray
-0.75 setlinewidth
-[] 0 setdash
-1 setlinecap
-1 setlinejoin
-10.00 setmiterlimit
-np
-96.78 91.44 m
-679.85 0 l
-o
-np
-96.78 91.44 m
-0 -7.20 l
-o
-np
-232.75 91.44 m
-0 -7.20 l
-o
-np
-368.72 91.44 m
-0 -7.20 l
-o
-np
-504.69 91.44 m
-0 -7.20 l
-o
-np
-640.66 91.44 m
-0 -7.20 l
-o
-np
-776.63 91.44 m
-0 -7.20 l
-o
-/Font1 findfont 12 s
-96.78 65.52 (0) .5 0 t
-232.75 65.52 (5) .5 0 t
-368.72 65.52 (10) .5 0 t
-504.69 65.52 (15) .5 0 t
-640.66 65.52 (20) .5 0 t
-776.63 65.52 (25) .5 0 t
-np
-77.04 150.32 m
-0 299.67 l
-o
-np
-77.04 150.32 m
--7.20 0 l
-o
-np
-77.04 225.24 m
--7.20 0 l
-o
-np
-77.04 300.16 m
--7.20 0 l
-o
-np
-77.04 375.07 m
--7.20 0 l
-o
-np
-77.04 449.99 m
--7.20 0 l
-o
-59.76 150.32 (2) .5 90 t
-59.76 225.24 (4) .5 90 t
-59.76 300.16 (6) .5 90 t
-59.76 375.07 (8) .5 90 t
-59.76 449.99 (10) .5 90 t
-np
-77.04 91.44 m
-716.61 0 l
-0 426.80 l
--716.61 0 l
-0 -426.80 l
-o
-18.00 18.00 823.89 577.28 cl
-/Font2 findfont 14 s
-0 setgray
-375.83 542.73 (Theoph) 0 ta
--0.280 (ylline data) tb gr
-/Font1 findfont 12 s
-435.34 36.72 (Time \(hr\)) .5 0 t
-30.96 248.49 (Concentr) 90 ta
--0.120 (ation \(mg/L\)) tb gr
-77.04 91.44 793.65 518.24 cl
-0 setgray
-0.75 setlinewidth
-[] 0 setdash
-1 setlinecap
-1 setlinejoin
-10.00 setmiterlimit
-np
-103.58 181.79 m
-8.70 139.72 l
-14.96 147.21 l
-24.47 -31.47 l
-48.95 -40.45 l
-34.81 -8.24 l
-52.48 -33.34 l
-54.94 -21.73 l
-83.48 -35.58 l
-333.12 -99.64 l
-o
-np
-104.12 139.84 m
-6.80 231.86 l
-13.06 14.98 l
-25.01 0.75 l
-42.97 -55.44 l
-41.34 -28.84 l
-54.65 -25.47 l
-53.58 -31.84 l
-81.58 -57.68 l
-334.48 -79.04 l
-o
-np
-104.12 240.22 m
-8.44 93.65 l
-11.96 48.69 l
-27.19 -14.98 l
-43.51 -11.24 l
-39.71 -48.69 l
-54.11 -33.71 l
-52.49 -14.99 l
-85.66 -44.95 l
-326.87 -99.26 l
-o
-np
-106.30 146.20 m
-6.80 101.51 l
-12.78 149.84 l
-28.83 -8.24 l
-37.25 -31.47 l
-41.34 -24.72 l
-54.38 -41.21 l
-54.39 -16.85 l
-80.49 -42.70 l
-344.55 -113.88 l
-o
-np
-104.94 151.07 m
-5.98 135.23 l
-13.06 216.13 l
-27.73 -77.54 l
-40.25 -22.10 l
-41.34 -44.20 l
-54.38 -17.61 l
-56.57 -44.57 l
-78.86 -57.31 l
-335.84 -104.88 l
-o
-np
-104.12 123.73 m
-8.44 67.05 l
-15.50 125.86 l
-23.93 -4.50 l
-41.87 -29.59 l
-38.89 -22.10 l
-54.39 -34.46 l
-60.37 -20.98 l
-78.32 -25.47 l
-319.52 -69.67 l
-o
-np
-103.58 107.25 m
-6.80 56.18 l
-14.14 100.02 l
-27.19 58.43 l
-39.71 19.10 l
-41.33 -16.10 l
-53.85 -52.82 l
-54.93 -32.21 l
-82.94 -32.22 l
-330.95 -89.15 l
-o
-np
-103.58 189.65 m
-7.34 0 l
-12.51 159.58 l
-28.28 9.36 l
-41.07 -36.33 l
-41.33 -26.60 l
-57.11 -43.08 l
-52.21 -5.99 l
-82.40 -58.81 l
-326.87 -65.55 l
-o
-np
-104.94 351.47 m
-8.97 62.18 l
-11.43 -70.79 l
-26.37 -30.34 l
-41.07 -25.10 l
-40.52 0.37 l
-58.46 -53.56 l
-44.33 -4.87 l
-76.14 -35.58 l
-348.90 -76.42 l
-o
-np
-106.84 183.66 m
-10.88 87.28 l
-6.80 44.57 l
-28.01 53.19 l
-40.79 89.15 l
-40.79 -38.58 l
-55.20 -43.45 l
-62.55 -32.96 l
-73.97 -54.69 l
-315.44 -122.11 l
-o
-np
-103.58 257.45 m
-6.80 89.15 l
-13.05 28.47 l
-27.20 -44.57 l
-44.05 -35.21 l
-38.62 -24.35 l
-54.65 -28.84 l
-54.39 -31.09 l
-84.03 -34.84 l
-325.24 -68.55 l
-o
-np
-103.58 122.23 m
-6.80 101.51 l
-13.60 144.59 l
-27.19 71.17 l
-41.33 1.12 l
-42.15 -44.20 l
-54.39 -74.16 l
-53.30 -17.98 l
-82.13 -57.69 l
-329.04 -127.36 l
-o
-ep
+%%BeginPageSetup
+%%PageBoundingBox: 0 0 841 595
+%%EndPageSetup
+q 0 0 841 595 rectclip
+1 0 0 -1 0 595 cm q
+1 g
+0 0 841 595 rectfill
+0 g
+0.75 w
+1 J
+1 j
+[] 0.0 d
+10 M 79.75 521.559 m 792.902 521.559 l S
+79.75 521.559 m 79.75 528.762 l S
+222.379 521.559 m 222.379 528.762 l S
+365.012 521.559 m 365.012 528.762 l S
+507.641 521.559 m 507.641 528.762 l S
+650.273 521.559 m 650.273 528.762 l S
+792.902 521.559 m 792.902 528.762 l S
+BT
+12 0 0 -12 76.25 547.256836 Tm
+/f-0-0 1 Tf
+(0)Tj
+11.885742 0 Td
+(5)Tj
+11.594401 0 Td
+(10)Tj
+11.885742 0 Td
+(15)Tj
+11.886068 0 Td
+(20)Tj
+11.885742 0 Td
+(25)Tj
+ET
+59.039 457.746 m 59.039 133 l S
+59.039 457.746 m 51.84 457.746 l S
+59.039 376.562 m 51.84 376.562 l S
+59.039 295.375 m 51.84 295.375 l S
+59.039 214.188 m 51.84 214.188 l S
+59.039 133 m 51.84 133 l S
+BT
+0 -12 -12 0 41.538086 461.246094 Tm
+/f-0-0 1 Tf
+[(2)-6209(4)]TJ
+13.530924 0 Td
+[(6)-6210(8)]TJ
+13.239583 0 Td
+(10)Tj
+ET
+59.039 59.039 751.723 462.52 re S
+BT
+14.399414 0 0 -14.399414 432.398438 34.21875 Tm
+/f-1-0 1 Tf
+( )Tj
+12 0 0 -12 410.398438 576.057617 Tm
+/f-0-0 1 Tf
+(Time \(hr\))Tj
+0 -12 -12 0 12.737305 346.800781 Tm
+[(Concentr)5(ation \(mg/L\))]TJ
+ET
+86.883 423.648 m 96.012 272.234 l 111.699 112.703 l 137.371 146.801 l 188.719
+ 190.645 l 225.234 199.574 l 280.289 235.703 l 337.91 259.246 l 425.488 
+297.809 l 774.93 405.789 l S
+87.453 469.113 m 94.582 217.84 l 108.277 201.605 l 134.52 200.793 l 179.59
+ 260.871 l 222.949 292.125 l 280.289 319.73 l 336.484 354.234 l 422.062 
+416.75 l 772.934 502.398 l S
+87.453 360.324 m 96.297 258.84 l 108.848 206.07 l 137.371 222.305 l 183.016
+ 234.484 l 224.664 287.254 l 281.43 323.789 l 336.484 340.027 l 426.344 
+388.738 l 769.227 496.312 l S
+89.734 462.211 m 96.867 352.203 l 110.273 189.832 l 140.512 198.762 l 179.59
+ 232.859 l 222.949 259.652 l 280.004 304.305 l 337.055 322.57 l 421.492 
+368.848 l 782.918 492.25 l S
+88.309 456.934 m 94.582 310.395 l 108.277 76.172 l 137.371 160.199 l 179.59
+ 184.148 l 222.949 232.047 l 280.004 251.129 l 339.336 299.434 l 422.062
+ 361.543 l 774.359 475.203 l S
+87.453 486.57 m 96.297 413.906 l 112.555 277.512 l 137.656 282.383 l 181.59
+ 314.453 l 222.379 338.402 l 279.434 375.75 l 342.762 398.48 l 424.914 426.086
+ l 760.098 501.59 l S
+86.883 504.43 m 94.012 443.539 l 108.848 335.156 l 137.371 271.828 l 179.02
+ 251.129 l 222.379 268.582 l 278.863 325.82 l 336.484 360.73 l 423.488 395.641
+ l 770.652 492.25 l S
+86.883 415.125 m 94.582 415.125 l 107.707 242.195 l 137.371 232.047 l 180.445
+ 271.426 l 223.809 300.246 l 283.711 346.926 l 338.48 353.422 l 424.914 
+417.152 l 767.801 488.191 l S
+88.309 239.762 m 97.723 172.375 l 109.703 249.098 l 137.371 281.977 l 180.445
+ 309.176 l 222.949 308.77 l 284.281 366.82 l 330.781 372.094 l 410.652 410.66
+ l 776.645 493.469 l S
+90.305 421.621 m 101.715 327.035 l 108.848 278.73 l 138.227 221.09 l 181.02
+ 124.477 l 223.809 166.289 l 281.715 213.375 l 347.324 249.098 l 424.914
+ 308.363 l 755.82 440.699 l S
+86.883 341.652 m 94.012 245.039 l 107.707 214.188 l 136.23 262.492 l 182.445
+ 300.652 l 222.949 327.035 l 280.289 358.293 l 337.34 391.984 l 425.488 
+429.738 l 766.66 504.023 l S
+86.883 488.191 m 94.012 378.184 l 108.277 221.496 l 136.801 144.367 l 180.16
+ 143.148 l 224.379 191.051 l 281.43 271.426 l 337.34 290.91 l 423.488 353.422
+ l 768.656 491.441 l S
+Q Q
+showpage
 %%Trailer
-%%Pages: 1
+end
 %%EOF

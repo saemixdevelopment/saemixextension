@@ -5,6 +5,7 @@ if(FALSE) {
   progDirExt<-file.path(saemixDir,"Rext")
   source(file.path(progDir,"aaa_generics.R"))
   source(file.path(progDirExt,"SaemixOutcome.R"))
+  source(file.path(progDirExt,"SaemixOutcome-methods.R"))
   source(file.path(progDirExt,"SaemixData.R"))
   source(file.path(progDirExt,"SaemixCovariateModel.R"))
   source(file.path(progDirExt,"SaemixCovariate.R"))

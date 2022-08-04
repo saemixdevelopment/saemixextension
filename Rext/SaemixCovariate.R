@@ -137,7 +137,7 @@ setReplaceMethod(
 setMethod( 
   f="initialize",
   signature="SaemixCovariate",
-  definition=function(.Object, name="", type="continuous", unit="", beta=1, beta.fix=0, covariate.transform){
+  definition=function(.Object, name="", type="continuous", unit="", beta=0, beta.fix=0, covariate.transform){
     .Object@name <- name
     .Object@type <- type
     .Object@unit <- unit
@@ -150,9 +150,10 @@ setMethod(
     if(covariate.transform@type=="categorical" && length(covariate.transform@ncat)>0) {
       length(beta)<-length(beta.fix)<-(covariate.transform@ncat-1)
       beta[is.na(beta)]<-1
-      beta.fix[is.na(beta.fix)]<-0
     } 
     .Object@beta<-beta
+    length(beta.fix)<-length(beta)
+    beta.fix[is.na(beta.fix)]<-0
     .Object@beta.fix<-beta.fix
 
     validObject(.Object)
@@ -208,11 +209,20 @@ setMethod("showall","SaemixCovariate",
 
 ########################################################################
 # Creator functions
+# If transform is given and centering is missing, covariate is automatically centered w/r to its median
+
 contCov <- function(name, transform, centering, beta=0, beta.fix=0, verbose=FALSE) {
-  if(missing(name)) name<-"cov"
+  if(missing(name)) name<-""
+  if(!missing(transform)) {
+    if(is(transform,"character")) {
+      transform<-switch(transform, log=log, exp=exp, sqrt=sqrt, function(x) x)
+    }
+  }
   if(!missing(centering)) {
     #    if(is(centering, "character") && is(as.function(centering),"function")) centering<-as.function(centering)
     #    if(is(centering, "character") && is(as.double(centering),"numeric")) centering<-as.double(centering)
+    if(is(centering,"character"))
+      centering<-switch(centering, mean=mean, median=median, min=min, max=max, "")
     if(is(centering, "function")) {
       covmodel <- new(Class="covmodelCont2Cont", name=name, transform.function=transform, centering.function=centering, verbose=verbose)
     } else {
@@ -223,13 +233,17 @@ contCov <- function(name, transform, centering, beta=0, beta.fix=0, verbose=FALS
         covmodel <- new(Class="covmodelCont2Cont", name=name, transform.function=transform, verbose=verbose)
       }
     }
-  } else 
-    covmodel <- new(Class="covmodelCont2Cont", name=name, transform.function=transform, verbose=verbose)
+  } else {
+    if(missing(transform)) covmodel <- new(Class="covmodelCont2Cont", name=name, transform.function=transform, verbose=verbose) else
+      covmodel <- new(Class="covmodelCont2Cont", name=name, transform.function=transform, centering.function=median, verbose=verbose)
+  }
   xcov <- new(Class="SaemixCovariate", name=name, type="continuous", covariate.transform=covmodel)
   if(!is.na(beta)) xcov@beta<-beta
   xcov@beta.fix<-as.integer(beta.fix!=0)
   return(xcov)
 }
+
+fun1<-switch("log",mean = mean, median = median, log=log)
 
 # special kind of catCov with ncat=2
 binCov <- function(name, breaks, groups, name.cat=character(), reference=character(),beta=0, beta.fix=0, verbose=FALSE) {
@@ -240,7 +254,7 @@ binCov <- function(name, breaks, groups, name.cat=character(), reference=charact
 }
 
 catCov <- function(name, breaks, groups, name.cat=character(), reference=character(), ncat=0, beta=0, beta.fix=0, verbose=FALSE) {
-  if(missing(name)) name<-"cov"
+  if(missing(name)) name<-""
   if(!missing(breaks) & !missing(groups)) { # If both groups and breaks are given, we can't decide, return empty
     if(verbose) message("Please specify only one of either 'groups' if the original covariate is categorical or 'breaks' if the original covariate is continuous and should be categorised")
     return(NULL)
@@ -273,6 +287,8 @@ catCov <- function(name, breaks, groups, name.cat=character(), reference=charact
     length(beta.fix)<-xcov@covariate.transform@ncat-1
     beta.fix[is.na(beta.fix)]<-0
   }
+  length(beta.fix)<-length(beta)
+  beta.fix[is.na(beta.fix)]<-0
   xcov@beta.fix<-as.integer(beta.fix!=0)
   return(xcov)
 }

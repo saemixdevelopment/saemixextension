@@ -13,37 +13,32 @@ Dataset characteristics:
     average/min/max nb obs: 4.00  /  4  /  4 
 First 10 lines of data:
    id dose         y mdv cens occ ytype
-1   1    0  5.757416   0    0   1     1
-2   1  100  6.229266   0    0   1     1
-3   1  300 15.884065   0    0   1     1
-4   1 1000 43.972055   0    0   1     1
-5   2    0  4.320488   0    0   1     1
-6   2  100  5.409232   0    0   1     1
-7   2  300  7.705316   0    0   1     1
-8   2 1000 19.461251   0    0   1     1
-9   3    0  7.200901   0    0   1     1
-10  3  100  6.993282   0    0   1     1
+1   1    0  5.334733   0    0   1     1
+2   1  100  5.947364   0    0   1     1
+3   1  300  9.095940   0    0   1     1
+4   1 1000 21.115630   0    0   1     1
+5   2    0  7.079666   0    0   1     1
+6   2  100  9.864847   0    0   1     1
+7   2  300 26.700399   0    0   1     1
+8   2 1000 38.947737   0    0   1     1
+9   3    0  5.032452   0    0   1     1
+10  3  100  4.773089   0    0   1     1
 -----------------------------------
 ----          Model            ----
 -----------------------------------
 Nonlinear mixed-effects model
   Model function:  Hill model  Model type:  structural
-function(psi,id,xidep) {
-  # input:
-  #   psi : matrix of parameters (4 columns, E0, Emax, E50, gamma)
-  #   id : vector of indices 
-  #   xidep : dependent variables (same nb of rows as length of id)
-  # returns:
-  #   a vector of predictions of length equal to length of id
-  dose<-xidep[,1]
-  e0<-psi[id,1]
-  emax<-psi[id,2]
-  e50<-psi[id,3]
-  gamma<-psi[id,4]
-  f<-e0+emax*dose**gamma/(e50**gamma+dose**gamma)
-  return(f)
+function (psi, id, xidep) 
+{
+    dose <- xidep[, 1]
+    e0 <- psi[id, 1]
+    emax <- psi[id, 2]
+    e50 <- psi[id, 3]
+    gamma <- psi[id, 4]
+    f <- e0 + emax * dose^gamma/(e50^gamma + dose^gamma)
+    return(f)
 }
-<bytecode: 0x563f6a33c3a8>
+<bytecode: 0x56445667bf78>
   Nb of parameters: 4 
       parameter names:  E0 Emax ED50 Gamma 
       distribution:
@@ -69,7 +64,7 @@ Pop.CondInit  5   30  500     3
     Estimation of standard errors and linearised log-likelihood
     Number of iterations:  K1=300, K2=100 
     Number of chains:  1 
-    Seed:  -601598438 
+    Seed:  1706955034 
     Simulations:
         nb of simulated datasets used for npde:  1000 
         nb of simulated datasets used for VPC:  100 
@@ -82,32 +77,32 @@ Pop.CondInit  5   30  500     3
 ----------------------------------------------------
 -----------------  Fixed effects  ------------------
 ----------------------------------------------------
-     Parameter Estimate SE      CV(%)
-[1,] E0          5.036   0.1783 3.5  
-[2,] Emax       32.397   3.0812 9.5  
-[3,] ED50      585.233  42.4969 7.3  
-[4,] Gamma       3.384   0.1491 4.4  
-[5,] b.1         0.099   0.0065 6.6  
+     Parameter Estimate SE     CV(%)
+[1,] E0          5.03    0.183 3.6  
+[2,] Emax       34.40    2.826 8.2  
+[3,] ED50      548.91   38.018 6.9  
+[4,] Gamma       2.96    0.089 3.0  
+[5,] b.1         0.09    0.006 6.6  
 ----------------------------------------------------
 -----------  Variance of random effects  -----------
 ----------------------------------------------------
       Parameter     Estimate SE    CV(%)
-E0    omega2.E0     0.12     0.018 15   
-Emax  omega2.Emax   0.58     0.098 17   
-ED50  omega2.ED50   0.33     0.055 17   
-covar cov.Emax.ED50 0.15     0.056 36   
+E0    omega2.E0     0.13     0.019 15   
+Emax  omega2.Emax   0.48     0.080 17   
+ED50  omega2.ED50   0.37     0.058 16   
+covar cov.Emax.ED50 0.14     0.052 36   
 ----------------------------------------------------
 ------  Correlation matrix of random effects  ------
 ----------------------------------------------------
             omega2.E0 omega2.Emax omega2.ED50
 omega2.E0   1         0.00        0.00       
-omega2.Emax 0         1.00        0.35       
-omega2.ED50 0         0.35        1.00       
+omega2.Emax 0         1.00        0.34       
+omega2.ED50 0         0.34        1.00       
 ----------------------------------------------------
 ---------------  Statistical criteria  -------------
 ----------------------------------------------------
 Likelihood computed by linearisation
-      -2LL= 2027.046 
-      AIC = 2045.046 
-      BIC = 2068.493 
+      -2LL= 2069.178 
+      AIC = 2087.178 
+      BIC = 2110.624 
 ----------------------------------------------------

@@ -1,5 +1,17 @@
 context("Creating SaemixVarLevel objects (representing a level of variability) using the class")
 
+test_that("Variability levels - missing or non-conform models", {
+  expect_error(x1<-new(Class="SaemixVarLevel", size=0))
+  omega.model.pb <- diag(x=2, nrow=3, ncol=3)
+  x1<-new(Class="SaemixVarLevel", omega.model=omega.model.pb)
+  expect_equal(ncol(x1@omega.model),1)
+  omega.pb <- diag(x=2, nrow=2, ncol=3)
+  x1<-new(Class="SaemixVarLevel", omega=omega.pb)
+  expect_equal(ncol(x1@omega.model),1)
+})
+
+context("Creating SaemixVarLevel objects (representing a level of variability) using the class")
+
 test_that("Variability levels", {
   x1<-new(Class="SaemixVarLevel")
   expect_equal(x1@name.level,"iiv")
@@ -19,8 +31,8 @@ test_that("Diagonal IIV", {
   expect_equal(x1@variable,"id")
   expect_equal(sum(x1@omega.model),3)
   expect_equal(length(x1@omega.tri),6)
-  expect_equal(length(x1@index.omega),3)
-  expect_equal(length(x1@index.omega.fix),0)
+  expect_equal(length(x1@idxmat.triomega),3)
+  expect_equal(length(x1@idxmat.triomega.fix),0)
 })
 
 test_that("Full var-cov", {
@@ -30,8 +42,8 @@ test_that("Full var-cov", {
   expect_equal(x1@variable,"id")
   expect_equal(sum(x1@omega.model),9)
   expect_equal(length(x1@omega.tri),6)
-  expect_equal(length(x1@index.omega),6)
-  expect_equal(length(x1@index.omega.fix),0)
+  expect_equal(length(x1@idxmat.triomega),6)
+  expect_equal(length(x1@idxmat.triomega.fix),0)
 })
 
 
@@ -99,10 +111,10 @@ test_that("Block diagonal var-cov, inferred from omega", {
   expect_equal(x1@variable,"id")
   expect_equal(sum(x1@omega.model),5)
   expect_equal(length(x1@omega.tri),6)
-  expect_equal(length(x1@index.omega),4)
-  expect_equal(x1@index.omega.var,c(1,4,6))
-  expect_equal(x1@index.omega.covar,2)
-  expect_equal(length(x1@index.omega.fix),0)
+  expect_equal(length(x1@idxmat.triomega),4)
+  expect_equal(x1@idxmat.triomega.var,c(1,4,6))
+  expect_equal(x1@idxmat.triomega.covar,2)
+  expect_equal(length(x1@idxmat.triomega.fix),0)
 })
 
 test_that("List of two levels, id and occ", {
@@ -129,7 +141,7 @@ test_that("One level, only omega given, 2 parameters with IIV", {
   expect_equal(x@variable,"id")
   expect_equal(sum(x@omega.model),4)
   expect_equal(sum(x@omega.model.fix),0)
-  expect_equal(length(x@omega.names[x@index.omega]),3)
+  expect_equal(length(x@omega.names[x@idxmat.triomega]),3)
 })
 
 test_that("2 parameters with IIV, parameter names given", {
@@ -140,7 +152,7 @@ test_that("2 parameters with IIV, parameter names given", {
   expect_equal(x@variable,"id")
   expect_equal(sum(x@omega.model),4)
   expect_equal(sum(x@omega.model.fix),0)
-  expect_equal(length(x@omega.names[x@index.omega]),3)
+  expect_equal(length(x@omega.names[x@idxmat.triomega]),3)
 })
 
 test_that("saemixVarModel with all defaults except size", {

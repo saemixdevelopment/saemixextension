@@ -630,7 +630,7 @@ setMethod("show","SaemixRes",
       tab<-cbind(tab,100*abs(as.double(tab[,3])/as.double(tab[,2])))
         }else{
             tab<-cbind(c(object@name.fixed), c(object@fixed.effects),c(object@se.fixed))
-            tab<-cbind(tab,100*abs(as.double(tab[,3])/as.double(tab[,3])))
+            tab<-cbind(tab,100*abs(as.double(tab[,3])/as.double(tab[,2])))
         }
       colnames(tab)<-c("Parameter","Estimate","  SE"," CV(%)")
       if(length(object@indx.cov)>0) {
@@ -764,7 +764,7 @@ setMethod("showall","SaemixRes",
             }
         } else{
             tab<-cbind(c(object@name.fixed), c(object@fixed.effects),c(object@se.fixed))
-            tab<-cbind(tab,100*abs(as.double(tab[,2])/as.double(tab[,1])))
+            tab<-cbind(tab,100*abs(as.double(tab[,3])/as.double(tab[,2])))
         }
       colnames(tab)<-c("Parameter","Estimate","SE","CV(%)")
       if(length(object@indx.cov)>0) {

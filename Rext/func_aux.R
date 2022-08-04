@@ -81,18 +81,19 @@ dtransphi<-function(phi,tr) {
 }
 
 ###########################	Computing the acceptance ratio	#############################
-# par: parameters to be optimised
-# y: observations
-# f: model predictions
-# error.function: error function 
+# Sum of squares; need to put par first as these parameters are optimised by optim
+## par: parameters to be optimised
+## y: observations
+## f: model predictions
+## error.function: error function 
 
-ssq<-function(par,y,f,error.function) { # Sum of squares; need to put par first as these parameters are optimised by optim
+ssq<-function(par,y,f,error.function) {
   g<-error.function(f,par)
   e<-sum(((y-f)**2/g**2)+2*log(g))
   return(e)
 }
 
-sumSquare<-function(par,y,f,error.function) { # Sum of squares; need to put par first as these parameters are optimised by optim
+sumSquare<-function(par,y,f,error.function) {
   g<-error.function(f,par)
   e<-sum(((y-f)**2/g**2))
   return(e)
@@ -100,23 +101,25 @@ sumSquare<-function(par,y,f,error.function) { # Sum of squares; need to put par 
 
 # Input
 ## phiM: matrix of parameters
-## Dargs: list, here we use the elements transform.par, model (structural model), IdM, XM, yM, ind.ioM (a vector of 0/1 indicating which elements of the square matrix DYF have data), list of outcomes (type, error.model, error.function)
-## error.parameters: list of the error parameters for the different outcomes in the model (NULL for non-continuous outcome)
+## Dargs: list, here we use the elements 
+### transform.par, model (structural model), 
+### list of outcomes (type, error.model, error.function, error.parameters)
+### IdM, XM, yM (duplicated data)
+### ind.ioM (a vector of 0/1 indicating which elements of the square matrix DYF have data)
 ## DYF: a matrix of dimension nmax=max(n_i) times (N*nb.chains); the column for subject i has the last nmax-n_i elements set to 0, so that colSums sums on the observations for that subject 
 # Output 
 ## U: vector with either sum(-LL) (continuous models, minus the constant sum(log(1/sqrt(2*pi)))) or sum(-logpdf) (likelihood models)
 
-compute.LLy<-function(phiM, Dargs, DYF, error.parameters) {
+compute.LLy<-function(phiM, Dargs, DYF) {
   psiM<-transphi(phiM,Dargs$transform.par)
   fpred<-Dargs$model(psiM,Dargs$IdM,Dargs$XM)
   lpred<-fpred
-  for(ityp in Dargs$etype.exp) fpred[Dargs$XM$ytype==ityp]<-log(cutoff(fpred[Dargs$XM$ytype==ityp]))
   for(iout in 1:length(Dargs$outcome)) {
     idx1<-which(Dargs$XM$ytype==iout)
     # print(summary(fpred[idx1]))
     if(Dargs$outcome[[iout]]@type=="continuous") {
       if(Dargs$outcome[[iout]]@error.model=="exponential") fpred[idx1]<-log(cutoff(fpred[idx1]))
-      gpred<-Dargs$outcome[[iout]]@error.function(fpred[idx1], error.parameters[[iout]])
+      gpred<-Dargs$outcome[[iout]]@error.function(fpred[idx1], Dargs$outcome[[iout]]@error.parameters)
       lpred[idx1]<-0.5*((Dargs$yM[idx1]-fpred[idx1])/gpred)**2+log(gpred)
       # print(summary(gpred))
     } else lpred[idx1]<- (-fpred[idx1])
@@ -124,19 +127,4 @@ compute.LLy<-function(phiM, Dargs, DYF, error.parameters) {
   DYF[Dargs$ind.ioM]<-lpred
   U<-colSums(DYF)
   return(U)
-}
-
-########################################################### Remove
-# Deprecated in version 4.0 - multiple outcomes
-error<-function(f,ab,etype) { # etype: error model
-  g<-f
-  for(ityp in sort(unique(etype))) {
-    g[etype==ityp]<-error.typ(f[etype==ityp],ab[((ityp-1)*2+1):(ityp*2)])
-  }
-  return(g)
-}
-error.typ<-function(f,ab) {
-  #  g<-cutoff(ab[1]+ab[2]*abs(f))
-  g<-cutoff(sqrt(ab[1]^2+ab[2]^2*f^2))  # Johannes 02/21
-  return(g)
 }

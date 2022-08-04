@@ -50,7 +50,7 @@ setClass(Class = "SaemixParameter",
            distribution = "character", # distribution (currently one of normal, lognormal, logit, probit)
            transform = "function", # transformation h where psi=h(phi) [transphi]
            inversetransform = "function", # inverse transformation h-1 (phi=h-1(psi)) [transpsi]
-           mu = "numeric", # initial value (psi0)
+           mu = "numeric", # initial value (psi0), can be a vector in case of more than one variability level
            mu.fix = "numeric", # 1 if mu is fixed, default is 0 (estimated)
            prior = "logical", # ignored and set to FALSE for the moment; can be extended to a SaemixPrior object (to be defined, containing the distribution and the parameters of the prior distribution, could have a default to eg identity)
            omega.level = "character", # vector of variables associated with the variability levels
@@ -81,6 +81,7 @@ setMethod(
   signature="SaemixParameter",
   definition=function(.Object, name="theta", distribution="lognormal", estimated=TRUE, prior=FALSE, mu.start=1, omega.start=1, omega.fix=FALSE, omega.level="id", covariate=list(), rho.param=list(), rho=list(), rho.fix=list()){
     .Object@name <- name
+    distribution<-distribution[1] # in case we wrongly gave a vector
     if(tolower(distribution) %in% c("normal","norm","n"))  distribution<-"normal"
     if(tolower(distribution) %in% c("lognormal","ln"))  distribution<-"lognormal"
     if(!(distribution %in% c("normal","lognormal","logit","probit"))) {
@@ -107,31 +108,64 @@ setMethod(
     #    if(!(estim %in% c("estimated","fixed","prior"))) estim<-"estimated"
     .Object@mu.fix <- 1-as.integer(estimated)
     .Object@mu <- mu.start
-    # Choose: either omega.level is a SaemixVarLevel object or it's just the list of variables defining variability levels
-#    if(!is.list(omega.level)) omega.level<-list(omega.level)
-    if(length(omega.level)>0) {
-      if(length(omega.level)>1) message("Currently only one level of variability is handled by saemix, ignoring nested variability levels")
-      .Object@omega.level <- omega.level[1]
-      .Object@omega.model <- 1
-      .Object@omega <- omega.start[1]
-      .Object@omega.fix <- as.integer(omega.fix[1])
+    nvarlevel<-max(length(omega.level), length(omega.start))
+    if(length(omega.level)==0 || omega.level[1]=="") nvarlevel<-0
+    if(length(omega.start)==1 & omega.start[1]==0) {
+      nvarlevel<-0
+    }
+    if(nvarlevel>length(omega.level)) omega.level<-completeVector(omega.level,nvarlevel,"")
+    if(nvarlevel>0 && omega.level[1]=="") omega.level[1]<-"id"
+    if(nvarlevel>1 && omega.level[2]=="") omega.level[2]<-"occ"
+    if(nvarlevel>length(omega.start)) omega.start<-completeVector(omega.start,nvarlevel,1)
+    if(nvarlevel>0) {
+#      if(length(omega.level)>1) message("Currently only one level of variability is handled by saemix, ignoring nested variability levels")
+        .Object@omega.level <- omega.level
+        .Object@omega.model <- as.integer(omega.start>0)
+        if(length(omega.start)>0) .Object@omega <- completeVector(omega.start,nvarlevel,1) else  .Object@omega<-rep(1,nvarlevel)
+        if(length(omega.fix)>0) .Object@omega.fix <- completeVector(as.integer(omega.fix),nvarlevel,0) else  .Object@omega.fix<-rep(0,nvarlevel)
+        if(length(.Object@mu)<nvarlevel) {
+          .Object@mu <- completeVector(mu.start,nvarlevel,0) # initialise additional parameters to 0
+          .Object@mu.fix <- completeVector(.Object@mu.fix,nvarlevel,1) # by default, don't estimate these parameters (assume only variabilities, not fixed effects, are associated with the variability levels)
+        } else { # .Object@mu has additional betas for the variability levels
+          .Object@mu <-mu.start[1:nvarlevel]
+          .Object@mu.fix <- completeVector(.Object@mu.fix,nvarlevel,0) # by default, estimate additional parameters
+        }
       if(length(rho.param)>0) {
         if(is(rho.param,"character")) rho.param<-list(rho.param) # given as c() instead of list() (valid for one level of variability)
-        if(length(rho)>0 && is(rho,"numeric")) rho<-list(rho)
-        if(is(rho.fix,"numeric")) rho.fix<-list(rho.fix)
-        if(length(rho.param)>1) rho.param<-rho.param[[1]]
-        if(length(rho)>1) rho<-rho[[1]]
-        if(length(rho.fix)>1) rho.fix<-rho.fix[[1]]
+        if(length(rho)>0) {
+          if(is(rho,"numeric")) rho<-list(rho)
+        } else rho<-vector(mode="list", length=nvarlevel)
+        if(length(rho.fix)>0) {
+          if(is(rho.fix,"numeric")) rho.fix<-list(rho.fix)
+        } else rho.fix<-vector(mode="list", length=nvarlevel)
+        if(length(rho.param) < nvarlevel) length(rho.param)<-nvarlevel
+        if(length(rho)>0 && length(rho)<nvarlevel) length(rho)<-nvarlevel
+        if(length(rho.fix)>0 && length(rho.fix)<nvarlevel) length(rho.fix)<-nvarlevel
         .Object@rho.param<-rho.param
-        if(length(rho)==0  | length(unlist(rho))!=length(unlist(rho.param)) | !is(unlist(rho),"numeric")) { # starting values for correlations not given or wrong size
-          rho<-vector(mode="list", length=length(rho.param))
-          for(i in 1:length(rho)) rho[[i]]<-rep(0.5, length(rho.param[[i]])) # initialise all correlations to 0.5
+        for(ilev in 1:length(rho.param)) {
+          if(length(rho[[ilev]])!=length(rho.param[[ilev]])) rho[[ilev]]<-completeVector(rho[[ilev]], length(rho.param[[ilev]]), 0.5)
+          if(length(rho.fix[[ilev]])!=length(rho.param[[ilev]])) rho.fix[[ilev]]<-completeVector(rho.fix[[ilev]], length(rho.param[[ilev]]), 0)
         }
+        # if(length(rho.param)>0) {
+        #   if(length(rho)==0) rho<-vector(mode="list", length=nvarlevel) else length(rho)<-nvarlevel
+        #   if(length(rho.fix)==0) rho.fix<-vector(mode="list", length=nvarlevel) else length(rho.fix)<-nvarlevel
+        #   for(ilev in 1:nvarlevel) {
+        #     if(length(rho[[ilev]])==0 || !is.numeric(rho[[ilev]])) rho[[ilev]]<-rep(0, length(rho.param[[ilev]])) else {
+        #       if(length(unlist(rho[[ilev]])) != length(unlist(rho.param[[ilev]]))) rho[[ilev]]<-completeVector(rho[[ilev]], length(rho.param[[ilev]]), 0)
+        #     }
+        #     x<-rho[[ilev]]
+        #     x[x<(-1)]<-0
+        #     x[x>1]<-0
+        #     rho[[ilev]]<-x
+        #     if(length(rho.fix[[ilev]])==0 || !is.numeric(rho.fix[[ilev]])) rho.fix[[ilev]]<-rep(0, length(rho.param[[ilev]])) else {
+        #       if(length(unlist(rho.fix[[ilev]]))!=length(unlist(rho.param[[ilev]]))) rho.fix[[ilev]]<-completeVector(rho.fix[[ilev]], length(rho.param[[ilev]]), 0)
+        #     }
+        #     x<-rho.fix[[ilev]]
+        #     x[!(x %in% c(0,1))]<-0
+        #     rho.fix[[ilev]]<-x
+        #   }
+        # }
         .Object@rho<-rho
-        if(length(rho.fix)==0 & length(unlist(rho.fix))!=length(unlist(rho.param))) { # fixed correlations
-          rho.fix<-vector(mode="list", length=length(rho.param))
-          for(i in 1:length(rho.fix)) rho.fix[[i]]<-rep(0, length(rho.param[[i]])) # by default, all correlations to be estimated
-        }
         .Object@rho.fix<-rho.fix
       }
     } else {
@@ -141,7 +175,9 @@ setMethod(
       ipb<-0
       covariate<-as.list(covariate)
       for(i in 1:length(covariate)) {
-        if(!is(covariate[[i]],"SaemixCovariate")) ipb<-ipb+1 else covariate[[i]]@name<-names(covariate)[i]
+        if(!is(covariate[[i]],"SaemixCovariate")) ipb<-ipb+1 else {
+          if(covariate[[i]]@name=="") covariate[[i]]@name<-names(covariate)[i]
+        }
       }
       if(ipb==0) .Object@covariate <- covariate else  
         message("Element covariate should be a list of SaemixCovariate elements created through the contCov(), binCov() or CatCov() function, wrong format ignored")
@@ -151,6 +187,7 @@ setMethod(
     return(.Object)
   }
 )
+        
 # Getteur
 setMethod(
   f ="[",
@@ -212,20 +249,23 @@ setMethod("show","SaemixParameter",
           function(object) {
             cat("Model parameter", object@name,"\n")
             cat("     distribution:",object@distribution,"\n")
-            cat(paste0("     mu.",object@name,":"),object@mu)
-            if(object@mu.fix==1) cat(" (fixed)")
+            cat(paste0("     mu.",object@name,":"),object@mu[1])
+            if(object@mu.fix[1]==1) cat(" (fixed)")
             cat("\n")
             if(length(object@omega.level)>0) {
               cat(paste0("     var.",object@name,":"),object@omega[1])
               if(object@omega.fix[1]==1) cat(" (fixed)")
               cat("\n")
               if(length(object@rho)>0 && length(object@rho[[1]])) {
-                cat("     covariances:")
+                cat("     correlations: ")
                 wrho<-c()
                 for(i in 1:length(object@rho[[1]]))
                   wrho<-c(wrho,paste0(object@rho.param[[1]][i]," (",object@rho[[1]][i],ifelse(object@rho.fix[[1]][i]==1," fixed",""),")"))
-                cat(paste(object@rho,collapse=","),"\n")
+                cat(paste(object@rho[[1]],collapse=","),"\n")
               }
+            }
+            if(length(object@omega)>1) {
+              cat("     ",length(object@omega)-1,"additional levels of variability:",object@omega.level[-c(1)],"\n")
             }
             if(length(object@covariate)>0) {
               cat("     covariates:",names(object@covariate),"\n")
@@ -250,6 +290,14 @@ setMethod("showall","SaemixParameter",
           }
 )
 
+########################################################################
+# Trim a vector to a given length
+completeVector<-function(x,leng,value=1) {
+  x<-unlist(x)
+  if(length(x)>leng) x<-x[1:leng]
+  if(length(x)<leng) x<-c(x,rep(value,leng-length(x)))
+  return(x)
+}   
 
 ########################################################################
 # could be transphi

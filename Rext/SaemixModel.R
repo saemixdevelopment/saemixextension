@@ -127,9 +127,9 @@ setClass(
     name.modpar = "character", # name of parameters in the model
     #    name.sigma="character",	# name of residual parameters (maybe not necessary)
     # covariate model
+    covariates="list",	# the list of covariates defined in the parameters
     covariate.model="matrix",	# covariate model
     covariate.model.fix="matrix",	# fixed parameters in the covariate model (defaults to all 0's)
-    transform.covariate="list",	# [MAYBE REMOVE and associate instead to covariates]
     beta.start="numeric", # initial value for covariate parameters
     betaest.model="matrix"	# 1st line=ones, next lines=covariate model [MAYBE REMOVE]
   ),
@@ -205,6 +205,7 @@ setMethod(
             "mu.fix"={return(x@mu.fix)},
             "transform.par"={return(x@transform.par)},
             "name.modpar"={return(x@name.modpar)},
+            "covariates"={return(x@covariates)},
             "covariate.model"={return(x@covariate.model)},
             "covariate.model.fix"={return(x@covariate.model.fix)},
             "beta.start"={return(x@beta.start)},
@@ -225,6 +226,7 @@ setReplaceMethod(
             "mu.fix"={x@mu.fix<-value},
             "transform.par"={x@transform.par<-value},
             "name.modpar"={x@name.modpar<-value},
+            "covariates"={x@covariates<-value},
             "covariate.model"={x@covariate.model<-value},
             "covariate.model.fix"={x@covariate.model.fix<-value},
             "beta.start"={x@beta.start<-value},
@@ -300,6 +302,8 @@ setClass(
     # variability model
     nvarlevel = "numeric", # number of variability levels (currently only 1 is used in the model)
     var.model = "list", # list of variability levels associated to the model parameters
+    ind.model = "list", # list of individual variability models (built when associating covariate.model, covariance.model and data) corresponding the the variability levels
+    nphirep = "list", # a list, each element is a vector giving how many times do we need to repeat the phi of each variability level
     #    index.iiv="numeric",	# index of random param estimated (was i1.omega2 then indx.omega) [now included in var.model]
     # names
     #    name.random="character",	# name of random parameters
@@ -392,13 +396,30 @@ setMethod(
   signature = "SaemixModel" ,
   definition = function (x,i,j,drop ){
     switch (EXPR=i,
-            "var.model"={return(x@var.model)},
             "nvarlevel"={return(x@nvarlevel)},
+            "var.model"={return(x@var.model)},
+            "ind.model"={return(x@ind.model)},
+            "nphirep"={return(x@nphirep)},
             "name.predictors"={return(x@name.predictors)},
             "name.X"={return(x@name.X)},
             "name.cov"={return(x@name.cov)},
             "name.thetas"={return(x@name.thetas)},
             "Mcovariates"={return(x@Mcovariates)},
+            "npar"={return(x@npar)},
+            "mu.start"={return(x@mu.start)},
+            "mu.fix"={return(x@mu.fix)},
+            "transform.par"={return(x@transform.par)},
+            "name.modpar"={return(x@name.modpar)},
+            "covariates"={return(x@covariates)},
+            "covariate.model"={return(x@covariate.model)},
+            "covariate.model.fix"={return(x@covariate.model.fix)},
+            "beta.start"={return(x@beta.start)},
+            "betaest.model"={return(x@betaest.model)},
+            "outcome"={return(x@outcome)},
+            "nb.outcome"={return(x@nb.outcome)},
+            "name.outcome"={return(x@name.outcome)},
+            "description"={return(x@description)},
+            "model"={return(x@model)},
             stop("No such attribute\n")
     )
   }
@@ -410,17 +431,172 @@ setReplaceMethod(
   signature = "SaemixModel" ,
   definition = function (x,i,j,value){
     switch (EXPR=i,
-            "var.model"={x@var.model<-value},
             "nvarlevel"={x@nvarlevel<-value},
+            "var.model"={x@var.model<-value},
+            "ind.model"={x@ind.model<-value},
+            "nphirep"={x@nphirep<-value},
             "name.predictors"={x@name.predictors<-value},
             "name.X"={x@name.X<-value},
             "name.cov"={x@name.cov<-value},
             "name.thetas"={x@name.thetas<-value},
             "Mcovariates"={x@Mcovariates<-value},
+            "npar"={x@npar<-value},
+            "mu.start"={x@mu.start<-value},
+            "mu.fix"={x@mu.fix<-value},
+            "transform.par"={x@transform.par<-value},
+            "name.modpar"={x@name.modpar<-value},
+            "covariates"={x@covariates<-value},
+            "covariate.model"={x@covariate.model<-value},
+            "covariate.model.fix"={x@covariate.model.fix<-value},
+            "beta.start"={x@beta.start<-value},
+            "betaest.model"={x@betaest.model<-value},
+            "outcome"={x@outcome<-value},
+            "nb.outcome"={x@nb.outcome<-value},
+            "name.outcome"={x@name.outcome<-value},
+            "description"={x@description<-value},
+            "model"={x@model<-value},
             stop("No such attribute\n")
     )
     validObject(x)
     return(x)
   }
 )
+
+######################################################################################
+####			S4 methods: show, print, showall	
+####			SaemixModel class - method to print/show data		
+####################################################################################
+
+#' @rdname print-methods
+#' @exportMethod print
+
+setMethod("print","SaemixModel",
+          function(x,...) {
+            cat("Nonlinear mixed-effects model\n")
+            if( is.null(body(x@model))) {
+              cat("No model function set yet\n")
+              return()
+            }
+            cat("  Model function")
+            if(length(x@description)>0 && nchar(x@description)>0) cat(": ",x@description)
+            cat("\n")
+            # Responses
+            nout<-length(x@outcome)
+            cat(paste0("  ","with ",nout," outcome",ifelse(nout>1,"s: ",": ")), x@name.outcome,"\n")
+            # Parameters
+            distrib<-c("normal","log-normal","probit","logit")
+            cat("  Nb of parameters:",x@npar,"\n")
+            cat("      parameter names: ",x@name.modpar,"\n")
+            cat("      distribution:\n")
+            tab<-cbind(Parameter=x@name.modpar,Distribution=distrib[x@transform.par+1], Estimated=ifelse(x@mu.fix==0,"estim","fixed"), mu.CI=x@mu.start, omega.CI=diag(x@var.model[[1]]@omega))
+            if(x@nvarlevel>1) {
+              for(i in 2:x@nvarlevel) {
+                tab<-cbind(tab, diag(x@var.model[[i]]@omega)) 
+                colnames(tab)[ncol(tab)]<-paste0("varlevel",i,".CI")
+              }
+            }
+            print(tab,quote=FALSE)
+            if(length(x@covariate.model)>0) {
+              cat("Covariate model:\n")
+              print(x@covariate.model)
+              if(length(x@covariate.model.fix)>0) {
+                cat("Fixed parameters in covariate model:\n")
+                print(x@covariate.model.fix)
+              }
+            }
+          }
+)
+# distrib<-c("normal","log-normal","probit","logit")
+# cat("  Model type")
+# if(length(x@modeltype)>0 && nchar(x@modeltype)>0) cat(": ",x@modeltype)
+# cat("\n")
+# print(x@model)
+# cat("  Variance-covariance matrix:\n")
+# tab<-x@covariance.model
+# #    try(colnames(tab)<-rownames(tab)<-x@name.modpar)
+# print(tab,quote=FALSE)
+# st1<-paste(x@name.sigma,x@error.init,sep="=")
+# if (x@modeltype=="structural"){
+#   cat("  Error model:",x@error.model,", initial values:",st1[x@indx.res],"\n")
+# }
+# if(dim(x@covariate.model)[1]>0) {
+#   cat("  Covariate model:")
+#   if(sum(x@covariate.model)==0) cat(" none\n") else {
+#     cat("\n")
+#     print(x@covariate.model)
+#   }
+# } else cat("    No covariate in the model.\n")
+
+#' @rdname show-methods
+#' @exportMethod show
+
+setMethod("show","SaemixModel",
+          function(object) {
+            cat("Nonlinear mixed-effects model\n")
+            if(length(object@description)>0 && nchar(object@description)>0)
+              cat(": ",object@description,"\n")
+            if( is.null(body(object@model))) {
+              cat("No model function set yet\n")
+              return()
+            } 
+            # Parameters
+            cat("  ",object@npar,"parameter(s): ",object@name.modpar,"\n")
+            if(dim(object@covariate.model)[1]>0) {
+              cat("     covariate model with",sum(object@covariate.model),"covariate effects\n")
+            }
+            # Responses
+            nout<-length(object@outcome)
+            cat(paste0("   ","with ",nout," outcome",ifelse(nout>1,"s: ",": ")), object@name.outcome,"\n")
+          }
+)
+
+#' @rdname showall-methods
+#' @exportMethod showall
+
+setMethod("showall","SaemixModel",
+          function(object) {
+            cat("Nonlinear mixed-effects model\n")
+            if(length(object@description)>0 && nchar(object@description)>0)
+              cat(": ",object@description,"\n")
+            if( is.null(body(object@model))) {
+              cat("No model function set yet\n")
+              return()
+            } 
+            # Parameters
+            distrib<-c("normal","log-normal","probit","logit")
+            cat("  ",object@npar,"parameter(s): ",object@name.modpar,"\n")
+            if(dim(object@covariate.model)[1]>0) {
+              cat("     covariate model with",sum(object@covariate.model),"covariate effects\n")
+            }
+            # Responses
+            nout<-length(object@outcome)
+            cat(paste0("   ","with ",nout," outcome",ifelse(nout>1,"s: ",":")),"\n")
+            for(iout in 1:nout) showall(x@outcome[[iout]])
+            if(length(object@name.predictors)>0) cat("      predictors: ",object@name.predictors,"\n")
+            if(length(object@name.X)>0) cat("      predictor used for X-axis on graphs: ",object@name.X,"\n")
+            # Items in object
+            if(length(object@name.thetas)>0) cat("      fixed parameters: ",object@name.thetas,"\n")
+            if(length(object@name.cov)>0) cat("      covariates: ",object@name.cov,"\n")
+            cat("      distribution:\n")
+            # Parameters
+            tab<-cbind(Parameter=object@name.modpar,Distribution=distrib[object@transform.par+1], Estimated=ifelse(object@mu.fix==0,"estim","fixed"), mu.CI=object@mu.start, omega.CI=diag(object@var.model[[1]]@omega))
+            if(object@nvarlevel>1) {
+              for(i in 2:object@nvarlevel) {
+               tab<-cbind(tab, diag(object@var.model[[i]]@omega)) 
+               colnames(tab)[ncol(tab)]<-paste0("varlevel",i,".CI")
+              }
+            }
+            print(tab,quote=FALSE)
+            # Covariates TODO
+            # if(length(object@ind.model)>0) {}
+            if(dim(object@covariate.model)[1]>0) {
+              cat("  Covariate model:")
+              if(sum(object@covariate.model)==0) cat(" none\n") else {
+                cat("\n")
+                print(object@covariate.model)
+              }
+            } else cat("  No covariate in the model.\n")
+          }
+)
+
 

@@ -19,10 +19,10 @@
 #' @slot omega.model.fix a matrix of 0/1 indicating elements of the variance-covariance matrix which are fixed (not estimated). Defaults to a matrix of 0's.
 #' @slot omega.tri (internal) lower triangular matrix in vector form
 #' @slot omega.names (internal) names of the variance-covariance parameters, in the same order as in omega.tri
-#' @slot index.omega (internal) index of estimated elements in omega.tri
-#' @slot index.omega.fix (internal) index of estimated elements in omega.tri that have been fixed by the user
-#' @slot index.omega.var (internal) index of elements in omega.tri corresponding to variance components
-#' @slot index.omega.covar (internal) index of elements in omega.tri corresponding to covariance components
+#' @slot idxmat.triomega (internal) index of estimated elements in omega.tri
+#' @slot idxmat.triomega.fix (internal) index of estimated elements in omega.tri that have been fixed by the user
+#' @slot idxmat.triomega.var (internal) index of elements in omega.tri corresponding to variance components
+#' @slot idxmat.triomega.covar (internal) index of elements in omega.tri corresponding to covariance components
 #' @slot index.eta (internal) index of parameters with IIV (1's in omega.model)
 #' @section Methods:
 #'   \describe{
@@ -50,15 +50,23 @@ setClass(Class = "SaemixVarLevel",
            name.level = "character", # name of variability level
            variable = "character", # which variable (in the dataset) is the variability associated to
            omega = "matrix", # variance-covariance matrix (values)
+           chol.omega = "matrix", # Cholesky decomposition of omega
            omega.model = "matrix", # structure of the variance-covariance matrix (1=present in the model, 0=absent)
            omega.model.fix = "matrix", # fixed elements of the variance-covariance matrix (1=fixed, 0=estimated)
            omega.tri = "numeric", # lower triangular matrix of omega, in vector form
            omega.names = "character", # names of the variance-covariance parameters in omega.tri
-           index.omega = "numeric", # index of estimated elements in omega.tri (=1 in omega.model)
-           index.omega.fix = "numeric", # index of fixed elements in omega.tri (=1 in omega.model.fix)
-           index.omega.var = "numeric", # index of variances in omega.tri
-           index.omega.covar = "numeric", # index of covariances in omega.tri
-           index.eta = "numeric" #  index of parameters with estimated variances
+           # indices in omega (columns/lines)
+           index.omega.novar = "integer", # index of parameters without IIV ## i0.omega2
+           index.omega.var = "integer", # index of parameters with IIV ## i1.omega2
+           # --- Indices in matrices
+           # indices in omega
+           idxmat.omega = "integer",  # index of 1's in omega.model ## indest.omega           
+           # indices in triangular matrices
+           idxmat.triomega = "integer", # index of estimated elements in omega.tri (=1 in omega.model)
+           idxmat.triomega.fix = "integer", # index of fixed elements in omega.tri (=1 in omega.model.fix)
+           idxmat.triomega.var = "integer", # index of variances in omega.tri
+           idxmat.triomega.covar = "integer", # index of covariances in omega.tri
+           index.eta = "integer" #  index of parameters with estimated variances
          ),
          validity=function(object){
            # Check all sizes are commensurate & check symmetry using validate.covariance.matrix TODO
@@ -66,7 +74,6 @@ setClass(Class = "SaemixVarLevel",
            return(TRUE)
          }
 )
-
 
 setMethod( 
   f="initialize",
@@ -85,23 +92,50 @@ setMethod(
     .Object@name.level <- name.level
     if(variable=="") variable<-"id"
     .Object@variable <- variable
+    if(!is.null(omega)) {  # check omega is conform if given
+      if(!(is.matrix(omega)) || nrow(omega)!=ncol(omega)) {
+        message(paste0("Variance matrix omega not conform, ignoring and setting size to ",size))
+        omega<-NULL
+      }
+    } 
+    if(!is.null(omega)) {
+      size<-ncol(omega)
+      if(!is.null(omega.model) && validate.covariance.model(omega.model)) {
+        if(ncol(omega.model)==size) omega <- omega*(omega.model) else omega.model<-1*(omega!=0) # if right size, multiply omega and omega.model, if omega.model isn't the same size, 
+      } else omega.model<-1*(omega!=0)
+    } else { # omega not given or not conform but omega.model given
+      if(!is.null(omega.model) && validate.covariance.model(omega.model)) { # if omega.model is conform, adjust omega
+        size<-ncol(omega.model)
+        omega<-mydiag(size)
+      } else omega.model<-NULL
+    }
+    if(size<1 & is.null(omega) & is.null(omega.model)) {
+      message("Please give at least one of size (size of variance model), omega (value of variance-covariance matrix, a symmetric square matrix) or omega.model (a non-negative symmetric square matrix), returning NULL")
+      return()
+    }
+    
     if(is.null(omega.model.fix)) .Object@omega.model.fix<-diag(x=0, nrow=size, ncol=size) else .Object@omega.model.fix<-omega.model.fix
     if(is.null(omega.model)) .Object@omega.model<-diag(x=1, nrow=size, ncol=size) else .Object@omega.model<-omega.model
     .Object@index.eta<-which(mydiag(.Object@omega.model)>0)
+    
+    .Object@index.omega.var <- which(mydiag(omega.model)>0) ## i1.omega2
+    .Object@index.omega.novar <- which((1-mydiag(omega.model))>0) ## i0.omega2
+    .Object@idxmat.omega <-  which(omega.model>0) # index of 1's in omega.model ## indest.omega
+    
     if(is.null(omega)) omega<-diag(x=1, nrow=size, ncol=size) 
     # TBD:
     # omega<-omega*.Object@omega.model
-    .Object@omega<-omega
+    .Object@omega<-omega  
     .Object@omega.tri <- omega[lower.tri(omega, diag=TRUE)] # vector of the lower triangular elements, including the diagonal
-    .Object@index.omega <- which(.Object@omega.model[lower.tri(.Object@omega.model, diag=TRUE)]==1) # elements of omega.tri in the model
-    .Object@index.omega.fix <- which(.Object@omega.model.fix[lower.tri(.Object@omega.model.fix, diag=TRUE)]==1) # elements of omega.tri fixed by the user
+    .Object@idxmat.triomega <- which(.Object@omega.model[lower.tri(.Object@omega.model, diag=TRUE)]==1) # elements of omega.tri in the model
+    .Object@idxmat.triomega.fix <- which(.Object@omega.model.fix[lower.tri(.Object@omega.model.fix, diag=TRUE)]==1) # elements of omega.tri fixed by the user
     # Elements corresponding to variances
     mat1<-vec2mat(1:length(.Object@omega.tri))
     idx<-diag(mat1)
-    .Object@index.omega.var<-intersect(.Object@index.omega,idx)
+    .Object@idxmat.triomega.var<-intersect(.Object@idxmat.triomega,as.integer(idx))
     # Elements corresponding to covariances
     idx<-mat1[lower.tri(mat1)]
-    .Object@index.omega.covar<-intersect(.Object@index.omega,idx)
+    .Object@idxmat.triomega.covar<-intersect(.Object@idxmat.triomega,as.integer(idx))
     
     validObject(.Object)
     return(.Object)
@@ -118,15 +152,19 @@ setMethod(
             "name.level"={return(x@name.level)},
             "variable"={return(x@variable)},
             "omega"={return(x@omega)},
+            "chol.omega"={return(x@chol.omega)},
             "omega.model"={return(x@omega.model)},
             "omega.model.fix"={return(x@omega.model.fix)},
             "omega.tri"={return(x@omega.tri)},
             "omega.names"={return(x@omega.names)},
-            "index.omega"={return(x@index.omega)},
-            "index.omega.tri"={return(x@index.omega.tri)},
-            "index.omega.fix"={return(x@index.omega.fix)},
+            "index.omega.novar"={return(x@index.omega.novar)},
             "index.omega.var"={return(x@index.omega.var)},
-            "index.omega.covar"={return(x@index.omega.covar)},
+            "idxmat.omega"={return(x@idxmat.omega)},
+            "idxmat.triomega"={return(x@idxmat.triomega)},
+            "idxmat.triomega.tri"={return(x@idxmat.triomega.tri)},
+            "idxmat.triomega.fix"={return(x@idxmat.triomega.fix)},
+            "idxmat.triomega.var"={return(x@idxmat.triomega.var)},
+            "idxmat.triomega.covar"={return(x@idxmat.triomega.covar)},
             "index.eta"={return(x@index.eta)},
             stop("No such attribute\n")
     )
@@ -142,15 +180,19 @@ setReplaceMethod(
             "name.level"={x@name.level<-value},
             "variable"={x@variable<-value},
             "omega"={x@omega<-value},
+            "chol.omega"={x@chol.omega<-value},
             "omega.model"={x@omega.model<-value},
             "omega.model.fix"={x@omega.model.fix<-value},
             "omega.tri"={x@omega.tri<-value},
             "omega.names"={x@omega.names<-value},
-            "index.omega"={x@index.omega<-value},
-            "index.omega.tri"={x@index.omega<-value},
-            "index.omega.fix"={x@index.omega.fix<-value},
+            "index.omega.novar"={x@index.omega.novar<-value},
             "index.omega.var"={x@index.omega.var<-value},
-            "index.omega.covar"={x@index.omega.covar<-value},
+            "idxmat.omega"={x@idxmat.omega<-value},
+            "idxmat.triomega"={x@idxmat.triomega<-value},
+            "idxmat.triomega.tri"={x@idxmat.triomega<-value},
+            "idxmat.triomega.fix"={x@idxmat.triomega.fix<-value},
+            "idxmat.triomega.var"={x@idxmat.triomega.var<-value},
+            "idxmat.triomega.covar"={x@idxmat.triomega.covar<-value},
             "index.eta"={x@index.eta<-value},
             stop("No such attribute\n")
     )
@@ -279,9 +321,9 @@ setMethod("showall","SaemixVarLevel",
             }
             if(length(object@omega.names)>0) {
               cat("    estimated parameters: ")
-              if(length(object@index.omega.fix)>0) cat(object@omega.names[object@index.omega[!(object@index.omega %in% c(object@index.omega.fix))]],"\n") else  cat(object@omega.names[object@index.omega],"\n")
-              if(length(object@index.omega.fix)>0)
-                cat("    fixed parameters: ",object@omega.names[object@index.omega[(object@index.omega %in% c(object@index.omega.fix))]],"\n")
+              if(length(object@idxmat.triomega.fix)>0) cat(object@omega.names[object@idxmat.triomega[!(object@idxmat.triomega %in% c(object@idxmat.triomega.fix))]],"\n") else  cat(object@omega.names[object@idxmat.triomega],"\n")
+              if(length(object@idxmat.triomega.fix)>0)
+                cat("    fixed parameters: ",object@omega.names[object@idxmat.triomega[(object@idxmat.triomega %in% c(object@idxmat.triomega.fix))]],"\n")
             }
           }
 )

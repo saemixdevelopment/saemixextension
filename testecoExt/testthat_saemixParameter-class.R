@@ -100,3 +100,61 @@ test_that("List of parameters with different options", {
   expect_equal(length(lpar[[3]]@covariate), 1)
   expect_equal(lpar[[3]]@rho, list(c(0.5,0.5)))
 })
+
+test_that("Covariates - same covariates for different parameters", {
+  lpar <- list(cl=saemixPar(mu.start=20, covariate=c(age=contCov(), sex=binCov())),
+               vd=saemixPar(mu.start=10, covariate=c(wt=contCov(), sex=binCov()), rho.param=c("cl","ka")))
+  x<-getCovariateModel(lpar)
+  expect_equal(length(lpar[[1]]@covariate), 2)
+  expect_equal(length(lpar[[2]]@covariate), 2)
+})
+
+
+test_that("Covariates - double covariate definition for one parameter", {
+  lpar <- list(cl=saemixPar(mu.start=20, covariate=c(age=contCov(), sex=binCov(name="gender"), gender=binCov(name="gender"))),
+               vd=saemixPar(mu.start=10, covariate=c(wt=contCov(), gender=binCov(name="gender")), rho.param=c("cl","ka")))
+  x<-removeDuplicateCovDef(lpar)
+  expect_equal(length(lpar[[1]]@covariate), 3)
+  expect_equal(length(x[[1]]@covariate), 2)
+  expect_equal(length(lpar[[2]]@covariate), 2)
+})
+
+
+test_that("Covariates - same covariates for different parameters but with different names", {
+  lpar <- list(cl=saemixPar(mu.start=20, covariate=c(age=contCov(), sex=binCov(name="gender"))),
+               vd=saemixPar(mu.start=10, covariate=c(wt=contCov(), gender=binCov(name="gender")), rho.param=c("cl","ka")))
+  lpar<-removeDuplicateCovDef(lpar)
+  x<-getCovariateModel(lpar)
+  expect_equal(length(lpar[[1]]@covariate), 2)
+  expect_equal(length(x$covariates), 3)
+  expect_equal(names(x$covariates), c("age","sex","wt")) # first name found for gender, here in the definition of cl
+  expect_equal(sum(x$covariate.model), 4)
+  expect_equal(dim(x$covariate.model)[1], 3)
+  expect_equal(sum(x$beta.start), 0)
+  expect_equal(sum(x$covariate.model.fix), 0)
+})
+
+test_that("Covariates - different covariate definitions but same names for different parameters", {
+  lpar <- list(cl=saemixPar(mu.start=20, covariate=c(wt=contCov(), sex=binCov())),
+               vd=saemixPar(mu.start=10, covariate=c(wt=contCov(transform=log, centering=median), sex=binCov()), rho.param=c("cl","ka")))
+  lpar<-removeDuplicateCovDef(lpar)
+  x<-getCovariateModel(lpar)
+  expect_equal(length(lpar[[1]]@covariate), 2)
+  expect_equal(length(lpar[[2]]@covariate), 2)
+  expect_equal(sum(x$covariate.model), 4)
+  expect_equal(dim(x$covariate.model)[1], 3)
+})
+
+test_that("Covariates - different covariate definitions but same names for different parameters, transform and centering given as character strings", {
+  lpar <- list(cl=saemixPar(mu.start=20, covariate=c(wt=contCov(), sex=binCov())),
+               vd=saemixPar(mu.start=10, covariate=c(wt=contCov(transform="log", centering="median"), sex=binCov()), rho.param=c("cl","ka")))
+  lpar<-removeDuplicateCovDef(lpar)
+  x<-getCovariateModel(lpar)
+  expect_equal(length(lpar[[1]]@covariate), 2)
+  expect_equal(length(lpar[[2]]@covariate), 2)
+  expect_equal(sum(x$covariate.model), 4)
+  expect_equal(dim(x$covariate.model)[1], 3)
+})
+
+
+

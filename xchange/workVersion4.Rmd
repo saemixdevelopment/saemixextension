@@ -106,6 +106,8 @@ if(!testMode) {
   - update testeco/testthat_saemixData-covariates.R 
   - update testeco/testthat_replaceData-cont.R (tested, works, but needs for theo.fit3 or theo.fit2 to be created before)
 - summary function in testthat_summary.R works
+- **TODO**
+    - check computation of CI on the parameters (psi or phi scale ?)
 
 #### Creating additional datasets for saemix
 

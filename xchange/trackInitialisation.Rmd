@@ -1,0 +1,422 @@
+---
+title: "Examples of initialised Uargs/Dargs"
+author: "Emmanuelle Comets"
+date: "01/06/2022"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE, echo=FALSE}
+saemixDir<-"/home/eco/work/saemix/saemixextension"
+progDir<-file.path(saemixDir,"R")
+progDirExt<-file.path(saemixDir,"Rext")
+source(file.path(progDir,"aaa_generics.R"))
+
+library(testthat)
+
+# Classes for saemixData
+source(file.path(progDirExt,"SaemixOutcome.R"))
+source(file.path(progDirExt,"SaemixOutcome-methods.R"))
+source(file.path(progDirExt,"SaemixData.R"))
+source(file.path(progDirExt,"SaemixCovariateModel.R"))
+source(file.path(progDirExt,"SaemixCovariate.R"))
+
+# Options and auxiliary files
+source(file.path(saemixDir,"Rext","func_aux.R"))
+source(file.path(saemixDir,"Rext","saemixControl.R"))
+
+# Classes for saemixModel
+source(file.path(progDirExt,"SaemixVarLevel.R"))
+source(file.path(progDirExt,"SaemixParameter.R"))
+source(file.path(progDirExt,"SaemixParameter-methods.R"))
+source(file.path(progDirExt,"SaemixModel.R"))
+source(file.path(progDirExt,"SaemixModel-methods.R"))
+
+# Old initialisation algorithm, adapted to the new structures
+source(file.path(progDirExt,"main_initialiseMainAlgo_old.R"))
+```
+
+## Context
+
+### Objective
+
+- provide examples of previous initialisations, including matrices, indices, etc...
+- later: print out side-by-side comparison of previous initialisation and new structures to check consistency
+
+### Initialisation step
+
+- Dargs: mostly elements related to model and data
+- Uargs: indices and design matrices
+- varList: elements to do with variability (omega and transformation, hwich parameters have IIV)
+- also opt: list of options needed during the run
+
+## Setting up data and options
+
+### Options
+
+- **TODO** 
+  - add computation of nbiter.tot within the call to saemixControl
+  - add checks at the beginning of the algorithm to compute derived options (nbiter.tot, nbiter.sa,...) in case they have been modified after the call to *saemixControl()*
+
+```{r setOptions, echo=FALSE}
+saemix.options<-saemixControl(nb.chains=2)
+saemix.options$nbiter.tot<-sum(saemix.options$nbiter.saemix)
+```
+
+### Dataset
+
+Creating an SaemixData object with PK/PD data by hand. New structure for data but most elements remain the same as previously
+
+```{r readDataset, echo=FALSE}
+pkpd<-read.table(file.path(saemixDir,"data40","warfarinPKPD.tab"), header=T)
+
+x<-new(Class="SaemixData", name.data="pkpd")
+x1<-continuousOutcome(model="combined2", start=c(1, 0.2))
+x2<-continuousOutcome(start=c(2))
+#new(Class="SaemixOutcome",type="continuous")
+x@outcome<-list(conc=new(Class="SaemixOutcome",type="continuous"), effect=new(Class="SaemixOutcome",type="continuous"))
+
+zesuj<-unique(pkpd$id)
+ind1<-match(pkpd$id, zesuj)
+x@data<-data.frame(index=ind1, pkpd[,c(1:4)], ytype=pkpd$dvid, cens=0, mdv=0, pkpd[,c(6:8)])
+x@name.group<-"id"
+x@name.predictors<-c("time","amt")
+x@name.X<-"time"
+x@name.response<-c("dv")
+x@name.ytype<-"ytype"
+x@name.covariates<-colnames(pkpd)[6:8]
+x@name.cens<-"cens"
+x@name.mdv<-"mdv"
+x@N<-length(zesuj)
+nind.obs<-tapply(pkpd$id, pkpd$id, length)
+x@nind.obs<-c(nind.obs[match(zesuj,names(nind.obs))])
+x@ntot.obs<-sum(x@nind.obs)
+x@units<-c("hr","mg")
+
+saemix.data<-x
+
+cat("Initialisation of data object:\n")
+print(saemix.data)
+```
+
+### Defining a function to output the results of initialisation
+
+```{r functionDef, echo=FALSE}
+prettyPrintInit <- function(saemix.data, saemix.model, saemix.option) {
+  mylist<-initialiseMainAlgo.old(saemix.data, saemix.model, saemix.options)
+  Uargs<-mylist$Uargs
+  Dargs<-mylist$Dargs
+  varList<-mylist$varList
+  tab0<-data.frame(name=c("nobs","fixedpsi.ini", "betas", "allpar0"), value=c(length(Uargs$yM),paste(mylist["fixedpsi.ini"]),
+        paste(format(mylist$betas, digits=3), collapse=", "), paste(unname(mylist$allpar0), collapse=", ")))
+  tab1<-data.frame(name=names(Uargs)[1:17])
+  vec<-c()
+  for(i in tab1$name) {
+    vec<-c(vec, paste(Uargs[i]))
+  }
+  tab1<-cbind(tab1, value=vec)
+  tab1<-rbind(tab0, tab1, 
+              data.frame(name=c("pres","ind.eta","ind0.eta","diag(omega)","domega2 (col1)"), value=c(paste(varList["pres"]), paste(varList["ind.eta"]), paste(varList["ind0.eta"]),paste(varList["diag.omega"]), paste(varList$domega2[,1],collapse=", "))))
+  vec1<-c("MCOV0","COV0","COV1","COV2","flag.fmin")
+  vec2<-c(ifelse(length(Uargs$MCOV0)==0,"empty","see below"),ifelse(length(Uargs$COV0)==0,"empty","see below"),
+          ifelse(length(Uargs$COV1)==0,"empty","see below"),ifelse(length(Uargs$COV2)==0,"empty","see below"), ifelse(mylist$opt$flag.fmin,"TRUE","FALSE"))
+  tab1<-rbind(tab1,
+              data.frame(name=vec1, value=vec2))
+
+  print(tab1)
+  
+  # Variability
+  cat("Omega\n")
+  print(varList$omega)
+  # Design matrices
+  cat("LCOV (design matrix nb.muteta x nb.modpar):\n")
+  print(Uargs$LCOV)
+  cat("MCOV (LCOV filled with parameter value on phi scale):\n")
+  print(varList$MCOV)
+  cat("MCOV0 (MCOV[ind.fix10,i0.omega2,drop=FALSE]):")
+  if(length(Uargs$MCOV0)>0) {cat("\n");print(Uargs$MCOV0)} else cat(" empty\n")
+  cat("COV0 (COV[,ind.fix10]):")
+  if(length(Uargs$COV0)>0) {cat("\n");print(head(Uargs$COV0))} else cat(" empty\n")
+  cat("COV1 (initialised as COV[,ind.fix1]):")
+  if(length(Uargs$COV1)>0) {cat("\n");print(head(Uargs$COV1))} else cat(" empty\n")
+  cat("COV2 (t(COV)%*%COV):")
+  if(length(Uargs$COV2)>0) {cat("\n");print(Uargs$COV2)} else cat(" empty\n")
+  cat("dstatCov (COV[,ind.fix0,drop=FALSE]%*%MCOV[ind.fix0,]):\n")
+  print(head(Uargs$dstatCOV))
+  # Covariates
+  cat("Mcovariates (column of 1's if IIV + covariates):\n")
+  print(head(Uargs$Mcovariates))
+  # Starting parameters
+  cat("Starting population parameters (mean.phi)\n")
+  print(head(mylist$mean.phi))
+  cat("Starting individual parameters (phiM)\n")
+  print(head(mylist$phiM))
+  
+  if(sum(mylist$DYF)>0) cat("Sum(DYF)=",sum(mylist$DYF),"\n")
+
+#  cat("domega2 (SD's for the random effect*options*rw.init, in column, x the nb of parameters):\n")
+#  print(varList$domega2)
+}
+
+```
+
+
+## Initialisation for various models
+
+### Example 1 - PK model without covariates
+
+- continuous outcome with combined error model
+- fixed effect parameters
+  - 3 parameters
+- covariates: none
+- variability: one level
+  - diagonal matrix
+
+```{r model1, echo=FALSE}
+# Model function
+model1cpt<-function(psi,id,xidep) { 
+  tim<-xidep[,1]
+  dose<-xidep[,2]
+  ka<-psi[id,1]
+  V<-psi[id,2]
+  CL<-psi[id,3]
+  k<-CL/V
+  ypk<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
+  return(ypk)
+}
+# Model outcomes
+out1<-list(conc=saemixOutcome(unit="mg/L", model="combined2", start=c(1, 0.2)))
+
+# Mean value for population parameters
+pkpd.psi0<-c(ka=1, vd=5, cl=0.1)
+# Model parameters
+lpar1 <- list(ka=saemixPar(mu.start=pkpd.psi0[1], omega.start=0.3),
+             cl=saemixPar(mu.start=pkpd.psi0[2], omega.start=0.5),
+             vd=saemixPar(mu.start=pkpd.psi0[3], omega.start=0.7))
+
+saemix.model<-saemixModel(model=model1cpt, outcome=out1, parameter=lpar1)
+cat("Initialisation of model, model 1:\n")
+print(saemix.model)
+
+# Initialisation
+if(FALSE)
+  mylist<-initialiseMainAlgo.old(saemix.data, saemix.model, saemix.options)
+prettyPrintInit(saemix.data, saemix.model, saemix.option)
+```
+
+### Example 2 - PK model without covariates
+
+- continuous outcome with proportional error model
+- fixed effect parameters
+  - 3 parameters
+- covariates: none
+- variability: one level
+  - no IIV on ka
+  - correlation between CL and V
+
+```{r model2, echo=FALSE}
+# Model outcomes
+out2<-list(conc=saemixOutcome(unit="mg/L", model="proportional", start=c(0.5)))
+
+# Model parameters
+lpar2 <- list(ka=saemixPar(mu.start=pkpd.psi0[1], omega=0),
+             cl=saemixPar(mu.start=pkpd.psi0[2], omega.start=0.5),
+             vd=saemixPar(mu.start=pkpd.psi0[3], omega.start=0.7,rho.param=c("cl"), rho=0.5))
+
+saemix.model2<-saemixModel(model=model1cpt, outcome=out2, parameter=lpar2)
+cat("Initialisation of model, model 2:\n")
+print(saemix.model2)
+
+# Initialisation
+prettyPrintInit(saemix.data, saemix.model2, saemix.option)
+```
+
+### Example 3 - PK model without covariates
+
+- continuous outcome with proportional error model
+- fixed effect parameters
+  - 3 parameters
+  - ka fixed to its initial value
+- covariates: none
+- variability: one level
+  - no IIV on ka
+  - correlation between CL and V
+
+```{r model3, echo=FALSE}
+# Model outcomes
+out2<-list(conc=saemixOutcome(unit="mg/L", model="proportional", start=c(0.5)))
+
+# Model parameters
+lpar3 <- list(ka=saemixPar(mu.start=pkpd.psi0[1], omega=0, fixed=TRUE),
+             cl=saemixPar(mu.start=pkpd.psi0[2], omega.start=0.5),
+             vd=saemixPar(mu.start=pkpd.psi0[3], omega.start=0.7,rho.param=c("cl"), rho=0.5))
+
+saemix.model3<-saemixModel(model=model1cpt, outcome=out2, parameter=lpar3)
+cat("Initialisation of model, model 3:\n")
+print(saemix.model3)
+
+# Initialisation
+prettyPrintInit(saemix.data, saemix.model3, saemix.option)
+```
+
+
+### Example 4 - PK model with covariates including fixed covariate effects
+
+- continuous outcome with combined error model
+- fixed effect parameters
+  - 3 parameters
+- covariates: untransformed for the old version where the names must be the same
+  - sex on ka
+  - weight and age on cl (effect of weight fixed to 0.75)
+  - weight and sex on vd (effect of weight fixed to 1)
+- variability: one level
+  - IIV on all parameters
+  - correlation between CL and V
+
+```{r model4, echo=FALSE}
+# Model parameters
+lpar4 <- list(ka=saemixPar(mu.start=pkpd.psi0[1], omega.start=1, covariate=c(sex=binCov(beta=0.2))),
+             cl=saemixPar(mu.start=pkpd.psi0[2], omega.start=0.5, covariate=c(wt=contCov(beta=0.75, beta.fix=1), age=contCov(beta=-0.5))),
+             vd=saemixPar(mu.start=pkpd.psi0[3], omega.start=0.7,rho.param=c("cl"), rho=0.5, covariate=c(wt=contCov(beta=1, beta.fix=1), sex=binCov(beta=0.4))))
+
+saemix.model4<-saemixModel(model=model1cpt, outcome=out1, parameter=lpar4)
+cat("Initialisation of model, model 4:\n")
+print(saemix.model4)
+
+# Initialisation
+prettyPrintInit(saemix.data, saemix.model4, saemix.option)
+```
+
+### Example 5 - PK model with covariates including fixed covariate effects and fixed parameters
+
+- continuous outcome with combined error model
+- fixed effect parameters
+  - 3 parameters
+  - ka fixed to its initial value
+- covariates: untransformed for the old version where the names must be the same
+  - no covariate on ka
+  - sex, weight and age on cl (effect of weight fixed to 0.75)
+  - weight and age on vd (effect of weight fixed to 1)
+- variability: one level
+  - IIV on ka
+  - correlation between CL and V
+
+```{r model5, echo=FALSE}
+# Model parameters
+lpar5 <- list(ka=saemixPar(mu.start=pkpd.psi0[1], fixed=TRUE,  omega.start=1),
+             cl=saemixPar(mu.start=pkpd.psi0[2], omega.start=0.5, covariate=c(sex=binCov(beta=0.2), wt=contCov(beta=0.75, beta.fix=1), age=contCov(beta=-0.5))),
+             vd=saemixPar(mu.start=pkpd.psi0[3], omega.start=0.7,rho.param=c("cl"), rho=0.5, covariate=c(wt=contCov(beta=1, beta.fix=1), age=contCov(beta=-0.15))))
+
+saemix.model5<-saemixModel(model=model1cpt, outcome=out1, parameter=lpar5)
+cat("Initialisation of model, model 5:\n")
+print(saemix.model5)
+
+# Initialisation
+prettyPrintInit(saemix.data, saemix.model5, saemix.option)
+```
+
+### Example 6 - PK model with covariates including fixed covariate effects and fixed parameters, and no IIV on one parameter
+
+- continuous outcome with combined error model
+- fixed effect parameters
+  - 3 parameters
+  - ka fixed to its initial value
+- covariates: untransformed for the old version where the names must be the same
+  - sex on ka
+  - wt and age on cl (effect of weight fixed to 0.75)
+  - weight and sex on vd (effect of weight fixed to 1)
+- variability: one level
+  - no IIV on ka
+  - correlation between CL and V
+
+```{r model6, echo=FALSE}
+# Model parameters
+lpar6 <- list(ka=saemixPar(mu.start=pkpd.psi0[1], fixed=TRUE, omega=0, covariate=c(sex=binCov(beta=0.2))),
+             cl=saemixPar(mu.start=pkpd.psi0[2], omega.start=0.5, covariate=c(wt=contCov(beta=0.75, beta.fix=1), age=contCov(beta=-0.5))),
+             vd=saemixPar(mu.start=pkpd.psi0[3], omega.start=0.7,rho.param=c("cl"), rho=0.5, covariate=c(wt=contCov(beta=1, beta.fix=1), sex=binCov(beta=0.15))))
+
+saemix.model6<-saemixModel(model=model1cpt, outcome=out1, parameter=lpar6)
+cat("Initialisation of model, model 6:\n")
+print(saemix.model6)
+
+# Initialisation
+prettyPrintInit(saemix.data, saemix.model6, saemix.option)
+```
+
+### Example 7 - PK model with covariates including fixed parameters and no IIV on one parameter
+
+- continuous outcome with combined error model
+- fixed effect parameters
+  - 3 parameters
+  - ka fixed to its initial value
+- covariates: untransformed for the old version where the names must be the same
+  - wt and age on cl
+  - weight and sex on vd
+- variability: one level
+  - no IIV on ka
+  - correlation between CL and V
+
+```{r model7, echo=FALSE}
+# Model parameters
+lpar7 <- list(ka=saemixPar(mu.start=pkpd.psi0[1], fixed=TRUE, omega=0),
+             cl=saemixPar(mu.start=pkpd.psi0[2], omega.start=0.5, covariate=c(wt=contCov(beta=0.75), age=contCov(beta=-0.5))),
+             vd=saemixPar(mu.start=pkpd.psi0[3], omega.start=0.7,rho.param=c("cl"), rho=0.5, covariate=c(wt=contCov(beta=1), sex=binCov(beta=0.15))))
+
+saemix.model7<-saemixModel(model=model1cpt, outcome=out1, parameter=lpar7)
+cat("Initialisation of model, model 7:\n")
+print(saemix.model7)
+
+# Initialisation
+prettyPrintInit(saemix.data, saemix.model7, saemix.option)
+```
+
+
+### Example 8 - PK model with covariates including fixed and estimated covariate parameters, and no IIV on one parameter
+
+- continuous outcome with combined error model
+- fixed effect parameters
+  - 3 parameters
+- covariates: untransformed for the old version where the names must be the same
+  - sex and wt on ka (wt fixed)
+  - wt and age on cl
+  - weight and sex on vd
+- variability: one level
+  - no IIV on ka
+  - correlation between CL and V
+
+```{r model8, echo=FALSE}
+# List of test models
+source(file.path(saemixDir,"testecoExt","modelsTested.R"))
+
+imodel <- 8
+saemix.model8 <- chooseDebugModel(model=imodel) 
+cat("Initialisation of model, model 8:\n")
+print(saemix.model8)
+
+# Initialisation
+prettyPrintInit(saemix.data, saemix.model8, saemix.option)
+```
+
+### Example 9 - PK model with covariates including covariate effects, no IIV on one parameter, no fixed parameter
+
+- continuous outcome with combined error model
+- fixed effect parameters
+  - 3 parameters
+- covariates: untransformed for the old version where the names must be the same
+  - sex and age on ka
+  - wt and age on cl
+  - weight and sex on vd
+- variability: one level
+  - no IIV on ka
+  - correlation between CL and V
+
+```{r model9, echo=FALSE}
+imodel <- 9
+saemix.model9 <- chooseDebugModel(model=imodel) 
+cat("Initialisation of model, model 9:\n")
+print(saemix.model9)
+
+# Initialisation
+prettyPrintInit(saemix.data, saemix.model9, saemix.option)
+```

@@ -1,9 +1,16 @@
-########################################################### Setup
+########################################################### Folder and generics
 saemixDir<-"/home/eco/work/saemix/saemixextension"
-source(file.path(saemixDir,"R","aaa_generics.R"))
+progDir<-file.path(saemixDir,"R")
+progDirExt<-file.path(saemixDir,"Rext")
+source(file.path(progDir,"aaa_generics.R"))
+
+########################################################### Data
 # Creating an SaemixData object with PK/PD data by hand - Responses
-source(file.path(saemixDir,"Rext","SaemixData.R"))
-source(file.path(saemixDir,"Rext","SaemixOutcome.R"))
+source(file.path(progDirExt,"SaemixOutcome.R"))
+source(file.path(progDirExt,"SaemixOutcome-methods.R"))
+source(file.path(progDirExt,"SaemixData.R"))
+source(file.path(progDirExt,"SaemixCovariateModel.R"))
+source(file.path(progDirExt,"SaemixCovariate.R"))
 pkpd<-read.table(file.path(saemixDir,"data40","warfarinPKPD.tab"), header=T)
 
 x<-new(Class="SaemixData", name.data="pkpd")
@@ -31,11 +38,7 @@ x@units<-c("hr","mg")
 
 pkpd.saemix<-x
 
-# Model outcomes
-xout1<-new(Class="SaemixContinuousOutcome", error.model=x1$error.model, error.npar=x1$error.npar, error.function=x1$error.function, error.parameters=x1$start, error.fix=x1$error.fix)
-xout2<-new(Class="SaemixContinuousOutcome", error.model=x2$error.model, error.npar=x2$error.npar, error.function=x2$error.function, error.parameters=x2$start, error.fix=x2$error.fix)
-pkpd.outcome<-list(conc=xout1, effect=xout2)
-
+########################################################### Model
 # Model function
 model1cptdirect<-function(psi,id,xidep) { 
   tim<-xidep[,1]
@@ -52,22 +55,19 @@ model1cptdirect<-function(psi,id,xidep) {
   return(ypk)
 }
 
+# Mean value for population parameters
+pkpd.psi0<-c(ka=1, vd=5, cl=0.1, ic50=5)
+# Table with population parameters for every subject in the dataset)
+psi1<-do.call(rbind, rep(list(pkpd.psi0), pkpd.saemix@N))
+
 ## Test the function
 xidep<-pkpd.saemix@data[,c(pkpd.saemix@name.predictors, "ytype")]
 id1<-pkpd.saemix@data$index
-psi0<-c(ka=1, vd=5, cl=0.1, ic50=5)
-psi1<-do.call(rbind, rep(list(psi0), pkpd.saemix@N))
+ypred<-model1cptdirect(psi1, id1, xidep)
 
-# Beginning of the model class - SaemixStructuralModel
-source(file.path(saemixDir,"Rext","SaemixVarLevel.R"))
-source(file.path(saemixDir,"Rext","SaemixModel.R"))
-source(file.path(saemixDir,"Rext","SaemixModel-methods.R"))
-
-# Model parameters for the following (population parameters for every subject in the dataset)
-pkpd.psi0<-c(ka=1, vd=5, cl=0.1, ic50=5)
-x<-saemixModel(model=model1cptdirect, outcome=pkpd.outcome, parameter=pkpd.psi0)
-
-source(file.path(saemixDir,"Rext","func_aux.R"))
+# Model outcomes
+pkpd.outcome<-list(conc=saemixOutcome(unit="mg/L", model="combined2", start=c(1, 0.2)), 
+                   effect=saemixOutcome(unit="%", start=1))
 
 gpred<-ypred
 for(iout in 1:length(pkpd.outcome)) {
@@ -77,6 +77,8 @@ for(iout in 1:length(pkpd.outcome)) {
 
 ########################################################### Optimising fixed effects
 # Computing SD of predictions for structural models
+source(file.path(saemixDir,"Rext","func_aux.R"))
+source(file.path(saemixDir,"Rext","saemixControl.R"))
 
 # Applying ssq to the two outcomes
 iout<-1
@@ -184,8 +186,8 @@ compute.LLy.old<-function(phiM,args,Dargs,DYF,pres) {
   U<-colSums(DYF)
   return(U)
 }
-source(file.path(saemixDir,"Rext","func_aux.R"))
 
+if(FALSE) {
 # Input
 ## phiM: matrix of parameters
 ## Dargs: list, here we use the elements transform.par, model (structural model), IdM, XM, yM, ind.ioM (a vector of 0/1 indicating which elements of the square matrix DYF have data), list of outcomes (type, error.model, error.function)
@@ -193,18 +195,16 @@ source(file.path(saemixDir,"Rext","func_aux.R"))
 ## DYF: a matrix of dimension nmax=max(n_i) times (N*nb.chains); the column for subject i has the last nmax-n_i elements set to 0, so that colSums sums on the observations for that subject 
 # Output 
 ## U: vector with either sum(-LL) (continuous models, minus the constant sum(log(1/sqrt(2*pi)))) or sum(-logpdf) (likelihood models)
-
 compute.LLy<-function(phiM, Dargs, DYF, error.parameters) {
   psiM<-transphi(phiM,Dargs$transform.par)
   fpred<-Dargs$model(psiM,Dargs$IdM,Dargs$XM)
   lpred<-fpred
-  for(ityp in Dargs$etype.exp) fpred[Dargs$XM$ytype==ityp]<-log(cutoff(fpred[Dargs$XM$ytype==ityp]))
   for(iout in 1:length(Dargs$outcome)) {
     idx1<-which(Dargs$XM$ytype==iout)
     # print(summary(fpred[idx1]))
     if(Dargs$outcome[[iout]]@type=="continuous") {
       if(Dargs$outcome[[iout]]@error.model=="exponential") fpred[idx1]<-log(cutoff(fpred[idx1]))
-      gpred<-Dargs$outcome[[iout]]@error.function(fpred[idx1], error.parameters[[iout]])
+      gpred<-Dargs$outcome[[iout]]@error.function(fpred[idx1], Dargs$outcome[[iout]]@error.parameters)
       lpred[idx1]<-0.5*((Dargs$yM[idx1]-fpred[idx1])/gpred)**2+log(gpred)
       # print(summary(gpred))
     } else lpred[idx1]<- (-fpred[idx1])
@@ -213,6 +213,8 @@ compute.LLy<-function(phiM, Dargs, DYF, error.parameters) {
   U<-colSums(DYF)
   return(U)
 }
+} else # load final debugged version
+  source(file.path(saemixDir,"Rext","func_aux.R"))
 
 ################################### Testing
 # Creating input for compute.LLy.mat
@@ -241,8 +243,11 @@ xvec1<-compute.LLy.old(phiM,args=list(ind.ioM=ind.ioM),Dargs1,DYF,pres1)
 # Dargs for new version
 Dargs2<-list(transform.par=c(0,0,0,0), IdM=IdM, XM=XM, yM=yM, ind.ioM=ind.ioM, model=pkpd.model@model, outcome=pkpd.model@outcome)
 pres2<-list(pkpd.model@outcome[[1]]@error.parameters, pkpd.model@outcome[[2]]@error.parameters)
-xvec2<-compute.LLy(phiM, Dargs2, DYF, pres2)
+xvec2<-compute.LLy(phiM, Dargs2, DYF)
 if(max(abs(xvec1-xvec2))>0) cat("Mismatch between old and new versions\n")
+
+### Final change
+# error.parameters are already in Dargs$outcome, removed from compute.LLy
 
 #### Eco 12/04/2022 - stopped here
 

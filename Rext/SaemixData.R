@@ -6,7 +6,8 @@ setClass(Class="SaemixData",
     name.data="character",	# name of dataset
     messages="logical",		# whether to print messages when creating the object
     outcome="list", # data outcomes (a vector or list of elements with type SaemixOutcome including name, type and units; defaults to y1, y2,... with units="" if not given)
-    covariates="list", # covariates in the model (a list of elements with type SaemixCovariate including name, type and units)
+    covariates="list", # covariates in the dataset (a list of elements with type SaemixCovariate including name, type and units)
+    # names
     name.group="character",	# name of column with ID
     name.predictors="character",# name of column(s) with predictors 
     name.response="character",	# name of column with response
@@ -18,13 +19,25 @@ setClass(Class="SaemixData",
     name.ytype="character", # name of column with type of response (1,2,...)
     #    trans.cov="list",	# a list of transformations applied to the covariates [REMOVE, now associated to the covariate model in the model object]
     units="character",		# units for predictors (a vector)
+    # data
     data="data.frame",		# the data (data frame with columns name.group (subject id), index (id renamed to 1:N), name.predictors (predictors), name.response (possibly transformed during fit), name.covariates), mdv (missing data), cens (censored data, 1=censored & value in column response is the LOQ, ytype (type of the response), occ (occasion)); binary covariates are modified to 0/1
     ocov="data.frame",		# original covariates from the dataset, before transformation
-    N="numeric",		# number of subjects
     yorig="numeric",		# vector of responses in original dataset
-    ind.gen="logical",	# vector of booleans (same size as name.covariates); TRUE=genetic covariate, FALSE=non-genetic covariates
+    # indices for the variability levels
+    var.match="matrix",  # matrix to match the different levels of variability to the corresponding lines in the dataset
+    # for ivarlevel, defined as rep(1:Nunit[ivarlevel], times=nvar.obs[[ivarlevel]])
+    # maybe remove
+    ind.gen="logical",	# vector of booleans (same size as name.covariates); TRUE=genetic covariate, FALSE=non-genetic covariates # MAYBE remove (only needed when creating the object)
+    # summary statistics
+    N="integer",		# number of subjects
+    nvarlevel="integer",		# number of variability levels
+    Nunit="integer", # vector with the number of units for each variability level Nunits[1]=N, Nunits[2]=N*sum_i(nocc_i),...
+    nrep.unit="list", # list with for each variability level, the number of lines in the dataset corresponding to this variability level
+    # nrep.unit[[1]] = nind.obs
+    id.unit="matrix", # matrix with nvarlevel columns
     ntot.obs="numeric",		# total number of observations (=dim(tab)[1])
-    nind.obs="numeric"		# number of observations for each subject
+    nind.obs="numeric"		# total number of observations for each subject [maybe replace with nrep.unit[[1]]]
+    # TODO: change all nind.obs to nrep.unit[[1]] in the algorithm
   ),
   validity=function(object){
     #    cat ("--- Checking SaemixData object ---\n")
@@ -80,13 +93,13 @@ setMethod(
 setClass(
   Class="SaemixRepData", # Saemix data, replicated for different chains
   representation=representation(
-    N="numeric",		# number of subjects
-    NM="numeric",		# number of subjects, replicated
+    N="integer",		# number of subjects
+    NM="integer",		# number of subjects, replicated
     dataM="data.frame",		# replicated data with columns IdM, xM, yM
     #    IdM="numeric",		# subject id
     #    XM="data.frame",		# matrix of predictors
     #    yM="numeric",		# vector of responses 
-    nrep="numeric"		# number of replicates
+    nrep="integer"		# number of replicates
   ),
   validity=function(object){
     #    cat ("--- Checking SaemixData object ---\n")
@@ -100,7 +113,7 @@ setClass(
 setClass(
   Class="SaemixSimData", # Saemix predicted and simulated data
   representation=representation(
-    N="numeric",		# number of subjects
+    N="integer",		# number of subjects
     name.group="character", # name of column with ID element
     name.response="character",	# name of column with response
     name.predictors="character",# name of column(s) with predictors 
@@ -131,13 +144,13 @@ setMethod(
   definition= function (.Object,data=NULL,nb.chains=1){
     #    cat ("--- initialising SaemixData Object --- \n")
     if(is.null(data)) {
-      .Object@N<-.Object@NM<-numeric(0)
+      .Object@N<-.Object@NM<-integer(0)
       .Object@dataM<-data.frame()
     } else {
       N<-data@N
       .Object@N<-N
-      .Object@nrep<-nb.chains
-      .Object@NM<-N*nb.chains
+      .Object@nrep<-as.integer(nb.chains)
+      .Object@NM<-as.integer(N*nb.chains)
       IdM<-kronecker(c(0:(nb.chains-1)),rep(N,data@ntot.obs))+rep(data@data[,"index"], nb.chains)
       yM<-rep(data@data[,data@name.response],nb.chains)
       XM<-do.call(rbind,rep(list(data@data[,c(data@name.predictors,data@name.cens,data@name.mdv,data@name.ytype),drop=FALSE]), nb.chains))
@@ -228,11 +241,16 @@ setMethod(
             "units"={return(x@units)},
             "data"={return(x@data)},
             "ocov"={return(x@ocov)},
+            "var.match"={return(x@var.match)},
             "N"={return(x@N)},
             "yorig"={return(x@yorig)},
             "ind.gen"={return(x@ind.gen)},
             "ntot.obs"={return(x@ntot.obs)},
             "nind.obs"={return(x@nind.obs)},
+            "nvarlevel"={return(x@nvarlevel)},
+            "Nunit"={return(x@Nunit)},
+            "nrep.unit"={return(x@nrep.unit)},
+            "id.unit"={return(x@id.unit)},
             stop("No such attribute\n")
     )
   }
@@ -261,11 +279,16 @@ setReplaceMethod(
             "units"={x@units<-value},
             "data"={x@data<-value},
             "ocov"={x@ocov<-value},
+            "var.match"={x@var.match<-value},
             "N"={x@N<-value},
             "ind.gen"={x@ind.gen<-value},
             "yorig"={x@yorig<-value},
             "ntot.obs"={x@ntot.obs<-value},
             "nind.obs"={x@nind.obs<-value},
+            "nvarlevel"={x@nvarlevel<-value},
+            "Nunit"={x@Nunit<-value},
+            "nrep.unit"={x@nrep.unit<-value},
+            "id.unit"={x@id.unit<-value},
             stop("No such attribute\n")
     )
     validObject(x)
