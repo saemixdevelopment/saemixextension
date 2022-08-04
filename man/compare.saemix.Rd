@@ -88,7 +88,6 @@ Electronic Journal of Statistics 8(1) p. 456-475
 \author{
 Maud Delattre
 }
-\keyword{AIC,}
+\keyword{AIC}
 \keyword{BIC}
-\keyword{comparison,}
 \keyword{model}

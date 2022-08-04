@@ -2,10 +2,7 @@
 % Please edit documentation in R/stepwise.R
 \name{stepwise.procedure}
 \alias{stepwise.procedure}
-\title{Joint selection of covariates and random effects in a nonlinear mixed effects model by a stepwise-type
-algorithm based on two different versions of BIC for covariate selection and random effects selection
-respectively. Selection is made among the covariates as such specified in the SaemixData object.
-Only uncorrelated random effects structures are considered.}
+\title{Stepwise procedure for joint selection of covariates and random effects}
 \usage{
 stepwise.procedure(saemixObject, covariate.init = NULL, trace = TRUE)
 }
@@ -35,11 +32,6 @@ M Delattre, MA Poursat (2017) BIC strategies for model choice in a population ap
 \author{
 Maud Delattre
 }
-\keyword{BIC.covariate}
-\keyword{and}
 \keyword{covariate}
-\keyword{effects}
-\keyword{joint}
-\keyword{random}
-\keyword{selection,}
-\keyword{stepwise,}
+\keyword{selection}
+\keyword{stepwise}

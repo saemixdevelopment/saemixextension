@@ -2,10 +2,7 @@
 % Please edit documentation in R/forward.R
 \name{forward.procedure}
 \alias{forward.procedure}
-\title{Joint selection of covariates and random effects in a nonlinear mixed effects model by a forward-type
-algorithm based on two different versions of BIC for covariate selection and random effects selection
-respectively. Selection is made among the covariates as such specified in the SaemixData object.
-Only uncorrelated random effects structures are considered.}
+\title{Backward procedure for joint selection of covariates and random effects}
 \usage{
 forward.procedure(saemixObject, trace = TRUE)
 }
@@ -33,11 +30,6 @@ M Delattre, MA Poursat (2017) BIC strategies for model choice in a population ap
 \author{
 Maud Delattre
 }
-\keyword{BIC.covariate}
-\keyword{and}
 \keyword{covariate}
-\keyword{effects}
-\keyword{forward,}
-\keyword{joint}
-\keyword{random}
-\keyword{selection,}
+\keyword{forward}
+\keyword{selection}
