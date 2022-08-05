@@ -1599,11 +1599,11 @@ replaceData.saemixObject<-function(saemixObject, newdata) {
 
 
 createSaemixObject.empty<-function(model,data,control=list()) {
-  if(class(model)!="SaemixModel") {
+  if(!is(model,"SaemixModel")) {
     message("Please provide a valid model object (see the help page for SaemixModel)\n")
     return("Need a valid model object")
   }
-  if(class(data)!="SaemixData") {
+  if(!is(data,"SaemixData")) {
     message("Please provide a valid data object (see the help page for SaemixData)\n")
     return("Need a valid data object")
   }
@@ -1624,14 +1624,15 @@ createSaemixObject.empty<-function(model,data,control=list()) {
 
 createSaemixObject.initial<-function(model,data,control=list()) {
   # Checking validity of input
-  if(class(model)!="SaemixModel") {
+  if(!is(model,"SaemixModel")) {
     message("Please provide a valid model object (see the help page for SaemixModel)\n")
     return("Need a valid model object")
   }
-  if(class(data)!="SaemixData") {
+  if(!is(data,"SaemixData")) {
     message("Please provide a valid data object (see the help page for SaemixData)\n")
     return("Need a valid data object")
   }
+  
   # Creating saemixObject (empty results)
   saemixObject<-new(Class="SaemixObject",data=data,model=model,options=control)
   opt.warn<-getOption("warn")

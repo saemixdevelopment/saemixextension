@@ -1060,7 +1060,7 @@ saemixModel<-function(model,psi0,description="",modeltype ="structural", name.re
     if(verbose) cat("Warning: no names given for the parameters in the model, please consider including parameter names.\n")
   }
   xmod<-try(new(Class="SaemixModel",model=model,description=description , modeltype=modeltype,psi0=psi0, name.response=name.response, name.sigma=name.sigma, error.model=error.model, transform.par=transform.par,fixed.estim=fixed.estim, covariate.model=covariate.model,covariance.model=covariance.model, omega.init=omega.init,error.init=error.init,name.modpar=name.modpar))
-  if(class(xmod)=="SaemixModel") x1<-try(validObject(xmod),silent=FALSE) else x1<-xmod
+  if(is(xmod,"SaemixModel")) x1<-try(validObject(xmod),silent=FALSE) else x1<-xmod
   if(!inherits(x1,"try-error")) {
     if(verbose) cat("\n\nThe following SaemixModel object was successfully created:\n\n")
     } else xmod<-"Creation of SaemixModel failed"

@@ -63,8 +63,7 @@ step.saemix <- function(saemixObject, trace = TRUE, direction = "forward", covar
   
   saemix.data <- saemixObject["data"]
   
-  if (class(saemixObject)=="SaemixObject"){
-  
+  if (is(saemixObject,"SaemixObject")) {
   if (length(saemix.data@name.covariates)==0){
     stop("The saemixData object should contain covariates.")
   } else{
