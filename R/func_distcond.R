@@ -403,13 +403,14 @@ conddist.saemix<-function(saemixObject, nsamp=1, max.iter=NULL, plot=FALSE, ...)
       }
     }
   }
-  
+
   eta.cond<-matrix(0,nrow=dim(etaM)[1],ncol=nb.parameters)
   eta.cond[,ind.eta]<-etaM
   eta.cond<-array(t(eta.cond),dim=c(nb.parameters,N,nsamp))
   eta.cond<-t(apply(eta.cond,c(1,2),mean))
+  colnames(eta.cond)<-paste("eta.",saemixObject["model"]["name.modpar"],sep="")
   cond.shrinkage<-100*(1-apply(eta.cond,2, var)/mydiag(saemixObject["results"]["omega"]))
-  names(cond.shrinkage)<-paste("Sh.",names(cond.shrinkage),".%",sep="")
+  names(cond.shrinkage)<-paste("Sh.",saemixObject["model"]["name.modpar"],".%",sep="")
   resh.eik<-resh.varik<-array(0,dim=c(nrow=N,ncol=nb.parameters,nsamp))
   phi1<-array(t(phiM),dim=c(nb.parameters,N,nsamp))
   phi.samp<-psi.samp<-array(0,dim=c(N,nb.parameters,nsamp))

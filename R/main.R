@@ -274,6 +274,8 @@ saemix<-function(model,data,control=list()) {
   cond.mean.eta[,varList$ind.eta]<-etaM
   cond.mean.eta<-array(t(cond.mean.eta),dim=c(Uargs$nb.parameters, Dargs$N, saemix.options$nb.chains))
   cond.mean.eta<-t(apply(cond.mean.eta,c(1,2),mean))
+  shrinkage<-100*(1-apply(cond.mean.eta,2,var)/mydiag(varList$omega))
+  names(shrinkage)<-paste("Sh.",saemixObject["model"]["name.modpar"],".%",sep="")
   
 # Updating objects
   saemix.model["Mcovariates"]<-Uargs$Mcovariates
@@ -297,7 +299,8 @@ saemix<-function(model,data,control=list()) {
   saemix.res["nbeta.fixed"]<-  sum(saemix.model["betaest.model"]%*%diag(saemix.model["fixed.estim"])%*%as.matrix(-1*diag(saemix.model["covariance.model"])+1))
   saemix.res["cond.mean.psi"]<-cond.mean.psi
   saemix.res["cond.mean.eta"]<-cond.mean.eta
-
+  saemix.res["cond.shrinkage"]<- shrinkage
+  
 # Updating elements of saemixObject
   saemixObject["model"]<-saemix.model
   saemixObject["results"]<-saemix.res
@@ -312,8 +315,9 @@ saemix<-function(model,data,control=list()) {
 # Compute the MAP estimates of the PSI_i's 
   if(saemix.options$map) {
     x<-try(saemixObject<-map.saemix(saemixObject))
-    if(inherits(x,"try-error") & saemixObject@options$warnings) message("Problem estimating the MAP parameters\n") else 
+    if(inherits(x,"try-error") & saemixObject@options$warnings) message("Problem estimating the MAP parameters\n") else {
       if(!saemix.options$save.graphs) saemixObject<-saemix.predict(saemixObject, type=c("ipred","ppred")) # if no graphs, compute predictions all the same
+    }
   }
   
 # Compute the Fisher Information Matrix & update saemix.res

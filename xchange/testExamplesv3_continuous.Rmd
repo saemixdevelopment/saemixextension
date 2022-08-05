@@ -1,5 +1,5 @@
 ---
-title: "Testing examples in saemix 3.0 - continuous models"
+title: "Testing examples in saemix 3.0, 3.1 - continuous models"
 author: "Emmanuelle"
 date: "20/10/2020"
 output:
@@ -107,7 +107,7 @@ saemix.data<-saemixData(name.data=theo.saemix,header=TRUE,sep=" ",na=NA,
   name.group=c("Id"),name.predictors=c("Dose","Time"),
   name.response=c("Concentration"),name.covariates=c("Weight","Sex"),
   units=list(x="hr",y="mg/L",covariates=c("kg","-")), name.X="Time")
-  model1cpt<-function(psi,id,xidep) { 
+model1cpt<-function(psi,id,xidep) { 
     dose<-xidep[,1]
     tim<-xidep[,2]  
     ka<-psi[id,1]
@@ -152,6 +152,46 @@ plot(ynpde, plot.type="vpc")
 
 saemix.fit<-conddist.saemix(saemix.fit)
 saemix.fit<-conddist.saemix(saemix.fit, plot=TRUE)
+
+```
+
+
+### One random effect
+
+Note: sort the message "one-dimensional optimization by Nelder-Mead is unreliable"
+
+```{r random1}
+
+model1cpt.1<-function(psi,id,xidep) {
+  dose<-xidep[,1]
+  tim<-xidep[,2]
+  ka<-psi[id,1]
+  V<-2
+  # V<-psi[id,2]
+  k<-0.5
+  CL<-k*V
+  ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
+  return(ypred)
+}
+saemix.model<-saemixModel(model=model1cpt.1,description="warfarin",modeltype="structural",
+  psi0=matrix(c(1),ncol=1,byrow=TRUE, dimnames=list(NULL, c("ka"))),
+  transform.par=c(1),omega.init=matrix(c(1),ncol=1,byrow=TRUE),
+  covariance.model=matrix(c(1),ncol=1,byrow=TRUE))
+
+saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
+
+# Alternate, fixing V and CL
+saemix.model2<-saemixModel(model=model1cpt,
+                          description="One-compartment model with first-order absorption",
+                          psi0=matrix(c(1.,20,1),ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))),
+                          transform.par=c(1,1,1), fixed.estim=c(1,0,0),
+                          covariance.model = diag(c(1,0,0)),
+                          omega.init=diag(c(1,1,1)))
+saemix.fit2<-saemix(saemix.model2,saemix.data,saemix.options)
+
+# Checking estimates are close (yes)
+saemix.fit@results
+saemix.fit2@results
 
 ```
 

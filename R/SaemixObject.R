@@ -1113,7 +1113,7 @@ setMethod(f="plot",
     if(length(id.map)>0) {
       if(length(x["results"]["map.eta"])==0) {
         if(x@options$warnings) message("Computing ETA estimates and adding them to fitted object.\n")
-	x<-compute.eta.map(x)
+      	x<-compute.eta.map(x)
         assign(namObj,x,envir=parent.frame())
       }
     }
