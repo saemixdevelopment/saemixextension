@@ -1,0 +1,375 @@
+---
+title: "Saemix 3.1 - binary and categorical models"
+author: "Emmanuelle"
+date: "08/2022"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+## Objective
+
+Run binary and categorical models in saemix
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# Libraries
+library(saemix)
+
+# library(ggplot2)
+# library(MASS)
+# library(rlang)
+# library(gridExtra)
+library(tidyverse)
+
+# Whether to save the plots
+saveFigs<-FALSE
+figDir <- getwd()
+```
+
+
+### Binary response model
+
+#### Data description
+
+- 
+
+```{r binaryData}
+data(toenail.saemix)
+
+saemix.data<-saemixData(name.data=toenail.saemix,name.group=c("id"),name.predictors=c("time","y"), name.response="y",
+                        name.covariates=c("treatment"),name.X=c("time"))
+```
+
+#### Exploring data
+
+The usual plot of the data object is not very informative as it alternates between 0 and 1's. Instead we plot the evolution of the frequency of infection over time in the population, stratifying by treatment.
+
+```{r binaryExplore}
+# Explore data
+toe1 <- toenail.saemix %>%
+  group_by(visit, treatment) %>%
+  summarise(nev = sum(y), n=n()) %>%
+  mutate(freq = nev/n, sd=sqrt((1-nev/n)/nev)) %>%
+  mutate(lower=freq-1.96*sd, upper=freq+1.96*sd)
+toe1$lower[toe1$lower<0] <-0 # we should use a better approximation for CI
+toe1$treatment <- factor(toe1$treatment, labels=c("A","B"))
+
+plot1<-ggplot(toe1, aes(x=visit, y=freq, group=treatment)) + geom_line(aes(colour=treatment)) + 
+  geom_point(aes(colour=treatment)) + 
+  geom_ribbon(aes(ymin=lower, ymax=upper, fill=treatment), alpha=0.2) +
+  ylim(c(0,1)) + theme_bw() + theme(legend.position = "top") +
+  xlab("Visit number") + ylab("Observed frequency of infection")
+
+print(plot1)
+if(saveFigs) {
+  namfig<-"toenail_infectionFreq.eps"
+  cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
+  plot(plot1)
+  dev.off()
+}
+```
+
+#### Statistical model
+
+- Model for repeated binary data
+  - the probability that $y_{ij}$ outcome observed in subject $i$ at visit $j$ (time $t_{ij}$ in months) is 1 is modelled as a logistic model
+  - linear model on the logit scale (${\rm logit}(p) = \ln \left( \frac{p}{1-p} \right)$)
+
+$$ {\rm logit}(P(y_{ij}=1)) = \alpha_i + \beta_i t_{ij} $$
+
+- Statistical model
+  - $\alpha_i$ assumed to follow a normal distribution $~N(\mu_{\alpha}, \omega_{\alpha})$
+  - $\beta_i$ assumed to depend on treatment as in  $\beta_i = \mu_{\beta} + 1_{trt=B}$
+
+```{r binaryModel}
+# saemix model
+binary.model<-function(psi,id,xidep) {
+  tim<-xidep[,1]
+  y<-xidep[,2]
+  inter<-psi[id,1]
+  slope<-psi[id,2]
+  logit<-inter+slope*tim
+  pevent<-exp(logit)/(1+exp(logit))
+  logpdf<-rep(0,length(tim))
+  P.obs = (y==0)*(1-pevent)+(y==1)*pevent
+  logpdf <- log(P.obs)
+  return(logpdf)
+}
+
+saemix.model<-saemixModel(model=binary.model,description="Binary model",
+                          modeltype="likelihood",
+                          psi0=matrix(c(-0.5,-.15,0,0),ncol=2,byrow=TRUE,dimnames=list(NULL,c("alpha","beta"))),
+                          transform.par=c(0,0), covariate.model=c(0,1),covariance.model=matrix(c(1,0,0,0),ncol=2), omega.init=diag(c(0.5,0.3)))
+```
+
+- Fit with saemix and store the results to the object *binary.fit*
+   - setting options
+    - 10 chains
+    - don't display intermediate graphs or save graphs
+    - don't compute the FIM (approximation not suited to discrete data models)
+- results
+  - numerical output
+    - note that the estimated value of $\mu_{\alpha}$ is `r format(binary.fit@results@fixed.effects[1], digits=3)`, corresponding to an estimated probability of event of `r format(1/(1+exp(-binary.fit@results@fixed.effects[1])), digits=3)`
+    - this is lower than the observed probability of infection at time 0 (around 0.37) because the logistic model is highly non-linear and $E(f(\theta))$ is very different from $f(E(\theta))$
+  - convergence plots show good convergence for all parameters
+
+```{r binaryModelFit}
+# saemix fit
+saemix.options<-list(seed=1234567,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, nb.chains=10, fim=FALSE)
+binary.fit<-saemix(saemix.model,saemix.data,saemix.options)
+
+plot(binary.fit, plot.type="convergence")
+```
+
+#### Diagnostics 
+
+- Simulation function to simulate from a binary model
+  - the model function defines directly the log-pdf, so the user needs to define a function to simulate from the appropriate binomial function
+  - note the similarities between the model function (*binary.model()*) and the simulation function (*simulBinary()*)
+    - same setting of dependent variables (*tim* and *y*) from *xidep* and parameters (*inter* and *slope*) from *psi*
+      - note that we don't use *y* in *simulBinary()*
+    - same definition of pevent (=$P(Y_{ij}=1)$, the probability of observing an event)
+    - in *binary.model()* we then compute the probability of the observed outcome as $1_{Y_{ij}=0} \times (1-P(Y_{ij}=1)) + 1_{Y_{ij}=1} \times P(Y_{ij}=1) $ using the observed value of $Y_{ij}$ contained in *y* for each observation
+    - in *simulBinary()*, we use the individual $P(Y_{ij}=1)$ predictions to simulate from a Bernouilli distribution using the *rbinom()* function
+- once the simulation function has been defined, we use the *simulateDiscreteSaemix()* function from the {\sf saemix} package to simulate *nsim* values (here 100) with the population parameters estimated in *binary.fit*
+  - this adds a *simdata* element to the *binary.fit*
+  - we extract dataframe with the simulated data (*binary.fit@sim.data@datasim*) and add columns *visit* and *treatment* to stratify the plots
+
+```{r binarySimulate}
+# simulate from model (nsim=100)
+simulBinary<-function(psi,id,xidep) {
+  tim<-xidep[,1]
+  y<-xidep[,2]
+  inter<-psi[id,1]
+  slope<-psi[id,2]
+  logit<-inter+slope*tim
+  pevent<-1/(1+exp(-logit))
+  ysim<-rbinom(length(tim),size=1, prob=pevent)
+  return(ysim)
+}
+
+nsim<-1000
+binary.fit <- simulateDiscreteSaemix(binary.fit, simulBinary, nsim=nsim)
+simdat <-binary.fit@sim.data@datasim
+simdat$visit<-rep(toenail.saemix$visit,nsim)
+simdat$treatment<-rep(toenail.saemix$treatment,nsim)
+```
+
+- VPC-like diagnostics
+  - 
+- npde for categorical data (submitted)
+
+```{r binaryDiagnostics}
+# VPC-type diagnostic
+ytab<-NULL
+for(irep in 1:nsim) {
+  xtab<-simdat[simdat$irep==irep,]
+  xtab1 <- xtab %>%
+    group_by(visit, treatment) %>%
+    summarise(nev = sum(ysim), n=n()) %>%
+    mutate(freq = nev/n)
+  ytab<-rbind(ytab,xtab1[,c("visit","freq","treatment")])
+}
+gtab <- ytab %>%
+  group_by(visit, treatment) %>%
+  summarise(lower=quantile(freq, c(0.05)), median=quantile(freq, c(0.5)), upper=quantile(freq, c(0.95))) %>%
+  mutate(treatment=ifelse(treatment==1,"B","A"))
+gtab$freq<-1
+
+plot2 <- ggplot(toe1, aes(x=visit, y=freq, group=treatment)) + geom_line(aes(colour=treatment)) + 
+  geom_point(aes(colour=treatment)) + 
+  geom_line(data=gtab, aes(x=visit, y=median), linetype=2, colour='lightblue') + 
+  geom_ribbon(data=gtab,aes(ymin=lower, ymax=upper), alpha=0.5, fill='lightblue') +
+  ylim(c(0,0.5)) + theme_bw() + theme(legend.position = "none") + facet_wrap(.~treatment) +
+  xlab("Visit number") + ylab("Frequency of infection")
+
+print(plot2)
+if(saveFigs) {
+  namfig<-"toenail_vpcByTreatment.eps"
+  cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
+  plot(plot2)
+  dev.off()
+}
+
+# npd
+
+
+```
+
+### Categorical response model
+
+- Knee pain after 3, 7 and 10 days of treatment compared to baseline (time=0)
+  - longitudinal ordinal model with 5 categories
+  - similar results to Monolix in terms of parameter estimates
+  - SE don't seem so off, but still higher than Monolix (but computed with linearisation anyway)
+- Comparing the 3 covariate models - model with Age on alp1 and treatment on beta best
+
+```{r knee}
+if(testMode)
+  data(knee.saemix) else
+    knee.saemix<-read.table(file.path(datDir, "knee.saemix.tab"), header=TRUE)
+
+# Data
+saemix.data<-saemixData(name.data=knee.saemix,name.group=c("id"),
+                        name.predictors=c("y", "time"), name.X=c("time"),
+                        name.covariates = c("Age","Sex","treatment","Age2"),
+                        units=list(x="d",y="", covariates=c("yr","-","-","yr2")))
+gtab <- knee.saemix %>%
+  group_by(time, y) %>%
+  summarise(n=length(y)) %>%
+  mutate(y=as.factor(y))
+
+ggplot(data = gtab, aes(x = time, y=n, group=y, fill=y)) + 
+  geom_bar(stat="identity", position = "dodge") + theme_bw() + 
+  scale_fill_brewer(palette = "Reds") + theme(legend.position = "top") +
+  labs(fill = "Score") + xlab("Time (d)") + ylab("Counts")
+
+# Model for ordinal responses
+ordinal.model<-function(psi,id,xidep) {
+  y<-xidep[,1]
+  time<-xidep[,2]
+  alp1<-psi[id,1]
+  alp2<-psi[id,2]
+  alp3<-psi[id,3]
+  alp4<-psi[id,4]
+  beta<-psi[id,5]
+  
+  logit1<-alp1 + beta*time
+  logit2<-logit1+alp2
+  logit3<-logit2+alp3
+  logit4<-logit3+alp4
+  pge1<-exp(logit1)/(1+exp(logit1))
+  pge2<-exp(logit2)/(1+exp(logit2))
+  pge3<-exp(logit3)/(1+exp(logit3))
+  pge4<-exp(logit4)/(1+exp(logit4))
+  pobs = (y==1)*pge1+(y==2)*(pge2 - pge1)+(y==3)*(pge3 - pge2)+(y==4)*(pge4 - pge3)+(y==5)*(1 - pge4)
+  logpdf <- log(pobs)
+  
+  return(logpdf)
+}
+
+# Fitting
+covmodel2<-covmodel1<-matrix(data=0,ncol=5,nrow=4)
+covmodel1[,1]<-1
+covmodel1[,5]<-1
+covmodel2[3,5]<-covmodel2[4,1]<-1
+
+saemix.model<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",
+                          psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))),
+                          transform.par=c(0,1,1,1,1),omega.init=diag(rep(1,5)), covariance.model = diag(c(1,0,0,0,1)))
+
+saemix.model.cov1<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",
+                              psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))),
+                              transform.par=c(0,1,1,1,1),omega.init=diag(rep(1,5)), covariance.model = diag(c(1,0,0,0,1)),
+                              covariate.model = covmodel1)
+saemix.model.cov2<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",
+                               psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))),
+                               transform.par=c(0,1,1,1,1),omega.init=diag(rep(1,5)), covariance.model = diag(c(1,0,0,0,1)),
+                               covariate.model = covmodel2)
+
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, nb.chains=10)
+#saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, nb.chains=10, fim=FALSE)
+
+ord.fit<-saemix(saemix.model,saemix.data,saemix.options)
+ord.fit.cov1<-saemix(saemix.model.cov1,saemix.data,saemix.options)
+ord.fit.cov2<-saemix(saemix.model.cov2,saemix.data,saemix.options)
+BIC(ord.fit)
+BIC(ord.fit.cov1)
+BIC(ord.fit.cov2)
+
+# Comparing the 3 covariate models - model with Age2 on alp1 and treatment on beta best
+compare.saemix(ord.fit, ord.fit.cov1, ord.fit.cov2)
+
+###################
+# But VPC not good
+### Simulations for VPC
+simulateOrdinal<-function(psi,id,xidep) {
+  y<-xidep[,1]
+  time<-xidep[,2]
+  alp1<-psi[id,1]
+  alp2<-psi[id,2]
+  alp3<-psi[id,3]
+  alp4<-psi[id,4]
+  beta<-psi[id,5]
+  
+  logit1<-alp1 + beta*time
+  logit2<-logit1+alp2
+  logit3<-logit2+alp3
+  logit4<-logit3+alp4
+  pge1<-exp(logit1)/(1+exp(logit1))
+  pge2<-exp(logit2)/(1+exp(logit2))
+  pge3<-exp(logit3)/(1+exp(logit3))
+  pge4<-exp(logit4)/(1+exp(logit4))
+  x<-runif(length(time))
+  ysim<-1+as.integer(x>pge1)+as.integer(x>pge2)+as.integer(x>pge3)+as.integer(x>pge4)
+  return(ysim)
+}
+
+nsim<-100
+yfit<-ord.fit.cov2
+yfit<-simulateDiscreteSaemix(yfit, simulateOrdinal, nsim=nsim)
+
+simdat <-yfit@sim.data@datasim
+simdat$time<-rep(yfit@data@data$time,nsim)
+simdat$treatment<-rep(yfit@data@data$treatment,nsim)
+
+ytab<-NULL
+for(irep in 1:nsim) {
+  xtab<-simdat[simdat$irep==irep,]
+  xtab1 <- xtab %>%
+    group_by(time, treatment, ysim) %>%
+    summarise(n=length(ysim))
+  ytab<-rbind(ytab,xtab1[,c("time","ysim","n","treatment")])
+}
+gtab <- ytab %>%
+  group_by(time, treatment, ysim) %>%
+  summarise(lower=quantile(n, c(0.05)), n=quantile(n, c(0.5)), upper=quantile(n, c(0.95))) %>%
+  mutate(y=as.factor(ysim))
+
+knee2 <- knee.saemix %>%
+  group_by(time, treatment, y) %>%
+  summarise(n=length(y)) %>%
+  mutate(y=as.factor(y))
+
+
+kneevpc <- ggplot(data = knee2, aes(x = time, y=n, fill=y, group=treatment)) + 
+  geom_ribbon(data=gtab, aes(x=time, ymin=lower, ymax=upper), alpha=0.9, colour="lightblue") +
+  geom_col(position = "dodge", width=0.5, colour="lightblue") + theme_bw() + 
+  scale_fill_brewer(palette = "Blues") + theme(legend.position = "top") +
+  labs(fill = "Score") + xlab("Time (d)") + ylab("Counts") + facet_wrap(treatment~y, nrow=2)
+
+print(kneevpc)
+
+# VPC for median score in each group
+knee3 <- knee.saemix %>%
+  group_by(time, treatment) %>%
+  summarise(mean=mean(y))
+
+ytab<-NULL
+for(irep in 1:nsim) {
+  xtab<-simdat[simdat$irep==irep,]
+  xtab1 <- xtab %>%
+    group_by(time, treatment) %>%
+    summarise(mean=mean(ysim))
+  ytab<-rbind(ytab,xtab1[,c("time","treatment","mean")])
+}
+gtab <- ytab %>%
+  group_by(time, treatment) %>%
+  summarise(lower=quantile(mean, c(0.05)), mean=median(mean), upper=quantile(mean, c(0.95)))
+
+kneeMedvpc <- ggplot(data = knee3, aes(x = time, y=mean, group=treatment)) + 
+  geom_ribbon(data=gtab, aes(x=time, ymin=lower, ymax=upper), alpha=0.5, fill="lightblue") +
+  geom_point(colour='blue') + theme_bw() + 
+  scale_fill_brewer(palette = "Blues") + theme(legend.position = "top") +
+  labs(fill = "Score") + xlab("Time (d)") + ylab("Median value of score over time") + facet_wrap(.~treatment)
+
+print(kneeMedvpc)
+if(saveFigs) {
+  namfig<-"knee_medianScoreVPC.eps"
+  cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
+  plot(kneeMedvpc)
+  dev.off()
+}
+```
