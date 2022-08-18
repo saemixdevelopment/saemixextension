@@ -60,6 +60,7 @@ setClass(
   Class="SaemixModel",
   representation=representation(
     model="function", 		# name of model function
+    simulate.function="function", 		# name of function used to simulate from data (used for non-Gaussian models)
     description="character",	# model description
     modeltype="character",     # type of model (structural, for continuous responses, or likelihood)
     psi0="matrix",		# CI for parameter estimates
@@ -175,7 +176,7 @@ setClass(
 setMethod(
   f="initialize",
   signature="SaemixModel",
-  definition=function(.Object,model,description,modeltype,psi0, name.response, name.sigma, transform.par,fixed.estim, error.model,covariate.model,covariance.model,omega.init,error.init, name.modpar, verbose=TRUE){
+  definition=function(.Object, model, description, modeltype,psi0, name.response, name.sigma, transform.par,fixed.estim, error.model,covariate.model,covariance.model,omega.init,error.init, name.modpar, verbose=TRUE){
 #    cat ("--- initialising SaemixModel Object --- \n")
     if(missing(modeltype)) modeltype<-"structural"
     .Object@modeltype<-modeltype
@@ -366,6 +367,7 @@ setMethod(
   definition = function (x,i,j,drop ){
   switch (EXPR=i,
     "model"={return(x@model)},
+    "simulate.function"={return(x@simulate.function)},
     "description"={return(x@description)},
     "modeltype"={return(x@modeltype)},
     "psi0"={return(x@psi0)},
@@ -403,6 +405,7 @@ setReplaceMethod(
   definition = function (x,i,j,value){
   switch (EXPR=i,
     "model"={x@model<-value},
+    "simulate.function"={x@simulate.function<-value},
     "description"={return(x@description)},
     "modeltype"={return(x@modeltype)},
     "psi0"={x@psi0<-value},
@@ -1021,7 +1024,7 @@ setMethod("plot",c("SaemixModel","SaemixData"),
 #' 
 #' @export saemixModel
 
-saemixModel<-function(model,psi0,description="",modeltype ="structural", name.response="", name.sigma=character(), error.model=character(), transform.par=numeric(),fixed.estim=numeric(),covariate.model=matrix(nrow=0,ncol=0), covariance.model=matrix(nrow=0,ncol=0),omega.init=matrix(nrow=0,ncol=0),error.init=numeric(), name.modpar=character(), verbose=TRUE) {
+saemixModel<-function(model,psi0,description="",modeltype ="structural", name.response="", name.sigma=character(), error.model=character(), transform.par=numeric(),fixed.estim=numeric(),covariate.model=matrix(nrow=0,ncol=0), covariance.model=matrix(nrow=0,ncol=0),omega.init=matrix(nrow=0,ncol=0),error.init=numeric(), name.modpar=character(), simulate.function=NULL, verbose=TRUE) {
 # Creating model from class
   if(missing(model)) {
     if(verbose) cat("Error in saemixModel:\n   The model must be a function, accepting 3 arguments: psi (a vector of parameters), id (a vector of indices) and xidep (a matrix of predictors). Please see the documentation for examples.\n")
@@ -1032,7 +1035,7 @@ saemixModel<-function(model,psi0,description="",modeltype ="structural", name.re
     if(verbose) cat("Error in saemixModel:\n   the model function does not exist.\n")
     return("Creation of SaemixModel failed")  
   }
-  if(typeof(model)=="character") {
+  if(is(model,"character")) {
     if(exists(model)) model<-get(model) else {
       if(verbose) cat("Error in saemixModel:\n   The argument model to saemixModel must be a valid function.\n")
       return("Creation of SaemixModel failed")
@@ -1045,6 +1048,24 @@ saemixModel<-function(model,psi0,description="",modeltype ="structural", name.re
   if(length(formals(model))!=3) {
     if(verbose) cat("Error in saemixModel:\n   The model must be a function, accepting 3 arguments: psi (a vector of parameters), id (a vector of indices) and xidep (a matrix of predictors). Please see the documentation for examples.\n")
     return("Creation of SaemixModel failed")
+  }
+  has.sim<-FALSE
+  if(!is.null(simulate.function)) {
+    xcal<-try(typeof(simulate.function))
+    if(inherits(xcal,"try-error")) {
+      if(verbose) message("The simulate.function does not exist, ignoring.\n")
+    } else {
+      if(is(simulate.function,"character")) {
+        if(exists(simulate.function)) {
+          simulate.function<-get(simulate.function)
+          has.sim <- TRUE
+        }
+      }
+      if(!is.function(simulate.function) || length(formals(simulate.function))!=3) {
+        if(verbose) cat("The simulate.function should have the same format as the model function, ignoring.\n")
+        has.sim <- FALSE
+      } else has.sim <- TRUE
+    }
   }
   if(missing(psi0) || length(psi0)==0) {
     if(verbose) cat("Error in saemixModel:\n   please provide initial estimates psi0 for at least the fixed effects.\n")
@@ -1064,6 +1085,7 @@ saemixModel<-function(model,psi0,description="",modeltype ="structural", name.re
   if(!inherits(x1,"try-error")) {
     if(verbose) cat("\n\nThe following SaemixModel object was successfully created:\n\n")
     } else xmod<-"Creation of SaemixModel failed"
+  if(has.sim) xmod@simulate.function <- simulate.function
   if(verbose) print(xmod)
   return(xmod)
 }

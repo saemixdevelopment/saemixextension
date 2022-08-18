@@ -9,13 +9,48 @@ output:
 
 ## Objective
 
-Run binary and categorical models in saemix
+Run binary and categorical models in **saemix**
 
+This notebook uses additional code from the **saemix** development github, not yet integrated in the package. The *workDir* folder in the next chunk of code points to the folder where the user stored this code, and is needed to run the notebook (*workDir* defaults to the current working directory). Specifically, the notebook loads:
+
+- code for different bootstraps in non-linear mixed effect models (Comets et al. 2021 and submitted)
+  - in the code, the number of bootstraps is set to 10 for speed but we recommend to use at least 200
+  - this can be changed in the following change of code by uncommenting the line *nboot<-200* and setting the number of bootstrap samples (this may cause memory issues in **Rstudio** with older machines, if this is the case we recommend executing the code in a separate script)
+- code for the MC/AGQ provided by Sebastian Ueckert (Ueckert et al. 2017)
+  - again if memory issues arise the code can be run in a separate script.
+
+The current notebook can be executed to create an HMTL or PDF output with comments and explanations. A script version containing only the R code is also given as *saemix3_categoricalModel.R* in the same folder.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+# Folders
+workDir<-getwd() 
+
+# @Eco
+workDir<-"/home/eco/work/saemix/saemixextension/paperSaemix3"
+saemixDir <- "/home/eco/work/saemix/saemixextension"
+setwd(workDir)
+
 # Libraries
 library(saemix)
+
+# Libraries needed to compute the FIM by AGQ
+library(R6)
+library(pracma)
+library(compiler)
+library(statmod)
+library(Matrix)
+library(randtoolbox)
+
+# FIM by MC/AGQ (code S. Ueckert)
+
+dirAGQ<-file.path(saemixDir,"fimAGQ")
+
+# Bootstrap code
+source(file.path(saemixDir, "bootstrap", "saemix_bootstrap.R"))
+
+# Code to compute the exact FIM by MC/AGQ
 
 # library(ggplot2)
 # library(MASS)
@@ -26,6 +61,11 @@ library(tidyverse)
 # Whether to save the plots
 saveFigs<-FALSE
 figDir <- getwd()
+
+# Number of bootstrap samples
+nboot <-5
+# nboot <- 200
+
 ```
 
 
@@ -47,6 +87,10 @@ saemix.data<-saemixData(name.data=toenail.saemix,name.group=c("id"),name.predict
 The usual plot of the data object is not very informative as it alternates between 0 and 1's. Instead we plot the evolution of the frequency of infection over time in the population, stratifying by treatment.
 
 ```{r binaryExplore}
+# Distribution of times
+if(FALSE) hist(toenail.saemix$time, breaks=c(-1,0.25,1.25,2.25, 3.25, 7,10,15,20), freq=T)
+table(cut(toenail.saemix$time, breaks=c(-1,0.25,1.25,2.25, 3.25, 7,10,15,20)))
+
 # Explore data
 toe1 <- toenail.saemix %>%
   group_by(visit, treatment) %>%
@@ -109,11 +153,6 @@ saemix.model<-saemixModel(model=binary.model,description="Binary model",
     - 10 chains
     - don't display intermediate graphs or save graphs
     - don't compute the FIM (approximation not suited to discrete data models)
-- results
-  - numerical output
-    - note that the estimated value of $\mu_{\alpha}$ is `r format(binary.fit@results@fixed.effects[1], digits=3)`, corresponding to an estimated probability of event of `r format(1/(1+exp(-binary.fit@results@fixed.effects[1])), digits=3)`
-    - this is lower than the observed probability of infection at time 0 (around 0.37) because the logistic model is highly non-linear and $E(f(\theta))$ is very different from $f(E(\theta))$
-  - convergence plots show good convergence for all parameters
 
 ```{r binaryModelFit}
 # saemix fit
@@ -122,6 +161,12 @@ binary.fit<-saemix(saemix.model,saemix.data,saemix.options)
 
 plot(binary.fit, plot.type="convergence")
 ```
+- results
+  - numerical output
+    - note that the estimated value of $\mu_{\alpha}$ is `r format(binary.fit@results@fixed.effects[1], digits=3)`, corresponding to an estimated probability of event of `r format(1/(1+exp(-binary.fit@results@fixed.effects[1])), digits=3)`
+    - this is lower than the observed probability of infection at time 0 (around 0.37) because the logistic model is highly non-linear and $E(f(\theta))$ is very different from $f(E(\theta))$
+  - convergence plots show good convergence for all parameters
+
 
 #### Diagnostics 
 
@@ -158,10 +203,11 @@ simdat$treatment<-rep(toenail.saemix$treatment,nsim)
 ```
 
 - VPC-like diagnostics
-  - 
+  - created by hand
 - npde for categorical data (submitted)
+  - **TODO** using code from Marc
 
-```{r binaryDiagnostics}
+```{r binaryDiagnostics, warning=FALSE, message=FALSE}
 # VPC-type diagnostic
 ytab<-NULL
 for(irep in 1:nsim) {
@@ -198,18 +244,127 @@ if(saveFigs) {
 
 ```
 
+#### Standard errors of estimation
+
+The computation of the FIM in **saemix** uses the so-called FOCE method, an approximation where the model function $f$ is linearised around the conditional expectation of the individual parameters. This approximation is particularly bad for discrete data models, which is why currently **saemix** doesn't provide estimation errors for categorical/binary data models. In this document we show how to obtain SE through the computation of the exact FIM using numerical integration, as well as a bootstrap approach. Because all subjects have different times, for the binary data we will use bootstrap approaches as computing the exact FIM is time-consuming and we would need to compute it for each subject separately before summing the individual FIMs.
+
+Different bootstrap approaches can be used in non-linear mixed effect models and have been implemented for **saemix** in Comets et al. 2021, with code available on the github.
+
+##### Case bootstrap
+
+The first bootstrap approach we can use is case bootstrap, where we resample at the level of the individual. We plot the bootstrap distribution for the 4 parameters (intercept, slope, treatment effect on slope, and variability of intercept). The red vertical line represents the estimate obtained on the original data while the blue line shows the mean of the bootstrap distribution.
+
+```{r binaryCaseBootstrapSE, warning=FALSE, message=FALSE}
+case.bin <- saemix.bootstrap(binary.fit, method="case", nboot=nboot) 
+head(case.bin)
+
+# Bootstrap distributions
+if(nboot<200) cat("The number of bootstrap samples is too low to provide good estimates of the confidence intervals\n") else {
+  resboot1<-case.bin
+  ypd2<-NULL
+  for(icol in 1:4) {
+    ypd2<-rbind(ypd2,data.frame(rep=resboot1[,1],Param=colnames(resboot1)[(icol+1)],value=resboot1[,(icol+1)], Bootstrap="Case", stringsAsFactors=FALSE))
+  }
+  
+  ypd2$Param<-factor(ypd2$Param, levels = unique(ypd2$Param))
+  ypd2.fix<-ypd2[ypd2$Param %in% unique(ypd2$Param)[1:3],]
+  ypd2.iiv<-ypd2[ypd2$Param %in% unique(ypd2$Param)[4],]
+  
+  par.estim<-c(binary.fit@results@fixed.effects,diag(binary.fit@results@omega)[binary.fit@results@indx.omega])
+  mean.bootDist<-apply(resboot1, 2, mean)[-c(1)]
+  df<-data.frame(Param=unique(ypd2$Param), mean.boot=mean.bootDist, est.saemix=par.estim) 
+  
+  plot.density2<-ggplot(data=ypd2) + geom_density(aes(value,fill="red4"), alpha=0.5) + 
+    geom_vline(data=df,aes(xintercept=est.saemix),colour="red",size=1.2) + 
+    geom_vline(data=df,aes(xintercept=mean.boot),colour="blue",size=1.2) +
+    theme_bw() + theme(axis.title.x = element_blank(),axis.text.x = element_text(size=9, angle=30, hjust=1), legend.position = "none") + 
+    facet_wrap(~Param, ncol=2, scales = 'free')
+  
+  print(plot.density2)
+}
+```
+
+##### Conditional bootstrap
+
+We can also use conditional bootstrap, a non-parametric residual bootstrap which bootstraps samples from the conditional distributions and preserves the exact structure of the original dataset.
+
+```{r binaryCondBootstrapSE}
+if(FALSE) cond.bin <- saemix.bootstrap(binary.fit, method="conditional", nboot=nboot) 
+
+# Bootstrap distributions
+if(nboot<200) cat("The number of bootstrap samples is too low to provide good estimates of the confidence intervals\n") else {
+  resboot1<-cond.bin
+  ypd2<-NULL
+  for(icol in 1:4) {
+    ypd2<-rbind(ypd2,data.frame(rep=resboot1[,1],Param=colnames(resboot1)[(icol+1)],value=resboot1[,(icol+1)], Bootstrap="Case", stringsAsFactors=FALSE))
+  }
+  
+  ypd2$Param<-factor(ypd2$Param, levels = unique(ypd2$Param))
+  ypd2.fix<-ypd2[ypd2$Param %in% unique(ypd2$Param)[1:3],]
+  ypd2.iiv<-ypd2[ypd2$Param %in% unique(ypd2$Param)[4],]
+  
+  par.estim<-c(binary.fit@results@fixed.effects,diag(binary.fit@results@omega)[binary.fit@results@indx.omega])
+  mean.bootDist<-apply(resboot1, 2, mean)[-c(1)]
+  df<-data.frame(Param=unique(ypd2$Param), mean.boot=mean.bootDist, est.saemix=par.estim) 
+  
+  plot.density2<-ggplot(data=ypd2) + geom_density(aes(value,fill="red4"), alpha=0.5) + 
+    geom_vline(data=df,aes(xintercept=est.saemix),colour="red",size=1.2) + 
+    geom_vline(data=df,aes(xintercept=mean.boot),colour="blue",size=1.2) +
+    theme_bw() + theme(axis.title.x = element_blank(),axis.text.x = element_text(size=9, angle=30, hjust=1), legend.position = "none") + 
+    facet_wrap(~Param, ncol=2, scales = 'free')
+  
+  print(plot.density2)
+}
+```
+
+##### Bootstrap results
+
+Here we produce a table showing tbe parameters estimated on the original dataset along with the bootstrap estimates (mean (SD) of the bootstrap distribution) and the 95% CI.
+
+```{r binaryBootstrapSE}
+if(nboot<200) cat("The number of bootstrap samples is too low to provide good estimates of the confidence intervals\n") else {
+  
+  par.estim<-c(binary.fit@results@fixed.effects,diag(binary.fit@results@omega)[binary.fit@results@indx.omega])
+  df2<-data.frame(parameter=colnames(case.bin)[-c(1)], saemix=par.estim)
+  for(i in 1:2) {
+    if(i==1) {
+      resboot1<-case.bin
+      namboot<-"case"
+      } else {
+      resboot1<-cond.bin
+      namboot <-"cNP"
+      }
+    mean.bootDist<-apply(resboot1, 2, mean)[-c(1)]
+    sd.bootDist<-apply(resboot1, 2, mean)[-c(1)]
+    quant.bootDist<-apply(resboot1[-c(1)], 2, quantile, c(0.025, 0.975))
+    l1<-paste0(format(mean.bootDist, digits=2)," (",format(sd.bootDist,digits=2, trim=T),")")
+    l2<-paste0("[",format(quant.bootDist[1,], digits=2),", ",format(quant.bootDist[2,],digits=2, trim=T),"]")
+    df2<-cbind(df2, l1, l2)
+    i1<-3+2*(i-1)
+    colnames(df2)[i1:(i1+1)]<-paste0(namboot,".",c("estimate","CI"))
+  }
+  print(df2)
+
+}
+
+```
+
+
 ### Categorical response model
 
-- Knee pain after 3, 7 and 10 days of treatment compared to baseline (time=0)
-  - longitudinal ordinal model with 5 categories
-  - similar results to Monolix in terms of parameter estimates
-  - SE don't seem so off, but still higher than Monolix (but computed with linearisation anyway)
-- Comparing the 3 covariate models - model with Age on alp1 and treatment on beta best
+#### Data
 
-```{r knee}
-if(testMode)
-  data(knee.saemix) else
-    knee.saemix<-read.table(file.path(datDir, "knee.saemix.tab"), header=TRUE)
+The *knee.saemix* data represents pain scores recorded in a clinical study in 127 patients with sport related injuries treated with two different therapies. The pain occuring during knee movement was observed after 3,7 and 10 days of treatment. It was taken from the {\sf catdata} package in R~\cite{catdata} (dataset {\sf knee}) and reformatted as follows
+
+- a time column was added representing the day of the measurement (with 0 being the baseline value) and each observation corresponds to a different line in the dataset
+- treatment was recoded as 0/1 (placebo/treatment), gender as 0/1 (male/female) 
+- {\sf Age2} represents the squared of centered Age. 
+
+The following code represents the data as barplots of the different pain scores as a function of time in study, illustrating a recovery as the proportion of lower pain scores increases.
+
+
+```{r kneeData}
+data(knee.saemix)
 
 # Data
 saemix.data<-saemixData(name.data=knee.saemix,name.group=c("id"),
@@ -225,7 +380,25 @@ ggplot(data = gtab, aes(x = time, y=n, group=y, fill=y)) +
   geom_bar(stat="identity", position = "dodge") + theme_bw() + 
   scale_fill_brewer(palette = "Reds") + theme(legend.position = "top") +
   labs(fill = "Score") + xlab("Time (d)") + ylab("Counts")
+```
 
+#### Model
+
+The dataset is part of the datasets analysed in~\cite{Tutz12} with various methods (please refer to the different vignettes in the documentation of {\sf knee}), but mainly as logistic regression on the response after 10 days, or as mixed binary regression after dichotomising the response. Here, we fit the following proportional odds model to the full data.  The probability $p_{ij}=P(Y_{ij}=1 | \theta_{1,i}, \theta_{2,i})$ associated with an event $Y_{ij}$ at time $t_{ij}$ is given by the following equation for the logit:
+\begin{equation}
+\begin{split}
+logit(P(Y_{ij} = 1 | \psi_i)) &= \alpha_{1,i} + \beta_{i} t_{ij} \\
+logit(P(Y_{ij} = 2 | \psi_i)) &= \alpha_{1,i} + \alpha_2 \\
+logit(P(Y_{ij} = 3 | \psi_i)) &= \alpha_{1,i} + \alpha_2 + \alpha_3 \\
+logit(P(Y_{ij} = 4 | \psi_i)) &= \alpha_{1,i} + \alpha_2 + \alpha_3 +\alpha_4\\
+P(Y_{ij} = 4 | \psi_i) &= 1 - \sum_k=1^4 P(Y_{ij} = k | \psi_i)\\
+\end{split}
+\end{equation}
+where $\alpha_1$ and $\beta$ are assumed to have interindividual variability and to follow a normal distribution. $\beta$ is the effect of time, $\alpha_1$ is the probability of a pain score of 1 and the other parameters represent an incremental risk to move into the higher pain category.
+
+The following segment of code defines the ordinal model, computing the different logits for the different categories and deriving the corresponding probability given the observed data passed in *xidep*. We first fit a base model without covariate.
+
+```{r kneeBaseModel}
 # Model for ordinal responses
 ordinal.model<-function(psi,id,xidep) {
   y<-xidep[,1]
@@ -250,15 +423,31 @@ ordinal.model<-function(psi,id,xidep) {
   return(logpdf)
 }
 
+# Saemix model
+saemix.model<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",
+                          psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))),
+                          transform.par=c(0,1,1,1,1),omega.init=diag(c(100, 1, 1, 1, 1)), covariance.model = diag(c(1,0,0,0,1)))
+
+# Fitting
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, nb.chains=10, nbiter.saemix=c(600,100))
+#saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, nb.chains=10, fim=FALSE)
+
+ord.fit<-saemix(saemix.model,saemix.data,saemix.options)
+plot(ord.fit, plot.type="convergence")
+
+## Note: comparable estimates obtained with Monolix (not same, but within CI)
+## quite a lot of sensitivity to distributions (when using eg normal distributions in Monolix the parameters and most importantly the SE's fluctuated quite a bit)
+```
+
+
+We can then fit different models. Here we considered covariates on the two parameters with interindividual variability, first testing all covariates then reducing to a model with Age2 influencing $\alpha_1$ and treatment affecting the slope $\beta$, which had the lowest BICc, as shown using the *compare.saemix()* function.
+
+```{r kneeCovariateModel}
 # Fitting
 covmodel2<-covmodel1<-matrix(data=0,ncol=5,nrow=4)
 covmodel1[,1]<-1
 covmodel1[,5]<-1
 covmodel2[3,5]<-covmodel2[4,1]<-1
-
-saemix.model<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",
-                          psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))),
-                          transform.par=c(0,1,1,1,1),omega.init=diag(rep(1,5)), covariance.model = diag(c(1,0,0,0,1)))
 
 saemix.model.cov1<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",
                               psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))),
@@ -269,10 +458,6 @@ saemix.model.cov2<-saemixModel(model=ordinal.model,description="Ordinal categori
                                transform.par=c(0,1,1,1,1),omega.init=diag(rep(1,5)), covariance.model = diag(c(1,0,0,0,1)),
                                covariate.model = covmodel2)
 
-saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, nb.chains=10)
-#saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, nb.chains=10, fim=FALSE)
-
-ord.fit<-saemix(saemix.model,saemix.data,saemix.options)
 ord.fit.cov1<-saemix(saemix.model.cov1,saemix.data,saemix.options)
 ord.fit.cov2<-saemix(saemix.model.cov2,saemix.data,saemix.options)
 BIC(ord.fit)
@@ -281,9 +466,14 @@ BIC(ord.fit.cov2)
 
 # Comparing the 3 covariate models - model with Age2 on alp1 and treatment on beta best
 compare.saemix(ord.fit, ord.fit.cov1, ord.fit.cov2)
+```
 
-###################
-# But VPC not good
+
+#### Model evaluation
+
+In the code below we define a simulation function for the ordinal model and we apply it to the covariate model. The VPC show some model misspecification, especially in the intermediate pain scores, as well as a tendency to overestimate the improvement, driven by the reduction in the highest pain score. This suggests the impact of time and treatment are not well taken into account in the current model.
+
+```{r kneeEval}
 ### Simulations for VPC
 simulateOrdinal<-function(psi,id,xidep) {
   y<-xidep[,1]
@@ -342,6 +532,11 @@ kneevpc <- ggplot(data = knee2, aes(x = time, y=n, fill=y, group=treatment)) +
 
 print(kneevpc)
 
+```
+
+We also looked at the VPC for the median score in each treatment group and find that the model tends to underpredict the pain scores, especially in the group receiving the first therapy.
+
+```{r kneeMedEval}
 # VPC for median score in each group
 knee3 <- knee.saemix %>%
   group_by(time, treatment) %>%
@@ -373,3 +568,113 @@ if(saveFigs) {
   dev.off()
 }
 ```
+
+
+##### Exact FIM by AGQ (code by Sebastian Ueckert)
+
+For non-Gaussian models, the exact FIM should be computed, and two approaches have been proposed using either numerical integration by a combination of MC and adaptive Gaussian quadrature (MC/AGQ, Ueckert et al 2017) or stochastic integration by MCMC (Rivière et al. 2017).
+
+Both these approaches are computationally intensive. 
+
+Here we use code provided by Sebastian Ueckert implementing the MC/AGQ approach, as the MCMC requires the installation of rStan. In this approach, the information matrix (FIM) over the population is first decomposed the sum of the individual FIM:
+$$
+FIM(\Psi, \Xi) = \sum_{i=1}^{N} FIM(\Psi, \xi_i)
+$$
+where $\xi_i$ denotes the individual design in subject $i$. Assuming $Q$ different elementary designs, the FIM can also be summed over the different designs weighted by the number of subjects $N_q$ in design $q$ as:
+$$
+FIM(\Psi, \Xi) = \sum_{q=1}^{Q} N_q FIM(\Psi, \xi_q)
+$$
+
+In the following, we first load the functions needed to compute the exact FIM. We then define a model object with the following components:
+
+- *parameter_function*: a function returning the list of parameters as the combination of fixed and random effects
+- *log_likelihood_function*: using the parameters, computes the log-likelihood for all y in the dataset
+- *simulation_function*: using the parameters, computes the log-likelihood and produces a random sample from the corresponding distribution
+- *inverse_simulation_function*: supposed to be the quantile function but not quite sure :-/ (here, returns the category in which is urand)
+- *mu*: the fixed parameters
+- *omega*: the variance-covariance matrix
+
+For *mu* and *omega*, we use the results from the saemix fit. Here we show the computation for the model without covariates. For a model with covariates, we would need to compute the FIM for each combination of covariates for categorical covariates, or for each subject with continuous covariates like Age2 here.
+
+```{r categoricalAGQFIMSE}
+# Code Sebastian
+source(file.path(dirAGQ,"default_settings.R"))
+source(file.path(dirAGQ,"helper_functions.R"))
+source(file.path(dirAGQ,"integration.R"))
+source(file.path(dirAGQ,"model.R"))
+
+saemix.fit <- ord.fit
+
+# Setting up ordinal model
+model <- Model$new(
+  parameter_function = function(mu, b) list(alp1=mu[1]+b[1], alp2=mu[2], alp3=mu[3], alp4=mu[4], beta=mu[5] + b[2]),
+  log_likelihood_function = function(y, design, alp1, alp2, alp3, alp4, beta) {
+    logit1<-alp1 + beta*design$time
+    logit2<-logit1+alp2
+    logit3<-logit2+alp3
+    logit4<-logit3+alp4
+    pge1<-exp(logit1)/(1+exp(logit1))
+    pge2<-exp(logit2)/(1+exp(logit2))
+    pge3<-exp(logit3)/(1+exp(logit3))
+    pge4<-exp(logit4)/(1+exp(logit4))
+    pobs = (y==1)*pge1+(y==2)*(pge2 - pge1)+(y==3)*(pge3 - pge2)+(y==4)*(pge4 - pge3)+(y==5)*(1 - pge4)
+    log(pobs)
+  }, 
+  simulation_function = function(design, alp1, alp2, alp3, alp4, beta) {
+    logit1<-alp1 + beta*design$time
+    logit2<-logit1+alp2
+    logit3<-logit2+alp3
+    logit4<-logit3+alp4
+    pge1<-exp(logit1)/(1+exp(logit1))
+    pge2<-exp(logit2)/(1+exp(logit2))
+    pge3<-exp(logit3)/(1+exp(logit3))
+    pge4<-exp(logit4)/(1+exp(logit4))
+    x<-runif(length(time))
+    ysim<-1+as.integer(x>pge1)+as.integer(x>pge2)+as.integer(x>pge3)+as.integer(x>pge4)
+  },
+  inverse_simulation_function = function(design, urand,alp1, alp2, alp3, alp4, beta) {
+    if(is.null(urand)) return(seq_along(design$time))
+    logit1<-alp1 + beta*design$time
+    logit2<-logit1+alp2
+    logit3<-logit2+alp3
+    logit4<-logit3+alp4
+    pge1<-exp(logit1)/(1+exp(logit1))
+    pge2<-exp(logit2)/(1+exp(logit2))
+    pge3<-exp(logit3)/(1+exp(logit3))
+    pge4<-exp(logit4)/(1+exp(logit4))
+    1+as.integer(urand>pge1)+as.integer(urand>pge2)+as.integer(urand>pge3)+as.integer(urand>pge4)
+  },
+  mu = saemix.fit@results@fixed.effects,
+  omega = saemix.fit@results@omega[c(1,5),c(1,5)])
+
+
+# define settings (agq with 3 grid points, quasi random monte-carlo and 500 samples)
+settings <- defaults.agq(gq.quad_points = 3,  y_integration.method = "qrmc", y_integration.n_samples = 500, seed = 3257)
+
+#### Design
+# Checking whether everyone has the same visits - yes
+time.patterns<-tapply(knee.saemix$time, knee.saemix$id, function(x) paste(x,collapse="-"))
+unique(time.patterns)
+
+# same 4 times for all subjects (0, 3, 7, 10)
+design <- data.frame(time=sort(unique(knee.saemix$time)))
+fim <- length(unique(knee.saemix$id)) * calc_fim(model, design, settings)
+print(fim)
+# calculate rse
+rse <- calc_rse(model, fim)
+print(rse)
+
+est.se<-sqrt(diag(solve(fim)))
+df <- data.frame(param=c(model$mu,diag(model$omega)),se=est.se)
+df$rse <- abs(df$se/df$param*100)
+
+print(df)
+
+```
+
+## References
+
+**Comets E**, Rodrigues C, Jullien V, Ursino M (2021). 
+
+**Ueckert S**, Mentré F (2017). A new method for evaluation of the Fisher information matrix for discrete mixed effect models using Monte Carlo sampling and adaptive Gaussian quadrature. *Computational Statistics and Data Analysis*, 111: 203-19. \url{10.1016/j.csda.2016.10.011}
+

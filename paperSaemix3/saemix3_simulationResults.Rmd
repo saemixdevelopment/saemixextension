@@ -1,0 +1,120 @@
+---
+title: "Simulation results"
+author: "Emmanuelle Comets"
+date: '2022-08-18'
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Folders
+workDir<-getwd() 
+
+# @Eco
+workDir<-"/home/eco/work/saemix/saemixextension/paperSaemix3"
+simDir <- "/home/eco/work/saemix/discreteEval"
+saemixDir <- "/home/eco/work/saemix/saemixextension"
+setwd(workDir)
+
+# Libraries
+library(ggplot2)
+
+```
+
+
+## Content
+
+
+
+## Binary model
+
+Simulations run using scripts (run before, only the results are used here)
+
+```{r binaryModelSimulations, echo=FALSE}
+if(FALSE) {
+  setwd(simDir)
+  system("R CMD BATCH eval_binaryOrig.R eval_binaryOrig.out")  
+  system("R CMD BATCH eval_binaryIIV.R eval_binaryIIV.out")  
+  
+}
+
+```
+
+Results
+
+- two scenarios, with design of the toenail study (per protocol)
+  - IIV on $\theta_1$ only: bias less than 5\% for all parameters (? when plotted, around 10\% ?)
+  - IIV on both parameters with 50\% IIV: some bias on $\theta_2$ and $\beta$ (~10\%) and a little on $\omega_{theta_2}$ (6.5\%)
+    - the bias on $\omega_{theta_2}$ disappears when we start from the true parameters but the bias on $\theta_2$ and $\beta$ remains around 10\%
+- comparing settings for initial values
+  - no difference w/r starting values of the parameters $\Rightarrow$ runs seem to be stable with 10 chains
+
+- Expected RSE from PFIM
+  - binaryOrig: -24.86142 -11.63633 -38.29206  20.39756 
+    - all parameters should be well estimated
+  - binaryIIV:  -10.70774  -20.99451 -112.04915   36.80376   65.15504 
+    - $\beta$ expected to be poorly estimated (but $\theta_2$ should be well estimated)
+
+
+```{r binaryModelPerformance, echo=FALSE}
+scenario <- "binaryOrig"
+
+par.fix<-c(-1.71, -0.39, -0.15)
+par.om <- c(4.02) 
+param<-c(par.fix, par.om)
+npar<-length(param)
+
+ytab<-NULL
+for (setting in c("true","pop","far")) {
+  res1<-read.table(file.path(simDir, scenario,"results",paste0(setting,"fit_",scenario,".tab")), header=T)
+  for(icol in 1:npar) {
+  y1<-data.frame(parameter=colnames(res1)[icol+1], value=(res1[,(icol+1)]-param[icol])/param[icol]*100 ,scenario=scenario, setting=setting)
+  ytab<-rbind(ytab, y1)
+  }
+}
+
+ggplot(data=ytab, aes(x=parameter, y=value, fill=setting)) + geom_boxplot() + geom_hline(yintercept=c(-5,5), linetype="dotted") + geom_hline(yintercept=c(-10,10), linetype="dashed")
+
+
+truepar <- data.frame(parameter=colnames(res1)[2:(1+npar)], value=param)
+
+setting<-"pop"
+res1<-read.table(file.path(simDir, scenario,"results",paste0(setting,"fit_",scenario,".tab")), header=T)
+for(icol in 1:4) {
+  print(summary(res1[,(icol+1)]-param[icol]))
+  print(summary((res1[,(icol+1)]-param[icol])/param[icol]))
+  print(sd(res1[,(icol+1)]))
+}
+
+### two IIV around 50%
+
+scenario <- "binaryIIV"
+par.fix<-c(-1.71, -0.39, -0.15)
+par.om <- c(1, 0.2) # around 50% variability for both
+param<-c(par.fix, par.om)
+npar<-length(param)
+
+ytab<-NULL
+for (setting in c("true","pop","far")) {
+  res1<-read.table(file.path(simDir, scenario,"results",paste0(setting,"fit_",scenario,".tab")), header=T)
+  for(icol in 1:npar) {
+  y1<-data.frame(parameter=colnames(res1)[icol+1], value=(res1[,(icol+1)]-param[icol])/param[icol]*100 ,scenario=scenario, setting=setting)
+  ytab<-rbind(ytab, y1)
+  }
+}
+
+ggplot(data=ytab, aes(x=parameter, y=value, fill=setting)) + geom_boxplot() + geom_hline(yintercept=c(-5,5), linetype="dotted") + geom_hline(yintercept=c(-10,10), linetype="dashed")
+
+res1<-read.table(file.path(simDir, scenario,"results",paste0("popfit_",scenario,".tab")), header=T)
+for(icol in 1:length(param)) {
+  print(summary(res1[,(icol+1)]-param[icol]))
+  print(summary((res1[,(icol+1)]-param[icol])/param[icol]))
+  print(sd(res1[,(icol+1)]))
+}
+
+
+```
+

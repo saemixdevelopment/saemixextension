@@ -1,0 +1,2635 @@
+
+R version 3.6.3 (2020-02-29) -- "Holding the Windsock"
+Copyright (C) 2020 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R est un logiciel libre livré sans AUCUNE GARANTIE.
+Vous pouvez le redistribuer sous certaines conditions.
+Tapez 'license()' ou 'licence()' pour plus de détails.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Tapez 'demo()' pour des démonstrations, 'help()' pour l'aide
+en ligne ou 'help.start()' pour obtenir l'aide au format HTML.
+Tapez 'q()' pour quitter R.
+
+[Sauvegarde de la session précédente restaurée]
+
+> workDir<-"/home/eco/work/saemix/saemixextension"
+> progDir<-file.path(workDir,"R")
+> 
+> # Libraries
+> library(ggplot2)
+> library(MASS)
+> 
+> # Sourcing saemix functions
+> {
++   source(file.path(progDir,"aaa_generics.R"))
++   #source(file.path(progDir,"global.R"))
++   source(file.path(progDir,"SaemixData.R"))
++   source(file.path(progDir,"SaemixRes.R"))
++   source(file.path(progDir,"SaemixModel.R"))
++   source(file.path(progDir,"SaemixObject.R"))
++   source(file.path(progDir,"main.R"))
++   source(file.path(progDir,"func_aux.R"))
++   source(file.path(progDir,"main_initialiseMainAlgo.R"))
++   source(file.path(progDir,"main_estep.R"))
++   source(file.path(progDir,"main_mstep.R"))
++   source(file.path(progDir,"func_FIM.R"))
++   source(file.path(progDir,"func_plots.R"))
++   source(file.path(progDir,"func_distcond.R"))
++   source(file.path(progDir,"func_simulations.R"))
++   source(file.path(progDir,"compute_LL.R"))
++   source(file.path(progDir,"func_estimParam.R"))
++ }
+> 
+> # Bootstrap functions
+> source(file.path(workDir,"bootstrap","saemix_bootstrap.R"))
+> 
+> datDir<-file.path(workDir,"bootstrap","data")
+> isim<-87
+> namscen<-"pdhillhigh.rich"
+> iscenar<-"Hill3"
+> 
+> mod.par<-c(E0=5,Emax=30,ED50=500,gamma=3)
+> mod.iiv<-c(E0=0.09,Emax=0.49,ED50=0.49,gamma=0)
+> omega<-diag(mod.iiv)
+> omega[3,2]<-omega[2,3]<-0.245
+> sigm<-0.1
+> modelhill<-function(psi,id,xidep) {
++   # input:
++   #   psi : matrix of parameters (4 columns, E0, Emax, E50, gamma)
++   #   id : vector of indices 
++   #   xidep : dependent variables (same nb of rows as length of id)
++   # returns:
++   #   a vector of predictions of length equal to length of id
++   dose<-xidep[,1]
++   e0<-psi[id,1]
++   emax<-psi[id,2]
++   e50<-psi[id,3]
++   gamma<-psi[id,4]
++   f<-e0+emax*dose**gamma/(e50**gamma+dose**gamma)
++   return(f)
++ }
+> 
+> namfile<-file.path(datDir,paste("data_",namscen,"_sim",isim,".tab",sep=""))
+> saemix.data<-saemixData(name.data=namfile, header=T,
++                         name.group=c("id"),name.predictors=c("time","amt"),
++                         name.response=c("conc"),name.covariates=NULL,
++                         units=list(x="hr",y="mg/L",covariates=c()))
+Reading data from file /home/eco/work/saemix/saemixextension/bootstrap/data/data_pdhillhigh.rich_sim87.tab 
+These are the first lines of the dataset as read into R. Please check the format of the data is appropriate, if not, modify the na and/or sep items and retry:
+  id dose         y
+1  1    0  4.361467
+2  1  100  4.504739
+3  1  300  5.761015
+4  1 1000 20.906273
+5  2    0  5.520022
+6  2  100  5.802740
+Column name(s) time amt do(es) not exist in the dataset, please check
+Remove columns 1 2 ( time amt ) 
+No valid name given, attempting automatic recognition
+Automatic recognition of columns dose successful 
+Column name(s) conc do(es) not exist in the dataset, please check
+Remove columns 1 ( conc ) 
+No valid name given, attempting automatic recognition
+Automatic recognition of columns y successful 
+
+
+The following SaemixData object was successfully created:
+
+Object of class SaemixData
+    longitudinal data for use with the SAEM algorithm
+Dataset /home/eco/work/saemix/saemixextension/bootstrap/data/data_pdhillhigh.rich_sim87.tab 
+    Structured data: y ~ dose | id 
+    Predictor: dose (hr) 
+> saemix.model<-saemixModel(model=modelhill,description="Hill model", 
++                           psi0=matrix(mod.par,ncol=4, byrow=TRUE,dimnames=list(NULL, c("E0","Emax","ED50","Gamma"))),transform.par=c(1,1,1,1),
++                           covariance.model=matrix(c(1,0,0,0,0,1,1,0,0,1,1,0,0,0,0,0),ncol=4,byrow=TRUE),omega.init = omega,error.model="proportional", error.init = c(0,sigm))
+
+
+The following SaemixModel object was successfully created:
+
+Nonlinear mixed-effects model
+  Model function:  Hill model  Model type:  structural
+function (psi, id, xidep) 
+{
+    dose <- xidep[, 1]
+    e0 <- psi[id, 1]
+    emax <- psi[id, 2]
+    e50 <- psi[id, 3]
+    gamma <- psi[id, 4]
+    f <- e0 + emax * dose^gamma/(e50^gamma + dose^gamma)
+    return(f)
+}
+  Nb of parameters: 4 
+      parameter names:  E0 Emax ED50 Gamma 
+      distribution:
+     Parameter Distribution Estimated
+[1,] E0        log-normal   Estimated
+[2,] Emax      log-normal   Estimated
+[3,] ED50      log-normal   Estimated
+[4,] Gamma     log-normal   Estimated
+  Variance-covariance matrix:
+      E0 Emax ED50 Gamma
+E0     1    0    0     0
+Emax   0    1    1     0
+ED50   0    1    1     0
+Gamma  0    0    0     0
+  Error model: proportional , initial values: b.1=0.1 
+    No covariate in the model.
+    Initial values
+             E0 Emax ED50 Gamma
+Pop.CondInit  5   30  500     3
+> 
+> saemix.options<-list(fix.seed=F,directory="current",displayProgress=FALSE, save.graphs=FALSE,print=FALSE)
+> saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
+Problem inverting covariance matrix, setting initial Omega to diagonal.
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:56:28 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:56:34 2021"
+Overwriting files in directory current 
+ 警告メッセージ: 
+ rm(.Random.seed) で:  objet '.Random.seed' introuvable
+> print(saemix.fit@results)
+----------------------------------------------------
+-----------------  Fixed effects  ------------------
+----------------------------------------------------
+     Parameter Estimate SE     CV(%)
+[1,] E0          5.036   0.165 3.3  
+[2,] Emax       34.428   2.686 7.8  
+[3,] ED50      559.903  40.580 7.2  
+[4,] Gamma       3.158   0.111 3.5  
+[5,] b.1         0.091   0.006 6.6  
+----------------------------------------------------
+-----------  Variance of random effects  -----------
+----------------------------------------------------
+      Parameter     Estimate SE    CV(%)
+E0    omega2.E0     0.10     0.015 15   
+Emax  omega2.Emax   0.40     0.067 17   
+ED50  omega2.ED50   0.40     0.062 15   
+covar cov.Emax.ED50 0.17     0.051 30   
+----------------------------------------------------
+------  Correlation matrix of random effects  ------
+----------------------------------------------------
+            omega2.E0 omega2.Emax omega2.ED50
+omega2.E0   1         0.00        0.00       
+omega2.Emax 0         1.00        0.43       
+omega2.ED50 0         0.43        1.00       
+----------------------------------------------------
+---------------  Statistical criteria  -------------
+----------------------------------------------------
+Likelihood computed by linearisation
+      -2LL= 2013.126 
+      AIC = 2031.126 
+      BIC = 2054.573 
+
+Likelihood computed by importance sampling
+      -2LL= 2006.66 
+      AIC = 2024.66 
+      BIC = 2048.106 
+----------------------------------------------------
+> 
+> # om.estim<-c(diag(saemix.fit@results@omega)[1:3], saemix.fit@results@omega[2,3], saemix.fit@results@respar[2])
+> # par.estim<-c(saemix.fit@results@fixed.effects,om.estim)
+> 
+> nboot<-100
+> saemix.bootOpt<-list(fix.seed=F,directory="current",displayProgress=F, save.graphs=F, map=F, ll.is=F, print=FALSE)
+> 
+> start_time <- Sys.time()
+> boot.case<-saemix.bootstrap(saemix.fit, nboot=nboot, method="case")
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:56:39 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:56:44 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:56:44 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:56:49 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:56:49 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:56:54 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:56:54 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:56:59 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:56:59 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:57:04 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:57:04 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:57:08 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:57:09 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:57:13 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:57:13 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:57:18 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:57:18 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:57:22 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:57:23 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:57:27 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:57:27 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:57:32 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:57:32 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:57:37 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:57:37 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:57:42 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:57:42 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:57:47 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:57:47 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:57:52 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:57:52 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:57:56 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:57:56 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:58:01 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:58:01 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:58:05 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:58:06 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:58:10 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:58:10 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:58:14 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:58:14 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:58:19 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:58:19 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:58:24 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:58:24 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:58:28 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:58:28 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:58:33 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:58:33 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:58:37 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:58:37 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:58:42 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:58:42 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:58:46 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:58:46 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:58:52 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:58:52 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:58:57 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:58:57 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:59:02 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:59:02 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:59:07 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:59:07 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:59:11 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:59:11 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:59:15 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:59:15 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:59:19 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:59:20 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:59:24 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:59:24 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:59:28 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:59:28 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:59:33 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:59:33 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:59:38 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:59:38 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:59:42 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:59:42 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:59:47 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:59:47 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:59:51 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:59:51 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 13:59:56 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 13:59:56 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:00:00 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:00:00 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:00:05 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:00:05 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:00:09 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:00:10 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:00:14 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:00:14 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:00:19 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:00:20 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:00:25 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:00:25 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:00:30 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:00:30 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:00:35 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:00:35 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:00:40 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:00:40 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:00:46 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:00:46 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:00:51 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:00:52 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:00:56 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:00:56 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:01:01 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:01:01 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:01:06 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:01:06 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:01:11 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:01:11 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:01:16 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:01:16 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:01:20 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:01:21 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:01:25 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:01:26 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:01:30 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:01:31 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:01:35 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:01:35 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:01:40 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:01:40 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:01:45 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:01:45 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:01:51 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:01:51 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:01:56 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:01:56 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:02:01 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:02:01 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:02:06 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:02:06 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:02:11 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:02:11 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:02:16 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:02:16 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:02:21 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:02:21 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:02:25 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:02:26 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:02:31 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:02:31 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:02:36 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:02:36 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:02:40 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:02:41 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:02:45 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:02:45 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:02:50 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:02:50 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:02:55 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:02:56 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:03:00 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:03:00 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:03:05 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:03:05 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:03:09 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:03:09 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:03:13 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:03:13 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:03:17 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:03:17 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:03:22 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:03:23 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:03:28 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:03:28 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:03:34 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:03:34 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:03:38 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:03:38 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:03:43 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:03:43 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:03:48 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:03:48 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:03:53 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:03:53 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:03:59 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:03:59 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:04:03 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:04:04 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:04:08 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:04:08 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:04:13 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:04:13 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:04:17 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:04:18 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:04:23 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:04:23 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:04:28 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:04:28 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:04:32 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:04:33 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:04:37 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:04:37 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:04:41 2021"
+Overwriting files in directory current 
+ 50 件以上の警告がありました (最初の 50 個の警告を見るには warnings() を使って下さい) 
+> case_time <- Sys.time()
+> 
+> print(case_time-start_time)
+Time difference of 8.040142 mins
+> 
+> boot.cNP<-saemix.bootstrap(saemix.fit, nboot=nboot, method="conditional")
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:07:44 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:07:49 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:07:49 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:07:54 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:07:55 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:08:00 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:08:00 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:08:05 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:08:05 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:08:10 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:08:10 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:08:15 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:08:15 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:08:20 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:08:20 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:08:25 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:08:25 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:08:30 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:08:30 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:08:35 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:08:35 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:08:39 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:08:39 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:08:44 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:08:45 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:08:50 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:08:50 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:08:55 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:08:55 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:09:00 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:09:00 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:09:04 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:09:04 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:09:08 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:09:08 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:09:13 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:09:13 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:09:18 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:09:18 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:09:23 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:09:23 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:09:28 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:09:28 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:09:33 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:09:33 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:09:37 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:09:37 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:09:42 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:09:42 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:09:46 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:09:46 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:09:51 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:09:51 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:09:56 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:09:56 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:10:01 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:10:01 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:10:06 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:10:06 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:10:11 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:10:11 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:10:16 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:10:16 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:10:20 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:10:21 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:10:25 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:10:25 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:10:30 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:10:30 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:10:35 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:10:36 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:10:40 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:10:40 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:10:45 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:10:45 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:10:49 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:10:49 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:10:53 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:10:54 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:10:58 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:10:58 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:11:03 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:11:03 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:11:08 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:11:08 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:11:13 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:11:13 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:11:18 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:11:18 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:11:23 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:11:23 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:11:27 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:11:28 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:11:32 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:11:32 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:11:37 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:11:37 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:11:43 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:11:43 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:11:49 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:11:49 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:11:54 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:11:55 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:12:00 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:12:00 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:12:05 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:12:06 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:12:11 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:12:11 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:12:15 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:12:15 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:12:20 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:12:20 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:12:25 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:12:25 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:12:30 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:12:31 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:12:35 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:12:35 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:12:40 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:12:40 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:12:44 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:12:44 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:12:49 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:12:49 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:12:53 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:12:53 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:12:58 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:12:58 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:13:02 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:13:02 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:13:06 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:13:06 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:13:10 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:13:11 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:13:15 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:13:15 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:13:19 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:13:19 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:13:23 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:13:23 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:13:28 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:13:28 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:13:32 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:13:32 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:13:37 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:13:37 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:13:42 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:13:42 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:13:47 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:13:47 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:13:52 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:13:52 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:13:57 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:13:57 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:14:02 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:14:02 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:14:07 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:14:07 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:14:13 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:14:13 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:14:18 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:14:18 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:14:23 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:14:23 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:14:28 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:14:28 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:14:35 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:14:35 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:14:40 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:14:41 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:14:46 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:14:46 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:14:51 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:14:51 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:14:55 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:14:56 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:15:00 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:15:00 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:15:05 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:15:05 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:15:09 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:15:09 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:15:14 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:15:14 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:15:19 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:15:19 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:15:24 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:15:24 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:15:28 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:15:29 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:15:33 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:15:33 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:15:38 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:15:38 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:15:43 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:15:43 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:15:48 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:15:48 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:15:53 2021"
+Overwriting files in directory current 
+ 50 件以上の警告がありました (最初の 50 個の警告を見るには warnings() を使って下さい) 
+> cNP_time <- Sys.time()
+> print(cNP_time-case_time)
+Time difference of 11.19224 mins
+> 
+> boot.NP<-saemix.bootstrap(saemix.fit, nboot=nboot, method="residual")
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:15:53 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:15:58 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:15:58 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:16:03 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:16:03 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:16:08 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:16:08 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:16:14 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:16:14 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:16:19 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:16:19 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:16:24 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:16:24 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:16:29 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:16:29 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:16:34 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:16:34 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:16:38 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:16:38 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:16:43 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:16:44 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:16:49 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:16:49 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:16:55 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:16:55 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:17:01 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:17:01 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:17:06 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:17:06 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:17:12 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:17:12 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:17:17 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:17:17 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:17:22 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:17:22 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:17:26 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:17:26 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:17:31 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:17:32 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:17:38 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:17:38 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:17:43 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:17:43 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:17:48 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:17:48 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:17:53 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:17:54 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:17:58 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:17:59 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:18:04 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:18:04 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:18:08 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:18:08 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:18:13 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:18:13 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:18:18 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:18:18 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:18:22 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:18:22 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:18:27 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:18:27 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:18:32 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:18:32 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:18:36 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:18:36 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:18:41 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:18:41 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:18:46 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:18:46 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:18:50 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:18:50 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:18:55 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:18:55 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:19:01 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:19:01 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:19:06 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:19:06 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:19:11 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:19:11 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:19:16 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:19:17 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:19:21 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:19:21 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:19:26 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:19:26 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:19:30 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:19:30 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:19:35 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:19:35 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:19:40 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:19:40 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:19:44 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:19:44 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:19:49 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:19:49 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:19:54 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:19:54 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:19:58 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:19:58 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:20:03 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:20:03 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:20:07 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:20:07 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:20:12 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:20:13 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:20:17 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:20:17 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:20:22 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:20:22 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:20:27 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:20:27 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:20:31 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:20:31 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:20:36 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:20:36 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:20:40 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:20:41 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:20:45 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:20:45 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:20:50 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:20:50 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:20:55 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:20:55 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:21:00 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:21:00 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:21:05 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:21:05 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:21:11 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:21:11 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:21:15 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:21:15 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:21:20 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:21:20 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:21:26 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:21:26 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:21:31 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:21:31 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:21:36 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:21:36 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:21:42 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:21:42 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:21:47 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:21:48 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:21:53 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:21:53 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:21:58 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:21:58 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:22:02 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:22:02 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:22:07 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:22:07 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:22:12 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:22:12 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:22:16 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:22:16 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:22:21 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:22:21 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:22:26 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:22:26 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:22:32 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:22:32 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:22:37 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:22:37 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:22:43 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:22:43 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:22:49 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:22:50 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:22:56 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:22:56 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:23:01 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:23:01 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:23:07 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:23:07 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:23:12 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:23:12 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:23:17 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:23:17 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:23:22 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:23:22 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:23:27 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:23:28 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:23:32 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:23:33 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:23:38 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:23:38 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:23:43 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:23:43 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:23:49 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:23:49 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:23:55 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:23:55 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:24:00 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:24:00 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:24:05 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:24:05 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:24:10 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:24:10 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:24:15 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:24:15 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:24:20 2021"
+Overwriting files in directory current 
+ 50 件以上の警告がありました (最初の 50 個の警告を見るには warnings() を使って下さい) 
+> NP_time <- Sys.time()
+> print(NP_time-cNP_time)
+Time difference of 8.450213 mins
+> 
+> boot.Par<-saemix.bootstrap(saemix.fit, nboot=nboot, method="parametric")
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:24:20 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:24:25 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:24:25 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:24:30 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:24:30 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:24:35 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:24:35 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:24:40 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:24:40 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:24:45 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:24:45 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:24:51 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:24:51 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:24:56 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:24:56 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:25:01 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:25:01 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:25:06 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:25:06 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:25:11 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:25:11 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:25:16 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:25:16 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:25:21 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:25:21 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:25:26 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:25:26 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:25:31 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:25:31 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:25:36 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:25:36 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:25:41 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:25:41 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:25:46 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:25:46 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:25:51 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:25:51 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:25:56 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:25:56 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:26:01 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:26:01 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:26:05 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:26:06 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:26:10 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:26:11 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:26:16 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:26:16 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:26:21 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:26:21 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:26:26 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:26:26 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:26:30 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:26:31 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:26:35 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:26:36 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:26:41 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:26:41 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:26:45 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:26:46 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:26:50 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:26:51 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:26:56 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:26:56 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:27:01 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:27:01 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:27:06 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:27:06 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:27:11 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:27:11 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:27:16 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:27:16 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:27:21 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:27:21 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:27:26 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:27:26 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:27:31 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:27:31 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:27:36 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:27:36 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:27:41 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:27:41 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:27:46 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:27:46 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:27:51 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:27:51 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:27:56 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:27:57 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:28:01 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:28:02 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:28:06 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:28:06 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:28:11 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:28:11 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:28:16 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:28:16 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:28:22 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:28:22 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:28:28 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:28:28 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:28:34 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:28:34 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:28:39 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:28:39 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:28:44 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:28:45 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:28:51 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:28:51 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:28:56 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:28:56 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:29:01 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:29:01 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:29:06 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:29:06 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:29:10 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:29:11 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:29:16 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:29:16 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:29:21 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:29:21 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:29:25 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:29:25 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:29:30 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:29:30 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:29:35 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:29:35 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:29:42 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:29:42 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:29:47 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:29:47 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:29:54 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:29:54 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:30:00 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:30:00 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:30:05 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:30:05 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:30:10 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:30:10 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:30:14 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:30:15 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:30:19 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:30:19 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:30:24 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:30:24 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:30:29 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:30:29 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:30:34 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:30:34 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:30:38 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:30:39 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:30:44 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:30:44 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:30:49 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:30:49 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:30:54 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:30:54 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:30:59 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:30:59 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:31:04 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:31:05 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:31:09 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:31:10 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:31:15 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:31:15 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:31:19 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:31:19 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:31:24 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:31:24 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:31:29 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:31:29 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:31:34 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:31:34 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:31:39 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:31:39 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:31:44 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:31:44 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:31:48 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:31:48 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:31:54 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:31:54 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:31:58 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:31:59 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:32:03 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:32:04 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:32:08 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:32:08 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:32:13 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:32:13 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:32:18 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:32:18 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:32:23 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:32:23 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:32:27 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:32:28 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:32:32 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:32:32 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:32:37 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:32:37 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:32:42 2021"
+Overwriting files in directory current 
+Running main SAEM algorithm
+[1] "Tue Apr 20 14:32:42 2021"
+....
+    Minimisation finished
+[1] "Tue Apr 20 14:32:47 2021"
+Overwriting files in directory current 
+ 50 件以上の警告がありました (最初の 50 個の警告を見るには warnings() を使って下さい) 
+> Par_time <- Sys.time()
+> print(Par_time-NP_time)
+Time difference of 8.443651 mins
+> 
+> end_time <- Sys.time()
+> 
+> proc.time()
+utilisateur     système      écoulé 
+   2174.112       4.644    2181.894 

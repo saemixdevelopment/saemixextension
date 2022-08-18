@@ -140,9 +140,10 @@ conddist.saemix<-function(saemixObject, nsamp=1, max.iter=NULL, plot=FALSE, ...)
   # nsamp= number of MCMC samples
   # max.iter= max nb of iterations
   # returns an array 
+  displayPlot<-plot
+  
   saemix.data<-saemixObject["data"]
   saemix.model<-saemixObject["model"]
-  displayPlot<-plot
   N<-saemix.data["N"]
   nb.parameters<-saemixObject["model"]["nb.parameters"]
   if(is.null(max.iter)) kmax<-sum(saemixObject["options"]$nbiter.saemix)*2 else kmax<-max.iter
@@ -200,7 +201,7 @@ conddist.saemix<-function(saemixObject, nsamp=1, max.iter=NULL, plot=FALSE, ...)
   # initialisation a phiM=estimation des parametres individuels
   mean.phiM<-do.call(rbind,rep(list(saemixObject["results"]["mean.phi"]),nsamp))
   phiM<-do.call(rbind,rep(list(saemixObject["results"]["cond.mean.phi"]),nsamp))
-  etaM<-phiM[,ind.eta]-mean.phiM[,ind.eta]  
+  etaM<-phiM[,ind.eta,drop=FALSE]-mean.phiM[,ind.eta,drop=FALSE]  
   Dargs<-list(transform.par=saemixObject["model"]["transform.par"], structural.model=saemixObject["model"]["model"],IdM=IdM,XM=XM,yM=yM,etype.exp=which(saemixObject["model"]["error.model"] == "exponential"), modeltype=saemixObject["model"]["modeltype"])
   Uargs<-list(ind.ioM=ind.ioM)
   somega<-solve(omega.eta)
@@ -256,7 +257,7 @@ conddist.saemix<-function(saemixObject, nsamp=1, max.iter=NULL, plot=FALSE, ...)
     if(saemixObject["options"]$nbiter.mcmc[3]>0) {
       nt2<-nbc2<-matrix(data=0,nrow=nb.etas,ncol=1)
       nrs2<-k%%(nb.etas-1)+2
-      #    if(is.nan(nrs2)) nrs2<-1 # to deal with case nb.etas=1
+      if(is.nan(nrs2)) nrs2<-1 # to deal with case nb.etas=1 ## Maybe need to skip this step if only one IIV ?
       for (u in 1:saemixObject["options"]$nbiter.mcmc[3]) {
         if(nrs2<nb.etas) {
           vk<-c(0,sample(c(1:(nb.etas-1)),nrs2-1))
