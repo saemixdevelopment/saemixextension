@@ -161,11 +161,13 @@ setGeneric(name="showall",
 #' displayProgress=FALSE)
 #' 
 #' # Not run (strict time constraints for CRAN)
-#' # saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
+#' \donttest{
+#' saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
+#' psi(saemix.fit)
+#' phi(saemix.fit)
+#' eta(saemix.fit,type="mean")
+#' }
 #' 
-#' # psi(saemix.fit)
-#' # phi(saemix.fit)
-#' # eta(saemix.fit,type="mean")
 #' @export
 setGeneric(name="psi",
            def=function(object,type=c("mode","mean")) standardGeneric("psi")

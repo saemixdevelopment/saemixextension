@@ -1,7 +1,11 @@
-Version 3.1 - March 2022
+Version 3.1 - August 2022
 
 o Bugfixes
    * corrected a minor bug causing the simulation to step to fail in the call to npdeSaemix when the data didn't have any covariate
+
+o Changes
+   * compute.eta.map is now called within the main function, to also return phi, eta and shrinkage for the MAP estimates
+   * elements phi, psi, and eta computed by MAP (compute.eta.map) or conditional estimates (conddist.saemix) are dataframes with npar columns (where npar is the number of parameters in the model, eg ka, CL, V for the theo.saemix example), and no longer have a column id
 
 Version 3.0 - February 2022
 

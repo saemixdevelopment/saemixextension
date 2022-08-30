@@ -662,7 +662,7 @@ setMethod("readSaemix",
     ow <- options("warn")
     options("warn"=-1)
 # ce test devrait aller dans la definition de la classe
-    if(class(object@name.data)!="character") {
+    if(!is(object@name.data,"character")) {
       if(object@messages) message("Please provide the name of the data (data.frame or path to file on disk) as a character string.\n")
     return("Creation of SaemixData object failed")
   }

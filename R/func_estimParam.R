@@ -1,7 +1,7 @@
 #' Predictions for a new dataset
 #' 
 #' @param saemixObject an SaemixObject from a fitted run
-#' @param newdata a dataframe containing the new data. The dataframe must contain the same information as the original dataset (colunm names, etc...) 
+#' @param newdata a dataframe containing the new data. The dataframe must contain the same information as the original dataset (column names, etc...) 
 #' @param type one or several of "ipred" (individual predictions using the MAP estimates), "ppred" (population predictions obtained using the population parameters f(E(theta))), "ypred" (mean of the population predictions (E(f(theta)))), "icpred"  (individual predictions using the conditional mean estimates). Defaults to "ppred".
 #' @param nsamp an integer, ignored for other types than icpred; if icpred, returns both the mean of the conditional distribution and nsamp samples, with the corresponding predictions. Defaults to 1.
 #' 

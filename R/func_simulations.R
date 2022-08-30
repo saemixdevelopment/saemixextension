@@ -153,8 +153,8 @@ simulateDiscreteSaemix <- function(object, simulate.function, nsim, seed, uncert
   
   # Simulate observations using these parameters and the simulate.function to simulate from the same model
   xidep<-object@data@data[,object@data@name.predictors]
-#  id1<-object@data@data[,"index"]
-  id1<-object@data@data[,object@data@name.group]
+  id1<-object@data@data[,"index"]
+#  id1<-object@data@data[,object@data@name.group]
   nsuj<-object@data@N
   datasim<-object@sim.data@datasim
   datasim$ysim<-NA

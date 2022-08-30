@@ -1,5 +1,5 @@
 ---
-title: "Package compilation for saemix 3.0 and basic run"
+title: "Package compilation for saemix 3.1 and basic run"
 author: "Emmanuelle Comets"
 date: "18/10/2021"
 output:
@@ -16,6 +16,12 @@ library(tools) # check reverse dependencies
 saemixDir<-"/home/eco/work/saemix/saemixextension"
 workDir<-"/home/eco/work/saemix/versions/saemix3.1"
 knitr::opts_chunk$set(root.dir = workDir)
+
+# Options
+testExamples <- TRUE
+checkReverseDependencies <- FALSE
+installPackage <- FALSE
+
 ```
 
 ## Copy files
@@ -43,7 +49,6 @@ for(ifile in c("CHANGES","DESCRIPTION")) {
 cmd<-paste("cp ",file.path(saemixDir,"inst","CITATION")," ", file.path(workDir,"saemix","inst"),sep="")
 system(cmd)
 
-
 ```
 
 ## Compilation
@@ -65,12 +70,28 @@ Found the following (possibly) invalid URLs:
     Message: Forbidden
 
   - to change: no commas between keywords in R (maybe for vignettes)
+  - previous version, solved now:
+````markdown
+`r ''````{r}
 Found the following \keyword or \concept entries
 which likely give several index terms:
   File 'backward.procedure.Rd':
     \keyword{backward,}
     \keyword{selection,}
 ... (others)
+```
+````
+
+- Examples with CPU or elapsed time > 5s
+                 user system elapsed
+rapi.saemix    47.006  0.096  47.115
+cow.saemix     25.185  0.120  25.311
+PD1.saemix     18.925  0.048  19.108
+toenail.saemix 16.656  0.020  16.676
+compare.saemix  9.152  0.020   9.171
+theo.saemix     6.481  0.008   6.490
+yield.saemix    5.419  0.016   5.435
+
 
 ```{r compilation}
 # Reduce size of viral load simulation data (to 500 simulations) for CRAN
@@ -82,27 +103,26 @@ roxygenise()
 setwd(workDir)
 system("R CMD build saemix")
 
-
-testExamples<-TRUE
 # Test examples
-if(testExamples) system("R CMD check --as-cran --run-donttest saemix_3.1.tar.gz") else system("R CMD check --as-cran saemix_3.1.tar.gz")
-
-if(FALSE)
-  system("R CMD check --as-cran saemix_3.1.tar.gz")
+if(testExamples) 
+  system("R CMD check --as-cran --run-donttest saemix_3.1.tar.gz") else 
+    system("R CMD check --as-cran saemix_3.1.tar.gz")
 
 # Reverse dependencies
 cmd<-paste("cp ",file.path("/home/eco/work/saemix/versions/reverseDependencies/varTestnlme_1.3.0.tar.gz")," ", file.path(workDir),sep="")
 system(cmd)
 
-if(FALSE) {
+if(checkReverseDependencies) {
   # Check which packages depend on saemix
   package_dependencies(packages="saemix", reverse=TRUE)
   # TODO download these packages into workDir
-  
+}
+
+if(installPackage) {  
   # install saemix current version and check packages
-  install.packages("saemix_3.0.tar.gz")
-  result <- check_packages_in_dir(workDir, revdep = list() )
-  #result <- check_packages_in_dir(workDir, revdep = list("varTestnlme") )
+  install.packages(pkgs=file.path(workDir,"saemix_3.1.tar.gz"),repos=NULL)
+  #result <- check_packages_in_dir(workDir, revdep = list() )
+  result <- check_packages_in_dir(workDir, revdep = list("varTestnlme") )
   summary(result)
 }
 ```
@@ -127,7 +147,7 @@ theo.saemix     5.171  0.000   5.172
   
 ```{r devModeInstall}
 dev_mode() # development mode
-install.packages(pkgs=file.path(workDir,"saemix_3.0.tar.gz"),repos=NULL)
+install.packages(pkgs=file.path(workDir,"saemix_3.1.tar.gz"),repos=NULL)
 library(saemix)
 library(testthat)
 ```

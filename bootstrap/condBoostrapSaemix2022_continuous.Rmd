@@ -1,0 +1,241 @@
+---
+title: "Use case for bootstrap methods in saemix - paper Sofia Kaisiridi"
+author: "Emmanuelle Comets"
+date: "08/2022"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+## Contents
+
+The present document is an R markdown notebook designed to showcase the different bootstrap methods in the paper **Conditional non-parametric bootstrap for non-linear mixed effect models** submitted by S. Kaisiridi et al (currently in revision for **Pharmaceutical Research**, initial submission February 2021). This notebook uses the 3.2 version of the *saemix* package, as well as additional code for bootstrap methods available on github: <https://github.com/saemixdevelopment/saemixextension>. An easy way to ensure all the functions are available is to clone the project using Rstudio, and follow updates by pull requests. Folders are relative to the installation folder, assuming the same architecture as on the github repository.
+
+In addition, several libraries need to be installed to run the present code:
+
+- ggplot2 and its dependencies
+- MASS
+
+The full set of simulated data and bootstrap distributions used for the paper have been uploaded to the Zenodo archive system <https://doi.org/10.5281/zenodo.4059718>
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+## If required, set your working directory, otherwise will run in the current directory
+## workDir<-"/my/path/to/saemixextension-master"
+workDir<-"."
+
+workDir<-"/home/eco/work/saemix/saemixextension"
+knitr::opts_chunk$set(root.dir = workDir)
+progDir<-file.path(workDir,"R")
+```
+
+### Loading functions
+
+As we use the development version of *saemix*, this chunk loads the functions from the package, as well as necessary libraries.
+
+```{r loadLibFct}
+# Libraries
+library(saemix) # August 2022: version 3.2
+library(ggplot2)
+library(MASS)
+
+# Bootstrap functions
+source(file.path(workDir,"bootstrap","saemix_bootstrap.R"))
+```
+
+## Bootstrap distributions for one simulated dataset
+
+### Plot of simulated data for one simulation in each scenario
+
+Below, we load the simulated data for the 6 scenarios presented in the paper (we randomly sampled one of the 200 simulations used to evaluate the performances of the different bootstrap approaches, simulation 87) and plot it using the *ggplot2* package (Supplemental material Figure 12). 
+
+```{r simData87, echo=FALSE}
+datDir<-file.path(workDir,"bootstrap","data")
+isim<-87
+
+ypd<-NULL
+for(myloop in 1:6) {
+  if(myloop==1) {namscen<-"pdemax.rich";iscenar<-"Hill2";namsimdat<-"data_pdemax";name.scenario<-"SEmax,R"}
+  if(myloop==2) {namscen<-"pdemax.sparse";iscenar<-"Hill2";namsimdat<-"data_pdemax";name.scenario<-"SEmax,S"}
+  if(myloop==3) {namscen<-"pdhillhigh.rich";iscenar<-"Hill3";namsimdat<-"data_pdhillhigh";name.scenario<-"SHill,R"}
+  if(myloop==4) {namscen<-"pdhillhigh.sparse";iscenar<-"Hill4";namsimdat<-"data_pdhillhigh";name.scenario<-"SHill,S"}
+  if(myloop==5) {namscen<-"pdhillhigh.rich";iscenar<-"Hill12";namsimdat<-"data_pdhillhigh";name.scenario<-"SHill,smallR"}
+  if(myloop==6) {namscen<-"pdhillhigh.sparse";iscenar<-"Hill11";namsimdat<-"data_pdhillhigh";name.scenario<-"SHill,smallS"}
+  namfile<-file.path(datDir,paste("data_",namscen,"_sim",isim,".tab",sep=""))
+  xdat<-read.csv(namfile,header=T,sep=" ")
+  if(myloop>4) {
+    if(myloop==5) nsuj<-20 else nsuj<-80
+    zesuj<-unique(xdat[,1])
+    ifirst<-rep(1:(nsuj/4),4)+rep(c(0:3)*length(zesuj)/4,each=(nsuj/4)) # First nsuj/4 subjects in each group
+    xdat<-xdat[xdat$id %in% ifirst,]
+  }
+  ypd<-rbind(ypd,cbind(xdat,scenario=name.scenario))
+}
+  
+plot.data<-ggplot(data=ypd,aes(x=dose,y=y, group=id)) + geom_point(col="red4",alpha=0.6)+geom_line(col="red4",alpha=0.6) + 
+    xlab("Dose") + ylab("Response") + theme_bw() +
+    theme(axis.title.x = element_blank(),axis.text.x = element_text(size=9, angle=30, hjust=1), legend.position = "none") + 
+    facet_wrap(~scenario, ncol=2)
+
+print(plot.data)
+```
+
+### Fitting the simulated data in replication 87, scenario SHill,R, with saemix
+
+```{r saemixFit87.rich, echo=FALSE, warning=FALSE}
+isim<-87
+nboot<-100
+namscen<-"pdhillhigh.rich"
+iscenar<-"Hill3"
+
+mod.par<-c(E0=5,Emax=30,ED50=500,gamma=3)
+mod.iiv<-c(E0=0.09,Emax=0.49,ED50=0.49,gamma=0)
+omega<-diag(mod.iiv)
+omega[3,2]<-omega[2,3]<-0.245
+sigm<-0.1
+modelhill<-function(psi,id,xidep) {
+  # input:
+  #   psi : matrix of parameters (4 columns, E0, Emax, E50, gamma)
+  #   id : vector of indices 
+  #   xidep : dependent variables (same nb of rows as length of id)
+  # returns:
+  #   a vector of predictions of length equal to length of id
+  dose<-xidep[,1]
+  e0<-psi[id,1]
+  emax<-psi[id,2]
+  e50<-psi[id,3]
+  gamma<-psi[id,4]
+  f<-e0+emax*dose**gamma/(e50**gamma+dose**gamma)
+  return(f)
+}
+
+namfile<-file.path(datDir,paste("data_",namscen,"_sim",isim,".tab",sep=""))
+saemix.data<-saemixData(name.data=namfile, header=T,
+                        name.group=c("id"),name.predictors=c("time","amt"),
+                        name.response=c("conc"),name.covariates=NULL,
+                        units=list(x="hr",y="mg/L",covariates=c()))
+saemix.model<-saemixModel(model=modelhill,description="Hill model", 
+                          psi0=matrix(mod.par,ncol=4, byrow=TRUE,dimnames=list(NULL, c("E0","Emax","ED50","Gamma"))),transform.par=c(1,1,1,1),
+                          covariance.model=matrix(c(1,0,0,0,0,1,1,0,0,1,1,0,0,0,0,0),ncol=4,byrow=TRUE),omega.init = omega,error.model="proportional", error.init = c(0,sigm))
+
+saemix.options<-list(fix.seed=F,directory="current",displayProgress=FALSE, save.graphs=FALSE,print=FALSE)
+saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
+ print(saemix.fit@results)
+
+om.estim<-c(diag(saemix.fit@results@omega)[1:3], saemix.fit@results@omega[2,3], saemix.fit@results@respar[2])
+par.estim<-c(saemix.fit@results@fixed.effects,om.estim)
+```
+
+### Bootstrap distributions for the simulated data in replication 87, scenario SHill,R - paper Pharm Res 2021
+
+In this section, we load the bootstrap distributions obtained by the four tested bootstraps for the simulated data in replication 87 (shown the first plot of the second line in the previous figure) from the result files in the Pharm Res paper, and plot these for each parameter. We add the new full conditional bootstrap where residual errors are also resampled.
+
+Note: 500 bootstrap samples were generated for each of the first 4 scenarios, but in the paper we harmonise across the different scenarios to 100 samples through the *nboot<-100* command in the code below.
+
+```{r bootstrapDistributions87.rich, echo=FALSE}
+resDir<-file.path(workDir,"bootstrap","results")
+isim<-87
+nboot<-100
+namscen<-"pdhillhigh.rich"
+iscenar<-"Hill3"
+namsimdat<-"data_pdemax"
+
+modpar2<-c(mod.par,mod.iiv[1:3],0.245,sigm)
+ypd1<-NULL
+for(typeboot in c("Case","NP","NPc","Par","fullNPc")) {
+  namfile<-file.path(resDir,paste("scenario",iscenar,"_bootstrap",typeboot,"_sim",isim,".res",sep=""))
+  resboot1<-read.table(namfile,header=T)
+  if(typeboot=="Case") namcol<-colnames(resboot1)
+  if(typeboot=="fullNPc") colnames(resboot1)<-namcol
+  resboot1<-resboot1[1:nboot,] 
+  for(icol in 1:9) {
+    ypd1<-rbind(ypd1,data.frame(rep=resboot1[,1],Param=colnames(resboot1)[(icol+1)],value=resboot1[,(icol+1)], Bootstrap=typeboot,stringsAsFactors=FALSE))
+  }
+}
+nampar<-namcol[2:10]
+ypd1$Param<-factor(ypd1$Param,levels = nampar)
+ypd1$Bootstrap<-factor(ypd1$Bootstrap, levels=unique(ypd1$Bootstrap))
+levels(ypd1$Bootstrap)[levels(ypd1$Bootstrap)=="NPc"]<-"cNP"
+ypd1.fix<-ypd1[ypd1$Param %in% unique(ypd1$Param)[1:4],]
+ypd1.iiv<-ypd1[ypd1$Param %in% unique(ypd1$Param)[5:9],]
+
+df<-data.frame(Param=factor(nampar), value=modpar2, value2=par.estim) 
+
+plot.density<-ggplot(data=ypd1) + geom_density(aes(value,fill=Bootstrap), alpha=0.5) + 
+  geom_vline(data=df,aes(xintercept=value),colour="red",size=1.2) + geom_vline(data=df,aes(xintercept=value2),colour="blue",size=1.2) +
+  theme_bw() + theme(axis.title.x = element_blank(),axis.text.x = element_text(size=9, angle=30, hjust=1), legend.position = "top") + 
+  scale_fill_manual(values = c("red4", "darkblue", "steelblue1","seagreen4","snow4")) +  facet_wrap(~Param, ncol=3, scales = 'free')
+
+print(plot.density)
+
+# Saving to a PDF file (requires cairo)
+cairo_pdf(file.path(workDir,"bootstrap","fig1_paper.pdf"),width = 11, height=8)
+print(plot.density)
+dev.off()
+
+```
+
+## Running bootstrap methods on one dataset (replication 87, scenario SHill,R)
+
+In the following we estimate bootstrap distributions with 100 samples using the different bootstrap methods through the *saemix.bootstrap()* function, and recreate the previous figure. Due to stochastic variability the bootstrap distributions are different from before but their shape and amplitude is similar. We only show the full conditional bootstrap.
+
+**Warning:** this code may take some time to execute. My Rstudio tends to run out of memory and crash before rendering, so I generated the pdf using the command *rmarkdown::render("./comets_condBoostrapSaemix.Rmd")* in a plain R window.
+
+
+```{r bootstrapRuns87, echo=FALSE, warning=FALSE, results='hide'}
+saemix.bootOpt<-list(fix.seed=F,directory="current",displayProgress=F, save.graphs=F, map=F, ll.is=F, print=FALSE)
+nboot<-100
+
+start_time <- Sys.time()
+boot.case<-saemix.bootstrap(saemix.fit, nboot=nboot, method="case")
+boot.cNP<-saemix.bootstrap(saemix.fit, nboot=nboot, method="conditional")
+boot.NP<-saemix.bootstrap(saemix.fit, nboot=nboot, method="residual")
+boot.Par<-saemix.bootstrap(saemix.fit, nboot=nboot, method="parametric")
+end_time <- Sys.time()
+```
+
+```{r bootstrapRuns87.res, echo=FALSE, warning=FALSE}
+# Summarising the results
+res<-data.frame(Case=colMeans(boot.case[,2:dim(boot.case)[2]]), NP=colMeans(boot.NP[,2:dim(boot.case)[2]]),cNP=colMeans(boot.cNP[,2:dim(boot.case)[2]]), Par=colMeans(boot.Par[,2:dim(boot.case)[2]]))
+sdres<-data.frame(Case=apply(boot.case[,2:dim(boot.case)[2]],2,sd), NP=apply(boot.NP[,2:dim(boot.case)[2]],2,sd), cNP=apply(boot.cNP[,2:dim(boot.case)[2]],2,sd), Par=apply(boot.Par[,2:dim(boot.case)[2]],2,sd))
+
+boot.est<-cbind(True=df$value,res[1:dim(df)[1],])
+for(icol in 2:5) {
+  boot.est[,icol]<-format(boot.est[,icol],nsmall=2, digits=1, scientific=FALSE)
+  sdres[,(icol-1)]<-format(sdres[,(icol-1)],nsmall=1, digits=1, scientific=FALSE)
+  boot.est[,icol]<-paste(boot.est[,icol]," (",sdres[1:dim(df)[1],(icol-1)],")",sep="")
+}
+cat("Bootstrap estimates (SD)\n")
+print(boot.est)
+cat("Run time:",end_time - start_time,"\n")
+
+# Recreating previous plot
+ypd2<-NULL
+for(typeboot in c("Case","NP","NPc","Par")) {
+  if(typeboot=="Case") resboot1<-boot.case
+  if(typeboot=="NP") resboot1<-boot.NP
+  if(typeboot=="NPc") resboot1<-boot.cNP
+  if(typeboot=="Par") resboot1<-boot.Par
+  colnames(resboot1)[2:10]<-nampar
+  for(icol in 1:9) {
+    ypd2<-rbind(ypd2,data.frame(rep=resboot1[,1],Param=colnames(resboot1)[(icol+1)],value=resboot1[,(icol+1)], Bootstrap=typeboot, stringsAsFactors=FALSE))
+  }
+}
+ypd2$Param<-factor(ypd2$Param, levels = nampar)
+ypd2$Bootstrap<-factor(ypd2$Bootstrap, levels=unique(ypd2$Bootstrap))
+levels(ypd2$Bootstrap)[levels(ypd2$Bootstrap)=="NPc"]<-"cNP"
+ypd2.fix<-ypd2[ypd2$Param %in% unique(ypd2$Param)[1:4],]
+ypd2.iiv<-ypd2[ypd2$Param %in% unique(ypd2$Param)[5:9],]
+
+plot.density2<-ggplot(data=ypd2) + geom_density(aes(value,fill=Bootstrap), alpha=0.5) + 
+  geom_vline(data=df,aes(xintercept=value),colour="red",size=1.2) + geom_vline(data=df,aes(xintercept=value2),colour="blue",size=1.2) +
+  theme_bw() + theme(axis.title.x = element_blank(),axis.text.x = element_text(size=9, angle=30, hjust=1), legend.position = "top") + 
+  scale_fill_manual(values = c("red4", "darkblue", "steelblue1","seagreen4","snow4")) +  facet_wrap(~Param, ncol=3, scales = 'free')
+
+print(plot.density2)
+
+cairo_pdf(file.path(workDir,"bootstrap","fig1_interactive.pdf"),width = 11, height=8)
+print(plot.density2)
+dev.off()
+
+```
