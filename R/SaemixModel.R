@@ -297,6 +297,7 @@ setMethod(
             "combined"=c(1,1)))
      }
     }
+    if (any(error.init < 0)) stop ("Initial estimates for error model parameters should be greater than zero")
     xres<-c()
     if(missing(name.sigma)) mis.sig<-TRUE else mis.sig<-FALSE
     if(missing(name.sigma) || length(name.sigma)!=2) name.sigma<-c("a","b")
