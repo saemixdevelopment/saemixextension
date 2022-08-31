@@ -4,7 +4,7 @@ mstep<-function(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, varList, 
 	# Input: kiter, Uargs, structural.model, DYF, phiM (unchanged)
 	# Output: varList, phi, betas, suffStat (changed)
 	#					mean.phi (created)
-	
+
 	# Update variances - TODO - check if here or elsewhere
 	nb.etas<-length(varList$ind.eta)
 	domega<-cutoff(mydiag(varList$omega[varList$ind.eta,varList$ind.eta]),.Machine$double.eps)
@@ -15,7 +15,7 @@ mstep<-function(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, varList, 
 	d1.omega<-Uargs$LCOV[,varList$ind.eta]%*%solve(omega.eta)
 	d2.omega<-d1.omega%*%t(Uargs$LCOV[,varList$ind.eta])
 	comega<-Uargs$COV2*d2.omega
-	
+
 	psiM<-transphi(phiM,Dargs$transform.par)
 	fpred<-structural.model(psiM, Dargs$IdM, Dargs$XM)
   	for(ityp in Dargs$etype.exp) fpred[Dargs$XM$ytype==ityp]<-log(cutoff(fpred[Dargs$XM$ytype==ityp]))
@@ -51,15 +51,15 @@ mstep<-function(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, varList, 
 	suffStat$statphi2<-suffStat$statphi2+opt$stepsize[kiter]*(stat2/Uargs$nchains-suffStat$statphi2)
 	suffStat$statphi3<-suffStat$statphi3+opt$stepsize[kiter]*(stat3/Uargs$nchains-suffStat$statphi3)
 	suffStat$statrese<-suffStat$statrese+opt$stepsize[kiter]*(statr/Uargs$nchains-suffStat$statrese)
-	
+
 	############# Maximisation
 	##### fixed effects
-	
+
 	if (opt$flag.fmin && kiter>=opt$nbiter.sa) {
 		temp<-d1.omega[Uargs$ind.fix11,]*(t(Uargs$COV1)%*%(suffStat$statphi1-Uargs$dstatCOV[,varList$ind.eta]))
-		betas[Uargs$ind.fix11]<-solve(comega[Uargs$ind.fix11,Uargs$ind.fix11],rowSums(temp)) 
+		betas[Uargs$ind.fix11]<-solve(comega[Uargs$ind.fix11,Uargs$ind.fix11],rowSums(temp))
 		# ECO TODO: utiliser optimise dans le cas de la dimension 1
-#		if(length(Uargs$ind.fix10)>1) 
+#		if(length(Uargs$ind.fix10)>1)
 		beta0<-optim(par=betas[Uargs$ind.fix10],fn=compute.Uy,phiM=phiM,pres=varList$pres,args=Uargs,Dargs=Dargs,DYF=DYF,control=list(maxit=opt$maxim.maxiter))$par # else
 #		beta0<-optimize(f=compute.Uy, interval=c(0.01,100)*betas[Uargs$ind.fix10],phiM=phiM,pres=varList$pres,args=Uargs,Dargs=Dargs,DYF=DYF)
 #		if(kiter==opt$nbiter.sa) {
@@ -69,18 +69,18 @@ mstep<-function(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, varList, 
 		betas[Uargs$ind.fix10]<-betas[Uargs$ind.fix10]+opt$stepsize[kiter]*(beta0-betas[Uargs$ind.fix10])
 	} else {
 		temp<-d1.omega[Uargs$ind.fix1,]*(t(Uargs$COV1)%*%(suffStat$statphi1-Uargs$dstatCOV[,varList$ind.eta]))
-		betas[Uargs$ind.fix1]<-solve(comega[Uargs$ind.fix1,Uargs$ind.fix1],rowSums(temp)) 
+		betas[Uargs$ind.fix1]<-solve(comega[Uargs$ind.fix1,Uargs$ind.fix1],rowSums(temp))
 	}
-	
+
 	varList$MCOV[Uargs$j.covariate]<-betas
 	mean.phi<-Uargs$COV %*% varList$MCOV
 	e1.phi<-mean.phi[,varList$ind.eta,drop=FALSE]
-	
+
 	# Covariance of the random effects
 	omega.full<-matrix(data=0,nrow=Uargs$nb.parameters,ncol=Uargs$nb.parameters)
 	omega.full[varList$ind.eta,varList$ind.eta]<-suffStat$statphi2/Dargs$N + t(e1.phi)%*%e1.phi/Dargs$N - t(suffStat$statphi1)%*%e1.phi/Dargs$N - t(e1.phi)%*%suffStat$statphi1/Dargs$N
 	varList$omega[Uargs$indest.omega]<-omega.full[Uargs$indest.omega]
-	
+
 	# Simulated annealing (applied to the diagonal elements of omega)
 	if (kiter<=opt$nbiter.sa) {
 		diag.omega.full<-mydiag(omega.full)
@@ -93,7 +93,7 @@ mstep<-function(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, varList, 
 		varList$diag.omega<-mydiag(varList$omega)
 	}
 	varList$omega<-varList$omega-mydiag(mydiag(varList$omega))+mydiag(varList$diag.omega)
-	
+
 	# Residual error
 	# Modified to add SA to constant and exponential residual error models (Edouard Ollier 10/11/2016)
 	if(Dargs$modeltype=="structural") {
@@ -114,11 +114,14 @@ mstep<-function(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, varList, 
 		        varList$pres[2]<-sqrt(sig2)
 		      }
 		    }
-		    
+
 		  } else {
 		    #	if (Dargs$error.model=="combined") {
-		    # ECO TODO: check and secure (when fpred<0 => NaN, & what happens if bres<0 ???)
-		    ABres<-optim(par=varList$pres,fn=ssq,y=Dargs$yM,f=fpred,etype=Dargs$XM$ytype)$par
+		    # ECO TODO: check and secure (when fpred<0 => NaN)
+        # JR: using lower=0 in the call to optim does not work, as L-BFGS-B
+        # does not cope with non-finite function values that we are obviously
+        # getting. Therefore we just take the absolute values after optimizing
+        ABres<-abs(optim(par=varList$pres,fn=ssq,y=Dargs$yM,f=fpred,etype=Dargs$XM$ytype)$par)
 		    if (kiter<=opt$nbiter.sa) {
 		      for(i in 1:length(varList$pres)) varList$pres[i]<-max(varList$pres[i]*opt$alpha1.sa,ABres[i])
 		    }  else {
