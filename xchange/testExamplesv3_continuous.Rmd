@@ -39,7 +39,7 @@ library(devtools)
 
 # testMode TRUE => tests the compiled package in dev_mode()
 # testMode FALSE => tests the library functions by loading them
-testMode<-TRUE
+testMode<-FALSE
 
 # Whether to save the plots for the documentation
 saveForDocs<-FALSE
@@ -78,6 +78,9 @@ if(!testMode) {
   source(file.path(progDir,"func_compare.R"))
 }
 
+if(!testMode) {
+  library(npde)
+}
 # Loading library
 if(testMode) {
   dev_mode()
@@ -150,8 +153,10 @@ plot(ynpde)
 plot(saemix.fit, plot.type="vpc")
 plot(ynpde, plot.type="vpc")
 
-saemix.fit<-conddist.saemix(saemix.fit)
+#saemix.fit<-conddist.saemix(saemix.fit)
 saemix.fit<-conddist.saemix(saemix.fit, plot=TRUE)
+
+plot(saemix.fit, plot.type="individual", smooth=TRUE)
 
 ```
 
@@ -247,6 +252,8 @@ fit2<-saemix(model2,saemix.data,saemix.options)
 wstat<-(-2)*(fit1["results"]["ll.is"]-fit2["results"]["ll.is"])
 
 cat("LRT test for covariate effect on EC50: p-value=",1-pchisq(wstat,1),"\n")
+
+plot(fit1, plot.type="individual", smooth=T, ilist=1:12)
 
 if(FALSE) {
   plot(model1, saemix.data)

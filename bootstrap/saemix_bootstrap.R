@@ -129,7 +129,7 @@ dataGen.case<- function(saemixObject) {
   smx.data@nind.obs <-saemixObject@data@nind.obs[idx.boot]
   smx.data@data<-data.boot
   orig.idx<-1:saemixObject@data@N
-  smx.data@data$index <- rep(1:smx.data@N,times=smx.data@nind.obs)
+  smx.data@data$index <- smx.data@data$id <- rep(1:smx.data@N,times=smx.data@nind.obs)
   # As yorig and ocov not used in fit, not included in dataset
   return(smx.data)
 }

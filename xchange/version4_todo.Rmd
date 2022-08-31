@@ -30,6 +30,9 @@ output:
   - new defaults: no plot for conditional distribution
 - github
   - get the hang of branches...
+- add a simulation function to generate diagnostics and simulate from the fitted model
+  - test if simulate function exists before creatign VPC/npde
+  - add an option to add this function later
 
 ### Loading
 

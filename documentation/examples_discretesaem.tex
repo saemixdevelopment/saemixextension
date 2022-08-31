@@ -28,7 +28,7 @@ saemix.data<-saemixData(name.data=toe,name.group=c("id"),name.predictors=c("time
     name.response="y", name.covariates=c("treatment"),name.X=c("time"))
 \end{verbatim}
 
-To tell \monolix~that we are now dealing with non-continuous responses, we add the argument {\sf modelType='likelihood'} to the definition of the model using the function {\sf saemixModel}. We assume only the intercept has interindividual variability, and follows a normal distribution. We set the covariate model for a treatment effect on $\theta_2$. 
+To tell \monolix~that we are now dealing with non-continuous responses, we add the argument {\sf modeltype='likelihood'} to the definition of the model using the function {\sf saemixModel}. We assume only the intercept has interindividual variability, and follows a normal distribution. We set the covariate model for a treatment effect on $\theta_2$. 
 \begin{verbatim}
 binary.model<-function(psi,id,xidep) {
   tim<-xidep[,1]
@@ -47,7 +47,7 @@ saemix.model<-saemixModel(model=binary.model,description="Binary model",
     psi0=matrix(c(-5,-.1,0,0),ncol=2,byrow=TRUE,dimnames=list(NULL,
     c("theta1","theta2"))),
     transform.par=c(0,0), covariate.model=c(0,1),
-    covariance.model=matrix(c(1,0,0,1),ncol=2))
+    covariance.model=matrix(c(1,0,0,0),ncol=2))
 \end{verbatim}
 
 We then fit the model, setting the option {\sf fim=FALSE} as the approximation used in the computation of the FIM by linearisation is not appropriate in discrete models. Since binary data contains very limited information, it is advised to increase the number of chains to stabilise the estimation. Here we set the number of chains to 10.

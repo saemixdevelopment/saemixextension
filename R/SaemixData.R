@@ -1033,10 +1033,12 @@ setMethod("summary","SaemixData",
     res<-list(N=object@N,nobs=list(ntot=object@ntot.obs,nind=object@nind.obs), id=object@data[,object@name.group],x=object@data[,object@name.predictors,drop=FALSE], y=object@data[,object@name.response])
     if(length(object@name.covariates)>0) {
       res$covariates<-object@ocov
-      ucov<-cbind(object@data[,object@name.group],object@ocov)
-      colnames(ucov)[1]<-object@name.group
-			ucov<-ucov[match(unique(object@data$index),object@data$index),]
-      res$ind.covariates<-ucov
+      if(dim(object@data)[1]==dim(object@ocov)[1]) {
+        ucov<-cbind(object@data[,object@name.group],object@ocov)
+        colnames(ucov)[1]<-object@name.group
+        ucov<-ucov[match(unique(object@data$index),object@data$index),]
+        res$ind.covariates<-ucov
+      }
     }
     invisible(res)
  }

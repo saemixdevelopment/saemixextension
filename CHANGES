@@ -1,3 +1,12 @@
+Version 3.2 - September 2022
+
+o Changes
+   * added a simulate.function slot to saemixModel objects, used by saemix.simulate() for non Gaussian data models defined through their likelihood
+   
+o Bugfixes
+   * corrected an error in the simulation function calling id instead of index (causing the simulation function to fail when the subjects were not numbered from 1 to N)
+   * added a test in summary() for saemixData object to prevent failing on bootstrapped datasets with case bootstrap when ocov was no longer the same dimension as data
+
 Version 3.1 - August 2022
 
 o Bugfixes

@@ -22,6 +22,8 @@ setwd(workDir)
 # Libraries
 library(ggplot2)
 
+saveFigs<-TRUE
+
 ```
 
 
@@ -46,17 +48,22 @@ if(FALSE) {
 Results
 
 - two scenarios, with design of the toenail study (per protocol)
-  - IIV on $\theta_1$ only: bias less than 5\% for all parameters (? when plotted, around 10\% ?)
-  - IIV on both parameters with 50\% IIV: some bias on $\theta_2$ and $\beta$ (~10\%) and a little on $\omega_{theta_2}$ (6.5\%)
-    - the bias on $\omega_{theta_2}$ disappears when we start from the true parameters but the bias on $\theta_2$ and $\beta$ remains around 10\%
+  - IIV on $\theta_1$ only: bias less than 5\% for all parameters (mean 4\% but median is 8.5\% ?)
+  - IIV on both parameters with 50\% IIV: some bias on $\theta_2$ and $\beta$ (~10\%) and a little on $\omega_{\theta_2}$ (6.5\%)
+    - the bias on $\omega_{\theta_2}$ disappears when we start from the true parameters but the bias on $\theta_2$ and $\beta$ remains around 10\%
 - comparing settings for initial values
   - no difference w/r starting values of the parameters $\Rightarrow$ runs seem to be stable with 10 chains
 
 - Expected RSE from PFIM
-  - binaryOrig: -24.86142 -11.63633 -38.29206  20.39756 
+  - binaryOrig: RSE($\theta_1$)=-24.86142 RSE($\theta_2$)=-11.63633 RSE($\beta$)=-38.29206  RSE($\omega_1^2$)=20.39756 
     - all parameters should be well estimated
-  - binaryIIV:  -10.70774  -20.99451 -112.04915   36.80376   65.15504 
+  - binaryIIV:  RSE($\theta_1$)=-10.70774  RSE($\theta_2$)=-20.99451 RSE($\beta$)=-112.04915   RSE($\omega_1^2$)=36.80376  RSE($\omega_2^2$)= 65.15504 
     - $\beta$ expected to be poorly estimated (but $\theta_2$ should be well estimated)
+  - in both cases, good agreement between predicted SE and empirical SE (obtained as SD(estimates) over the 200 simulations) for all parameters (with sometimes empirical SE smaller than predicted SE, for $\theta_1$ in original scenario and for $\omega_{\theta_2}$ in scenario with two IIV)
+    - compare the SD computed here (=empirical SE) with predicted SE from seFIMAGQ_true.res in the result folder
+    - slightly smaller for $\omega_{\theta_1}$ and smaller by 50\% $\omega_{\theta_2}$in IIV and for $\theta_1$ in original scenari, otherwise very close
+    
+- Compared one run with Monolix and very similar estimates when using 10 chains and the same CI
 
 
 ```{r binaryModelPerformance, echo=FALSE}
@@ -76,8 +83,15 @@ for (setting in c("true","pop","far")) {
   }
 }
 
-ggplot(data=ytab, aes(x=parameter, y=value, fill=setting)) + geom_boxplot() + geom_hline(yintercept=c(-5,5), linetype="dotted") + geom_hline(yintercept=c(-10,10), linetype="dashed")
+plotOrig <- ggplot(data=ytab, aes(x=parameter, y=value, fill=setting)) + geom_boxplot() + geom_hline(yintercept=c(-5,5), linetype="dotted") + geom_hline(yintercept=c(-10,10), linetype="dashed") + xlab("Parameter") + ylab("Relative estimation error (%)")
+print(plotOrig)
 
+if(saveFigs) {
+  namfig<-file.path(simDir, scenario,"results",paste0("ree_",scenario,".eps"))
+  cairo_ps(file = namfig, onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
+  plot(plotOrig)
+  dev.off()
+}
 
 truepar <- data.frame(parameter=colnames(res1)[2:(1+npar)], value=param)
 
@@ -86,7 +100,7 @@ res1<-read.table(file.path(simDir, scenario,"results",paste0(setting,"fit_",scen
 for(icol in 1:4) {
   print(summary(res1[,(icol+1)]-param[icol]))
   print(summary((res1[,(icol+1)]-param[icol])/param[icol]))
-  print(sd(res1[,(icol+1)]))
+  if(icol==4) print(sd(res1[,(icol+1)]**2)) else print(sd(res1[,(icol+1)]))
 }
 
 ### two IIV around 50%
@@ -106,13 +120,21 @@ for (setting in c("true","pop","far")) {
   }
 }
 
-ggplot(data=ytab, aes(x=parameter, y=value, fill=setting)) + geom_boxplot() + geom_hline(yintercept=c(-5,5), linetype="dotted") + geom_hline(yintercept=c(-10,10), linetype="dashed")
+plotIIV <- ggplot(data=ytab, aes(x=parameter, y=value, fill=setting)) + geom_boxplot() + geom_hline(yintercept=c(-5,5), linetype="dotted") + geom_hline(yintercept=c(-10,10), linetype="dashed") + xlab("Parameter") + ylab("Relative estimation error (%)")
+print(plotIIV)
+
+if(saveFigs) {
+  namfig<-file.path(simDir, scenario,"results",paste0("ree_",scenario,".eps"))
+  cairo_ps(file = namfig, onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
+  plot(plotIIV)
+  dev.off()
+}
 
 res1<-read.table(file.path(simDir, scenario,"results",paste0("popfit_",scenario,".tab")), header=T)
 for(icol in 1:length(param)) {
   print(summary(res1[,(icol+1)]-param[icol]))
   print(summary((res1[,(icol+1)]-param[icol])/param[icol]))
-  print(sd(res1[,(icol+1)]))
+  if(icol>3) print(sd(res1[,(icol+1)]**2)) else print(sd(res1[,(icol+1)]))
 }
 
 
