@@ -625,6 +625,7 @@ if(runBootstrap) {
  nboot<-dim(case.ordinal)[1]
 }
 case.ordinal <- case.ordinal[!is.na(case.ordinal[,2]),]
+cond.ordinal <- cond.ordinal[!is.na(cond.ordinal[,2]),]
 
 par.estim<-c(ord.fit@results@fixed.effects,diag(ord.fit@results@omega)[ord.fit@results@indx.omega])
 df2<-data.frame(parameter=colnames(case.ordinal)[-c(1)], saemix=par.estim)

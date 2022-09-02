@@ -10,10 +10,6 @@ output:
 ## Version
 Use saemix version $\geq$ 3.2
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
 ## Objective
 
 Run binary and categorical models in **saemix**
@@ -268,7 +264,7 @@ if(FALSE) {
 ```{r countPoissonDiagnostics}
 ### Simulations
 nsim<-100
-yfit1<-simulateDiscreteSaemix(poisson.fit.cov2, countsimulate.poisson, nsim=nsim)
+yfit1<-simulateDiscreteSaemix(poisson.fit.cov2, nsim=nsim)
 
 hist(yfit1@data@data$rapi, xlim=c(0,50), freq=F, breaks=30, xlab="Observed counts", main="")
 lines(density(yfit1@sim.data@datasim$ysim[yfit1@sim.data@datasim$ysim<50]), lwd = 2, col = 'red')
@@ -285,10 +281,12 @@ simdat$gender<-rep(yfit@data@data$gender,nsim)
 ytab<-NULL
 for(irep in 1:nsim) {
   xtab<-simdat[simdat$irep==irep,]
+  suppressMessages(
   xtab1 <- xtab %>%
     group_by(time, gender) %>%
     summarise(nev = sum(ysim==0), n=n()) %>%
     mutate(freq = nev/n)
+  )
   ytab<-rbind(ytab,xtab1[,c("time","gender","freq")])
 }
 gtab <- ytab %>%
@@ -352,10 +350,10 @@ exp(zippoisson.fit.cov2@results@fixed.effects)
 
 **Comets E**, Rodrigues C, Jullien V, Ursino M (2021). Conditional non-parametric bootstrap for non-linear mixed effect models. *Pharmaceutical Research*, 38: 1057-66.
 
-Neighbors (2010a)
+**Neighbors** (2010a)
 
-Neighbors (2010b)
+**Neighbors** (2010b)
 
 **Ueckert S**, Mentré F (2017). A new method for evaluation of the Fisher information matrix for discrete mixed effect models using Monte Carlo sampling and adaptive Gaussian quadrature. *Computational Statistics and Data Analysis*, 111: 203-19. \url{10.1016/j.csda.2016.10.011}
 
-White (1989)
+**White** (1989)
