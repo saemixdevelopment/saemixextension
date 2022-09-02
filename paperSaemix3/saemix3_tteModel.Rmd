@@ -1,0 +1,134 @@
+---
+title: "Saemix 3 - time-to-event models"
+author: "Emmanuelle"
+date: "09/2022"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+/home/eco/biblio/survival/vanwijk22_CPTPSP_choosingHazardFctTTETutorialShinyApp.pdf
+
+## Version
+Use saemix version $\geq$ 3.2
+
+- correction of a bug in the simulation file
+- added a simulation function for non Gaussian data models
+  - **TODO** test if function is NULL !!!
+
+## Objective
+
+Run single and repeated time-to-event models in **saemix**
+
+This notebook uses additional code from the **saemix** development github, not yet integrated in the package. The *workDir* folder in the next chunk of code points to the folder where the user stored this code, and is needed to run the notebook (*workDir* defaults to the current working directory). Specifically, the notebook loads:
+
+- code for different bootstraps in non-linear mixed effect models (Comets et al. 2021 and submitted)
+  - the bootstrap runs have been performed previously and are stored in files to be read
+    - bootstraps can be run instead by switching the *runBootstrap* variable to TRUE in the first chunk of code
+    - in the code, the number of bootstraps is set to 10 for speed but we recommend to use at least 200 for a 90\% CI.
+  - this can be changed in the following change of code by uncommenting the line *nboot<-200* and setting the number of bootstrap samples (this may cause memory issues in **Rstudio** with older machines, if this is the case we recommend executing the code in a separate script)
+- code for the MC/AGQ provided by Sebastian Ueckert (Ueckert et al. 2017)
+  - again if memory issues arise the code can be run in a separate script.
+
+The current notebook can be executed to create an HMTL or PDF output with comments and explanations. A script version containing only the R code is also given as *saemix3_tteModel.R* in the same folder.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Folders
+workDir<-getwd() 
+
+# @Eco
+workDir<-"/home/eco/work/saemix/saemixextension/paperSaemix3"
+saemixDir <- "/home/eco/work/saemix/saemixextension"
+setwd(workDir)
+
+# Libraries
+library(saemix)
+
+# Libraries needed to compute the FIM by AGQ
+library(R6)
+library(pracma)
+library(compiler)
+library(statmod)
+library(Matrix)
+library(randtoolbox)
+
+# FIM by MC/AGQ (code S. Ueckert)
+
+dirAGQ<-file.path(saemixDir,"fimAGQ")
+
+# Bootstrap code
+source(file.path(saemixDir, "bootstrap", "saemix_bootstrap.R"))
+
+# Code to compute the exact FIM by MC/AGQ
+
+# library(ggplot2)
+# library(MASS)
+# library(rlang)
+# library(gridExtra)
+library(tidyverse)
+
+# Whether to save the plots
+saveFigs<-FALSE
+figDir <- getwd()
+
+# Number of bootstrap samples
+runBootstrap <- FALSE # to read the results from disk
+nboot <-10
+# nboot <- 200
+
+```
+
+### Time-to-event model for a single event
+
+#### Data description - Alexandra change here or later for competitive risk ?
+
+Lung data from the survival package **[copy here from examplesDocumentation.R]**
+- reformatting changes
+  - saemix format: added time=0
+  - created one column for status (dead or alive, recoded as 1/0) and one for censoring (0/1)
+  - removed subjects with missing age, institution, sex, or ph scores (ecog and karno)
+
+**Checks**
+
+- The `Surv` function from the `survival` package creates a survival object for use as the response in a model formula.
+  - one entry for each subject that is the survival time, which is followed by a `+` if the subject was censored
+  - transform lung.saemix in the Surv format to check the survival function w/r saemix fit
+- Weibull model
+  - parametric survival function $$ S(t) = e^{ - \left( \frac{t}{\lambda} \right) ^{\beta}}$$
+- Also tried computing a SE for $S(t)$ using the delta-method where the vector of derivatives for the survival function of Weibull model are:
+
+$$ \begin{pmatrix}
+\frac{\delta S}{\delta \lambda} \\
+\frac{\delta S}{\delta \beta}
+\end{pmatrix} = 
+\begin{pmatrix}
+\frac{\beta}{\lambda} \; \left( \frac{t}{\lambda} \right)^{\beta} e^{-  \left( \frac{t}{\lambda} \right)^{\beta}} \\ 
+- \ln \left( \frac{t}{\lambda} \right) \; \left( \frac{t}{\lambda} \right)^{\beta} e^{-  \left( \frac{t}{\lambda} \right)^{\beta}} \\ 
+\end{pmatrix}$$
+
+  - works pretty well compared to the non-parametric KM estimate
+#### Exploring data
+
+**TODO** Kaplan-Meier plot, other plots, maybe
+
+The plot is created using **ggplot2**.
+
+#### Statistical model
+
+A nice review of the more frequent hazard functions used in parametric models of TTE data has recently been van Wijk and Simonsson (*CPT:PSP* 2022), including a Shiny app to explore their shape and how to set initial parameters. These models are very sensitive to the initial parameter estimates and their variance, therefore using 
+
+## References
+
+**Comets E**, Rodrigues C, Jullien V, Ursino M (2021). Conditional non-parametric bootstrap for non-linear mixed effect models. *Pharmaceutical Research*, 38: 1057-66.
+
+**Ueckert S**, Mentré F (2017). A new method for evaluation of the Fisher information matrix for discrete mixed effect models using Monte Carlo sampling and adaptive Gaussian quadrature. *Computational Statistics and Data Analysis*, 111: 203-19. \url{10.1016/j.csda.2016.10.011}
+
+**van Wijk R**, Simonsson U (2022). Finding the right hazard function for time- to-event modeling: A tutorial and Shiny application. *Clinical Pharmacokinetics and Therapeutics: Pharmacometrics and Systems Pharmacology*
+

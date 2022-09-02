@@ -119,14 +119,15 @@ simul.saemix<-function(object, nsim, seed, predictions=TRUE,res.var=TRUE,uncerta
 #' in the object. The function will then be used to simulate data under the empirical design,
 #' using the model and estimated parameters from a fit.
 #' 
-#' @param object an saemixObject object returned by the \code{\link{saemix}} function
+#' @param object an saemixObject object returned by the \code{\link{saemix}} function. 
+#' The model must contain a slot simulate.function, containing a function with the same structure as the model functions 
+#' (arguments (psi, id, xidep)) which returns simulated responses when given a set of individual parameters (psi) 
+#' and the corresponding predictors (xidep)
 #' @param nsim Number of simulations to perform. Defaults to the nb.simpred
 #' element in options
-#' @param simulate.function a function with the same structure as the model functions (arguments 
-#' (psi, id, xidep)) which returns simulated responses when given a set of individual parameters (psi) 
-#' and the corresponding predictors (xidep)
 #' @param seed if non-null, seed used to initiate the random number generator (defaults to NULL)
 #' @param uncertainty Uses uncertainty (currently not implemented). Defaults to FALSE
+#' @param verbose if TRUE, prints messages (defaults to FALSE)
 #' 
 #' @details This function calls simulate.SaemixObject with the prediction=FALSE option to 
 #' simulate individual parameters, then the simulate.function to obtain corresponding predictions.
@@ -140,12 +141,22 @@ simul.saemix<-function(object, nsim, seed, predictions=TRUE,res.var=TRUE,uncerta
 #' 
 #' @export 
 
-simulateDiscreteSaemix <- function(object, simulate.function, nsim, seed, uncertainty=FALSE) {
+simulateDiscreteSaemix <- function(object, nsim, seed, uncertainty=FALSE, verbose=FALSE) {
   # Simulate individual parameters from the population distribution
   ## object: an SaemixObject object resulting from a call to saemix()
   ## simulate.function: a function matching the model object@model@model and simulating outcomes given predictors and individual parameters
   ## nsim: number of simulations
   ## uncertainty: if TRUE, add uncertainty when simulating (not implemented yet)
+  if(!is(object,"SaemixObject")) {
+    if(verbose) message("The argument object should be a fitted saemixObject object\n")
+    return(NULL)
+  }
+  if(is.null(body(object@model@simulate.function)) || is(try(validObject(object@model)), "try-error")) {
+    if(verbose) message("No simulate.function element in the model component, please add a simulate.function \nwith the same structure as the model functions (arguments (psi, id, xidep)), \nto return simulated responses when given a set of individual parameters (psi) 
+and the corresponding predictors (xidep) \n")
+    return(NULL)
+    } else
+      simulate.function <- object@model@simulate.function
   if(missing(nsim)) nsim<-object["options"]$nb.sim
   if(missing(seed)) seed<-NULL
   object<-simulate.SaemixObject(object, nsim=nsim, seed=seed, predictions=FALSE, uncertainty=uncertainty)

@@ -60,7 +60,7 @@ mstep<-function(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, varList, 
 		betas[Uargs$ind.fix11]<-solve(comega[Uargs$ind.fix11,Uargs$ind.fix11],rowSums(temp))
 		# ECO TODO: utiliser optimise dans le cas de la dimension 1
 #		if(length(Uargs$ind.fix10)>1)
-		beta0<-optim(par=betas[Uargs$ind.fix10],fn=compute.Uy,phiM=phiM,pres=varList$pres,args=Uargs,Dargs=Dargs,DYF=DYF,control=list(maxit=opt$maxim.maxiter))$par # else
+		suppressWarnings(beta0<-optim(par=betas[Uargs$ind.fix10],fn=compute.Uy,phiM=phiM,pres=varList$pres,args=Uargs,Dargs=Dargs,DYF=DYF,control=list(maxit=opt$maxim.maxiter))$par) # else
 #		beta0<-optimize(f=compute.Uy, interval=c(0.01,100)*betas[Uargs$ind.fix10],phiM=phiM,pres=varList$pres,args=Uargs,Dargs=Dargs,DYF=DYF)
 #		if(kiter==opt$nbiter.sa) {
 #		  cat("ind.fix10=",Uargs$ind.fix10,"ind.fix11=",Uargs$ind.fix11,"ind.fix1=",Uargs$ind.fix1,"ind.fix0=",Uargs$ind.fix0,"\n")
@@ -121,7 +121,7 @@ mstep<-function(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, varList, 
         # JR: using lower=0 in the call to optim does not work, as L-BFGS-B
         # does not cope with non-finite function values that we are obviously
         # getting. Therefore we just take the absolute values after optimizing
-        ABres<-abs(optim(par=varList$pres,fn=ssq,y=Dargs$yM,f=fpred,etype=Dargs$XM$ytype)$par)
+		    suppressWarnings(ABres<-abs(optim(par=varList$pres,fn=ssq,y=Dargs$yM,f=fpred,etype=Dargs$XM$ytype)$par))
 		    if (kiter<=opt$nbiter.sa) {
 		      for(i in 1:length(varList$pres)) varList$pres[i]<-max(varList$pres[i]*opt$alpha1.sa,ABres[i])
 		    }  else {

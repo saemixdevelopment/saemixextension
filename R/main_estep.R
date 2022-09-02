@@ -119,7 +119,7 @@ estep<-function(kiter, Uargs, Dargs, opt, mean.phi, varList, DYF, phiM) {
 			    mean.phi1<-mean.phiM[i,i1.omega2]
 			    phii<-phiM[i,]
 			    phi1<-phii[i1.omega2]
-			    phi1.opti<-optim(par=phi1, fn=conditional.distribution_c, phii=phii,idi=idi,xi=xi,yi=yi,mphi=mean.phi1,idx=i1.omega2,iomega=iomega.phi1, trpar=Dargs$transform.par, model=Dargs$structural.model, pres=varList$pres, err=Dargs$error.model)
+			    suppressWarnings(phi1.opti<-optim(par=phi1, fn=conditional.distribution_c, phii=phii,idi=idi,xi=xi,yi=yi,mphi=mean.phi1,idx=i1.omega2,iomega=iomega.phi1, trpar=Dargs$transform.par, model=Dargs$structural.model, pres=varList$pres, err=Dargs$error.model))
 			    phi.map[i,i1.omega2]<-phi1.opti$par
 			}
 			
@@ -183,7 +183,7 @@ estep<-function(kiter, Uargs, Dargs, opt, mean.phi, varList, DYF, phiM) {
 			    mean.phi1<-mean.phiM[i,i1.omega2]
 			    phii<-phiM[i,]
 			    phi1<-phii[i1.omega2]
-			    phi1.opti<-optim(par=phi1, fn=conditional.distribution_d, phii=phii,idi=idi,xi=xi,yi=yi,mphi=mean.phi1,idx=i1.omega2,iomega=iomega.phi1, trpar=Dargs$transform.par, model=Dargs$structural.model)
+			    suppressWarnings(phi1.opti<-optim(par=phi1, fn=conditional.distribution_d, phii=phii,idi=idi,xi=xi,yi=yi,mphi=mean.phi1,idx=i1.omega2,iomega=iomega.phi1, trpar=Dargs$transform.par, model=Dargs$structural.model))
 			    phi.map[i,i1.omega2]<-phi1.opti$par
 			}
 			#rep the map nchains time

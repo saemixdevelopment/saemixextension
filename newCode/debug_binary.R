@@ -149,4 +149,11 @@ nsamp<-100
 max.iter<-NULL
 displayPlot<-FALSE
 
+#########################################################################################
+# Ordinal data - knee
+# ord.fit defined in ordinalBootstrap_knee.R (in saemixextension/bootstrap)
+nboot<-2
+case.ordinal <- try(saemix.bootstrap(ord.fit, method="case", nboot=nboot))
+cond.ordinal <- try(saemix.bootstrap(ord.fit, method="conditional", nboot=nboot))
+
 
