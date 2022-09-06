@@ -3,8 +3,9 @@ title: "Package compilation for saemix 3.2 and basic run"
 author: "Emmanuelle Comets"
 date: "16/08/2022"
 output:
-  pdf_document:
+  pdf_document: null
   latex_engine: xelatex
+  word_document: default
 html_document: default
 ---
   

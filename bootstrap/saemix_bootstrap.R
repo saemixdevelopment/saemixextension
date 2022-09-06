@@ -40,6 +40,12 @@
 
 
 saemix.bootstrap<-function(saemixObject, method="conditional", nboot=200, nsamp=100, saemix.options=NULL) {
+  if(method!="case") {
+    if(saemixObject@model@modeltype!="structural" & (is.null(body(saemixObject@model@simulate.function)) | length(formals(saemixObject@model@simulate.function))!=3)) {
+      if(saemixObject@options$warnings) message("A simulation function needs to be provided for non Gaussian models to obtain bootstrap distributions by other methods than the Case bootstrap. This function needs to have the same structure as the model function and return simulated values based on the same model. \nPlease provide a simulation function the simulate.function slot of the model or use method='case' for Case bootstrap. \nExiting bootstrap.")
+      return(NULL)
+    }
+  }
   if(method=="residual" | method=="conditional") {
     saemixObject<-saemix.predict(saemixObject) # estimate individual parameters and compute residuals (currently iwres are needed also for conditional but need to modify this in a further extension to cNP ECO TODO)
   }
@@ -69,7 +75,10 @@ saemix.bootstrap<-function(saemixObject, method="conditional", nboot=200, nsamp=
   idx.iiv<-saemixObject@model@indx.omega
   idx.rho<-which(saemixObject@model@covariance.model[lower.tri(saemixObject@model@covariance.model)]==1)
   bootstrap.distribution<-failed.runs<-data.frame()
-  nelements <- ord.fit@model@nb.parameters+length(idx.iiv)+length(idx.rho)+length(idx.eps)
+  nelements <- length(saemixObject@results@fixed.effects)+length(idx.iiv)+length(idx.rho)+length(idx.eps)
+  model.boot<-saemixObject["model"]
+  model.boot@psi0 <- model.boot["betaest.model"]
+  model.boot@psi0[model.boot["betaest.model"]==1]<-saemixObject@results@fixed.effects
   for(iboot in 1:nboot) {
     if(method=="case")  
       data.boot <- dataGen.case(saemixObject)
@@ -79,7 +88,7 @@ saemix.bootstrap<-function(saemixObject, method="conditional", nboot=200, nsamp=
       data.boot <- dataGen.NP(saemixObject, nsamp=nsamp,eta.sampc=eta.sampc, conditional=TRUE)
     if(method=="parametric")
       data.boot <- dataGen.Par(saemixObject)
-    fit.boot<-try(saemix(saemixObject["model"], data.boot, saemix.options))
+    fit.boot<-try(saemix(model.boot, data.boot, saemix.options))
     if(is(fit.boot,"try-error")) {
       l1<-c(iboot,rep(NA,nelements))
       failed.runs <- rbind(failed.runs, c(iboot, fit.boot))

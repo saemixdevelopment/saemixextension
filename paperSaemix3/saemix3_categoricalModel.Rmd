@@ -18,7 +18,7 @@ Use saemix version $\geq$ 3.2
 
 Run binary and categorical models in **saemix**
 
-This notebook uses additional code from the **saemix** development github, not yet integrated in the package. The *workDir* folder in the next chunk of code points to the folder where the user stored this code, and is needed to run the notebook (*workDir* defaults to the current working directory). Specifically, the notebook loads:
+This notebook uses additional code from the **saemix** development github (https://github.com/saemixdevelopment/saemixextension), not yet integrated in the package. The *workDir* folder in the next chunk of code points to the folder where the user stored this code, and is needed to run the notebook (*workDir* defaults to the current working directory). Specifically, the notebook loads:
 
 - code for different bootstraps in non-linear mixed effect models (Comets et al. 2021 and submitted)
   - the bootstrap runs have been performed previously and are stored in files to be read

@@ -18,17 +18,17 @@ Data are from \cite{debacker_toenail}, a multi-center randomised comparison  of 
 
 Several analyses have been made in the literature \cite{lesaffre2001effect,lin2011goodness}, and here we fit the logistic random effect model developed by \cite{hedeker1994random}. This model includes a random intercept ($\theta_1$, normally distributed with a standard deviation $\omega_1$),  a time effect ($\beta_2$, normally distributed with a standard deviation $\omega_2$). Treatment (A or B) ($\beta$) is included as a covariate on time. The treatments were randomised at baseline so we don't include a treatment effect on the intercept. The probability $p_{ij}=P(Y_{ij}=1 | \theta_{1,i}, \theta_{2,i})$ associated with an event $Y_{ij}$ at time $t_{ij}$ is given by the following equation for the logit:
 \begin{equation}
-logit(p_{ij}) = \ln \left( \frac{p_{ij}}{1-p_{ij}} \right) = \theta_{1,i} + \theta_{1,i} t_{ij}
+logit(p_{ij}) = \ln \left( \frac{p_{ij}}{1-p_{ij}} \right) = \theta_{1,i} + \theta_{1,i} t_{ij} \label{eq:logit}
 \end{equation}
 
-For non-gaussian models, the model function must be written to return the log-pdf, that is, the logarithm of the probability of the observed response given a set of parameters. To do this we need to pass the response as one of the predictors.
+For non-gaussian models, the model function must be written to return the log-pdf, that is, the logarithm of the probability of the observed response given a set of parameters. To do this we need to pass the response as one of the predictors when creating the {\sf SaemixData} object.
 \begin{verbatim}
 data(toenail.saemix)
 saemix.data<-saemixData(name.data=toe,name.group=c("id"),name.predictors=c("time","y"), 
     name.response="y", name.covariates=c("treatment"),name.X=c("time"))
 \end{verbatim}
 
-To tell \monolix~that we are now dealing with non-continuous responses, we add the argument {\sf modeltype='likelihood'} to the definition of the model using the function {\sf saemixModel}. We assume only the intercept has interindividual variability, and follows a normal distribution. We set the covariate model for a treatment effect on $\theta_2$. 
+The model function can now be written. As previously, it must take 3 arguments, {\sf psi}, {\sf id} and {\sf xidep}. Within the body of the function, we compute the logpdf as a function of the parameters. Here for a binomial model, this means we define first the logit of the probability, then the probability itself by inverting equation~\ref{eq:logit}. We then define the probability of the observed outcome as $pevent \; \mathbb{1}_{Y=1} + (1-pevent) \; \mathbb{1}_{Y=0}$
 \begin{verbatim}
 binary.model<-function(psi,id,xidep) {
   tim<-xidep[,1]
@@ -41,9 +41,26 @@ binary.model<-function(psi,id,xidep) {
   logpdf <- log(pobs)
   return(logpdf)
 }
+\end{verbatim}
 
+We can also add a simulation function to the model definition, which we will use later to obtain diagnostics. This simulation function has the same structure as the model function, but after defining the probability $pevent$, we use it to simulate from a binomial model. This function is not required for fitting, but is necessary to be able to use the simulation function we will define later. Notice the similarity with the model function {\sf binary.model} defined above: we replaced the line defining the log-probability {\sf logp} in {\sf binary.model}  call to the {\sf rbinom} function from {\sf R} to obtain simulations from a Bernouilli distribution with probability $pevent$ for each value of time, and we return those simulated events.
+\begin{verbatim}
+simulBinary<-function(psi,id,xidep) {
+  tim<-xidep[,1]
+  y<-xidep[,2]
+  inter<-psi[id,1]
+  slope<-psi[id,2]
+  logit<-inter+slope*tim
+  pevent<-1/(1+exp(-logit))
+  ysim<-rbinom(length(tim),size=1, prob=pevent)
+  return(ysim)
+}
+\end{verbatim}
+
+To tell \monolix~that we are now dealing with non-continuous responses, we add the argument {\sf modeltype='likelihood'} to the definition of the model using the function {\sf saemixModel}. We assume only the intercept has interindividual variability, and follows a normal distribution. We set the covariate model for a treatment effect on $\theta_2$. We pass the simulation function in the {\sf simulate.function} argument (optional).
+\begin{verbatim}
 saemix.model<-saemixModel(model=binary.model,description="Binary model",
-    modeltype="likelihood",
+    modeltype="likelihood", simulate.function=simulBinary,
     psi0=matrix(c(-5,-.1,0,0),ncol=2,byrow=TRUE,dimnames=list(NULL,
     c("theta1","theta2"))),
     transform.par=c(0,0), covariate.model=c(0,1),
@@ -59,22 +76,11 @@ binary.fit<-saemix(saemix.model,saemix.data,saemix.options)
 
 {\bf Important note:} The linear approximation of the FIM does not apply well to discrete response models. Exact computation methods to estimate the FIM without linearisation have been proposed by~\cite{Riviere16} using Hamiltonian Monte-Carlo and~\cite{Ueckert16} using adaptive Gaussian quadrature. These methods can be applied to estimate SE for the parameters but are not automatically available yet in \monolix.
 
-\paragraph{Diagnostics:} automated visualisation or diagnostic plots have not yet been implemented for discrete response models, but we can of course create our own in R by simulating from the model. To to this we need to define a simulation function associated with the structural model, with the same arguments as the model function, and returning simulated responses. For the binary model, this function would be the following, where we replace the line defining the log-probability {\sf logp} in {\sf binary.model} with a line simulating from a Binomial distribution with parameter $pevent$ for each value of time, and returning those simulated events.
+\paragraph{Diagnostics:} automated visualisation or diagnostic plots have not yet been implemented for discrete response models, but we can of course create our own in R by simulating from the model. The {\sf simulateDiscreteSaemix} function uses the model fit and the simulation function (defined above) to simulate responses from the estimated parameter distribution.
 % ECO TODO: add Marc's npd for categorical data...
-
 \begin{verbatim}
-simulBinary<-function(psi,id,xidep) {
-  tim<-xidep[,1]
-  y<-xidep[,2]
-  inter<-psi[id,1]
-  slope<-psi[id,2]
-  logit<-inter+slope*tim
-  pevent<-1/(1+exp(-logit))
-  ysim<-rbinom(length(tim),size=1, prob=pevent)
-  return(ysim)
-}
 nsim<-100
-binary.fit <- simulateDiscreteSaemix(binary.fit, simulBinary, nsim=nsim)
+binary.fit <- simulateDiscreteSaemix(binary.fit, nsim=nsim)
 \end{verbatim}
 
 In figure~\ref{fig:toenailPropVPC} we use the simulated data in the {\sf datasim} dataframe contained in the {\sf sim.data} element of the object after the call to the function to compute a 90\% prediction interval on the proportion of events at each visit. This VPC plot shows a reasonable model fit in the two treatment groups.
@@ -87,7 +93,7 @@ In figure~\ref{fig:toenailPropVPC} we use the simulated data in the {\sf datasim
 \caption{Proportion of expected events compared to the observed proportion across time, for the model fit to the toenail data.} \label{fig:toenailPropVPC}
 \end{figure}
 
-The following code was used to produce this plot:
+The following code was used to produce this plot (the libraries {\sf tidyverse, ggplot2} and {\sf gridExtra} are assumed to be loaded in the {\sf R} session):
 \begin{verbatim}
 simdat <-binary.fit@sim.data@datasim
 simdat$visit<-rep(toenail.saemix$visit,nsim)
@@ -245,7 +251,7 @@ We first show a simple example using the {\sf epilepsy} data from the {\sf MASS}
 P(Y=n) = \frac{\lambda^n \; e^{-\lambda}}{n!}
 \end{equation}
 
-where $\lambda>0$ is the parameter of the model. We asssume a log-normal distribution for $\lambda$.
+where $\lambda>0$ is the parameter of the model. We assume a log-normal distribution for $\lambda$.
 
 \begin{verbatim}
 epilepsy<-MASS::epil
@@ -269,9 +275,9 @@ saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE,
 poisson.fit<-saemix(saemix.model,saemix.data,saemix.options)
 \end{verbatim}
 
-Web-based brief alcohol interventions have the potential to reach a large number of individuals at low cost; however, few controlled evaluations have been conducted to date. The present study was designed to evaluate the efficacy of gender-specific versus gender-nonspecific personalized normative feedback (PNF) with single versus biannual administration in a 2-year randomized controlled trial targeting a large sample of heavy-drinking college students.
-
 \subsubsection{RAPI data} \label{sec:RAPICount}
+
+%Web-based brief alcohol interventions have the potential to reach a large number of individuals at low cost; however, few controlled evaluations have been conducted to date. The present study was designed to evaluate the efficacy of gender-specific versus gender-nonspecific personalized normative feedback (PNF) with single versus biannual administration in a 2-year randomized controlled trial targeting a large sample of heavy-drinking college students.
 
 This dataset was kindly made available by David Atkins (University of Washington) in his tutorial on modelling count data~\cite{Atkins13} and comes from a randomised controlled trial assessing the effectiveness of web-based personalised normative feedback intervention on alcohol consumption~\cite{Neighbors10a, Neighbors10b}. The {\sf RAPI dataset} records alcohol-related problems, as measured by the Rutgers Alcohol Problem Index (RAPI)~\cite{White89}, in freshmen at risk for heavy drinking behaviours. Students were asked to report every six months the number of alcohol-related problems, and the dataset includes 3,616 repeated measures of these counts in 818 subjects, 561 of whom had the full 5 measurements over a period of 2 years. Interesting features of this dataset are first, the longitudinal aspect which allow to evaluate changes over time, and second, the shape of the distribution of counts. Counts are often positively skewed, bounded by zero, with a large stack of data points at zero, indicating individuals and/or occasions without drinking, use, or related problems. This dataset was used in~\cite{Atkins13} to illustrate mixed effects count regression using the {\sf glmer()} function from the {\sf lme4} package.
 
@@ -298,33 +304,9 @@ count.poisson<-function(psi,id,xidep) {
   return(logp)
 }
 \end{verbatim}
-The expression of logp in the model function is unchanged, but now we define a log-normal distribution for $\lambda$ within the model so that we can use two parameters and time as a predictor. The statistical model also changes to reflect this, as our parameters intercept and slope are now on the scale of the random effects, so they are given a normal distribution. Defining and fitting this model in \monolix, we have:
-\begin{verbatim}
-saemix.model.poi<-saemixModel(model=count.poisson,description="Count model Poisson",
-    modeltype="likelihood",   
-    psi0=matrix(c(log(5),0.01),ncol=2,byrow=TRUE,dimnames=list(NULL, c("intercept","slope"))), 
-    transform.par=c(0,0), omega.init=diag(c(0.5, 0.5)))
-saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
-poisson.fit<-saemix(saemix.model.poi,saemix.data,saemix.options)
-\end{verbatim}
-Note that when parameters enter the model through a normal distribution, we may need to adjust the initial values of the $\Omega$ matrix (argument {\sf omega.init}) to avoid failure to find valid initial parameter estimates.
+The expression of logp in the model function is unchanged, but now we define a log-normal distribution for $\lambda$ within the model so that we can use two parameters and time as a predictor. The statistical model also changes to reflect this, as our parameters intercept and slope are now on the scale of the random effects, so they are given a normal distribution. 
 
-We can also add the covariate gender to both parameters as well as a correlation between the two random effects:
-\begin{verbatim}
-modsmx.poi.cov2<-saemixModel(model=count.poisson,
-      description="Count model Poisson",modeltype="likelihood",   
-      psi0=matrix(c(log(5),0.01),ncol=2,byrow=TRUE,dimnames=list(NULL, 
-      c("intercept","slope"))), transform.par=c(0,0), 
-      omega.init=diag(c(0.5, 0.5)), 
-      covariance.model=matrix(data=1, ncol=2, nrow=2),
-      covariate.model=matrix(c(1,1), ncol=2, byrow=TRUE))
-poisson.fit.cov2<-saemix(modsmx.poi.cov2,saemix.data,saemix.options)
-\end{verbatim}
-Comparing the parameter estimates from this fit to the estimates obtained by {\sf glmer()} using a Laplace approximation in Table~2 of~\cite{Atkins13}, we find very good agreement with the SAEM algorithm.
-
-\noindent{\bf Note:} \monolix~does not provide adequate standard errors of estimation for the parameters in version 3.0. The FO-approximation of the FIM implemented in the current version of the algorithm is known to be very poor for discrete outcome models.
-
-Some diagnostics for this model can be obtained by simulating from the model. To to this we need to define a simulation function associated with the structural model, with the same arguments as the model function, and returning simulated responses. For the Poisson model, this function would be the following, where we replace the line defining the log-probability {\sf logp} in {\sf count.poisson} with a line simulating from a Poisson distribution with parameter $\lambda$ for each value of time, and returning those simulated counts.
+Again we can define a simulation function associated with the model, with the same arguments as the model function, and returning simulated responses. For the Poisson model, this function would be the following, where we replace the line defining the log-probability {\sf logp} in {\sf count.poisson} with a line simulating from a Poisson distribution with parameter $\lambda$ for each value of time, and returning those simulated counts.
 \begin{verbatim}
 saemix.simulatePoisson<-function(psi, id, xidep) {
   time<-xidep[,1]
@@ -337,10 +319,35 @@ saemix.simulatePoisson<-function(psi, id, xidep) {
 }
 \end{verbatim}
 
-We then use the {\sf simulateDiscreteSaemix} function to obtain simulations from the model, using the estimated parameters. Here we set the number of simulations to 100 as the dataset is large and we are interested in global diagnostics.
+Defining and fitting this model in \monolix, we have:
 \begin{verbatim}
-yfit1<-simulateDiscreteSaemix(poisson.fit.cov2, simulate.function=saemix.simulatePoisson, 
-    nsim=100)
+saemix.model.poi<-saemixModel(model=count.poisson,description="Count model Poisson",
+    modeltype="likelihood", simulate.function=saemix.simulatePoisson,
+    psi0=matrix(c(log(5),0.01),ncol=2,byrow=TRUE,dimnames=list(NULL, c("intercept","slope"))), 
+    transform.par=c(0,0), omega.init=diag(c(0.5, 0.5)))
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
+poisson.fit<-saemix(saemix.model.poi,saemix.data,saemix.options)
+\end{verbatim}
+Note that when parameters enter the model through a normal distribution, we may need to adjust the initial values of the $\Omega$ matrix (argument {\sf omega.init}) to avoid failure to find valid initial parameter estimates.
+
+We can also add the covariate gender to both parameters as well as a correlation between the two random effects:
+\begin{verbatim}
+modsmx.poi.cov2<-saemixModel(model=count.poisson, simulate.function=saemix.simulatePoisson,
+      description="Count model Poisson",modeltype="likelihood",   
+      psi0=matrix(c(log(5),0.01),ncol=2,byrow=TRUE,dimnames=list(NULL, 
+      c("intercept","slope"))), transform.par=c(0,0), 
+      omega.init=diag(c(0.5, 0.5)), 
+      covariance.model=matrix(data=1, ncol=2, nrow=2),
+      covariate.model=matrix(c(1,1), ncol=2, byrow=TRUE))
+poisson.fit.cov2<-saemix(modsmx.poi.cov2,saemix.data,saemix.options)
+\end{verbatim}
+Comparing the parameter estimates from this fit to the estimates obtained by {\sf glmer()} using a Laplace approximation in Table~2 of~\cite{Atkins13}, we find very good agreement with the SAEM algorithm.
+
+\noindent{\bf Note:} \monolix~does not provide adequate standard errors of estimation for the parameters in version 3.0. The FO-approximation of the FIM implemented in the current version of the algorithm is known to be very poor for discrete outcome models.
+
+Some diagnostics for this model can be obtained by simulating from the model. We use the {\sf simulateDiscreteSaemix} function to obtain simulations from the model, using the estimated parameters. Here we set the number of simulations to 100 as the dataset is large and we are interested in global diagnostics. Again 
+\begin{verbatim}
+yfit1<-simulateDiscreteSaemix(poisson.fit.cov2, nsim=100)
 cat("Observed proportion of 0's", 
      length(yfit1@data@data$rapi[yfit1@data@data$rapi==0])/yfit1@data@ntot.obs,"\n")
 cat("      Poisson model, p=",
@@ -363,19 +370,7 @@ count.poissonzip<-function(psi,id,xidep) {
   return(logp)
 }
 \end{verbatim}
-and fit the model using:
-\begin{verbatim}
-modsmx.zip<-saemixModel(model=count.poissonzip,description="count model ZIP",
-   modeltype="likelihood", 
-   psi0=matrix(c(1.5, 0.01, 0.2),ncol=3,byrow=TRUE,dimnames=list(NULL, 
-      c("intercept", "slope","p0"))), 
-   transform.par=c(0,0,3), covariance.model=diag(c(1,1,0)), 
-   omega.init=diag(c(0.5,0.3,0)),
-   covariate.model = matrix(c(1,1,0),ncol=3, byrow=TRUE))
-
-zippoisson.fit <- saemix(modsmx.zip,saemix.data,saemix.options)
-\end{verbatim}
-where we assume a logit-normal distribution for the added parameter p0 through the transform.par argument. We could also model logit(p0) on a normal scale if we needed to add a time effect. The same approach as above can then be used to simulate from the model, this time using the simulation function:
+as well as the associated simulation function:
 \begin{verbatim}
 saemix.simulatePoissonZIP<-function(psi, id, xidep) {
   time<-xidep[,1]
@@ -390,7 +385,19 @@ saemix.simulatePoissonZIP<-function(psi, id, xidep) {
   return(y)
 }
 \end{verbatim}
-and we can check that the proportion of simulated 0's is now closer to the observed value.
+and fit the model using:
+\begin{verbatim}
+modsmx.zip<-saemixModel(model=count.poissonzip,description="count model ZIP",
+   modeltype="likelihood", simulate.function=saemix.simulatePoissonZIP,
+   psi0=matrix(c(1.5, 0.01, 0.2),ncol=3,byrow=TRUE,dimnames=list(NULL, 
+      c("intercept", "slope","p0"))), 
+   transform.par=c(0,0,3), covariance.model=diag(c(1,1,0)), 
+   omega.init=diag(c(0.5,0.3,0)),
+   covariate.model = matrix(c(1,1,0),ncol=3, byrow=TRUE))
+
+zippoisson.fit <- saemix(modsmx.zip,saemix.data,saemix.options)
+\end{verbatim}
+where we assume a logit-normal distribution for the added parameter p0 through the transform.par argument. We could also model logit(p0) on a normal scale if we needed to add a time effect. The same approach as above can then be used to simulate from the model, and we can check that the proportion of simulated 0's is now closer to the observed value.
 
 A second type of model used in~\cite{Atkins13} is the hurdle model, which combines a binary logistic model for the probability of having counts greater than 0, with a truncated Poisson model for counts greater than 0. To implement this, we fit separately the two models: the binary logistic model is fit to the data where we use as a response the binary outcome with values 0 for counts of 0 and 1 for counts strictly positive, then the Poisson model is fit to the data excluding zero counts.
 

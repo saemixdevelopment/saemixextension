@@ -17,7 +17,8 @@
 #' * case refers to case bootstrap, where resampling is performed at the level of the individual and the bootstrap sample consists in sampling with replacement from the observed individuals
 #' * residual refers to non-parametric residual bootstrap, where for each individual the residuals for the random effects and for the residual error are resampled from the individual estimates after the fit
 #' * parametric refers to parametric residual bootstrap, where these residuals are sampled from their theoretical distributions
-#' * conditional refers the conditional non-parametric bootstrap (Rodrigues 2019), where the random effects are resampled from the individual conditional distributions
+#' * conditional refers to the conditional non-parametric bootstrap, where the random effects are resampled from the individual 
+#'   conditional distributions as in (Comets et al. 2021) and the residual errors resampled from the corresponding residuals
 #' @md#' 
 #' @author Emmanuelle Comets <emmanuelle.comets@@inserm.fr>, Audrey Lavenu,
 #' Marc Lavielle.
@@ -31,7 +32,7 @@
 #' nonlinear mixed-effects models : a simulation study in population pharmacokinetics.
 #' Journal of Pharmacokinetics and Pharmacodynamics, 2014; 41:15–33.
 #' 
-#' Rodrigues C, Jullien V, Comets E. Conditional non-parametric bootstrap for 
+#' Comets E, Rodrigues C, Jullien V, Moreno U. Conditional non-parametric bootstrap for 
 #' non-linear mixed effect models. 28th Meeting of the Population Approach Group in
 #' Europe,2019, Abstract 8871.
 #' 
@@ -39,11 +40,22 @@
 
 
 saemix.bootstrap<-function(saemixObject, method="conditional", nboot=200, nsamp=100, saemix.options=NULL) {
+  if(method!="case") {
+    if(saemixObject@model@modeltype!="structural" & (is.null(body(saemixObject@model@simulate.function)) | length(formals(saemixObject@model@simulate.function))!=3)) {
+      if(saemixObject@options$warnings) message("A simulation function needs to be provided for non Gaussian models to obtain bootstrap distributions by other methods than the Case bootstrap. This function needs to have the same structure as the model function and return simulated values based on the same model. \nPlease provide a simulation function the simulate.function slot of the model or use method='case' for Case bootstrap. \nExiting bootstrap.")
+      return(NULL)
+    }
+  }
   if(method=="residual" | method=="conditional") {
     saemixObject<-saemix.predict(saemixObject) # estimate individual parameters and compute residuals (currently iwres are needed also for conditional but need to modify this in a further extension to cNP ECO TODO)
   }
   if(method=="conditional") {
-    saemixObject<-conddist.saemix(saemixObject, nsamp=nsamp) # estimated conditional distribution and sample residuals
+    ndone <- dim(saemixObject@results@phi.samp)
+    if(!is.null(ndone)) ndone<-ndone[3]
+    if(ndone<nsamp) {
+      if(saemixObject@options$warnings) message("Not enough samples in the object, sampling from the conditional distribution\n")
+      saemixObject<-conddist.saemix(saemixObject, nsamp=nsamp) # estimate conditional distributions and sample residuals
+    }
     eta.sampc<-centerDist.NPcond(saemixObject, nsamp=nsamp) # Center eta samples from the conditional distribution, to avoid doing this repeatedly
   }
   if(is.null(saemix.options)) {
@@ -58,10 +70,15 @@ saemix.bootstrap<-function(saemixObject, method="conditional", nboot=200, nsamp=
     saemix.options$ll.is<-FALSE
     saemix.options$print<-FALSE
   }
+  verbose <- saemix.options$warnings
   if(saemixObject@model@modeltype=="structural") idx.eps<-saemixObject@model@indx.res else idx.eps<-integer(0)
   idx.iiv<-saemixObject@model@indx.omega
   idx.rho<-which(saemixObject@model@covariance.model[lower.tri(saemixObject@model@covariance.model)]==1)
-  bootstrap.distribution<-data.frame()
+  bootstrap.distribution<-failed.runs<-data.frame()
+  nelements <- length(saemixObject@results@fixed.effects)+length(idx.iiv)+length(idx.rho)+length(idx.eps)
+  model.boot<-saemixObject["model"]
+  model.boot@psi0 <- model.boot["betaest.model"]
+  model.boot@psi0[model.boot["betaest.model"]==1]<-saemixObject@results@fixed.effects
   for(iboot in 1:nboot) {
     if(method=="case")  
       data.boot <- dataGen.case(saemixObject)
@@ -71,12 +88,18 @@ saemix.bootstrap<-function(saemixObject, method="conditional", nboot=200, nsamp=
       data.boot <- dataGen.NP(saemixObject, nsamp=nsamp,eta.sampc=eta.sampc, conditional=TRUE)
     if(method=="parametric")
       data.boot <- dataGen.Par(saemixObject)
-    fit.boot<-saemix(saemixObject["model"], data.boot, saemix.options)
-    res<-fit.boot@results
-    l1<-c(iboot,res@fixed.effects, diag(res@omega)[idx.iiv])
-    if(length(idx.rho)>0) l1<-c(l1,res@omega[lower.tri(res@omega)][idx.rho])
-    if(length(idx.eps)>0) l1<-c(l1, res@respar[idx.eps])
-    if(length(res@ll.lin)>0) l1<-c(l1, res@ll.lin)
+    fit.boot<-try(saemix(model.boot, data.boot, saemix.options))
+    if(is(fit.boot,"try-error")) {
+      l1<-c(iboot,rep(NA,nelements))
+      failed.runs <- rbind(failed.runs, c(iboot, fit.boot))
+    } else {
+      res<-fit.boot@results
+      l1<-c(iboot,res@fixed.effects, diag(res@omega)[idx.iiv])
+      if(length(idx.rho)>0) l1<-c(l1,res@omega[lower.tri(res@omega)][idx.rho])
+      if(length(idx.eps)>0) l1<-c(l1, res@respar[idx.eps])
+      if(length(res@ll.lin)>0) l1<-c(l1, res@ll.lin)
+      
+    }
 #    l1<-c(iboot,res@fixed.effects, diag(res@omega)[idx.iiv],res@omega[lower.tri(res@omega)][idx.rho],res@respar[idx.eps], res@se.fixed, res@se.omega[idx.iiv],res@se.cov[lower.tri(res@se.cov)][idx.rho], res@se.respar[idx.eps],res@ll.lin)
     bootstrap.distribution<-rbind(bootstrap.distribution,l1) 
   }
@@ -96,7 +119,10 @@ saemix.bootstrap<-function(saemixObject, method="conditional", nboot=200, nsamp=
 #  namcol<-c(saemixObject@results@name.fixed,saemixObject@results@name.random,namcol, saemixObject@results@name.sigma[saemixObject@results@indx.res])
 #  colnames(bootstrap.distribution)<-c("Replicate",namcol,paste("SE",namcol,sep="."),"LL.lin")
   colnames(bootstrap.distribution)<-c("Replicate",namcol)
-  
+  if(verbose && dim(failed.runs)[1]>0) {
+    cat(dim(failed.runs)[1],"failed:\n")
+    print(head(failed.runs))
+  }
   return(bootstrap.distribution)
 }
 
@@ -123,7 +149,7 @@ dataGen.case<- function(saemixObject) {
   smx.data@nind.obs <-saemixObject@data@nind.obs[idx.boot]
   smx.data@data<-data.boot
   orig.idx<-1:saemixObject@data@N
-  smx.data@data$index <- rep(1:smx.data@N,times=smx.data@nind.obs)
+  smx.data@data$index <- smx.data@data$id <- rep(1:smx.data@N,times=smx.data@nind.obs)
   # As yorig and ocov not used in fit, not included in dataset
   return(smx.data)
 }
@@ -138,11 +164,15 @@ dataGen.NP<-function(saemixObject,nsamp=0,eta.sampc=NULL,conditional=FALSE) {
   } else x<-sampDist.NP(saemixObject)
   id<-saemixObject@data@data$index
   xdep<-saemixObject@data@data[,c(saemixObject@data["name.predictors"]),drop=FALSE]
-  fpred<-saemixObject@model@model(x$psi.boot,id,xdep)
-  if(saemixObject@model@error.model=="exponential") fpred<-log(cutoff(fpred))
-  gpred<-error.typ(fpred,saemixObject@results@respar)
   smx.data<-saemixObject@data
-  smx.data@data[,saemixObject@data["name.response"]] <- fpred+gpred*x$eps.boot # Bootstrapped data
+  if(saemixObject@model@modeltype=="structural") {
+    fpred<-saemixObject@model@model(x$psi.boot,id,xdep)
+    if(saemixObject@model@error.model=="exponential") fpred<-log(cutoff(fpred))
+    gpred<-error.typ(fpred,saemixObject@results@respar)
+    smx.data@data[,saemixObject@data["name.response"]] <- fpred+gpred*x$eps.boot # Bootstrapped data
+  } else {
+    smx.data@data[,saemixObject@data["name.response"]] <-saemixObject@model@simulate.function(x$psi.boot,id,xdep)
+  }
   return(smx.data)
 }
 
@@ -153,17 +183,21 @@ dataGen.Par<-function(saemixObject) { # Probably could reintegrate in function .
   x<-sampDist.Par(saemixObject)
   id<-saemixObject@data@data$index
   xdep<-saemixObject@data@data[,c(saemixObject@data["name.predictors"]),drop=FALSE]
-  fpred<-saemixObject@model@model(x$psi.boot,id,xdep)
-  if(saemixObject@model@error.model=="exponential") fpred<-log(cutoff(fpred))
-  gpred<-error.typ(fpred,saemixObject@results@respar)
   smx.data<-saemixObject@data
-  smx.data@data[,saemixObject@data["name.response"]] <- fpred+gpred*x$eps.boot # Bootstrapped data
+  if(saemixObject@model@modeltype=="structural") {
+    fpred<-saemixObject@model@model(x$psi.boot,id,xdep)
+    if(saemixObject@model@error.model=="exponential") fpred<-log(cutoff(fpred))
+    gpred<-error.typ(fpred,saemixObject@results@respar)
+    smx.data@data[,saemixObject@data["name.response"]] <- fpred+gpred*x$eps.boot # Bootstrapped data
+  } else {
+    smx.data@data[,saemixObject@data["name.response"]] <-saemixObject@model@simulate.function(x$psi.boot,id,xdep)
+  }
   return(smx.data)
 }
 
 
 sampDist.Par <- function(saemixObject) {
-  omega.est<-saemixObject@results@omega[saemixObject@model@indx.omega,saemixObject@model@indx.omega] # Estimated var-cov matrix
+  omega.est<-saemixObject@results@omega[saemixObject@model@indx.omega,saemixObject@model@indx.omega, drop=FALSE] # Estimated var-cov matrix
   #sigma.est<-saemixObject@results@ # Estimated residual error
   phicond<-saemixObject@results@cond.mean.phi
   etacond<-saemixObject@results@cond.mean.eta # Estimated eta_i
@@ -172,41 +206,48 @@ sampDist.Par <- function(saemixObject) {
   etacond[,saemixObject@model@indx.omega]<-eta.sim
   phi.boot <- Cimu + etacond
   psi.boot <- transphi(phi.boot,saemixObject@model["transform.par"])
-  eps.boot <- rnorm(saemixObject@data@ntot.obs)
+  if(saemixObject@model@modeltype=="structural") 
+    eps.boot <- rnorm(saemixObject@data@ntot.obs)  else 
+      eps.boot<-NULL
   return(list(psi.boot=psi.boot, eta.boot=etacond, eps.boot=eps.boot))
 }
 
 # Sampling distributions for non-parametric bootstraps
 sampDist.NP <- function(saemixObject) {
-  omega.est<-saemixObject@results@omega[saemixObject@model@indx.omega,saemixObject@model@indx.omega] # Estimated var-cov matrix
+  omega.est<-saemixObject@results@omega[saemixObject@model@indx.omega,saemixObject@model@indx.omega, drop=FALSE] # Estimated var-cov matrix
   #sigma.est<-saemixObject@results@ # Estimated residual error
-  eps.est<-saemixObject@results@iwres # Estimated epsilon_ij
+  if(saemixObject@model@modeltype=="structural") {
+      eps.est<-saemixObject@results@iwres # Estimated epsilon_ij
+      epsc<-center.eps(eps.est)
+      epscorr<-epsc/sd(epsc)
+      eps.boot <- sample(epscorr,size=saemixObject@data@ntot.obs,replace=T)
+  } else eps.boot<-NULL
   phicond<-saemixObject@results@cond.mean.phi
   etacond<-saemixObject@results@cond.mean.eta # Estimated eta_i
   Cimu<-phicond-etacond
-  etacorr<-normalise.eta.svd(etacond[,saemixObject@model@indx.omega], omega.est)
-  epsc<-center.eps(eps.est)
-  epscorr<-epsc/sd(epsc)
+  etacorr<-normalise.eta.svd(etacond[,saemixObject@model@indx.omega, drop=FALSE], omega.est)
   etasamp<-etacond
   etasamp[,saemixObject@model@indx.omega]<-etacorr
   idx.boot<-sample(1:saemixObject@data@N, size=saemixObject@data@N, replace=T)
   eta.boot<-etasamp[idx.boot,]
   phi.boot <- Cimu + eta.boot
   psi.boot <- transphi(phi.boot,saemixObject@model["transform.par"])
-  eps.boot <- sample(epscorr,size=saemixObject@data@ntot.obs,replace=T)
   return(list(psi.boot=psi.boot, eta.boot=eta.boot, eps.boot=eps.boot))
 }
 
 
 # Added eta.sampc=NULL argument for the simulations
 # in the simulations we can create the data.frame only once and pass it to reduce computation time
-sampDist.NPcond <- function(saemixObject,nsamp,eta.sampc=NULL, population=TRUE) {
+sampDist.NPcond <- function(saemixObject,nsamp, eta.sampc=NULL, population=TRUE) {
   # eta.sampc: etas to sample from, centered 
   # population: centering and resampling method, either at the level of the population or at the level of the individual [only for etas for the moment]
-  eps.est<-saemixObject@results@iwres # Estimated epsilon_ij
-  epsc<-center.eps(eps.est)
-  epscorr<-center.eps(eps.est)/sd(epsc) # Correcting empirical residuals
-  omega.est<-saemixObject@results@omega[saemixObject@model@indx.omega,saemixObject@model@indx.omega] # Estimated var-cov matrix
+  if(saemixObject@model@modeltype=="structural") {
+    eps.est<-saemixObject@results@iwres # Estimated epsilon_ij
+    epsc<-center.eps(eps.est)
+    epscorr<-center.eps(eps.est)/sd(epsc) # Correcting empirical residuals
+    eps.boot <- sample(epscorr,size=saemixObject@data@ntot.obs,replace=T)
+  } else eps.boot<-NULL
+  omega.est<-saemixObject@results@omega[saemixObject@model@indx.omega,saemixObject@model@indx.omega, drop=FALSE] # Estimated var-cov matrix
   #sigma.est<-saemixObject@results@ # Estimated residual error
   phicond<-saemixObject@results@cond.mean.phi
   etacond<-saemixObject@results@cond.mean.eta # Estimated eta_i
@@ -224,7 +265,6 @@ sampDist.NPcond <- function(saemixObject,nsamp,eta.sampc=NULL, population=TRUE) 
     id1<-1:saemixObject@data@N
     idx.boot<-idx.boot*(saemixObject@data@N-1)+id1 # sample nb idx.boot for subject id1
   }
-  eps.boot <- sample(epscorr,size=saemixObject@data@ntot.obs,replace=T)
   eta.boot<-eta.sampc[idx.boot,]
   phi.boot <- Cimu + eta.boot
   psi.boot <- transphi(as.matrix(phi.boot),saemixObject@model["transform.par"])
