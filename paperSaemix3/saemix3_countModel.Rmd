@@ -24,7 +24,7 @@ This notebook uses additional code from the **saemix** development github, not y
 - code for the MC/AGQ provided by Sebastian Ueckert (Ueckert et al. 2017)
   - again if memory issues arise the code can be run in a separate script.
 
-The current notebook can be executed to create an HMTL or PDF output with comments and explanations. A script version containing only the R code is also given as *saemix3_categoricalModel.R* in the same folder.
+The current notebook can be executed to create an HMTL or PDF output with comments and explanations. A script version containing only the R code is also given as *saemix3_countModel.R* in the same folder.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)

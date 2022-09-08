@@ -33,3 +33,19 @@ vpc_tte(sim = rtte_sim_nm[rtte_sim_nm$sim <= 20,],
         rtte = FALSE,
         sim_cols=list(dv = "dv", idv = "t"), obs_cols=list(idv = "t"))
 
+# Only first event
+# idx<-which()
+
+
+## Applied to tte.fit from saemix3_tteModel.Rmd notebook
+n<-dim(ysim.tte@sim.data@datasim)[1]
+simron<-cbind(ysim.tte@sim.data@datasim,dv=rep(c(0,1), n/2))
+colnames(simron)<-c("id","sim","time","dv")
+
+vpc_tte(sim = simron,
+        obs = lung.saemix,
+#        rtte = FALSE,
+        sim_cols=list(id="id", dv = "dv", idv = "time"), obs_cols=list(id="id", dv="status", idv = "time"))
+
+write.table(simron[simron$sim<21,],"/home/eco/work/saemix/hotline/ronvpc/simulatedTTE.csv", quote=F, row.names=F)
+

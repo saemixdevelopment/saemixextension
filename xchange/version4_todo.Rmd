@@ -9,6 +9,8 @@ output:
 
 # TODO list
 
+$1_{Y_{ij}=0} \times (1-P(Y_{ij}=1)) + 1_{Y_{ij}=1} \times P(Y_{ij}=1) $
+
 - **TODO** 
   - interface to mkin ?
   - error messages to solve better ?
