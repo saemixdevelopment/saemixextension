@@ -437,7 +437,7 @@ setMethod("summary","SaemixObject",
       if(length(object@results@indx.cov)>0) {
       wstat<-as.double(tab[,2])/as.double(tab[,3])
       pval<-rep("-",length(wstat))
-      pval[object@results@indx.cov]<-1-normcdf(abs(wstat[object@results@indx.cov]))
+      pval[object@results@indx.cov]<-2*(1-normcdf(abs(wstat[object@results@indx.cov])))
       tab<-cbind(tab,"p-value"=pval,stringsAsFactors=FALSE)
       }
     }

@@ -225,4 +225,19 @@ See **changes2.4to3.0.ods** for side-by-side comparison of functions tracing the
 
 $\square$ TODO: check status with Maud
 
+### Some bugs from TODO.txt - check if solved
+
+- createSaemixObject.initial
+Currently, calling the createSaemixObject.initial function with a model parameter that isn't 'structural' will fail with the following error :
+
+Error in (function (cl, name, valueClass)  : 
+  assignment of an object of class “NULL” is not valid for @‘respar’ in an object of class “SaemixRes”; is(value, "numeric") is not TRUE
+
+CHANGE fix.seed to be FALSE by default otherwise this can really mess up a simulation study...
+
+- censored responses (12/05/21, Chris) bug
+2.       If the column in the data supplied for name.cens is not named “cens”, saemix() throws an error.
+
+ 
+
   

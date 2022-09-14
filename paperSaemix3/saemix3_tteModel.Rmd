@@ -224,15 +224,42 @@ gpl <- discreteVPC(simtte.fit, outcome="TTE")
 plot(gpl)
 ```
 
-
 Note that there are some specialised packages such as the **survsim** and the **simsurv** package that could be leveraged for this exercise.
 
+##### VPC using Ron's package
 
+A recent package was developed by Ron Keizer to implement VPC for different types of data. For survival data, we can use the *vpc_tte()* function from this package to produce the KM-VPC plot.
+
+```{r lungTTEDiagnosticVPCRon}
+library(vpc)
+
+n<-dim(ysim.tte@sim.data@datasim)[1]
+simron<-cbind(ysim.tte@sim.data@datasim,dv=rep(c(0,1), n/2))
+colnames(simron)<-c("id","sim","time","dv")
+
+vpc_tte(sim = simron,
+        obs = lung.saemix,
+#        rtte = FALSE,
+        sim_cols=list(id="id", dv = "dv", idv = "time"), obs_cols=list(id="id", dv="status", idv = "time"))
+
+
+if(FALSE) { # Setting late simulated times to the maximum event time (a censored event)
+  simron$time[simron$time>max(lung.saemix$time)]<-max(lung.saemix$time)
+  vpc_tte(sim = simron,
+          obs = lung.saemix,
+          #        rtte = FALSE,
+          sim_cols=list(id="id", dv = "dv", idv = "time"), obs_cols=list(id="id", dv="status", idv = "time"))
+}
+```
 ###### Exact FIM by AGQ (code by Sebastian Ueckert)
 
 For non-Gaussian models, the exact FIM should be computed, and two approaches have been proposed using either numerical integration by a combination of MC and adaptive Gaussian quadrature (MC/AGQ, Ueckert et al 2017) or stochastic integration by MCMC (Rivière et al. 2017).
 
 Both these approaches are computationally intensive. 
+
+**Eco** pas sûre que la méthode pour calculer la FIM exacte dans un protocole de population soit utilisable pour calculer la FIM empirique d'un jeu de données... 
+
+**Eco** no example for TTE models in Sebastian's code so need to define the different functions by hand...
 
 Here we use code provided by Sebastian Ueckert implementing the MC/AGQ approach, as the MCMC requires the installation of rStan. In this approach, the information matrix (FIM) over the population is first decomposed the sum of the individual FIM:
 $$
@@ -265,6 +292,50 @@ source(file.path(dirAGQ,"model.R"))
 
 saemix.fit <- tte.fit
 
+# TODO - adapt to TTE model ???
+model <- Model$new(
+  parameter_function = function(mu, b) list(alp1=mu[1]+b[1], alp2=mu[2], alp3=mu[3], alp4=mu[4], beta=mu[5] + b[2]),
+  log_likelihood_function = function(y, design, alp1, alp2, alp3, alp4, beta) {
+    logit1<-alp1 + beta*design$time
+    logit2<-logit1+alp2
+    logit3<-logit2+alp3
+    logit4<-logit3+alp4
+    pge1<-exp(logit1)/(1+exp(logit1))
+    pge2<-exp(logit2)/(1+exp(logit2))
+    pge3<-exp(logit3)/(1+exp(logit3))
+    pge4<-exp(logit4)/(1+exp(logit4))
+    pobs = (y==1)*pge1+(y==2)*(pge2 - pge1)+(y==3)*(pge3 - pge2)+(y==4)*(pge4 - pge3)+(y==5)*(1 - pge4)
+    log(pobs)
+  }, 
+  simulation_function = function(design, alp1, alp2, alp3, alp4, beta) {
+    logit1<-alp1 + beta*design$time
+    logit2<-logit1+alp2
+    logit3<-logit2+alp3
+    logit4<-logit3+alp4
+    pge1<-exp(logit1)/(1+exp(logit1))
+    pge2<-exp(logit2)/(1+exp(logit2))
+    pge3<-exp(logit3)/(1+exp(logit3))
+    pge4<-exp(logit4)/(1+exp(logit4))
+    x<-runif(length(time))
+    ysim<-1+as.integer(x>pge1)+as.integer(x>pge2)+as.integer(x>pge3)+as.integer(x>pge4)
+  },
+  inverse_simulation_function = function(design, urand,alp1, alp2, alp3, alp4, beta) {
+    if(is.null(urand)) return(seq_along(design$time))
+    logit1<-alp1 + beta*design$time
+    logit2<-logit1+alp2
+    logit3<-logit2+alp3
+    logit4<-logit3+alp4
+    pge1<-exp(logit1)/(1+exp(logit1))
+    pge2<-exp(logit2)/(1+exp(logit2))
+    pge3<-exp(logit3)/(1+exp(logit3))
+    pge4<-exp(logit4)/(1+exp(logit4))
+    1+as.integer(urand>pge1)+as.integer(urand>pge2)+as.integer(urand>pge3)+as.integer(urand>pge4)
+  },
+  mu = saemix.fit@results@fixed.effects,
+  omega = saemix.fit@results@omega[c(1,5),c(1,5)]
+  )
+
+# TBContinued
 ```
 
 #### Diagnostics
@@ -311,43 +382,6 @@ lines(xtim,ypred-1.96*sesurv, col="red",lwd=1, lty=2)
 
 ```
 
-##### VPC TODO
-
-
-```{r lungTTEDiagnosticVPC}
-# Adding the simulation function to the model component of the fit
-tte.fit@model@simulate.function <- simulateWeibullTTE
-ysim.tte <- simulateDiscreteSaemix(tte.fit, nsim=100)
-
-
-```
-
-
-##### VPC using Ron's package
-
-A recent package was developed by Ron Keizer to implement VPC for different types of data. For survival data, we can use the *vpc_tte()* function from this package to produce the KM-VPC plot.
-
-```{r lungTTEDiagnosticVPCRon}
-library(vpc)
-
-n<-dim(ysim.tte@sim.data@datasim)[1]
-simron<-cbind(ysim.tte@sim.data@datasim,dv=rep(c(0,1), n/2))
-colnames(simron)<-c("id","sim","time","dv")
-
-vpc_tte(sim = simron,
-        obs = lung.saemix,
-#        rtte = FALSE,
-        sim_cols=list(id="id", dv = "dv", idv = "time"), obs_cols=list(id="id", dv="status", idv = "time"))
-
-
-if(FALSE) { # Setting late simulated times to the maximum event time (a censored event)
-  simron$time[simron$time>max(lung.saemix$time)]<-max(lung.saemix$time)
-  vpc_tte(sim = simron,
-          obs = lung.saemix,
-          #        rtte = FALSE,
-          sim_cols=list(id="id", dv = "dv", idv = "time"), obs_cols=list(id="id", dv="status", idv = "time"))
-}
-```
 
 ### RTTE model
 

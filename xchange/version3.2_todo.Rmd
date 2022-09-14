@@ -1,0 +1,154 @@
+---
+title: "saemix 3.2"
+author: "Emmanuelle"
+date: "13/09/2022"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+# TODO list
+
+- **TODO** bugfixes
+  - **DONE** computation of the p-value for the Wald test
+- **TODO** testthat functions
+  - SaemixData class
+    - validate names
+    - covariates
+  - SaemixObject class
+      - summary function
+  - plots
+  - computations ?
+  - display options
+- examples
+- documentation
+  - error models
+  - new references
+  - new defaults: no plot for conditional distribution
+- **TODO** next version
+  - interface to mkin ?
+  - error messages to solve better ?
+    - unable to find starting parameter values
+    - add FAQ as to how to diagnose this
+    - maybe need a predict function for these models
+  - bookdown: https://github.com/saemixdevelopment/saemix_bookdown
+    - case-studies for categorical data and RTTE data
+      - simulate using R instead of mlx
+    - move online or keep pdf/tex version ?
+      - if move completely online, need to transform the LaTeX guide into a bookdown
+- **TODO** test suite using simulated data
+  - datasets (K=100 in each scenario)
+    - continuous data
+      - Plan's Emax data
+    - discrete data
+  - estimation scripts to test the different versions
+
+### Loading
+
+#### aaa_generics.R TODO
+
+- check generic definition of read
+- check aliases for some internal functions
+
+#### zzz.R
+
+- check if the current version works or if we need to add date
+
+### Classes
+
+#### SaemixData
+
+- check object validation
+- harmonise output messages across the package
+  - no messages to be output to stdin by default
+- new slot automatic in 3.0
+  - normally allows automatic recognition and filling in arguments not given
+  - $\square$ TODO: testthat function
+  - also test validate.names()
+- use is(x, "data.frame") instead of testing class(x)=="data.frame" (class may have more than 1 value)
+
+- check if fixed - March 2021: validate.names (Johannes)
+    - I noticed that in the read method of SaemixData you call validate.names on name.group. In my case, this generates a warning ("NA values introduced by coercion") which is suppressed by the call to options("warn" = -1) in the very beginning of the method definition .... WHAT?
+    - This looks as if validate.names needs some attention not to generate warnings in valid use cases! The way it is, this warning pops up if one wishes to catch warnings from saemixData with tryCatch.
+    - This confirms my impression that setting options within a function is not good practice, even if you reset them at the end. In case there are good reasons to set options, it is preferable to reset them using on.exit, which is more fail-safe.
+
+#### SaemixModel
+
+#### SaemixRes
+
+#### SaemixObject
+
+### Computational functions
+
+#### compute_LL.R
+
+- check if alias ggq.mlx exists
+
+#### func_aux.R
+
+- modified combined error model
+  - $\square$ TODO: add to documentation
+- conditional distribution function split into 2 functions according to nature of the model
+  - $\square$ TODO:  add to documentation
+- check computation of compute.LLy
+
+### func_FIM.R
+
+- $\square$ TODO: secure the code for discrete data models (only compute LL by linearisation ? do not use altogether ?)
+- $\square$ TODO: check cat and replace with message
+  - check name of option to print out messages (maybe name of option changed)
+
+### Main algorithm
+
+#### main_initialiseMainAlgo.R
+
+#### main_estep.R
+
+#### main_mstep.R
+
+- check computation of sigma and influence of SA (nbiter.saemix changed to nbiter.sa)
+  - $\square$ TODO: check
+- $\square$ TODO: add Lucie's changes +++
+  - ask Lucie to check afterwards
+
+#### main.R
+
+### Parameters, Simulations
+  
+#### func_distcond.R
+
+- commented out the plots for the moment
+  - $\square$ TODO: add option to output the graphs
+  
+#### func_estimParam.R
+
+#### func_simulations.R
+
+### Plots
+
+- $\square$ TODO: exploration plots for discrete data
+- $\square$ TODO: basic VPC for discrete data
+- $\square$ TODO: diagnostics with npd/npde for discrete data
+
+## New functions by Maud
+
+### HMM
+
+$\square$ TODO: check status with Maud
+
+### Some bugs from TODO.txt - check if solved
+
+- createSaemixObject.initial
+Currently, calling the createSaemixObject.initial function with a model parameter that isn't 'structural' will fail with the following error :
+
+Error in (function (cl, name, valueClass)  : 
+  assignment of an object of class “NULL” is not valid for @‘respar’ in an object of class “SaemixRes”; is(value, "numeric") is not TRUE
+
+CHANGE fix.seed to be FALSE by default otherwise this can really mess up a simulation study...
+
+- censored responses (12/05/21, Chris) bug
+2.       If the column in the data supplied for name.cens is not named “cens”, saemix() throws an error.
+
+ 
+
+  

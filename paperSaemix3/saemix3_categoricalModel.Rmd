@@ -726,7 +726,8 @@ model <- Model$new(
     1+as.integer(urand>pge1)+as.integer(urand>pge2)+as.integer(urand>pge3)+as.integer(urand>pge4)
   },
   mu = saemix.fit@results@fixed.effects,
-  omega = saemix.fit@results@omega[c(1,5),c(1,5)])
+  omega = saemix.fit@results@omega[c(1,5),c(1,5)]
+  )
 
 
 # define settings (agq with 3 grid points, quasi random monte-carlo and 500 samples)

@@ -6,7 +6,7 @@
         dtransphi returns exp(phi) (could be h'())
         
 * Error model
-    - currently implemented as combined 1, consider switching to combined 2
+    - currently implemented as combined 1, consider switching to combined 2 => done
     Johannes 18/02/2021 suggests:
     error.typ<-function(f,ab) {
     -  g<-cutoff(ab[1]+ab[2]*abs(f)) 

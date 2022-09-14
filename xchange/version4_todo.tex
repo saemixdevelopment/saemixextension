@@ -1,0 +1,553 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{lmodern}
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\ifLuaTeX
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same} % disable monospaced font for URLs
+\hypersetup{
+  pdftitle={Saemix 4.0 - multiple responses},
+  pdfauthor={Emmanuelle},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+
+\title{Saemix 4.0 - multiple responses}
+\author{Emmanuelle}
+\date{07/02/2022}
+
+\begin{document}
+\maketitle
+
+\hypertarget{todo-list}{%
+\section{TODO list}\label{todo-list}}
+
+\$1\_\{Y\_\{ij\}=0\} \times (1-P(Y\_\{ij\}=1)) + 1\_\{Y\_\{ij\}=1\}
+\times P(Y\_\{ij\}=1) \$
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{TODO}
+
+  \begin{itemize}
+  \tightlist
+  \item
+    interface to mkin ?
+  \item
+    error messages to solve better ?
+
+    \begin{itemize}
+    \tightlist
+    \item
+      unable to find starting parameter values
+    \item
+      add FAQ as to how to diagnose this
+    \item
+      maybe need a predict function for these models
+    \end{itemize}
+  \item
+    bookdown: \url{https://github.com/saemixdevelopment/saemix_bookdown}
+
+    \begin{itemize}
+    \tightlist
+    \item
+      case-studies for categorical data and RTTE data
+
+      \begin{itemize}
+      \tightlist
+      \item
+        simulate using R instead of mlx
+      \end{itemize}
+    \item
+      move online or keep pdf/tex version ?
+
+      \begin{itemize}
+      \tightlist
+      \item
+        if move completely online, need to transform the LaTeX guide
+        into a bookdown
+      \item
+        copy on iame github
+      \end{itemize}
+    \end{itemize}
+  \end{itemize}
+\item
+  examples
+
+  \begin{itemize}
+  \tightlist
+  \item
+    real example with TTE and RTTE data
+  \item
+    real example with competitive risks
+  \item
+    joint models
+  \end{itemize}
+\item
+  documentation
+
+  \begin{itemize}
+  \tightlist
+  \item
+    error models
+  \item
+    new defaults: no plot for conditional distribution
+  \end{itemize}
+\item
+  github
+
+  \begin{itemize}
+  \tightlist
+  \item
+    get the hang of branches\ldots{}
+  \end{itemize}
+\item
+  add a simulation function to generate diagnostics and simulate from
+  the fitted model
+
+  \begin{itemize}
+  \tightlist
+  \item
+    test if simulate function exists before creatign VPC/npde
+  \item
+    add an option to add this function later
+  \end{itemize}
+\end{itemize}
+
+\hypertarget{loading}{%
+\subsubsection{Loading}\label{loading}}
+
+\hypertarget{aaa_generics.r-todo}{%
+\paragraph{aaa\_generics.R TODO}\label{aaa_generics.r-todo}}
+
+\begin{itemize}
+\tightlist
+\item
+  check generic definition of read
+\item
+  check aliases for some internal functions
+\end{itemize}
+
+\hypertarget{zzz.r}{%
+\paragraph{zzz.R}\label{zzz.r}}
+
+\begin{itemize}
+\tightlist
+\item
+  check if the current version works or if we need to add date
+\end{itemize}
+
+\hypertarget{classes}{%
+\subsubsection{Classes}\label{classes}}
+
+\hypertarget{saemixdata}{%
+\paragraph{SaemixData}\label{saemixdata}}
+
+\begin{itemize}
+\tightlist
+\item
+  check object validation
+
+  \begin{itemize}
+  \tightlist
+  \item
+    create testthat functions
+  \end{itemize}
+\item
+  harmonise output messages across the package
+
+  \begin{itemize}
+  \tightlist
+  \item
+    no messages to be output to stdin by default
+  \end{itemize}
+\item
+  new slot automatic in 3.0
+
+  \begin{itemize}
+  \tightlist
+  \item
+    normally allows automatic recognition and filling in arguments not
+    given
+  \item
+    \(\square\) TODO: testthat function
+  \item
+    also test validate.names()
+  \end{itemize}
+\item
+  use is(x, ``data.frame'') instead of testing class(x)==``data.frame''
+  (class may have more than 1 value)
+\end{itemize}
+
+\hypertarget{saemixmodel}{%
+\paragraph{SaemixModel}\label{saemixmodel}}
+
+\begin{itemize}
+\tightlist
+\item
+  main change in 3.0: added discrete response with a modelType argument
+
+  \begin{itemize}
+  \tightlist
+  \item
+    for joint models, will need some tweak (maybe as a vector of
+    response types ?)
+  \end{itemize}
+\item
+  new function validate\_covariance.model
+
+  \begin{itemize}
+  \tightlist
+  \item
+    \(\square\) TODO: change name to validate.covariance.model
+  \item
+    check function (add testthat) and add documentation
+  \end{itemize}
+\end{itemize}
+
+\hypertarget{saemixres}{%
+\paragraph{SaemixRes}\label{saemixres}}
+
+\begin{itemize}
+\tightlist
+\item
+  \(\text{\rlap{$\checkmark$}}\square\) check definition of ypred and
+  ppred
+
+  \begin{itemize}
+  \tightlist
+  \item
+    ypred should be f(theta\_MAP) and ppred should be E(f(theta))
+  \item
+    checked and corrected
+  \end{itemize}
+\end{itemize}
+
+\hypertarget{saemixobject}{%
+\paragraph{SaemixObject}\label{saemixobject}}
+
+\begin{itemize}
+\tightlist
+\item
+  maybe change name saemix.simul to saemix.simulate
+\item
+  \(\square\) TODO: logLik.saemix, AIC.SaemixObject, BIC.SaemixObject
+
+  \begin{itemize}
+  \tightlist
+  \item
+    Maud made changes in the 2.4
+  \item
+    but Johannes also made some changes in 3.0
+  \item
+    \(\text{\rlap{$\checkmark$}}\square\) TODO: add Johannes's changes
+    to the 2.4 version \textbf{in fact} already in 2.4 but
+  \end{itemize}
+\item
+  options
+
+  \begin{itemize}
+  \tightlist
+  \item
+    \(\square\) TODO: see CRAN for the rules (like for 2.4, in
+    compute\_LL.R)
+  \end{itemize}
+\end{itemize}
+
+\hypertarget{computational-functions}{%
+\subsubsection{Computational functions}\label{computational-functions}}
+
+\hypertarget{compute_ll.r}{%
+\paragraph{compute\_LL.R}\label{compute_ll.r}}
+
+\begin{itemize}
+\tightlist
+\item
+  check if alias ggq.mlx exists
+\end{itemize}
+
+\hypertarget{func_aux.r}{%
+\paragraph{func\_aux.R}\label{func_aux.r}}
+
+\begin{itemize}
+\tightlist
+\item
+  modified combined error model
+
+  \begin{itemize}
+  \tightlist
+  \item
+    \(\square\) TODO: add to documentation
+  \end{itemize}
+\item
+  conditional distribution function split into 2 functions according to
+  nature of the model
+
+  \begin{itemize}
+  \tightlist
+  \item
+    \(\square\) TODO: add to documentation
+  \end{itemize}
+\item
+  check computation of compute.LLy
+\end{itemize}
+
+\hypertarget{func_fim.r}{%
+\subsubsection{func\_FIM.R}\label{func_fim.r}}
+
+\begin{itemize}
+\tightlist
+\item
+  \(\square\) TODO: secure the code for discrete data models (only
+  compute LL by linearisation ? do not use altogether ?)
+\item
+  \(\square\) TODO: check cat and replace with message
+
+  \begin{itemize}
+  \tightlist
+  \item
+    check name of option to print out messages (maybe name of option
+    changed)
+  \end{itemize}
+\end{itemize}
+
+\hypertarget{main-algorithm}{%
+\subsubsection{Main algorithm}\label{main-algorithm}}
+
+\hypertarget{main_initialisemainalgo.r}{%
+\paragraph{main\_initialiseMainAlgo.R}\label{main_initialisemainalgo.r}}
+
+\begin{itemize}
+\tightlist
+\item
+  \(\square\) TODO: check cat and replace with message
+
+  \begin{itemize}
+  \tightlist
+  \item
+    check name of option to print out messages (maybe name of option
+    changed)
+  \end{itemize}
+\end{itemize}
+
+\hypertarget{main_estep.r}{%
+\paragraph{main\_estep.R}\label{main_estep.r}}
+
+\begin{itemize}
+\tightlist
+\item
+  check computation of compute.LLy now completely replacing the
+  computation of U.y
+\item
+  4th kernel added (Laplacian kernel)
+
+  \begin{itemize}
+  \tightlist
+  \item
+    \(\square\) TODO: add default option (0 iterations)
+  \item
+    \(\square\) TODO: add to documentation and recommendations
+  \end{itemize}
+\end{itemize}
+
+\hypertarget{main_mstep.r}{%
+\paragraph{main\_mstep.R}\label{main_mstep.r}}
+
+\begin{itemize}
+\tightlist
+\item
+  check computation of sigma and influence of SA (nbiter.saemix changed
+  to nbiter.sa)
+
+  \begin{itemize}
+  \tightlist
+  \item
+    \(\square\) TODO: check
+  \end{itemize}
+\item
+  \(\square\) TODO: add Lucie's changes +++
+
+  \begin{itemize}
+  \tightlist
+  \item
+    ask Lucie to check afterwards
+  \end{itemize}
+\end{itemize}
+
+\hypertarget{main.r}{%
+\paragraph{main.R}\label{main.r}}
+
+\begin{itemize}
+\tightlist
+\item
+  \(\square\) TODO: check cat and replace with message
+
+  \begin{itemize}
+  \tightlist
+  \item
+    check name of option to print out messages (maybe name of option
+    changed)
+  \end{itemize}
+\end{itemize}
+
+\hypertarget{parameters-simulations}{%
+\subsubsection{Parameters, Simulations}\label{parameters-simulations}}
+
+\hypertarget{func_distcond.r}{%
+\paragraph{func\_distcond.R}\label{func_distcond.r}}
+
+\begin{itemize}
+\tightlist
+\item
+  commented out the plots for the moment
+
+  \begin{itemize}
+  \tightlist
+  \item
+    \(\square\) TODO: add option to output the graphs
+  \end{itemize}
+\end{itemize}
+
+\hypertarget{func_estimparam.r}{%
+\paragraph{func\_estimParam.R}\label{func_estimparam.r}}
+
+\begin{itemize}
+\tightlist
+\item
+  renamed the function to predict newdata as in 2.4 (also has an Roxygen
+  documentation now)
+
+  \begin{itemize}
+  \tightlist
+  \item
+    copied the old file in newCode
+  \item
+    \(\square\) TODO: check that the code within is similar
+  \end{itemize}
+\end{itemize}
+
+\hypertarget{func_simulations.r}{%
+\paragraph{func\_simulations.R}\label{func_simulations.r}}
+
+\begin{itemize}
+\tightlist
+\item
+  renamed simul.saemix in saemix.simul in 3.0 for consistency (all
+  functions start with saemix and not end with it)
+
+  \begin{itemize}
+  \tightlist
+  \item
+    \(\square\) TODO: add to documentation and CHANGELOG
+  \end{itemize}
+\end{itemize}
+
+\hypertarget{plots}{%
+\subsubsection{Plots}\label{plots}}
+
+\begin{itemize}
+\tightlist
+\item
+  \(\square\) TODO: check cat and replace with message
+
+  \begin{itemize}
+  \tightlist
+  \item
+    check name of option to print out messages (maybe name of option
+    changed)
+  \end{itemize}
+\end{itemize}
+
+\hypertarget{new-functions-by-maud}{%
+\subsection{New functions by Maud}\label{new-functions-by-maud}}
+
+\hypertarget{bic-criterion}{%
+\subsubsection{BIC criterion}\label{bic-criterion}}
+
+\begin{itemize}
+\tightlist
+\item
+  definition and computation included in SaemixObject (see above)
+
+  \begin{itemize}
+  \tightlist
+  \item
+    \(\square\) TODO: add to documentation and CHANGELOG
+  \end{itemize}
+\end{itemize}
+
+\hypertarget{algorithm}{%
+\subsubsection{Algorithm}\label{algorithm}}
+
+\begin{itemize}
+\tightlist
+\item
+  create a notebook to test the algorithm and integrate it
+\item
+  add test example
+
+  \begin{itemize}
+  \tightlist
+  \item
+    \(\square\) TODO: add to documentation
+  \end{itemize}
+\end{itemize}
+
+\hypertarget{hmm}{%
+\subsubsection{HMM}\label{hmm}}
+
+\(\square\) TODO: check status with Maud
+
+\end{document}
