@@ -149,4 +149,26 @@ nsamp<-100
 max.iter<-NULL
 displayPlot<-FALSE
 
+#########################################################################################
+# Ordinal data - knee
+# ord.fit defined in ordinalBootstrap_knee.R (in saemixextension/bootstrap)
+nboot<-2
+case.ordinal <- try(saemix.bootstrap(ord.fit, method="case", nboot=nboot))
+cond.ordinal <- try(saemix.bootstrap(ord.fit, method="conditional", nboot=nboot))
+
+#########################################################################################
+# Count data - rapi
+# zippoisson.fit.cov2 defined in countBootstrap_rapi.R (in saemixextension/bootstrap)
+
+case.count <- try(saemix.bootstrap(zippoisson.fit.cov2, method="case", nboot=nboot))
+
+# Debug
+nboot<-2 
+nsamp<-100
+saemixObject <- zippoisson.fit.cov2
+saemixObject<-saemix.predict(saemixObject) 
+
+method<-"conditional"
+saemix.options <- NULL
+
 

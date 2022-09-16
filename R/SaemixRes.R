@@ -501,7 +501,7 @@ setMethod("print","SaemixRes",
       if(length(x@indx.cov)>0) {
       wstat<-as.double(tab[,2])/as.double(tab[,3])
       pval<-rep("-",length(wstat))
-      pval[x@indx.cov]<-1-normcdf(abs(wstat[x@indx.cov]))
+      pval[x@indx.cov]<-2*(1-normcdf(abs(wstat[x@indx.cov])))
       tab<-cbind(tab,"p-value"=pval)
       }
       is.not.est<-which(as.double(tab[,3])<=.Machine$double.xmin)
@@ -636,7 +636,7 @@ setMethod("show","SaemixRes",
       if(length(object@indx.cov)>0) {
       wstat<-as.double(tab[,2])/as.double(tab[,3])
       pval<-rep("-",length(wstat))
-      pval[object@indx.cov]<-1-normcdf(abs(wstat[object@indx.cov]))
+      pval[object@indx.cov]<-2*(1-normcdf(abs(wstat[object@indx.cov])))
       tab<-cbind(tab,"p-value"=pval)
       }
       is.not.est<-which(as.double(tab[,3])<=.Machine$double.xmin)
@@ -770,7 +770,7 @@ setMethod("showall","SaemixRes",
       if(length(object@indx.cov)>0) {
       wstat<-as.double(tab[,2])/as.double(tab[,3])
       pval<-rep("-",length(wstat))
-      pval[object@indx.cov]<-1-normcdf(abs(wstat[object@indx.cov]))
+      pval[object@indx.cov]<-2*(1-normcdf(abs(wstat[object@indx.cov])))
       tab<-cbind(tab,"p-value"=pval)
       }
       is.not.est<-which(as.double(tab[,3])<=.Machine$double.xmin)
@@ -988,7 +988,7 @@ setMethod("summary","SaemixRes",
               if(length(object@indx.cov)>0) {
                 wstat<-as.double(tab[,2])/as.double(tab[,3])
                 pval<-rep("-",length(wstat))
-                pval[object@indx.cov]<-1-normcdf(abs(wstat[object@indx.cov]))
+                pval[object@indx.cov]<-2*(1-normcdf(abs(wstat[object@indx.cov])))
                 tab<-cbind(tab,"p-value"=pval,stringsAsFactors=FALSE)
               }
             }

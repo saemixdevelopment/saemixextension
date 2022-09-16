@@ -1,5 +1,5 @@
 ---
-title: "Saemix 3.1 - binary and categorical models"
+title: "Saemix 3 - binary and categorical models"
 author: "Emmanuelle"
 date: "08/2022"
 output:
@@ -8,7 +8,7 @@ output:
 ---
 
 ## Version
-Use saemix version 3.2
+Use saemix version $\geq$ 3.2
 
 - correction of a bug in the simulation file
 - added a simulation function for non Gaussian data models
@@ -18,7 +18,7 @@ Use saemix version 3.2
 
 Run binary and categorical models in **saemix**
 
-This notebook uses additional code from the **saemix** development github, not yet integrated in the package. The *workDir* folder in the next chunk of code points to the folder where the user stored this code, and is needed to run the notebook (*workDir* defaults to the current working directory). Specifically, the notebook loads:
+This notebook uses additional code from the **saemix** development github (https://github.com/saemixdevelopment/saemixextension), not yet integrated in the package. The *workDir* folder in the next chunk of code points to the folder where the user stored this code, and is needed to run the notebook (*workDir* defaults to the current working directory). Specifically, the notebook loads:
 
 - code for different bootstraps in non-linear mixed effect models (Comets et al. 2021 and submitted)
   - the bootstrap runs have been performed previously and are stored in files to be read
@@ -143,6 +143,8 @@ $$ {\rm logit}(P(y_{ij}=1)) = \theta_{1,i} + \theta_{2,i} t_{ij} $$
 - Statistical model
   - $\theta_{1,i}$ assumed to follow a normal distribution $~N(\mu_{\theta_1}, \omega_{\theta_1})$
   - $\theta_{2,i}$ assumed to depend on treatment as in  $\theta_{2,i} = \mu_{\beta} + 1_{trt=B}$
+  
+In the following chunk of code, we define the model and the simulate function, then create the saemixModel object.
 
 ```{r binaryModel}
 # saemix model
@@ -159,8 +161,19 @@ binary.model<-function(psi,id,xidep) {
   return(logpdf)
 }
 
-saemix.model<-saemixModel(model=binary.model,description="Binary model",
-                          modeltype="likelihood",
+# simulation function (used for diagnostics)
+simulBinary<-function(psi,id,xidep) {
+  tim<-xidep[,1]
+  y<-xidep[,2]
+  inter<-psi[id,1]
+  slope<-psi[id,2]
+  logit<-inter+slope*tim
+  pevent<-1/(1+exp(-logit))
+  ysim<-rbinom(length(tim),size=1, prob=pevent)
+  return(ysim)
+}
+
+saemix.model<-saemixModel(model=binary.model,description="Binary model",simulate.function=simulBinary, modeltype="likelihood",
                           psi0=matrix(c(-0.5,-.15,0,0),ncol=2,byrow=TRUE,dimnames=list(NULL,c("theta1","theta2"))),
                           transform.par=c(0,0), covariate.model=c(0,1),covariance.model=matrix(c(1,0,0,0),ncol=2), omega.init=diag(c(0.5,0.3)))
 ```
@@ -193,27 +206,17 @@ plot(binary.fit, plot.type="convergence")
     - same setting of dependent variables (*tim* and *y*) from *xidep* and parameters (*inter* and *slope*) from *psi*
       - note that we don't use *y* in *simulBinary()*
     - same definition of pevent (=$P(Y_{ij}=1)$, the probability of observing an event)
-    - in *binary.model()* we then compute the probability of the observed outcome as $1_{Y_{ij}=0} \times (1-P(Y_{ij}=1)) + 1_{Y_{ij}=1} \times P(Y_{ij}=1) $ using the observed value of $Y_{ij}$ contained in *y* for each observation
+    - in *binary.model()* we then compute the probability of the observed outcome using the observed value of $Y_{ij}$ contained in *y* for each observation
     - in *simulBinary()*, we use the individual $P(Y_{ij}=1)$ predictions to simulate from a Bernouilli distribution using the *rbinom()* function
 - once the simulation function has been defined, we use the *simulateDiscreteSaemix()* function from the {\sf saemix} package to simulate *nsim* values (here 100) with the population parameters estimated in *binary.fit*
   - this adds a *simdata* element to the *binary.fit*
   - we extract dataframe with the simulated data (*binary.fit@sim.data@datasim*) and add columns *visit* and *treatment* to stratify the plots
 
 ```{r binarySimulate}
+#  $1_{Y_{ij}=0} \times (1-P(Y_{ij}=1)) + 1_{Y_{ij}=1} \times P(Y_{ij}=1) $
 # simulate from model (nsim=100)
-simulBinary<-function(psi,id,xidep) {
-  tim<-xidep[,1]
-  y<-xidep[,2]
-  inter<-psi[id,1]
-  slope<-psi[id,2]
-  logit<-inter+slope*tim
-  pevent<-1/(1+exp(-logit))
-  ysim<-rbinom(length(tim),size=1, prob=pevent)
-  return(ysim)
-}
-
 nsim<-1000
-binary.fit <- simulateDiscreteSaemix(binary.fit, simulBinary, nsim=nsim)
+binary.fit <- simulateDiscreteSaemix(binary.fit, nsim=nsim)
 simdat <-binary.fit@sim.data@datasim
 simdat$visit<-rep(toenail.saemix$visit,nsim)
 simdat$treatment<-rep(toenail.saemix$treatment,nsim)
@@ -229,10 +232,12 @@ simdat$treatment<-rep(toenail.saemix$treatment,nsim)
 ytab<-NULL
 for(irep in 1:nsim) {
   xtab<-simdat[simdat$irep==irep,]
+  suppressMessages(
   xtab1 <- xtab %>%
     group_by(visit, treatment) %>%
     summarise(nev = sum(ysim), n=n()) %>%
     mutate(freq = nev/n)
+  )
   ytab<-rbind(ytab,xtab1[,c("visit","freq","treatment")])
 }
 gtab <- ytab %>%
@@ -311,8 +316,8 @@ We can also use conditional bootstrap, a non-parametric residual bootstrap which
 
 ```{r binaryCondBootstrapSE}
 if(!runBootstrap)
-  cond.bin <- read.table(file.path(saemixDir,"bootstrap","results","toenail_condBootstrap.res"), header=T)
-  else cond.bin <- saemix.bootstrap(binary.fit, method="conditional", nboot=nboot) 
+  cond.bin <- read.table(file.path(saemixDir,"bootstrap","results","toenail_condBootstrap.res"), header=T)  else 
+    cond.bin <- saemix.bootstrap(binary.fit, method="conditional", nboot=nboot) 
 summary(cond.bin)
 
 # Bootstrap distributions
@@ -415,17 +420,17 @@ ggplot(data = gtab, aes(x = time, y=n, group=y, fill=y)) +
 
 #### Model
 
-The dataset is part of the datasets analysed in~\cite{Tutz12} with various methods (please refer to the different vignettes in the documentation of {\sf knee}), but mainly as logistic regression on the response after 10 days, or as mixed binary regression after dichotomising the response. Here, we fit the following proportional odds model to the full data.  The probability $p_{ij}=P(Y_{ij}=1 | \theta_{1,i}, \theta_{2,i})$ associated with an event $Y_{ij}$ at time $t_{ij}$ is given by the following equation for the logit:
+The dataset is part of the datasets analysed in (Tutz 2012) with various methods described in the vignettes in the documentation of the *knee* dataset, but mainly as logistic regression on the response after 10 days, or as mixed binary regression after dichotomising the response. Here, we fit a proportional odds model to the full data.  The probability $p_{ij}=P(Y_{ij}=1 | \theta_{1,i}, \theta_{2,i})$ associated with an event $Y_{ij}$ at time $t_{ij}$ is given by the following equation for the logit:
 \begin{equation}
 \begin{split}
-logit(P(Y_{ij} = 1 | \psi_i)) &= \theta_1_{1,i} + \beta_{i} t_{ij} \\
-logit(P(Y_{ij} = 2 | \psi_i)) &= \theta_1_{1,i} + \theta_1_2 \\
-logit(P(Y_{ij} = 3 | \psi_i)) &= \theta_1_{1,i} + \theta_1_2 + \theta_1_3 \\
-logit(P(Y_{ij} = 4 | \psi_i)) &= \theta_1_{1,i} + \theta_1_2 + \theta_1_3 +\theta_1_4\\
+logit(P(Y_{ij} = 1 | \psi_i)) &= \theta_{1,i} + \beta_{i} t_{ij} \\
+logit(P(Y_{ij} = 2 | \psi_i)) &= \theta_{1,i} + \theta_2 \\
+logit(P(Y_{ij} = 3 | \psi_i)) &= \theta_{1,i} + \theta_2 + \theta_3 \\
+logit(P(Y_{ij} = 4 | \psi_i)) &= \theta_{1,i} + \theta_2 + \theta_3 +\theta_4\\
 P(Y_{ij} = 4 | \psi_i) &= 1 - \sum_k=1^4 P(Y_{ij} = k | \psi_i)\\
 \end{split}
 \end{equation}
-where $\theta_1_1$ and $\beta$ are assumed to have interindividual variability and to follow a normal distribution. $\beta$ is the effect of time, $\theta_1_1$ is the probability of a pain score of 1 and the other parameters represent an incremental risk to move into the higher pain category.
+where $\theta_1$ and $\beta$ are assumed to have interindividual variability and to follow a normal distribution. $\beta$ is the effect of time, $\theta_1$ is the probability of a pain score of 1 and the other parameters represent an incremental risk to move into the higher pain category.
 
 The following segment of code defines the ordinal model, computing the different logits for the different categories and deriving the corresponding probability given the observed data passed in *xidep*. We first fit a base model without covariate.
 
@@ -453,59 +458,7 @@ ordinal.model<-function(psi,id,xidep) {
   
   return(logpdf)
 }
-
-# Saemix model
-saemix.model<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",
-                          psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))),
-                          transform.par=c(0,1,1,1,1),omega.init=diag(c(100, 1, 1, 1, 1)), covariance.model = diag(c(1,0,0,0,1)))
-
-# Fitting
-saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, fim=FALSE, nb.chains=10, nbiter.saemix=c(600,100))
-#saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, nb.chains=10, fim=FALSE)
-
-ord.fit<-saemix(saemix.model,saemix.data,saemix.options)
-plot(ord.fit, plot.type="convergence")
-
-## Note: comparable estimates obtained with Monolix (not same, but within CI)
-## quite a lot of sensitivity to distributions (when using eg normal distributions in Monolix the parameters and most importantly the SE's fluctuated quite a bit)
-```
-
-
-We can then fit different models. Here we considered covariates on the two parameters with interindividual variability, first testing all covariates then reducing to a model with Age2 influencing $\theta_1_1$ and treatment affecting the slope $\beta$, which had the lowest BICc, as shown using the *compare.saemix()* function.
-
-```{r kneeCovariateModel}
-# Fitting
-covmodel2<-covmodel1<-matrix(data=0,ncol=5,nrow=4)
-covmodel1[,1]<-1
-covmodel1[,5]<-1
-covmodel2[3,5]<-covmodel2[4,1]<-1
-
-saemix.model.cov1<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",
-                              psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))),
-                              transform.par=c(0,1,1,1,1),omega.init=diag(rep(1,5)), covariance.model = diag(c(1,0,0,0,1)),
-                              covariate.model = covmodel1)
-saemix.model.cov2<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",
-                               psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))),
-                               transform.par=c(0,1,1,1,1),omega.init=diag(rep(1,5)), covariance.model = diag(c(1,0,0,0,1)),
-                               covariate.model = covmodel2)
-
-ord.fit.cov1<-saemix(saemix.model.cov1,saemix.data,saemix.options)
-ord.fit.cov2<-saemix(saemix.model.cov2,saemix.data,saemix.options)
-BIC(ord.fit)
-BIC(ord.fit.cov1)
-BIC(ord.fit.cov2)
-
-# Comparing the 3 covariate models - model with Age2 on alp1 and treatment on beta best
-compare.saemix(ord.fit, ord.fit.cov1, ord.fit.cov2)
-```
-
-
-#### Model evaluation
-
-In the code below we define a simulation function for the ordinal model and we apply it to the covariate model. The VPC show some model misspecification, especially in the intermediate pain scores, as well as a tendency to overestimate the improvement, driven by the reduction in the highest pain score. This suggests the impact of time and treatment are not well taken into account in the current model.
-
-```{r kneeEval}
-### Simulations for VPC
+# simulate function
 simulateOrdinal<-function(psi,id,xidep) {
   y<-xidep[,1]
   time<-xidep[,2]
@@ -528,9 +481,61 @@ simulateOrdinal<-function(psi,id,xidep) {
   return(ysim)
 }
 
+# Saemix model
+saemix.model<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood", simulate.function=simulateOrdinal,
+                          psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))),
+                          transform.par=c(0,1,1,1,1),omega.init=diag(c(100, 1, 1, 1, 1)), covariance.model = diag(c(1,0,0,0,1)))
+
+# Fitting
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, fim=FALSE, nb.chains=10, nbiter.saemix=c(600,100))
+#saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, nb.chains=10, fim=FALSE)
+
+ord.fit<-saemix(saemix.model,saemix.data,saemix.options)
+plot(ord.fit, plot.type="convergence")
+
+## Note: comparable estimates obtained with Monolix (not same, but within CI)
+## quite a lot of sensitivity to distributions (when using eg normal distributions in Monolix the parameters and most importantly the SE's fluctuated quite a bit)
+```
+
+
+We can then fit different models. Here we considered covariates on the two parameters with interindividual variability, first testing all covariates then reducing to a model with Age2 influencing $\theta_1$ and treatment affecting the slope $\beta$, which had the lowest BICc, as shown using the *compare.saemix()* function.
+
+```{r kneeCovariateModel}
+# Fitting
+covmodel2<-covmodel1<-matrix(data=0,ncol=5,nrow=4)
+covmodel1[,1]<-1
+covmodel1[,5]<-1
+covmodel2[3,5]<-covmodel2[4,1]<-1
+
+saemix.model.cov1<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",simulate.function=simulateOrdinal,
+                              psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))),
+                              transform.par=c(0,1,1,1,1),omega.init=diag(rep(1,5)), covariance.model = diag(c(1,0,0,0,1)),
+                              covariate.model = covmodel1)
+saemix.model.cov2<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",simulate.function=simulateOrdinal,
+                               psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))),
+                               transform.par=c(0,1,1,1,1),omega.init=diag(rep(1,5)), covariance.model = diag(c(1,0,0,0,1)),
+                               covariate.model = covmodel2)
+
+ord.fit.cov1<-saemix(saemix.model.cov1,saemix.data,saemix.options)
+ord.fit.cov2<-saemix(saemix.model.cov2,saemix.data,saemix.options)
+BIC(ord.fit)
+BIC(ord.fit.cov1)
+BIC(ord.fit.cov2)
+
+# Comparing the 3 covariate models - model with Age2 on alp1 and treatment on beta best
+compare.saemix(ord.fit, ord.fit.cov1, ord.fit.cov2)
+```
+
+
+#### Model evaluation
+
+In the code below we define a simulation function for the ordinal model and we apply it to the covariate model. The VPC show some model misspecification, especially in the intermediate pain scores, as well as a tendency to overestimate the improvement, driven by the reduction in the highest pain score. This suggests the impact of time and treatment are not well taken into account in the current model.
+
+```{r kneeEval}
+### Simulations for VPC
 nsim<-100
 yfit<-ord.fit.cov2
-yfit<-simulateDiscreteSaemix(yfit, simulateOrdinal, nsim=nsim)
+yfit<-simulateDiscreteSaemix(yfit, nsim=nsim)
 
 simdat <-yfit@sim.data@datasim
 simdat$time<-rep(yfit@data@data$time,nsim)
@@ -539,9 +544,11 @@ simdat$treatment<-rep(yfit@data@data$treatment,nsim)
 ytab<-NULL
 for(irep in 1:nsim) {
   xtab<-simdat[simdat$irep==irep,]
+  suppressMessages(
   xtab1 <- xtab %>%
     group_by(time, treatment, ysim) %>%
     summarise(n=length(ysim))
+  )
   ytab<-rbind(ytab,xtab1[,c("time","ysim","n","treatment")])
 }
 gtab <- ytab %>%
@@ -576,9 +583,11 @@ knee3 <- knee.saemix %>%
 ytab<-NULL
 for(irep in 1:nsim) {
   xtab<-simdat[simdat$irep==irep,]
+  suppressMessages(
   xtab1 <- xtab %>%
     group_by(time, treatment) %>%
     summarise(mean=mean(ysim))
+  )
   ytab<-rbind(ytab,xtab1[,c("time","treatment","mean")])
 }
 gtab <- ytab %>%
@@ -615,6 +624,8 @@ if(runBootstrap) {
  cond.ordinal <- read.table(file.path(saemixDir,"bootstrap","results","knee_condBootstrap.res"), header=T)
  nboot<-dim(case.ordinal)[1]
 }
+case.ordinal <- case.ordinal[!is.na(case.ordinal[,2]),]
+cond.ordinal <- cond.ordinal[!is.na(cond.ordinal[,2]),]
 
 par.estim<-c(ord.fit@results@fixed.effects,diag(ord.fit@results@omega)[ord.fit@results@indx.omega])
 df2<-data.frame(parameter=colnames(case.ordinal)[-c(1)], saemix=par.estim)
@@ -715,7 +726,8 @@ model <- Model$new(
     1+as.integer(urand>pge1)+as.integer(urand>pge2)+as.integer(urand>pge3)+as.integer(urand>pge4)
   },
   mu = saemix.fit@results@fixed.effects,
-  omega = saemix.fit@results@omega[c(1,5),c(1,5)])
+  omega = saemix.fit@results@omega[c(1,5),c(1,5)]
+  )
 
 
 # define settings (agq with 3 grid points, quasi random monte-carlo and 500 samples)

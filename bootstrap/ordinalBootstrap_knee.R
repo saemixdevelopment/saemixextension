@@ -31,6 +31,7 @@ source(file.path(progDir,"func_compare.R"))
 
 # Bootstrap code
 source(file.path(saemixDir, "bootstrap", "saemix_bootstrap.R"))
+set.seed(42919)
 
 # Number of bootstrap samples
 nboot <- 500
@@ -105,10 +106,12 @@ saemix.options<-list(seed=632545, save=FALSE, fim=FALSE, save.graphs=FALSE, nb.c
 ord.fit<-saemix(saemix.model,saemix.data,saemix.options)
 
 # Case bootstrap
-case.ordinal <- saemix.bootstrap(ord.fit, method="case", nboot=nboot) 
-write.table(case.ordinal, file.path(workDir, "results", "knee_caseBootstrap.res"), quote=F, row.names=FALSE)
+case.ordinal <- try(saemix.bootstrap(ord.fit, method="case", nboot=nboot))
+if(is(case.ordinal,"data.frame"))
+  write.table(case.ordinal, file.path(workDir, "results", "knee_caseBootstrap.res"), quote=F, row.names=FALSE)
 
 # Conditional non-parametric bootstrap
-cond.ordinal <- saemix.bootstrap(ord.fit, method="conditional", nboot=nboot) 
-write.table(cond.ordinal, file.path(workDir, "results", "knee_condBootstrap.res"), quote=F, row.names=FALSE)
+cond.ordinal <- try(saemix.bootstrap(ord.fit, method="conditional", nboot=nboot))
+if(is(cond.ordinal,"data.frame"))
+  write.table(cond.ordinal, file.path(workDir, "results", "knee_condBootstrap.res"), quote=F, row.names=FALSE)
 

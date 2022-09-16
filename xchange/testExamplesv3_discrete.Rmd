@@ -86,7 +86,7 @@ if(!testMode) {
 # Loading library
 if(testMode) {
   dev_mode()
-  install.packages(file.path(versionDir,"saemix3.1","saemix_3.1.tar.gz"),repos=NULL)
+  install.packages(file.path(versionDir,"saemix3.2","saemix_3.2.tar.gz"),repos=NULL)
   library(saemix)
 }
 ```
@@ -137,8 +137,17 @@ binary.model<-function(psi,id,xidep) {
   logpdf <- log(P.obs)
   return(logpdf)
 }
-
-saemix.model<-saemixModel(model=binary.model,description="Binary model",
+simulBinary<-function(psi,id,xidep) {
+  tim<-xidep[,1]
+  y<-xidep[,2]
+  inter<-psi[id,1]
+  slope<-psi[id,2]
+  logit<-inter+slope*tim
+  pevent<-1/(1+exp(-logit))
+  ysim<-rbinom(length(tim),size=1, prob=pevent)
+  return(ysim)
+}
+saemix.model<-saemixModel(model=binary.model,description="Binary model",simulate.function=simulBinary,
                           modeltype="likelihood",
                           psi0=matrix(c(0,-.5,0,0.5),ncol=2,byrow=TRUE,dimnames=list(NULL,c("theta1","theta2"))),
                           transform.par=c(0,0), covariate.model=c(0,1),covariance.model=matrix(c(1,0,0,1),ncol=2))
@@ -150,20 +159,9 @@ binary.fit<-saemix(saemix.model,saemix.data,saemix.options)
 plot(binary.fit, plot.type="convergence")
 
 # simulate from model (nsim=100)
-simulBinary<-function(psi,id,xidep) {
-  tim<-xidep[,1]
-  y<-xidep[,2]
-  inter<-psi[id,1]
-  slope<-psi[id,2]
-  logit<-inter+slope*tim
-  pevent<-1/(1+exp(-logit))
-  ysim<-rbinom(length(tim),size=1, prob=pevent)
-  return(ysim)
-}
-
 yfit<-binary.fit
 nsim<-100
-yfit <- simulateDiscreteSaemix(yfit, simulBinary, nsim=nsim)
+yfit <- simulateDiscreteSaemix(yfit, nsim=nsim)
 simdat <-yfit@sim.data@datasim
 simdat$visit<-rep(toenail.saemix$visit,nsim)
 simdat$treatment<-rep(toenail.saemix$treatment,nsim)
@@ -172,10 +170,12 @@ simdat$treatment<-rep(toenail.saemix$treatment,nsim)
 ytab<-NULL
 for(irep in 1:nsim) {
   xtab<-simdat[simdat$irep==irep,]
+  suppressMessages(
   xtab1 <- xtab %>%
     group_by(visit, treatment) %>%
     summarise(nev = sum(ysim), n=n()) %>%
     mutate(freq = nev/n)
+  )
   ytab<-rbind(ytab,xtab1[,c("visit","freq","treatment")])
 }
 gtab <- ytab %>%
@@ -251,42 +251,6 @@ ordinal.model<-function(psi,id,xidep) {
   
   return(logpdf)
 }
-
-# Fitting
-covmodel2<-covmodel1<-matrix(data=0,ncol=5,nrow=4)
-covmodel1[,1]<-1
-covmodel1[,5]<-1
-covmodel2[3,5]<-covmodel2[4,1]<-1
-
-saemix.model<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",
-                          psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))),
-                          transform.par=c(0,1,1,1,1),omega.init=diag(rep(1,5)), covariance.model = diag(c(1,0,0,0,1)))
-
-saemix.model.cov1<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",
-                              psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))),
-                              transform.par=c(0,1,1,1,1),omega.init=diag(rep(1,5)), covariance.model = diag(c(1,0,0,0,1)),
-                              covariate.model = covmodel1)
-saemix.model.cov2<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",
-                               psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))),
-                               transform.par=c(0,1,1,1,1),omega.init=diag(rep(1,5)), covariance.model = diag(c(1,0,0,0,1)),
-                               covariate.model = covmodel2)
-
-saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, nb.chains=10)
-#saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, nb.chains=10, fim=FALSE)
-
-ord.fit<-saemix(saemix.model,saemix.data,saemix.options)
-ord.fit.cov1<-saemix(saemix.model.cov1,saemix.data,saemix.options)
-ord.fit.cov2<-saemix(saemix.model.cov2,saemix.data,saemix.options)
-BIC(ord.fit)
-BIC(ord.fit.cov1)
-BIC(ord.fit.cov2)
-
-# Comparing the 3 covariate models - model with Age2 on alp1 and treatment on beta best
-compare.saemix(ord.fit, ord.fit.cov1, ord.fit.cov2)
-
-###################
-# But VPC not good
-### Simulations for VPC
 simulateOrdinal<-function(psi,id,xidep) {
   y<-xidep[,1]
   time<-xidep[,2]
@@ -309,9 +273,46 @@ simulateOrdinal<-function(psi,id,xidep) {
   return(ysim)
 }
 
+# Fitting
+covmodel2<-covmodel1<-matrix(data=0,ncol=5,nrow=4)
+covmodel1[,1]<-1
+covmodel1[,5]<-1
+covmodel2[3,5]<-covmodel2[4,1]<-1
+
+saemix.model<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",simulate.function=simulateOrdinal,
+                          psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))),
+                          transform.par=c(0,1,1,1,1),omega.init=diag(rep(1,5)), covariance.model = diag(c(1,0,0,0,1)))
+
+saemix.model.cov1<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",
+                               simulate.function=simulateOrdinal,
+                              psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))),
+                              transform.par=c(0,1,1,1,1),omega.init=diag(rep(1,5)), covariance.model = diag(c(1,0,0,0,1)),
+                              covariate.model = covmodel1)
+saemix.model.cov2<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood", 
+                               simulate.function=simulateOrdinal,
+                               psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))),
+                               transform.par=c(0,1,1,1,1),omega.init=diag(rep(1,5)), covariance.model = diag(c(1,0,0,0,1)),
+                               covariate.model = covmodel2)
+
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, nb.chains=10)
+#saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, nb.chains=10, fim=FALSE)
+
+ord.fit<-saemix(saemix.model,saemix.data,saemix.options)
+ord.fit.cov1<-saemix(saemix.model.cov1,saemix.data,saemix.options)
+ord.fit.cov2<-saemix(saemix.model.cov2,saemix.data,saemix.options)
+BIC(ord.fit)
+BIC(ord.fit.cov1)
+BIC(ord.fit.cov2)
+
+# Comparing the 3 covariate models - model with Age2 on alp1 and treatment on beta best
+compare.saemix(ord.fit, ord.fit.cov1, ord.fit.cov2)
+
+###################
+# But VPC not good
+### Simulations for VPC
 nsim<-100
 yfit<-ord.fit.cov2
-yfit<-simulateDiscreteSaemix(yfit, simulateOrdinal, nsim=nsim)
+yfit<-simulateDiscreteSaemix(yfit, nsim=nsim)
 
 simdat <-yfit@sim.data@datasim
 simdat$time<-rep(yfit@data@data$time,nsim)
@@ -320,9 +321,11 @@ simdat$treatment<-rep(yfit@data@data$treatment,nsim)
 ytab<-NULL
 for(irep in 1:nsim) {
   xtab<-simdat[simdat$irep==irep,]
+  suppressMessages(
   xtab1 <- xtab %>%
     group_by(time, treatment, ysim) %>%
     summarise(n=length(ysim))
+  )
   ytab<-rbind(ytab,xtab1[,c("time","ysim","n","treatment")])
 }
 gtab <- ytab %>%
@@ -352,9 +355,11 @@ knee3 <- knee.saemix %>%
 ytab<-NULL
 for(irep in 1:nsim) {
   xtab<-simdat[simdat$irep==irep,]
+  suppressMessages(
   xtab1 <- xtab %>%
     group_by(time, treatment) %>%
     summarise(mean=mean(ysim))
+  )
   ytab<-rbind(ytab,xtab1[,c("time","treatment","mean")])
 }
 gtab <- ytab %>%
@@ -482,16 +487,26 @@ count.poisson<-function(psi,id,xidep) {
   logp <- -lambda + y*log(lambda) - log(factorial(y))
   return(logp)
 }
-
+saemix.simulatePoisson<-function(psi, id, xidep) {
+  time<-xidep[,1]
+  y<-xidep[,2]
+  intercept<-psi[id,1]
+  slope<-psi[id,2]
+  lambda<- exp(intercept + slope*time)
+  y<-rpois(length(time), lambda=lambda)
+  return(y)
+}
 # Fits
 ## Poisson
 ### Model without covariate
 saemix.model.poi<-saemixModel(model=count.poisson,description="Count model Poisson",modeltype="likelihood",   
+                              simulate.function=saemix.simulatePoisson, 
                               psi0=matrix(c(log(5),0.01),ncol=2,byrow=TRUE,dimnames=list(NULL, c("intercept","slope"))), 
                               transform.par=c(0,0), omega.init=diag(c(0.5, 0.5)))
 
 ### Gender effect on intercept and slope
 saemix.model.poi.cov2<-saemixModel(model=count.poisson,description="Count model Poisson",modeltype="likelihood",   
+                                   simulate.function=saemix.simulatePoisson, 
                                    psi0=matrix(c(log(5),0.01),ncol=2,byrow=TRUE,dimnames=list(NULL, c("intercept","slope"))), 
                                    transform.par=c(0,0), omega.init=diag(c(0.5, 0.5)),
                                    covariance.model =matrix(data=1, ncol=2, nrow=2),
@@ -507,17 +522,8 @@ exp(poisson.fit.cov2@results@fixed.effects)
 
 
 ### Simulations
-saemix.simulatePoisson<-function(psi, id, xidep) {
-  time<-xidep[,1]
-  y<-xidep[,2]
-  intercept<-psi[id,1]
-  slope<-psi[id,2]
-  lambda<- exp(intercept + slope*time)
-  y<-rpois(length(time), lambda=lambda)
-  return(y)
-}
 nsim<-100
-yfit1<-simulateDiscreteSaemix(poisson.fit.cov2, saemix.simulatePoisson, nsim=nsim)
+yfit1<-simulateDiscreteSaemix(poisson.fit.cov2, nsim=nsim)
 
 hist(yfit1@data@data$rapi, xlim=c(0,50), freq=F, breaks=30, xlab="Observed counts", main="")
 lines(density(yfit1@sim.data@datasim$ysim[yfit1@sim.data@datasim$ysim<50]), lwd = 2, col = 'red')
@@ -534,10 +540,12 @@ simdat$gender<-rep(yfit@data@data$gender,nsim)
 ytab<-NULL
 for(irep in 1:nsim) {
   xtab<-simdat[simdat$irep==irep,]
+  suppressMessages(
   xtab1 <- xtab %>%
     group_by(time, gender) %>%
     summarise(nev = sum(ysim==0), n=n()) %>%
     mutate(freq = nev/n)
+  )
   ytab<-rbind(ytab,xtab1[,c("time","gender","freq")])
 }
 gtab <- ytab %>%
@@ -604,20 +612,34 @@ count.NB<-function(psi,id,xidep) {
   logp <- log(factorial(y+k-1)) - log(factorial(y)) - log(factorial(k-1)) + y*log(lambda) - y*log(lambda+k) + k*log(k) - k*log(lambda+k)
   return(logp)
 }
-
+saemix.simulatePoissonZIP<-function(psi, id, xidep) {
+  time<-xidep[,1]
+  y<-xidep[,2]
+  intercept<-psi[id,1]
+  slope<-psi[id,2]
+  p0<-psi[id,3] # Probability of zero's
+  lambda<- exp(intercept + slope*time)
+  prob0<-rbinom(length(time), size=1, prob=p0)
+  y<-rpois(length(time), lambda=lambda)
+  y[prob0==1]<-0
+  return(y)
+}
 ## ZIP
 ### base model
-saemix.model.zip<-saemixModel(model=count.poissonzip,description="count model ZIP",modeltype="likelihood",   
+saemix.model.zip<-saemixModel(model=count.poissonzip,description="count model ZIP",modeltype="likelihood", 
+                              simulate.function=saemix.simulatePoissonZIP,
                               psi0=matrix(c(1.5, 0.01, 0.2),ncol=3,byrow=TRUE,dimnames=list(NULL, c("intercept", "slope","p0"))), 
                               transform.par=c(0,0,3), covariance.model=diag(c(1,1,0)), omega.init=diag(c(0.5,0.3,0)))
 
 ### ZIP Poisson with gender on both intercept
 saemix.model.zip.cov1<-saemixModel(model=count.poissonzip,description="count model ZIP",modeltype="likelihood",   
+                                  simulate.function=saemix.simulatePoissonZIP,
                                    psi0=matrix(c(1.5, 0.01, 0.2),ncol=3,byrow=TRUE,dimnames=list(NULL, c("intercept", "slope","p0"))), 
                                    transform.par=c(0,0,3), covariance.model=diag(c(1,1,0)), omega.init=diag(c(0.5,0.3,0)),
                                    covariate.model = matrix(c(1,0,0),ncol=3, byrow=TRUE))
 ### ZIP Poisson with gender on both intercept and slope
 saemix.model.zip.cov2<-saemixModel(model=count.poissonzip,description="count model ZIP",modeltype="likelihood",   
+                                  simulate.function=saemix.simulatePoissonZIP,
                                    psi0=matrix(c(1.5, 0.01, 0.2),ncol=3,byrow=TRUE,dimnames=list(NULL, c("intercept", "slope","p0"))), 
                                    transform.par=c(0,0,3), covariance.model=diag(c(1,1,0)), omega.init=diag(c(0.5,0.3,0)),
                                    covariate.model = matrix(c(1,1,0),ncol=3, byrow=TRUE))
@@ -631,20 +653,7 @@ exp(zippoisson.fit.cov1@results@fixed.effects)
 exp(zippoisson.fit.cov2@results@fixed.effects)
 
 ### Simulations
-saemix.simulatePoissonZIP<-function(psi, id, xidep) {
-  time<-xidep[,1]
-  y<-xidep[,2]
-  intercept<-psi[id,1]
-  slope<-psi[id,2]
-  p0<-psi[id,3] # Probability of zero's
-  lambda<- exp(intercept + slope*time)
-  prob0<-rbinom(length(time), size=1, prob=p0)
-  y<-rpois(length(time), lambda=lambda)
-  y[prob0==1]<-0
-  return(y)
-}
-
-yfit2<-simulateDiscreteSaemix(zippoisson.fit.cov2, saemix.simulatePoissonZIP, 100)
+yfit2<-simulateDiscreteSaemix(zippoisson.fit.cov2,  100)
 
 cat("Observed proportion of 0's", length(yfit1@data@data$rapi[yfit1@data@data$rapi==0])/yfit1@data@ntot.obs,"\n")
 cat("      Poisson model, p=",length(yfit1@sim.data@datasim$ysim[yfit1@sim.data@datasim$ysim==0])/length(yfit1@sim.data@datasim$ysim),"\n")
@@ -664,10 +673,12 @@ simdat$gender<-rep(yfit@data@data$gender,nsim)
 ytab<-NULL
 for(irep in 1:nsim) {
   xtab<-simdat[simdat$irep==irep,]
+  suppressMessages(
   xtab1 <- xtab %>%
     group_by(time, gender) %>%
     summarise(nev = sum(ysim==0), n=n()) %>%
     mutate(freq = nev/n)
+  )
   ytab<-rbind(ytab,xtab1[,c("time","gender","freq")])
 }
 gtab <- ytab %>%
@@ -723,9 +734,18 @@ binary.model<-function(psi,id,xidep) {
   logpdf <- log(pobs)
   return(logpdf)
 }
-
+simulBinary<-function(psi,id,xidep) {
+  tim<-xidep[,1]
+  y<-xidep[,2]
+  inter<-psi[id,1]
+  slope<-psi[id,2]
+  logit<-inter+slope*tim
+  pevent<-exp(logit)/(1+exp(logit))
+  ysim<-rbinom(length(tim),size=1, prob=pevent)
+  return(ysim)
+}
 saemix.hurdle0<-saemixModel(model=binary.model,description="Binary model",
-                            modeltype="likelihood",
+                            modeltype="likelihood",simulate.function=simulBinary,
                             psi0=matrix(c(-1.5,-.1,0,0),ncol=2,byrow=TRUE,dimnames=list(NULL,c("theta1","theta2"))),
                             transform.par=c(0,0), covariate.model=c(1,1),
                             covariance.model=matrix(c(1,0,0,1),ncol=2), omega.init=diag(c(1,0.3)))
@@ -738,6 +758,7 @@ table(rapi.saemix$rapi[rapi.saemix$time==0] == 0) # 10.6%
 
 # Fit Poisson model to saemix.data1
 saemix.hurdle1.cov2<-saemixModel(model=count.poisson,description="Count model Poisson",modeltype="likelihood",   
+                                 simulate.function = saemix.simulatePoisson,
                                  psi0=matrix(c(log(5),0.01),ncol=2,byrow=TRUE,dimnames=list(NULL, c("intercept","slope"))), 
                                  transform.par=c(0,0), omega.init=diag(c(0.5, 0.5)),
                                  covariance.model =matrix(data=1, ncol=2, nrow=2),
@@ -751,22 +772,11 @@ summary(hurdlefit1)
 
 
 # Simulate binary data
-simulBinary<-function(psi,id,xidep) {
-  tim<-xidep[,1]
-  y<-xidep[,2]
-  inter<-psi[id,1]
-  slope<-psi[id,2]
-  logit<-inter+slope*tim
-  pevent<-exp(logit)/(1+exp(logit))
-  ysim<-rbinom(length(tim),size=1, prob=pevent)
-  return(ysim)
-}
-
 # proportion of 0's in the data
 rapi.tab <- table(rapi.saemix$rapi == 0)
 
 nsim<-100
-ysim.hurdle0 <- simulateDiscreteSaemix(hurdlefit0, simulBinary, nsim=nsim)
+ysim.hurdle0 <- simulateDiscreteSaemix(hurdlefit0, nsim=nsim)
 cat("Observed proportion of 0's overall:",rapi.tab[2]/sum(rapi.tab),"\n")
 cat("Simulated proportion of 0's overall:",sum(ysim.hurdle0@sim.data@datasim$ysim)/length(ysim.hurdle0@sim.data@datasim$ysim),"\n")
 
@@ -779,10 +789,12 @@ simdat$gender<-rep(yfit@data@data$gender,nsim)
 ytab<-NULL
 for(irep in 1:nsim) {
   xtab<-simdat[simdat$irep==irep,]
+  suppressMessages(
   xtab1 <- xtab %>%
     group_by(time, gender) %>%
     summarise(nev = sum(ysim), n=n()) %>%
     mutate(freq = nev/n)
+  )
   ytab<-rbind(ytab,xtab1[,c("time","gender","freq")])
 }
 gtab <- ytab %>%

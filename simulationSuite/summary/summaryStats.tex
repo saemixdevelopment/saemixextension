@@ -1,0 +1,41 @@
+\documentclass[a4paper,10pt]{article}
+\usepackage[utf8]{inputenc}
+
+%opening
+\title{}
+\author{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+
+\end{abstract}
+
+\section{}
+
+- summary statistics
+  - sample mean: $\bar{\theta} =  \frac{1}{K} \sum_k \hat{\theta}_k$
+  - sample variance $S^2_{\theta} = var(\hat{\theta}-\bar{\theta}) = \frac{1}{K-1} \sum_k (\hat{\theta}_k-\bar{\theta})^2 $ 
+- absolute metrics
+  - absolute bias
+    - defined as the difference $E(\hat{\theta})-\theta_0$
+    - estimated as $\bar{\theta} -\theta_0$
+  - precision
+    - defined as the variance of the estimates$E \left( (\theta-E(\theta) \right)^2$
+    - estimated as $S^2_{\theta}$
+  - accuracy
+    - defined as $MSE=E((\theta-\theta_0)^2 )$
+    - estimated as $ \frac{1}{K} \sum_k (\hat{\theta}_k-\bar{\theta})^2 $ 
+    - RMSE: square root of MSE $RMSE = \sqrt{MSE}$
+- relative Bias
+  - defined as the relative difference from true parameter  $E(\hat{\theta})/\theta$
+  - estimated as $mean(\hat{\theta})/\theta_0$
+- relative MSE
+  - accuracy in relative terms
+  - defined as $E((\hat{\theta}- \theta)^2)/\theta^2$
+  - **approximated** as $\left( (\bar{\theta} -\theta_0)^2 + S^2_{\theta} \right)/\theta_0$ 
+  - take square root to obtain the relative RMSE 
+
+\end{document}

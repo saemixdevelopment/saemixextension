@@ -124,6 +124,17 @@ setClass(
       message("[ SaemixModel : Error ] Invalid type of model")
       return("Invalid model type")
     }
+    if(!is.null(body(object@simulate.function))) { # Check the simulate.function is formally valid
+      simulate.function <- object@simulate.function
+      has.sim<-FALSE
+      if(!is.function(simulate.function) || length(formals(simulate.function))!=3) {
+        message("The simulate.function should have the same format as the model function, ignoring.\n")
+        has.sim <- FALSE
+      } else has.sim <- TRUE
+      if(!has.sim) {
+        return("Invalid simulate.function element")
+      }
+    }
     return(TRUE)
   }
 )

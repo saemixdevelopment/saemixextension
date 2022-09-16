@@ -1050,7 +1050,7 @@ NULL
 #'   return(logp)
 #' }
 #' # Gender effect on intercept and slope
-#' rapimod.poisson<-saemixModel(model=count.poisson,
+#' rapimod.poisson<-saemixModel(model=count.poisson, simulate.function=saemix.simulatePoisson
 #'    description="Count model Poisson",modeltype="likelihood",   
 #'    psi0=matrix(c(log(5),0.01),ncol=2,byrow=TRUE,dimnames=list(NULL, c("intercept","slope"))), 
 #'    transform.par=c(0,0), omega.init=diag(c(0.5, 0.5)),
@@ -1072,7 +1072,7 @@ NULL
 #'   logp[y==0]<-logp0[y==0]
 #'   return(logp)
 #' }
-#' rapimod.zip<-saemixModel(model=count.poissonzip,
+#' rapimod.zip<-saemixModel(model=count.poissonzip, simulate.function=saemix.simulatePoissonZIP,
 #'    description="count model ZIP",modeltype="likelihood",   
 #'    psi0=matrix(c(1.5, 0.01, 0.2),ncol=3,byrow=TRUE,
 #'    dimnames=list(NULL, c("intercept", "slope","p0"))), 
@@ -1105,8 +1105,8 @@ NULL
 #' 
 #' # Using simulations to compare the predicted proportion of 0's in the two models
 #' nsim<-100
-#' yfit1<-simulateDiscreteSaemix(poisson.fit, saemix.simulatePoisson, nsim=nsim)
-#' yfit2<-simulateDiscreteSaemix(zippoisson.fit, saemix.simulatePoissonZIP, 100)
+#' yfit1<-simulateDiscreteSaemix(poisson.fit,  nsim=nsim)
+#' yfit2<-simulateDiscreteSaemix(zippoisson.fit,  100)
 #' {
 #' nobssim<-length(yfit1@sim.data@datasim$ysim)
 #' cat("Observed proportion of 0's", 

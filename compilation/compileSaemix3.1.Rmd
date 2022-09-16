@@ -1,7 +1,7 @@
 ---
-title: "Package compilation for saemix 3.1 and basic run"
+title: "Package compilation for saemix 3.2 and basic run"
 author: "Emmanuelle Comets"
-date: "18/10/2021"
+date: "16/08/2022"
 output:
   pdf_document:
   latex_engine: xelatex
@@ -14,7 +14,7 @@ library(devtools)
 library(roxygen2)
 library(tools) # check reverse dependencies
 saemixDir<-"/home/eco/work/saemix/saemixextension"
-workDir<-"/home/eco/work/saemix/versions/saemix3.1"
+workDir<-"/home/eco/work/saemix/versions/saemix3.2"
 knitr::opts_chunk$set(root.dir = workDir)
 
 # Options
@@ -105,8 +105,8 @@ system("R CMD build saemix")
 
 # Test examples
 if(testExamples) 
-  system("R CMD check --as-cran --run-donttest saemix_3.1.tar.gz") else 
-    system("R CMD check --as-cran saemix_3.1.tar.gz")
+  system("R CMD check --as-cran --run-donttest saemix_3.2.tar.gz") else 
+    system("R CMD check --as-cran saemix_3.2.tar.gz")
 
 # Reverse dependencies
 cmd<-paste("cp ",file.path("/home/eco/work/saemix/versions/reverseDependencies/varTestnlme_1.3.0.tar.gz")," ", file.path(workDir),sep="")
@@ -120,7 +120,7 @@ if(checkReverseDependencies) {
 
 if(installPackage) {  
   # install saemix current version and check packages
-  install.packages(pkgs=file.path(workDir,"saemix_3.1.tar.gz"),repos=NULL)
+  install.packages(pkgs=file.path(workDir,"saemix_3.2.tar.gz"),repos=NULL)
   #result <- check_packages_in_dir(workDir, revdep = list() )
   result <- check_packages_in_dir(workDir, revdep = list("varTestnlme") )
   summary(result)
@@ -147,7 +147,7 @@ theo.saemix     5.171  0.000   5.172
   
 ```{r devModeInstall}
 dev_mode() # development mode
-install.packages(pkgs=file.path(workDir,"saemix_3.1.tar.gz"),repos=NULL)
+install.packages(pkgs=file.path(workDir,"saemix_3.2.tar.gz"),repos=NULL)
 library(saemix)
 library(testthat)
 ```
