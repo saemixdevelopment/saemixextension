@@ -7,6 +7,7 @@ o Changes
 o Bugfixes
    * corrected an error in the simulation function calling id instead of index (causing the simulation function to fail when the subjects were not numbered from 1 to N)
    * added a test in summary() for saemixData object to prevent failing on bootstrapped datasets with case bootstrap when ocov was no longer the same dimension as data
+   * fixed the error model parameters to always be positive when they are calculated in the M-step.
    * corrected the computation of p-value of the Wald test as a two-sided test comparing beta/SE(beta) to a normal distribution
 
 Version 3.1 - August 2022
