@@ -34,7 +34,7 @@ if(settings=="defaultTrue") {
   omega0 <- omega
   res0 <- respar
 }
-if(settings=="defaultFalse") {
+if(settings %in% c("defaultFalse","longFalse")) {
   psi0 <- pfaux[1:3]
   omega0 <- diag(c(1,1,1))
   res0 <- respar*2
@@ -66,7 +66,7 @@ saemix.model<-saemixModel(model=modelemax, description="PD Emax model",
                           psi0=matrix(psi0, ncol=3, byrow = TRUE, dimnames=list(NULL, nampar)),transform.par=c(1,1,1),
                           covariance.model=matrix(c(1,0,0,0,1,1,0,1,1),ncol=3,byrow=TRUE),
                           omega.init = omega0, error.init=c(0,res0), error.model="proportional")
-saemix.options<-list(seed=zeseed[1], save=FALSE, save.graphss=FALSE, displayProgress=FALSE)
+saemix.options<-list(seed=zeseed[1], save=FALSE, save.graphs=FALSE, displayProgress=FALSE)
 if(settings=="longFalse") {
   saemix.options$nchains <- 5
   saemix.options$nbiter.saemix <- c(800, 300)

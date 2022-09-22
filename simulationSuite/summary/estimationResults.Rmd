@@ -237,4 +237,253 @@ xtab3
 ```
 
 
+#### Tweaking the algorithm
 
+Keeping the IIV active until the end of the K1 first iterations instead of setting them to 0 at the end of the SA part of the algorithm
+
+Results are clearly worse, both for random effects (biased variances) and even for some fixed effects ($\gamma$ in the sparse Hill design, but also ED50 and Emax that already showed 10% bias, now increased to 20%).
+
+```{r versionSettingsTweakSA}
+runDate <- '220914'
+who <- "eco"
+saemixVersion <-"tweakSA"
+exampleName <- "doseResponsePlanProp"
+runSettings <- c("defaultTrue","defaultFalse","longFalse")
+runScenarios <- c("emaxRichProp","emaxSparseProp","hillRichProp","hillSparseProp")
+```
+
+
+
+```{r readParameterEstimatesTweakSA, echo=FALSE}
+# Loop over scenarios
+fullres <- fullresrel<-ygpl<-fullrelSE<-NULL
+for(iscen in 1:4) {
+  scenario<-runScenarios[iscen]
+  if(length(grep('emax',scenario))==0) 
+    pvrai<- c(parpop, respar, diag(omega), omega[2,3]) else
+      pvrai <- c(parpop[1:3], respar, diag(omega), omega[2,3])
+    npar<-length(pvrai)
+    fullres1 <- fullresrel1 <-fullrelSE1<-NULL
+    # Loop over settings
+    for(iset in 1:3) {
+      namRes <-paste0(runDate,"_",who,"_",saemixVersion,"_",scenario,"_",runSettings[iset],".res")
+      estpar <- read.table(file.path(workDir, dataType, scenario,"results", namRes), header=T)
+      resbias <- computeBias(estpar[,2:(1+npar)], pvrai)
+      if(iset==1) {
+        tabres <- fullres1 <- fullresrel1<-data.frame(param=resbias[,1], true=pvrai)
+        fullrelSE1 <- data.frame(param=resbias[,1], empSE=resbias$empSE)
+      }
+      tabres<-cbind(tabres, bias=resbias[,2], rmse=sqrt(resbias[,4]))
+      fullres1<-cbind(fullres1, bias=resbias$bias, rmse=sqrt(resbias$mse), precision=sqrt(resbias$precision))
+      fullresrel1<-cbind(fullresrel1,bias=resbias$relativeBias*100, rrmse=resbias$rrmse*100)
+      resbiasSE<-computeBias(estpar[,(4+npar):(2*npar+3)], resbias$empSE)
+      fullrelSE1<-cbind(fullrelSE1,bias=resbiasSE$relativeBias*100, rrmse=resbiasSE$rrmse*100)
+      
+      tabree<-computeREE(estpar[,2:(1+npar)], pvrai)
+      tabgpl <- tabree %>%
+        pivot_longer( everything()) %>%
+        mutate(setting=runSettings[iset], scenario=scenario)
+      ygpl <- rbind(ygpl, tabgpl)
+    }
+    # Print results of bias and RMSE for the scenario
+#    cat("Results for scenario", scenario,"\n")
+#    cat("                   ", paste(runSettings,collapse="                           "),"\n")
+#    print(tabres)
+    l1<-fullres1[1,]
+    l1[1]<-scenario
+    l1[2:dim(fullres1)[2]]<-NA
+    fullres<-rbind(fullres,l1,fullres1)
+    l1<-fullresrel1[1,]
+    l1[1]<-scenario
+    l1[2:dim(fullresrel1)[2]]<-NA
+    fullresrel<-rbind(fullresrel,l1,fullresrel1)
+    l1<-fullrelSE1[1,]
+    l1[1]<-scenario
+    l1[2:dim(fullrelSE1)[2]]<-NA
+    fullrelSE<-rbind(fullrelSE,l1,fullrelSE1)
+    }
+
+ygpl$name <- factor(ygpl$name,levels=unique(ygpl$name))
+ygpl$setting <- factor(ygpl$setting,levels=unique(ygpl$setting))
+ygpl$scenario <- factor(ygpl$scenario,levels=unique(ygpl$scenario))
+
+# Would like to include the linetypes but not working, TBC
+plot1 <- ggplot(ygpl, aes(name, value,colour=factor(setting),fill=factor(setting))) + geom_boxplot(alpha=0.5) + 
+  geom_hline(yintercept = 0, alpha=0.5) + 
+  geom_hline(yintercept = -10, alpha=0.3, linetype='dashed') + geom_hline(yintercept = 10, alpha=0.3, linetype='dashed') + 
+  geom_hline(yintercept = -50, alpha=0.3, linetype='dotted') + geom_hline(yintercept = 50, alpha=0.3, linetype='dotted') + 
+  xlab("Parameter") + ylab("Estimation error (%)") + theme_minimal() + scale_color_viridis(discrete=TRUE) + scale_fill_viridis(discrete=TRUE) + 
+  scale_linetype_manual(name = "Bias", values = c("within 10%"="dashed","within 50%"="solid")) + 
+  theme(legend.position = "right", axis.text.x = element_text(angle = 30)) + labs(fill = "Settings", linetype="Bias") + 
+  guides(colour = "none", linetype = guide_legend(order = 2)) +
+  facet_wrap(.~scenario, nrow=2) 
+
+print(plot1)
+
+if(saveFigs) {
+  namFig <- paste0(runDate,"_",who,"_",saemixVersion,"_",exampleName,".eps")
+  cairo_ps(file = file.path(workDir, "figs", namFig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
+  plot(plot1)
+  dev.off()
+}
+
+```
+Bias and accuracy of the estimates in the different settings and scenarios
+
+```{r biasTablesTweakSA, results='asis', echo=FALSE, message=FALSE, warning=FALSE}
+# Making xtables
+# l1<-fullres[1,] # doesn't work, we lose the formatting...
+# l1[1]<-c("")
+# l1[c(3,6,9)]<-runSettings
+# fullres<-rbind(l1,fullres)
+xtab1<-xtable(fullres, caption=paste0("Bias, precision and accurary in the example ",exampleName," for settings:",paste(runSettings, collapse=', ')), digits=2, nsmall=2)
+xtab1
+# print(xtab1, include.rownames=FALSE, comment=FALSE)
+
+# l1<-fullresrel[1,]
+# l1[1]<-c("")
+# l1[c(3,5,7)]<-runSettings
+# fullresrel<-rbind(l1,fullresrel)
+xtab2 <- xtable(fullresrel, caption=paste0("Relative bias and relative RMSE (in %) in the example ",exampleName," for settings:",paste(runSettings, collapse=', ')), digits=2, nsmall=2)
+xtab2
+# print(xtab2, include.rownames=FALSE, comment=FALSE)
+
+xtab3 <- xtable(fullrelSE, caption=paste0("Relative bias and relative RMSE (in %) on SE estimated by linearisation, compared to the empirical SE, in the example ",exampleName," for settings:",paste(runSettings, collapse=', ')), digits=2, nsmall=2)
+xtab3
+
+```
+
+## Imax sigmoid model
+
+Data was simulated according to a sigmoid Emax Hill model
+
+### Settings
+
+```{r hillImaxSettings}
+dataType <- "cont"
+parpop<-c(100,0.7,500,2)
+parcov<-(-0.5) # ED50=500 in group 0, 300 in group 1
+nampar<-c("E0","Imax","ED50","gamma")
+omega<-diag(c(0.01,0,0.09,0)) # 10% IIV on E0 and 30% IIV on ID50, no correlation
+respar<-c(5,0.2) # additive and proportional error terms
+```
+
+### Simulation results
+
+#### Version 3.1 on CRAN
+
+```{r imaxSettings31}
+runDate <- '220920'
+who <- "eco"
+saemixVersion <-"cran31"
+exampleName <- "doseResponsePlanProp"
+runSettings <- c("defaultTrue","defaultFalse","longFalse")
+runSettings <- c("defaultTrue")
+runScenarios <- c("imaxRichProp","imaxRichAdd","imaxRichComb")
+
+# namsimdat<-"pdimax"
+# settings: n=6, N=100, 2 groups
+
+```
+
+```{r readParameterEstimates31, echo=FALSE}
+# Loop over scenarios
+fullres <- fullresrel<-ygpl<-fullrelSE<-NULL
+for(iscen in 1:length(runScenarios)) {
+  scenario<-runScenarios[iscen]
+  sigma<-respar
+  if(length(grep("Add", scenario))>0) sigma<-respar[1]
+  if(length(grep("Prop", scenario))>0) sigma<-respar[2]
+  pvrai <- c(parpop[1:3], parcov, parpop[4], sigma, omega[1,1],omega[3,3])
+  npar<-length(pvrai)
+  fullres1 <- fullresrel1 <-fullrelSE1<-NULL
+    # Loop over settings
+    for(iset in 1:length(runSettings)) {
+      namRes <-paste0(runDate,"_",who,"_",saemixVersion,"_",scenario,"_",runSettings[iset],".res")
+      estpar <- read.table(file.path(workDir, dataType, scenario,"results", namRes), header=T)
+      if(length(grep("Comb", scenario))>0) 
+        estpar[,"b.1"] <- abs(estpar[,"b.1"])
+      resbias <- computeBias(estpar[,2:(1+npar)], pvrai)
+      if(iset==1) {
+        tabres <- fullres1 <- fullresrel1<-data.frame(param=resbias[,1], true=pvrai)
+        fullrelSE1 <- data.frame(param=resbias[,1], empSE=resbias$empSE)
+      }
+      tabres<-cbind(tabres, bias=resbias[,2], rmse=sqrt(resbias[,4]))
+      fullres1<-cbind(fullres1, bias=resbias$bias, rmse=sqrt(resbias$mse), precision=sqrt(resbias$precision))
+      fullresrel1<-cbind(fullresrel1,bias=resbias$relativeBias*100, rrmse=resbias$rrmse*100)
+      resbiasSE<-computeBias(estpar[,(4+npar):(2*npar+3)], resbias$empSE)
+      fullrelSE1<-cbind(fullrelSE1,bias=resbiasSE$relativeBias*100, rrmse=resbiasSE$rrmse*100)
+      
+      tabree<-computeREE(estpar[,2:(1+npar)], pvrai)
+      tabgpl <- tabree %>%
+        pivot_longer( everything()) %>%
+        mutate(setting=runSettings[iset], scenario=scenario)
+      ygpl <- rbind(ygpl, tabgpl)
+    }
+    # Print results of bias and RMSE for the scenario
+#    cat("Results for scenario", scenario,"\n")
+#    cat("                   ", paste(runSettings,collapse="                           "),"\n")
+#    print(tabres)
+    l1<-fullres1[1,]
+    l1[1]<-scenario
+    l1[2:dim(fullres1)[2]]<-NA
+    fullres<-rbind(fullres,l1,fullres1)
+    l1<-fullresrel1[1,]
+    l1[1]<-scenario
+    l1[2:dim(fullresrel1)[2]]<-NA
+    fullresrel<-rbind(fullresrel,l1,fullresrel1)
+    l1<-fullrelSE1[1,]
+    l1[1]<-scenario
+    l1[2:dim(fullrelSE1)[2]]<-NA
+    fullrelSE<-rbind(fullrelSE,l1,fullrelSE1)
+    }
+
+ygpl$name <- factor(ygpl$name,levels=unique(ygpl$name))
+ygpl$setting <- factor(ygpl$setting,levels=unique(ygpl$setting))
+ygpl$scenario <- factor(ygpl$scenario,levels=unique(ygpl$scenario))
+
+# Would like to include the linetypes but not working, TBC
+plot1 <- ggplot(ygpl, aes(name, value,colour=factor(setting),fill=factor(setting))) + geom_boxplot(alpha=0.5) + 
+  geom_hline(yintercept = 0, alpha=0.5) + 
+  geom_hline(yintercept = -10, alpha=0.3, linetype='dashed') + geom_hline(yintercept = 10, alpha=0.3, linetype='dashed') + 
+  geom_hline(yintercept = -50, alpha=0.3, linetype='dotted') + geom_hline(yintercept = 50, alpha=0.3, linetype='dotted') + 
+  xlab("Parameter") + ylab("Estimation error (%)") + theme_minimal() + scale_color_viridis(discrete=TRUE) + scale_fill_viridis(discrete=TRUE) + 
+  scale_linetype_manual(name = "Bias", values = c("within 10%"="dashed","within 50%"="solid")) + 
+  theme(legend.position = "right", axis.text.x = element_text(angle = 30)) + labs(fill = "Settings", linetype="Bias") + 
+  guides(colour = "none", linetype = guide_legend(order = 2)) +
+  facet_wrap(.~scenario, nrow=2) 
+
+print(plot1)
+
+if(saveFigs) {
+  namFig <- paste0(runDate,"_",who,"_",saemixVersion,"_",exampleName,".eps")
+  cairo_ps(file = file.path(workDir, "figs", namFig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
+  plot(plot1)
+  dev.off()
+}
+
+```
+Bias and accuracy of the estimates in the different settings and scenarios
+
+```{r biasTables31, results='asis', echo=FALSE, message=FALSE, warning=FALSE}
+# Making xtables
+# l1<-fullres[1,] # doesn't work, we lose the formatting...
+# l1[1]<-c("")
+# l1[c(3,6,9)]<-runSettings
+# fullres<-rbind(l1,fullres)
+xtab1<-xtable(fullres, caption=paste0("Bias, precision and accurary in the example ",exampleName," for settings:",paste(runSettings, collapse=', ')), digits=2, nsmall=2)
+xtab1
+# print(xtab1, include.rownames=FALSE, comment=FALSE)
+
+# l1<-fullresrel[1,]
+# l1[1]<-c("")
+# l1[c(3,5,7)]<-runSettings
+# fullresrel<-rbind(l1,fullresrel)
+xtab2 <- xtable(fullresrel, caption=paste0("Relative bias and relative RMSE (in %) in the example ",exampleName," for settings:",paste(runSettings, collapse=', ')), digits=2, nsmall=2)
+xtab2
+# print(xtab2, include.rownames=FALSE, comment=FALSE)
+
+xtab3 <- xtable(fullrelSE, caption=paste0("Relative bias and relative RMSE (in %) on SE estimated by linearisation, compared to the empirical SE, in the example ",exampleName," for settings:",paste(runSettings, collapse=', ')), digits=2, nsmall=2)
+xtab3
+
+```

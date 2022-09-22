@@ -214,7 +214,7 @@ hist(simtime.maxcens[simtime.maxcens>0], breaks=30, xlim=c(0,1000), xlab="Time",
 
 ```
 
-We then use the simulation function defined above to simulate from the fitted model and plot VPC.
+We then use the simulation function defined above to simulate from the fitted model, adding it first to the model component, and plot VPC.
 
 ```{r WeibullTTEVPC}
 tte.fit@model@simulate.function <- simulateWeibullTTE

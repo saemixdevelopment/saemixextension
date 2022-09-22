@@ -448,7 +448,7 @@ obsmat<-data.frame(id=ydat@data[,ydat@name.group], x=ydat@data[,ydat@name.X], y=
 
 # Regrouping scores - observed data
 mybreaks <- c(0:9, 16, 25, 80)
-x <- cut(obsmat$y, breaks=mybreaks, include.lowest = TRUE)
+x <- cut(obsmat$y, breaks=mybreaks, include.lowest = TRUE, right=FALSE)
 obsmat$score.group <- x
 
 # With tidyverse
@@ -467,7 +467,7 @@ freq.scores <- number.samples %>%
 # ggplot(data=freq.scores, aes(x=x, y=freq, group=covariate.group, colour=as.factor(covariate.group))) + geom_line() + facet_wrap(.~score.group, ncol=4)
 
 # Regrouping scores - simulated data
-ysim.tab <- data.frame(irep=rep(1:nsim, each=dim(ydat@data)[1]), x=rep(obsmat$x, nsim), covariate.group=rep(obsmat$covariate.group, nsim), score.group=cut(ysim, breaks=mybreaks, include.lowest = TRUE))
+ysim.tab <- data.frame(irep=rep(1:nsim, each=dim(ydat@data)[1]), x=rep(obsmat$x, nsim), covariate.group=rep(obsmat$covariate.group, nsim), score.group=cut(ysim, breaks=mybreaks, include.lowest = TRUE, right=FALSE))
 sim.scores <- ysim.tab %>%
   group_by(irep, x, covariate.group) %>%
   count(score.group)

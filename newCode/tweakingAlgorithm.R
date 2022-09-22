@@ -1,0 +1,106 @@
+################################ Debug 3.2 and tests
+
+# Directories
+saemixDir<-"/home/eco/work/saemix/saemixextension"
+progDir<-file.path(saemixDir,"R")
+datDir<-file.path(saemixDir,"data")
+ecoDir<-file.path(saemixDir,"testeco")
+belDir<-file.path(saemixDir,"testbelhal")
+
+# Libraries
+library(ggplot2)
+library(MASS)
+library(rlang)
+
+# Source functions
+source(file.path(progDir,"aaa_generics.R"))
+source(file.path(progDir,"SaemixData.R"))
+source(file.path(progDir,"SaemixRes.R"))
+source(file.path(progDir,"SaemixModel.R"))
+source(file.path(progDir,"SaemixObject.R"))
+source(file.path(progDir,"func_aux.R"))
+source(file.path(progDir,"main_initialiseMainAlgo.R"))
+# Main files from package
+source(file.path(progDir,"main.R"))
+source(file.path(progDir,"main_estep.R"))
+source(file.path(progDir,"main_mstep.R"))
+source(file.path(progDir,"func_FIM.R"))
+source(file.path(progDir,"func_plots.R"))
+source(file.path(progDir,"func_distcond.R"))
+source(file.path(progDir,"func_simulations.R"))
+source(file.path(progDir,"compute_LL.R"))
+source(file.path(progDir,"func_estimParam.R"))
+
+# Testing alternate versions
+source(file.path(saemixDir,"newCode","alternateMain.R"))
+source(file.path(saemixDir,"newCode","alternate_mstep.R"))
+#########################################################################################
+settings <- "longFalse"
+computeIndPar <- FALSE # can be set to TRUE to compute individual parameter estimates
+
+# Scenario
+scenario <- "hillRichProp"
+datDir <- file.path(simulDir,"simulationSuite","cont", scenario,"data")
+namsimdat<-"pdhillhigh"
+parpop<-c(5,30,500,2)
+nampar<-c("E0","Emax","ED50","gamma")
+omega<-diag(c(0.09,0.49,0.49))
+omega[3,2]<-omega[2,3]<-0.245
+respar<-c(0.1)
+pvrai <- c(parpop, diag(omega)[1:2], omega[2,3],omega[3,3], respar)
+pfaux<-c(10,60,1000,0.1,0.1,0.01,0.1,sqrt(0.0625))
+
+if(settings=="defaultTrue") {
+  psi0 <- pvrai
+  omega0 <- diag(c(1,1,1,0.2))
+  omega0[1:3,1:3]<-omega
+  res0 <- respar
+}
+if(settings %in% c("defaultFalse", "longFalse")) {
+  psi0 <- pfaux
+  omega0 <- diag(c(1,1,1,1))
+  res0 <- respar*2
+}
+
+modelhill<-function(psi,id,xidep) {
+  # input:
+  #   psi : matrix of parameters (4 columns, E0, Emax, E50, gamma)
+  #   id : vector of indices 
+  #   xidep : dependent variables (same nb of rows as length of id)
+  # returns:
+  #   a vector of predictions of length equal to length of id
+  dose<-xidep[,1]
+  e0<-psi[id,1]
+  emax<-psi[id,2]
+  e50<-psi[id,3]
+  gamma<-psi[id,4]
+  f<-e0+emax*dose**gamma/(e50**gamma+dose**gamma)
+  return(f)
+}
+
+saemix.model<-saemixModel(model=modelhill, description="PD Hill model",
+                          psi0=matrix(psi0, ncol=4, byrow = TRUE, dimnames=list(NULL, nampar)),transform.par=c(1,1,1,1),
+                          covariance.model=matrix(c(1,0,0,0,0,1,1,0,0,1,1,0,0,0,0,0),ncol=4,byrow=TRUE),
+                          omega.init = omega0, error.init=c(0,res0), error.model="proportional")
+saemix.options<-list(seed=zeseed[1], save=FALSE, save.graphss=FALSE, displayProgress=FALSE)
+if(settings=="longFalse") {
+  saemix.options$nchains <- 5
+  saemix.options$nbiter.saemix <- c(800, 300)
+}
+
+isim <- 1
+namfich<-paste('data_',namsimdat,isim,".tab",sep="")
+saemix.data<-saemixData(file.path(datDir,namfich),header=T,name.group="id",name.predictors="dose",name.response="y",units=list(x="-",y="-"))
+
+#########################################################################################
+
+# Running the original fit
+yfit.orig <- saemix(saemix.model, saemix.data, saemix.options)
+
+yfit.change <- saemixAlternate(saemix.model, saemix.data, saemix.options)
+
+plot(yfit.orig, plot.type="convergence")
+plot(yfit.change, plot.type="convergence")
+
+yfit.orig@results@conf.int
+yfit.change@results@conf.int

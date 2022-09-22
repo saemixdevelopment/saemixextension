@@ -1066,6 +1066,7 @@ saemix.data.setoptions<-function(saemix.data) {
     limit=TRUE,					# limit to nmax plots
     sample=FALSE,				# if FALSE=use the (nmax) first subjects; TRUE=randomly sample (nmax) subjects from the dataset
     interactive=FALSE,  # whether the program should prompt the user for the number of subjects to plot in the individual plots if this number exceeds nmax
+    which.cov="none",  # whether to split over covariates
 # Layout and plots options
     mfrow=c(),				# page layout (if empty, defaults to the default layout for each graph type)
     main=" ",				# title
