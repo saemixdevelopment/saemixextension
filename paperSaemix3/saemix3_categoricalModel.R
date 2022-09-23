@@ -387,7 +387,6 @@ BIC(ord.fit.cov2)
 # Comparing the 3 covariate models - model with Age2 on alp1 and treatment on beta best
 compare.saemix(ord.fit, ord.fit.cov1, ord.fit.cov2)
 
-
 #### Model evaluation
 
 ### Simulations for VPC
@@ -395,6 +394,10 @@ nsim<-100
 yfit<-ord.fit.cov2
 yfit<-simulateDiscreteSaemix(yfit, nsim=nsim)
 
+### VPC
+discreteVPC(yfit, outcome="categorical")
+
+### Using simdat with R
 simdat <-yfit@sim.data@datasim
 simdat$time<-rep(yfit@data@data$time,nsim)
 simdat$treatment<-rep(yfit@data@data$treatment,nsim)

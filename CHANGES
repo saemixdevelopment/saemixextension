@@ -1,8 +1,12 @@
-Version 3.2 - September 2022
+Version 3.2 - October 2022
 
 o Changes
    * added a simulate.function slot to saemixModel objects, used by saemix.simulate() for non Gaussian data models defined through their likelihood
    * modified function simulateDiscreteSaemix() to use this simulate.function element for the simulations (now returns NULL if the slot isn't filled)
+   
+o Plots for discrete data models (work in progress)
+   * plotDiscreteData(): function to explore discrete data (KM plot for TTE data (single event), longitudinal proportion plots for categorical and count data)
+   * discreteVPC(): function to plot VPC for discrete data model (KM-VPC for TTE data (single event), VPC for the proportion of each score/category for count and categorical data)
    
 o Bugfixes
    * corrected an error in the simulation function calling id instead of index (causing the simulation function to fail when the subjects were not numbered from 1 to N)

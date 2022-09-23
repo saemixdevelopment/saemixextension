@@ -14,15 +14,14 @@ Use saemix version $\geq$ 3.2
 
 Run binary and categorical models in **saemix**
 
-This notebook uses additional code from the **saemix** development github, not yet integrated in the package. The *workDir* folder in the next chunk of code points to the folder where the user stored this code, and is needed to run the notebook (*workDir* defaults to the current working directory). Specifically, the notebook loads:
+This notebook uses additional code from the **saemix** development github (https://github.com/saemixdevelopment/saemixextension), not yet integrated in the package. The *workDir* folder in the next chunk of code points to the folder where the user stored this code, and is needed to run the notebook (*workDir* defaults to the current working directory). Specifically, the notebook loads:
 
-- code for different bootstraps in non-linear mixed effect models (Comets et al. 2021 and submitted)
-  - the bootstrap runs have been performed previously and are stored in files to be read
+- code for the MC/AGQ provided by Sebastian Ueckert (Ueckert et al. 2017)
+  - if memory issues arise the code can be run in a separate script.
+- the results for the bootstrap runs performed using different approaches (see Comets et al. Pharm Res 2021)
     - bootstraps can be run instead by switching the *runBootstrap* variable to TRUE in the first chunk of code
     - in the code, the number of bootstraps is set to 10 for speed but we recommend to use at least 200 for a 90\% CI.
   - this can be changed in the following change of code by uncommenting the line *nboot<-200* and setting the number of bootstrap samples (this may cause memory issues in **Rstudio** with older machines, if this is the case we recommend executing the code in a separate script)
-- code for the MC/AGQ provided by Sebastian Ueckert (Ueckert et al. 2017)
-  - again if memory issues arise the code can be run in a separate script.
 
 The current notebook can be executed to create an HMTL or PDF output with comments and explanations. A script version containing only the R code is also given as *saemix3_countModel.R* in the same folder.
 
@@ -51,9 +50,6 @@ library(randtoolbox)
 # FIM by MC/AGQ (code S. Ueckert)
 
 dirAGQ<-file.path(saemixDir,"fimAGQ")
-
-# Bootstrap code
-source(file.path(saemixDir, "bootstrap", "saemix_bootstrap.R"))
 
 # Code to compute the exact FIM by MC/AGQ
 
@@ -88,12 +84,18 @@ data(rapi.saemix)
 saemix.data<-saemixData(name.data=rapi.saemix, name.group=c("id"),
                         name.predictors=c("time","rapi"),name.response=c("rapi"),
                         name.covariates=c("gender"),
-                        units=list(x="months",y="",covariates=c("")))
+                        units=list(x="months",y="",covariates=c("")), verbose=FALSE)
 ```
 
 #### Exploring data
 
-The distribution of count data can be visualised as a histogram. The over-representation of low scores can be seen when zooming on the early part of the histogram. We can also tabulate the data by stratifying on men and women to realise that there seems to be a gender difference, with more women not reporting any episode of drinking than men.
+We can visualise the evolution of the proportion of each count over time using the *plotDiscreteData()* function with the outcome set to *count*. Here we stratify by gender and regroup the higher scores in 3 categories.
+
+```{r countExploreProp}
+plotDiscreteData(saemix.data, outcome="count", which.cov="gender", breaks=c(0:9, 16, 25,80))
+```
+
+The distribution of count data can also be visualised as a histogram. The over-representation of low scores can be seen when zooming on the early part of the histogram. We can also tabulate the data by stratifying on men and women to realise that there seems to be a gender difference, with more women not reporting any episode of drinking than men.
 
 ```{r countExplore}
 # Simple histogram
@@ -160,7 +162,7 @@ The code below fits a base Poisson model without correlation between the paramet
 saemix.model.poi<-saemixModel(model=count.poisson,description="Count model Poisson",simulate.function=countsimulate.poisson,
                               modeltype="likelihood",   
                               psi0=matrix(c(log(5),0.01),ncol=2,byrow=TRUE,dimnames=list(NULL, c("intercept","slope"))), 
-                              transform.par=c(0,0), omega.init=diag(c(0.5, 0.5)))
+                              transform.par=c(0,0), omega.init=diag(c(0.5, 0.5)), verbose=FALSE)
 
 ### Gender effect on intercept and slope
 saemix.model.poi.cov2<-saemixModel(model=count.poisson,description="Count model Poisson",simulate.function=countsimulate.poisson, 
@@ -168,13 +170,15 @@ saemix.model.poi.cov2<-saemixModel(model=count.poisson,description="Count model 
                                    psi0=matrix(c(log(5),0.01),ncol=2,byrow=TRUE,dimnames=list(NULL, c("intercept","slope"))), 
                                    transform.par=c(0,0), omega.init=diag(c(0.5, 0.5)),
                                    covariance.model =matrix(data=1, ncol=2, nrow=2),
-                                   covariate.model=matrix(c(1,1), ncol=2, byrow=TRUE))
+                                   covariate.model=matrix(c(1,1), ncol=2, byrow=TRUE), verbose=FALSE)
 
-saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, fim=FALSE)
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, fim=FALSE, print=FALSE)
   
 ### Fit with saemix
 poisson.fit<-saemix(saemix.model.poi,saemix.data,saemix.options)
 poisson.fit.cov2<-saemix(saemix.model.poi.cov2,saemix.data,saemix.options)
+#print(poisson.fit@results)
+summary(poisson.fit.cov2)
 
 ### Results
 if(FALSE) {
@@ -208,14 +212,18 @@ Some diagnostics for this model can be obtained by simulating from the model. To
     - in *countsimulate.poisson()*, we use the individual value of $\lambda(Y_{ij})$ to simulate from a Poisson distribution using the *rpoisson()* function
 - once the simulation function has been defined, we use the *simulateDiscreteSaemix()* function from the {\sf saemix} package to simulate *nsim* values (here 100) with the population parameters estimated in *poisson.fit*
   - this adds a *simdata* element to the *poisson.fit*
-  - we extract dataframe with the simulated data (*poisson.fit@sim.data@datasim*) and add a column *gender* to stratify the plots
+  - we then use the *discreteVPC()* function to produce VPC corresponding to the fit
 
-
-```{r countPoissonDiagnostics}
+```{r countPoissonVPC}
 ### Simulations
 nsim<-100
 yfit1<-simulateDiscreteSaemix(poisson.fit.cov2, nsim=nsim)
+discreteVPC(yfit1, outcome="count", which.cov="gender", breaks=c(0:9, 16, 25,80))
+```
+- we can also extract dataframe with the simulated data (*poisson.fit@sim.data@datasim*), adding a column *gender* to stratify the plots, in order to produce additional diagnostics
 
+```{r countPoissonDiagnostics}
+# Proportion of zeroes
 hist(yfit1@data@data$rapi, xlim=c(0,50), freq=F, breaks=30, xlab="Observed counts", main="")
 lines(density(yfit1@sim.data@datasim$ysim[yfit1@sim.data@datasim$ysim<50]), lwd = 2, col = 'red')
 
@@ -346,44 +354,49 @@ We then fit the ZIP model without and with covariates.
 saemix.model.zip<-saemixModel(model=count.poissonzip,description="count model ZIP",modeltype="likelihood",   
                               simulate.function = countsimulate.poissonzip,
                               psi0=matrix(c(1.5, 0.01, 0.2),ncol=3,byrow=TRUE,dimnames=list(NULL, c("intercept", "slope","p0"))), 
-                              transform.par=c(0,0,3), covariance.model=diag(c(1,1,0)), omega.init=diag(c(0.5,0.3,0)))
+                              transform.par=c(0,0,3), covariance.model=diag(c(1,1,0)), omega.init=diag(c(0.5,0.3,0)), verbose=FALSE)
 
 ### ZIP Poisson with gender on both intercept
 saemix.model.zip.cov1<-saemixModel(model=count.poissonzip,description="count model ZIP",modeltype="likelihood",   
                               simulate.function = countsimulate.poissonzip,
                                    psi0=matrix(c(1.5, 0.01, 0.2),ncol=3,byrow=TRUE,dimnames=list(NULL, c("intercept", "slope","p0"))), 
                                    transform.par=c(0,0,3), covariance.model=diag(c(1,1,0)), omega.init=diag(c(0.5,0.3,0)),
-                                   covariate.model = matrix(c(1,0,0),ncol=3, byrow=TRUE))
+                                   covariate.model = matrix(c(1,0,0),ncol=3, byrow=TRUE), verbose=FALSE)
 ### ZIP Poisson with gender on both intercept and slope
 saemix.model.zip.cov2<-saemixModel(model=count.poissonzip,description="count model ZIP",modeltype="likelihood",   
                               simulate.function = countsimulate.poissonzip,
                                    psi0=matrix(c(1.5, 0.01, 0.2),ncol=3,byrow=TRUE,dimnames=list(NULL, c("intercept", "slope","p0"))), 
                                    transform.par=c(0,0,3), covariance.model=diag(c(1,1,0)), omega.init=diag(c(0.5,0.3,0)),
-                                   covariate.model = matrix(c(1,1,0),ncol=3, byrow=TRUE))
+                                   covariate.model = matrix(c(1,1,0),ncol=3, byrow=TRUE), verbose=FALSE)
 
 zippoisson.fit<-saemix(saemix.model.zip,saemix.data,saemix.options)
 zippoisson.fit.cov1<-saemix(saemix.model.zip.cov1,saemix.data,saemix.options)
 zippoisson.fit.cov2<-saemix(saemix.model.zip.cov2,saemix.data,saemix.options)
+print(zippoisson.fit.cov2@results)
+
 
 exp(zippoisson.fit@results@fixed.effects)
 exp(zippoisson.fit.cov1@results@fixed.effects)
 exp(zippoisson.fit.cov2@results@fixed.effects)
 
-
 # saemix.model.gen<-saemixModel(model=count.genpoisson,description="count model Generalised Poisson",modeltype="likelihood",                                psi0=matrix(c(1.5, 0.01, 0.2),ncol=3,byrow=TRUE,dimnames=list(NULL, c("intercept", "slope","delta"))), transform.par=c(0,0,3), covariance.model=diag(c(1,1,0)), omega.init=diag(c(0.5,0.3,0)))
-
 ```
 
 The results from the covariate model are very close to the previous ones for the common parameters (intercept, slope and gender effects). The proportion of overinflated  `r format(zippoisson.fit.cov2@results@fixed.effects[5], digits=2)`.
 
 #### Diagnostics 
 
-We compare the previous fit from the Poisson model with the ZIP model using the same approach as before, and find a much better agreement between the predictions and the fit in both genders.
+We can look at VPC plots for the different values of the score. Here, we plot separate VPC for scores 0 to 9 then regroup the higher scores into 3 categories as the number of subjects with more than 10 drinking episodes drops quickly. The code below can be tweaked to adjust to different score categories if needed (changing the *breaks* argument). The ZIP model is able to predict the probability of observing different values of the score in both men and women over time.
 
-```{r countPoissonZIPDiagnostics}
+We compare the previous fit from the Poisson model with the ZIP model using the same approach as before, and find a much better agreement between the predictions and the fit in both genders.
+```{r countPoissonZIPVPC}
 ### Simulations
 ysim.zip2<-simulateDiscreteSaemix(zippoisson.fit.cov2,  100)
+discreteVPC(ysim.zip2, outcome="count", breaks=c(0:9,16,25,80), which.cov="gender")
+```
 
+```{r countPoissonZIPDiagnostics}
+### Proportion of zeroes
 cat("Observed proportion of 0's", length(yfit1@data@data$rapi[yfit1@data@data$rapi==0])/yfit1@data@ntot.obs,"\n")
 cat("      Poisson model, p=",length(yfit1@sim.data@datasim$ysim[yfit1@sim.data@datasim$ysim==0])/length(yfit1@sim.data@datasim$ysim),"\n")
 cat("  ZI-Poisson model, p=",length(ysim.zip2@sim.data@datasim$ysim[ysim.zip2@sim.data@datasim$ysim==0])/length(ysim.zip2@sim.data@datasim$ysim),"\n")
@@ -434,61 +447,7 @@ plot2 <- ggplot(rapipl, aes(x=time, y=freq, group=gender)) + geom_line() +
 
 print(plot2)
 ```
-To diagnose the model further, we can look at VPC plots for the different values of the score. Here, we plot separate VPC for scores 0 to 9 then regroup the higher scores into 3 categories as the number of subjects with more than 10 drinking episodes drops quickly. The code below can be tweaked to adjust to different score categories if needed (changing the *mybreaks* line). The ZIP model is able to predict the probability of observing different values of the score in both men and women over time.
 
-```{r rapiVPCCountsZIP}
-# Grouping data by time and score
-yfit <- ysim.zip2
-ydat <- yfit@data
-ysim <- yfit@sim.data@datasim$ysim
-nsim<-length(ysim)/dim(ydat@data)[1]
-obsmat<-data.frame(id=ydat@data[,ydat@name.group], x=ydat@data[,ydat@name.X], y=ydat@data[,ydat@name.response], covariate.group=ydat@data[,ydat@name.covariates])
-
-# Regrouping times - not needed here as everyone has the same times
-
-# Regrouping scores - observed data
-mybreaks <- c(0:9, 16, 25, 80)
-x <- cut(obsmat$y, breaks=mybreaks, include.lowest = TRUE, right=FALSE)
-obsmat$score.group <- x
-
-# With tidyverse
-counting.scores <- obsmat %>%
-  group_by(x, covariate.group) %>%
-  count(score.group)
-number.samples <- obsmat %>%
-  group_by(x, covariate.group) %>%
-  summarise(n=n())
-freq.scores <- number.samples %>%
-  left_join(counting.scores, 
-            by = c("x","covariate.group")) %>%
-  mutate(freq=n.y/n.x) %>%
-  mutate(covariate.group=ifelse(covariate.group==0,"Men","Women"))
-
-# ggplot(data=freq.scores, aes(x=x, y=freq, group=covariate.group, colour=as.factor(covariate.group))) + geom_line() + facet_wrap(.~score.group, ncol=4)
-
-# Regrouping scores - simulated data
-ysim.tab <- data.frame(irep=rep(1:nsim, each=dim(ydat@data)[1]), x=rep(obsmat$x, nsim), covariate.group=rep(obsmat$covariate.group, nsim), score.group=cut(ysim, breaks=mybreaks, include.lowest = TRUE, right=FALSE))
-sim.scores <- ysim.tab %>%
-  group_by(irep, x, covariate.group) %>%
-  count(score.group)
-simfreq.scores <- number.samples %>%
-  left_join(sim.scores, 
-            by = c("x","covariate.group")) %>%
-  mutate(freq=n.y/n.x) %>%
-  mutate(covariate.group=ifelse(covariate.group==0,"Men","Women"))
-
-simfreq.bands <- simfreq.scores %>%
-  group_by(x, covariate.group, score.group) %>%
-  summarise(lower=quantile(freq, c(0.05)), median=quantile(freq, c(0.5)), upper=quantile(freq, c(0.95)), freq=mean(freq)) 
-
-plot.counts <- ggplot(data=freq.scores, aes(x=x, y=freq, group=covariate.group, colour=as.factor(covariate.group))) + geom_line() + 
-  geom_line(data=simfreq.bands, aes(x=x, y=median, group=covariate.group, colour=as.factor(covariate.group)), linetype="dashed") + 
-  geom_ribbon(data=simfreq.bands, aes(ymin=lower, ymax=upper,  group=covariate.group, fill=as.factor(covariate.group)), alpha=0.2) + 
-  xlab("Time") + ylab("Proportion of counts") + guides(fill=guide_legend(title='Gender'), colour=guide_legend(title='Gender')) +
-  facet_wrap(.~score.group, ncol=4)
-
-print(plot.counts)
-```
 
 #### Hurdle model
 
@@ -499,13 +458,13 @@ Another way to handle the excess of 0's is the so-called hurdle model. In this m
 saemix.data1<-saemixData(name.data=rapi.saemix[rapi.saemix$rapi>0,], name.group=c("id"),
                          name.predictors=c("time","rapi"),name.response=c("rapi"),
                          name.covariates=c("gender"),
-                         units=list(x="week",y="",covariates=c("")))
+                         units=list(x="week",y="",covariates=c("")), verbose=FALSE)
 
 rapi.saemix$y0<-as.integer(rapi.saemix$rapi==0)
 saemix.data0<-saemixData(name.data=rapi.saemix, name.group=c("id"),
                          name.predictors=c("time","y0"),name.response=c("y0"),
                          name.covariates=c("gender"),
-                         units=list(x="week",y="",covariates=c("")))
+                         units=list(x="week",y="",covariates=c("")), verbose=FALSE)
 
 # Fit Binomial model to saemix.data0
 binary.model<-function(psi,id,xidep) {
@@ -534,9 +493,9 @@ saemix.hurdle0<-saemixModel(model=binary.model,description="Binary model",
                             modeltype="likelihood",simulate.function=simulBinary,
                             psi0=matrix(c(-1.5,-.1,0,0),ncol=2,byrow=TRUE,dimnames=list(NULL,c("theta1","theta2"))),
                             transform.par=c(0,0), covariate.model=c(1,1),
-                            covariance.model=matrix(c(1,0,0,1),ncol=2), omega.init=diag(c(1,0.3)))
+                            covariance.model=matrix(c(1,0,0,1),ncol=2), omega.init=diag(c(1,0.3)), verbose=FALSE)
 
-saemix.options<-list(seed=1234567,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, nb.chains=10, fim=FALSE, displayProgress=FALSE)
+saemix.options<-list(seed=1234567,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, nb.chains=10, fim=FALSE, displayProgress=FALSE, print=FALSE)
 
 hurdlefit0<-saemix(saemix.hurdle0,saemix.data0,saemix.options)
 cat("Expected proportion of 0's at time 0:",1/(1+exp(-hurdlefit0@results@fixed.effects[1])),"\n")
@@ -548,8 +507,8 @@ saemix.hurdle1.cov2<-saemixModel(model=count.poisson,description="Count model Po
                                  psi0=matrix(c(log(5),0.01),ncol=2,byrow=TRUE,dimnames=list(NULL, c("intercept","slope"))), 
                                  transform.par=c(0,0), omega.init=diag(c(0.5, 0.5)),
                                  covariance.model =matrix(data=1, ncol=2, nrow=2),
-                                 covariate.model=matrix(c(1,1), ncol=2, byrow=TRUE))
-saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
+                                 covariate.model=matrix(c(1,1), ncol=2, byrow=TRUE), verbose=FALSE)
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, print=FALSE)
 
 hurdlefit1<-saemix(saemix.hurdle1.cov2,saemix.data1,saemix.options)
 
@@ -635,58 +594,7 @@ We can also produce VPC for the counts as previously for the ZIP model.
 ```{r rapiVPCCountsHurdle}
 nsim<-100
 ysim.hurdle1 <- simulateDiscreteSaemix(hurdlefit1, nsim=nsim)
-
-# Grouping data by time and score
-yfit <- ysim.hurdle1
-ydat <- yfit@data
-ysim <- yfit@sim.data@datasim$ysim
-nsim<-length(ysim)/dim(ydat@data)[1]
-obsmat<-data.frame(id=ydat@data[,ydat@name.group], x=ydat@data[,ydat@name.X], y=ydat@data[,ydat@name.response], covariate.group=ydat@data[,ydat@name.covariates])
-
-# Regrouping times - not needed here as everyone has the same times
-
-# Regrouping scores - observed data
-mybreaks <- c(0:9, 16, 25, 80)
-x <- cut(obsmat$y, breaks=mybreaks, include.lowest = TRUE)
-obsmat$score.group <- x
-
-# With tidyverse
-counting.scores <- obsmat %>%
-  group_by(x, covariate.group) %>%
-  count(score.group)
-number.samples <- obsmat %>%
-  group_by(x, covariate.group) %>%
-  summarise(n=n())
-freq.scores <- number.samples %>%
-  left_join(counting.scores, 
-            by = c("x","covariate.group")) %>%
-  mutate(freq=n.y/n.x) %>%
-  mutate(covariate.group=ifelse(covariate.group==0,"Men","Women"))
-
-# ggplot(data=freq.scores, aes(x=x, y=freq, group=covariate.group, colour=as.factor(covariate.group))) + geom_line() + facet_wrap(.~score.group, ncol=4)
-
-# Regrouping scores - simulated data
-ysim.tab <- data.frame(irep=rep(1:nsim, each=dim(ydat@data)[1]), x=rep(obsmat$x, nsim), covariate.group=rep(obsmat$covariate.group, nsim), score.group=cut(ysim, breaks=mybreaks, include.lowest = TRUE))
-sim.scores <- ysim.tab %>%
-  group_by(irep, x, covariate.group) %>%
-  count(score.group)
-simfreq.scores <- number.samples %>%
-  left_join(sim.scores, 
-            by = c("x","covariate.group")) %>%
-  mutate(freq=n.y/n.x) %>%
-  mutate(covariate.group=ifelse(covariate.group==0,"Men","Women"))
-
-simfreq.bands <- simfreq.scores %>%
-  group_by(x, covariate.group, score.group) %>%
-  summarise(lower=quantile(freq, c(0.05)), median=quantile(freq, c(0.5)), upper=quantile(freq, c(0.95)), freq=mean(freq)) 
-
-plot.counts <- ggplot(data=freq.scores, aes(x=x, y=freq, group=covariate.group, colour=as.factor(covariate.group))) + geom_line() + 
-  geom_line(data=simfreq.bands, aes(x=x, y=median, group=covariate.group, colour=as.factor(covariate.group)), linetype="dashed") + 
-  geom_ribbon(data=simfreq.bands, aes(ymin=lower, ymax=upper,  group=covariate.group, fill=as.factor(covariate.group)), alpha=0.2) + 
-  xlab("Time") + ylab("Proportion of counts") + guides(fill=guide_legend(title='Gender'), colour=guide_legend(title='Gender')) +
-  facet_wrap(.~score.group, ncol=4)
-
-print(plot.counts)
+discreteVPC(ysim.hurdle1, outcome="count", breaks=c(0:9, 16, 25, 80), which.cov="gender")
 ```
 
 

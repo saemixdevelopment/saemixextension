@@ -16,6 +16,7 @@
 #'     \item{\code{model}:}{Object of class \code{"function"}: name of the function used to get predictions from the model (see the User Guide and the online examples for the format and what this function should return).}
 #'     \item{\code{description}:}{Object of class \code{"character"}: an optional text description of the model}
 #'     \item{\code{psi0}:}{Object of class \code{"matrix"}: a matrix with named columns containing the initial estimates for the parameters in the model (first line) and for the covariate effects (second and subsequent lines, optional). The number of columns should be equal to the number of parameters in the model.}
+#'     \item{\code{simulate.function}:}{Object of class \code{"function"}: for non-Gaussian data models, name of the function used to simulate from the model.}
 #'     \item{\code{transform.par}:}{Object of class \code{"numeric"}: vector giving the distribution for each model parameter (0: normal, 1: log-normal, 2: logit, 3: probit). Its length should be equal to the number of parameters in the model.}
 #'     \item{\code{fixed.estim}:}{Object of class \code{"numeric"}: for each parameter, 0 if the parameter is fixed and 1 if it should be estimated. Defaults to a vector of 1 (all parameters are estimated). Its length should be equal to the number of parameters in the model.}
 #'     \item{\code{error.model}:}{Object of class \code{"character"}: name of the error model. Valid choices are "constant" (default), "proportional" and "combined" (see equations in User Guide, except for combined which was changed to y = f + sqrt(a^2+b^2*f^2)*e )}
@@ -974,6 +975,13 @@ setMethod("plot",c("SaemixModel","SaemixData"),
 #' @param description a character string, giving a brief description of the
 #' model or the analysis
 #' @param modeltype a character string, giving model type (structural or likelihood)
+#' @param simulate.function for non-Gaussian data models, defined as modeltype='likelihood', 
+#' the name of the function used to simulate from the structural model. The
+#' function should have the same header as the model function, and should return 
+#' a vector of simulated values given a matrix of individual parameters, 
+#' a vector of indices specifying which records belong to a given individual, 
+#' and a matrix of dependent variables (see example in the documentation, section
+#' discrete data examples)
 #' @param name.response the name of the dependent variable
 #' @param name.sigma a vector of character string giving the names of the residual error parameters
 #' @param error.model type of residual error model (valid types are constant,

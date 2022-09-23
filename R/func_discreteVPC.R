@@ -90,7 +90,7 @@
 #' plot(gpl)
 #' }
 #' 
-#' @aliases discreteVPCTTE discreteVPCcount discreteVPCcat discreteVPC.aux
+#' @aliases discreteVPCcount discreteVPCcat discreteVPC.aux
 #' 
 #' @export 
 
@@ -101,12 +101,12 @@ discreteVPC <- function(object, outcome="categorical", verbose=FALSE, ...) {
   # outcome: type of outcome (valid types are TTE, binary, categorical, count)
   # verbose: whether to print messages
   # ...: to pass additional plot options (such as title, colours, etc...) which will supersede the options in the prefs slot of object
-  
-  if(!is(object,"SaemixObject")) {
+  if(!is(try(exists(object)),"try-error") || !is(object,"SaemixObject")) {
     message("Please provide a valid object \n")
     return()
   }
   outcome<-tolower(outcome)
+  if(outcome=="event") outcome<-"tte"
   if(is.na(match(outcome,c("continuous","tte","count","categorical","binary")))) {
     if(verbose) message("Please specify a valid outcome type (TTE, count, categorical, binary). For continuous data, VPC can be obtained via the npde package loaded along with saemix.\n")
     return()
@@ -253,7 +253,7 @@ discreteVPCTTE <- function(object, ngrid=200, interpolation.method="step", verbo
   # Creating plot 
   ## TODO: add options
   ## TODO: add censored data (eg red dots to indicate censored events in the KM plot)
-  xplot <- ggplot(data=tab.quant, aes(x=time, y=median)) +
+  xplot <- ggplot(data=tab.quant, aes(x=.data$time, y=.data$median)) +
     # theme of the ggplot template - from npde, to integrate here
     # theme(plot.title = element_text(hjust = 0.5, size = plot.opt$size.sub),
     #       axis.title.x = element_text(size = plot.opt$size.xlab),
@@ -271,14 +271,14 @@ discreteVPCTTE <- function(object, ngrid=200, interpolation.method="step", verbo
     # coordinates x-y
     # coord_cartesian(xlim=x.limits, ylim=y.limits) +
     { if ( plot.opt$bands == TRUE )
-      geom_ribbon(aes(ymin = lower, ymax = upper), fill = plot.opt$fillcol, alpha = plot.opt$alpha.bands) } +
+      geom_ribbon(aes(ymin = .data$lower, ymax = .data$upper), fill = plot.opt$fillcol, alpha = plot.opt$alpha.bands) } +
     geom_line(linetype = plot.opt$lty.lpi,colour = plot.opt$col.lpi, size = plot.opt$lwd.lpi)+
-    geom_line(aes(y=lower), colour = plot.opt$col.lpi, size = plot.opt$lwd.lpi, alpha = plot.opt$alpha.bands)+
-    geom_line(aes(y=upper), colour = plot.opt$col.lpi, size = plot.opt$lwd.lpi, alpha = plot.opt$alpha.bands)+
-    geom_line(data=tab.obs,aes(x=tobs, y = km),  linetype = plot.opt$lty.lobs,colour = plot.opt$col.lobs,size = plot.opt$lwd.lobs)+
+    geom_line(aes(y=.data$lower), colour = plot.opt$col.lpi, size = plot.opt$lwd.lpi, alpha = plot.opt$alpha.bands)+
+    geom_line(aes(y=.data$upper), colour = plot.opt$col.lpi, size = plot.opt$lwd.lpi, alpha = plot.opt$alpha.bands)+
+    geom_line(data=tab.obs,aes(x=.data$tobs, y = .data$km),  linetype = plot.opt$lty.lobs,colour = plot.opt$col.lobs,size = plot.opt$lwd.lobs)+
     # Censored events
     {if(length(idx.cens)>0 & plot.opt$plot.censTTE)
-      geom_point(data=tab.obs[idx.cens,],aes(x=tobs, y=km), colour=plot.opt$col.pcens)} +
+      geom_point(data=tab.obs[idx.cens,],aes(x=.data$tobs, y=.data$km), colour=plot.opt$col.pcens)} +
     # x-y log-scales
     { if (plot.opt$xlog == FALSE)  scale_x_continuous(plot.opt$xlab, scales::pretty_breaks(n = plot.opt$breaks.x))
     } +
@@ -355,13 +355,13 @@ discreteVPCcount <- function(object, max.cat=10, breaks=NULL, catlabel=NULL, ver
     nrow1<-ncol1<-NULL
   }
   # ggplot
-  plot.counts <- ggplot(data=xtab, aes(x=x.group, y=freq, group=as.factor(group), colour=as.factor(group))) + geom_line() + 
-    geom_line(data=stab, aes(x=x.group, y=median, group=as.factor(group), colour=as.factor(group)), linetype="dashed") + 
-    geom_ribbon(data=stab, aes(x=x.group, ymin=lower, ymax=upper, group=as.factor(group), fill=as.factor(group)), alpha=0.2) + 
+  plot.counts <- ggplot(data=xtab, aes(x=.data$x.group, y=.data$freq, group=as.factor(.data$group), colour=as.factor(.data$group))) + geom_line() + 
+    geom_line(data=stab, aes(x=.data$x.group, y=.data$median, group=as.factor(.data$group), colour=as.factor(.data$group)), linetype="dashed") + 
+    geom_ribbon(data=stab, aes(x=.data$x.group, ymin=.data$lower, ymax=.data$upper, group=as.factor(.data$group), fill=as.factor(.data$group)), alpha=0.2, linetype=0) + 
     xlab(plot.opt$xlab) + ylab(plot.opt$ylab) + 
     {if(length(cgroups)==1) theme(legend.position="none")} +
     {if(length(cgroups)>1) guides(fill=guide_legend(title=plot.opt$which.cov), colour=guide_legend(title=plot.opt$which.cov))} +
-    facet_wrap(.~y.group, nrow=nrow1, ncol=ncol1)
+    facet_wrap(.~.data$y.group, nrow=nrow1, ncol=ncol1)
   return(plot.counts)
 }
 
@@ -396,7 +396,7 @@ discreteVPCcat <- function(object, max.cat=10, breaks=NULL, catlabel=NULL, verbo
   } else {
     object@prefs$ylab <- "Proportion of category (-)"
   }
-  x<-discreteVPC.aux(object, max.cat=max.cat, breaks=breaks, verbose=verbose, ...)
+  x<-discreteVPC.aux(object, max.cat=max.cat, breaks=breaks, catlabel=catlabel, verbose=verbose, ...)
   xtab<-x$xtab
   stab<-x$stab
   plot.opt<-x$plot.opt
@@ -416,13 +416,13 @@ discreteVPCcat <- function(object, max.cat=10, breaks=NULL, catlabel=NULL, verbo
   } else {
     nrow1<-ncol1<-NULL
   }
-  plot.cat <- ggplot(data=xtab, aes(x=x.group, y=freq, group=as.factor(group), colour=as.factor(group))) + geom_line() + 
-    geom_line(data=stab, aes(x=x.group, y=median, group=as.factor(group), colour=as.factor(group)), linetype="dashed") + 
-    geom_ribbon(data=stab, aes(x=x.group, ymin=lower, ymax=upper, group=as.factor(group), fill=as.factor(group)), alpha=0.2) + 
+  plot.cat <- ggplot(data=xtab, aes(x=.data$x.group, y=.data$freq, group=as.factor(.data$group), colour=as.factor(.data$group))) + geom_line() + 
+    geom_line(data=stab, aes(x=.data$x.group, y=.data$median, group=as.factor(.data$group), colour=as.factor(.data$group)), linetype="dashed") + 
+    geom_ribbon(data=stab, aes(x=.data$x.group, ymin=.data$lower, ymax=.data$upper, group=as.factor(.data$group), fill=as.factor(.data$group)), alpha=0.2, linetype=0) + 
     xlab(plot.opt$xlab) + ylab(plot.opt$ylab) + 
     {if(length(cgroups)==1) theme(legend.position="none")} +
     {if(length(cgroups)>1) guides(fill=guide_legend(title=plot.opt$which.cov), colour=guide_legend(title=plot.opt$which.cov))} +
-    facet_wrap(.~y.group, nrow=nrow1, ncol=ncol1)
+    facet_wrap(.~.data$y.group, nrow=nrow1, ncol=ncol1)
   return(plot.cat)
 }
 
@@ -444,7 +444,7 @@ interpol.lin <- function(x, y) {
 }
 
 # Binning and computing PI
-discreteVPC.aux <- function(object, max.cat=10, breaks=NULL, verbose=FALSE, ...) {
+discreteVPC.aux <- function(object, max.cat=10, breaks=NULL, catlabel=NULL, verbose=FALSE, ...) {
   # object: a saemixObject including simulated data
   # ngrid: number of grid points for interpolation of the PI
   # verbose: whether to print messages
@@ -549,7 +549,9 @@ discreteVPC.aux <- function(object, max.cat=10, breaks=NULL, verbose=FALSE, ...)
   alpha <- (1-plot.opt$vpc.interval)/2
   for(igroup in cgroups) {
     tab1<-table(obsdat$x.group[obsdat$covariate.group==igroup],obsdat$score.group[obsdat$covariate.group==igroup])
+    ncol<-colSums(tab1)
     nobs<-rowSums(tab1)
+    tab1<-tab1[,(ncol>0),drop=FALSE]
     freqtab <- tab1/nobs
     xtab <- rbind(xtab,
                   data.frame(group=igroup, x.group=rep(xgroups,length(sgroups)), y.group=rep(sgroups, each=length(xgroups)), freq=c(freqtab), nobs=rep(nobs, length(sgroups))))
@@ -563,7 +565,7 @@ discreteVPC.aux <- function(object, max.cat=10, breaks=NULL, verbose=FALSE, ...)
     for(iscr in 1:length(sgroups)) {
       #      cat("score group",sgroups[iscr],"\n")
       #      print(quant[,,iscr])
-      stab<-rbind(stab,data.frame(group=igroup, x.group=xgroups, y.group=sgroups[iscr], t(quant[,,iscr])))
+      stab<-rbind(stab,data.frame(group=igroup, x.group=xgroups, y.group=sgroups[iscr], t(quant[,,match(sgroups[iscr],dimnames(quant)[[3]])])))
     }
   }
   colnames(stab)[4:6]<-c("lower","median","upper")
@@ -579,6 +581,7 @@ discreteVPC.aux <- function(object, max.cat=10, breaks=NULL, verbose=FALSE, ...)
         catlabel<-gsub(")","",catlabel, fixed=TRUE)
         catlabel<-gsub("]","",catlabel, fixed=TRUE)
         catlabel<-matrix(as.numeric(unlist(strsplit(catlabel,",",fixed=TRUE))), ncol=2, byrow=T)
+        for(i in 1:2) catlabel[,i]<-round(catlabel[,i])
         if(catlabel[1,1]<0) catlabel[1,1]<-0
         catlabel1<-catlabel[,1]
         for(i in 1:length(catlabel1)) {

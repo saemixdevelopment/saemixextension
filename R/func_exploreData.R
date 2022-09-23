@@ -1,3 +1,6 @@
+# fix "no visible binding for global variable '.x'" NOTE (from scales package)
+if(getRversion() >= "2.15.1")  utils::globalVariables(c(".x"))
+
 ###########################	Visualising non Gaussian data		#############################
 
 #' Plot non Gaussian data
@@ -70,12 +73,12 @@ plotDiscreteData <- function(object, outcome="continuous", verbose=FALSE, ...) {
   # outcome: type of outcome (valid types are TTE, binary, categorical, count)
   # verbose: whether to print messages
   # ...: to pass additional plot options (such as title, colours, etc...) which will supersede the options in the prefs slot of object
-  
-  if(!is(object,"SaemixData")) {
+  if(!is(try(exists(object)),"try-error") || !is(object,"SaemixData")) {
     message("Please provide a valid SaemixData object (created by a call to saemixData()) \n")
     return()
   }
   outcome<-tolower(outcome)
+  if(outcome=="event") outcome<-"tte"
   if(is.na(match(outcome,c("continuous","tte","count","categorical","binary")))) {
     if(verbose) message("Please specify a valid outcome type (continuous (default), tte, count, categorical, binary).")
     return()
@@ -176,11 +179,11 @@ exploreDataTTE <- function(object, verbose=FALSE, ...) {
   # Creating plot 
   ## TODO: add options
   ## TODO: add censored data (eg red dots to indicate censored events in the KM plot)
-  xplot <- ggplot(data=tab.obs, aes(x=tobs, y=km, group=as.factor(covariate.group), colour=as.factor(covariate.group))) + 
+  xplot <- ggplot(data=tab.obs, aes(x=.data$tobs, y=.data$km, group=as.factor(.data$covariate.group), colour=as.factor(.data$covariate.group))) + 
     geom_line(linetype = plot.opt$lty.lobs, size = plot.opt$lwd.lobs) +
     # Censored events
     {if(has.cens & plot.opt$plot.censTTE)
-      geom_point(data=tab.cens1, aes(x=tobs, y=km), colour=plot.opt$col.pcens)} +
+      geom_point(data=tab.cens1, aes(x=.data$tobs, y=.data$km), colour=plot.opt$col.pcens)} +
     # x-y log-scales
     { if (plot.opt$xlog == FALSE)  scale_x_continuous(plot.opt$xlab, scales::pretty_breaks(n = plot.opt$breaks.x))
     } +
@@ -239,14 +242,14 @@ exploreDataCountHist <- function(object, verbose=FALSE, ...) {
   plot.opt$ylab <- ifelse(plot.opt$hist.freq, "Frequency","Density")
   if ("xlim" %in% names(plot.opt) & length(plot.opt$xlim)==2)
     x.limits = c(plot.opt$xlim[1],plot.opt$xlim[2])  else
-      x.limits = c(min(obsmat$y,na.rm=TRUE),max(obsmat$y,na.rm=TRUE))
+      x.limits = c(min(obsdat$y,na.rm=TRUE),max(obsdat$y,na.rm=TRUE))
   
   # Future: stratify over eg covariates or groups ?
   numberCategories <- 1
   
   # Creating plot 
   ## TODO: add options
-  xplot <- ggplot(data=obsdat, aes(x=y)) + geom_histogram() +
+  xplot <- ggplot(data=obsdat, aes(x=.data$y)) + geom_histogram() +
     # x log-scale (no sense in y log-scale)
     { if (plot.opt$xlog == FALSE)  scale_x_continuous(plot.opt$xlab, limits = x.limits,  scales::pretty_breaks(n = plot.opt$breaks.x))
     } +
@@ -269,11 +272,11 @@ exploreDataCountHist <- function(object, verbose=FALSE, ...) {
 ###########################	Proportion of each category across X, categorical data		#############################
 # TODO: passing plot options + extending current graphical options to match those of npde (through npdeControl)
 
-exploreDataCat <- function(object, max.cat=10, breaks=NULL, verbose=FALSE, ...) {
+exploreDataCat <- function(object, max.cat=10, breaks=NULL, catlabel=NULL, verbose=FALSE, ...) {
   # object: SaemixData object
   # verbose: whether to print messages
   # ...: to pass additional plot options (such as title, colours, etc...)
-  x<-plotDiscreteData.aux(object, max.cat=max.cat, breaks=breaks, verbose=verbose, ...)
+  x<-plotDiscreteData.aux(object, max.cat=max.cat, breaks=breaks, catlabel=catlabel, verbose=verbose, ...)
   xtab<-x$xtab
   plot.opt<-x$plot.opt
   if(length(plot.opt$mfrow)==2) {
@@ -283,18 +286,18 @@ exploreDataCat <- function(object, max.cat=10, breaks=NULL, verbose=FALSE, ...) 
     nrow1<-ncol1<-NULL
   }
   cgroups<-unique(xtab$group)
-  plot.cat <- ggplot(data=xtab, aes(x=x.group, y=freq, group=as.factor(group), colour=as.factor(group))) + geom_line() + 
+  plot.cat <- ggplot(data=xtab, aes(x=.data$x.group, y=.data$freq, group=as.factor(.data$group), colour=as.factor(.data$group))) + geom_line() + 
     xlab(plot.opt$xlab) + ylab(plot.opt$ylab) + 
     {if(length(cgroups)==1) theme(legend.position="none")} +
     {if(length(cgroups)>1) guides(fill=guide_legend(title=plot.opt$which.cov), colour=guide_legend(title=plot.opt$which.cov))} +
-    facet_wrap(.~y.group, nrow=nrow1, ncol=ncol1)
+    facet_wrap(.~.data$y.group, nrow=nrow1, ncol=ncol1)
   return(plot.cat)
 
 }
 
 ###########################	Binning on X-axis and on scores		#############################
 
-plotDiscreteData.aux <- function(object, max.cat=10, breaks=NULL, verbose=FALSE, ...) {
+plotDiscreteData.aux <- function(object, max.cat=10, breaks=NULL, catlabel=NULL, verbose=FALSE, ...) {
   # object: a SaemixData object including simulated data
   # max.cat, breaks: used to bin the categories of the response
   # verbose: whether to print messages
@@ -362,12 +365,10 @@ plotDiscreteData.aux <- function(object, max.cat=10, breaks=NULL, verbose=FALSE,
       breaks<-unique(quantile(obsdat$y, seq(0,1, length.out=(max.cat+1))))
       breaks[1]<-breaks[1]-0.01
       #      print(breaks)
-      if(max(ysim)>breaks[length(breaks)])  breaks[length(breaks)]<-max(ysim)
       xgrp <- cut(obsdat$y, breaks=breaks, include.lowest=TRUE, right=FALSE)
     } else {
       breaks<-sort(unique(breaks))
       if(min(breaks)>min(obsdat$y)) breaks<-c(min(obsdat$y), breaks)
-      if(max(breaks)<max(obsdat$y, ysim)) breaks<-c(breaks,max(obsdat$y, ysim))
       breaks[1]<-breaks[1]-0.01 # make sure all observations are included
       xgrp <- cut(obsdat$y, breaks=breaks, include.lowest=TRUE, right=FALSE)
     }
@@ -383,6 +384,8 @@ plotDiscreteData.aux <- function(object, max.cat=10, breaks=NULL, verbose=FALSE,
   #  print(xgroups)
   for(igroup in cgroups) {
     tab1<-table(obsdat$x.group[obsdat$covariate.group==igroup],obsdat$score.group[obsdat$covariate.group==igroup])
+    ncol<-colSums(tab1)
+    tab1<-tab1[,(ncol>0),drop=FALSE]
     nobs<-rowSums(tab1)
     freqtab <- tab1/nobs
     xtab <- rbind(xtab,
@@ -398,6 +401,7 @@ plotDiscreteData.aux <- function(object, max.cat=10, breaks=NULL, verbose=FALSE,
         catlabel<-gsub(")","",catlabel, fixed=TRUE)
         catlabel<-gsub("]","",catlabel, fixed=TRUE)
         catlabel<-matrix(as.numeric(unlist(strsplit(catlabel,",",fixed=TRUE))), ncol=2, byrow=T)
+        for(i in 1:2) catlabel[,i]<-round(catlabel[,i])
         if(catlabel[1,1]<0) catlabel[1,1]<-0
         catlabel1<-catlabel[,1]
         for(i in 1:length(catlabel1)) {

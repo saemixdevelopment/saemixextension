@@ -297,6 +297,10 @@ plot2 <- ggplot(rapipl, aes(x=time, y=freq, group=gender)) + geom_line() +
 
 print(plot2)
 
+### VPC
+discreteVPC(ysim.zip2, outcome="count", breaks=c(0:9, 16, 25, 80), which.cov="gender")
+
+######### VPC by hand using tidyverse
 # Grouping data by time and score
 yfit <- ysim.zip2
 ydat <- yfit@data
@@ -423,6 +427,10 @@ cat("Simulated proportion of 0's overall:",sum(ysim.hurdle0@sim.data@datasim$ysi
 
 ysim.hurdle1 <- simulateDiscreteSaemix(hurdlefit1, nsim=nsim)
 
+### VPC
+discreteVPC(ysim.hurdle1, outcome="count", breaks=c(0:9, 16, 25, 80), which.cov="gender")
+
+### Other graphs
 # Graph of proportion of 0's with time
 yfit<-ysim.hurdle0
 simdat <-yfit@sim.data@datasim

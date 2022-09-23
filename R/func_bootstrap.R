@@ -128,9 +128,12 @@ saemix.bootstrap<-function(saemixObject, method="conditional", nboot=200, nsamp=
 
 #' Bootstrap datasets
 #' 
-#' These functions create bootstrapped datasets using the bootstrap methods described in \code{\link{bootstrap.saemix}}
+#' These functions create bootstrapped datasets using the bootstrap methods described in \code{\link{saemix.bootstrap}}
 #' 
 #' @rdname boostrap.data
+#' 
+#' @param saemixObject an object returned by the \code{\link{saemix}} function
+#' 
 #' @aliases dataGen.case dataGen.NP dataGen.Par
 #' @aliases sampDist.Par sampDist.NP sampDist.NPcond
 #'  
@@ -154,6 +157,10 @@ dataGen.case<- function(saemixObject) {
 }
 
 #' @rdname boostrap.data
+#' @param nsamp number of samples from the conditional distribution (for method="conditional")
+#' @param eta.sampc if available, samples from the conditional distribution (otherwise, they are obtained within the function)
+#' @param conditional if TRUE, sample from the conditional distribution, if FALSE, sample within the 
+#' empirical Bayes estimates (EBE) as in the traditional non-parametric residual bootstrap
 #' @export dataGen.NP
 
 dataGen.NP<-function(saemixObject,nsamp=0,eta.sampc=NULL,conditional=FALSE) {
@@ -176,6 +183,9 @@ dataGen.NP<-function(saemixObject,nsamp=0,eta.sampc=NULL,conditional=FALSE) {
 }
 
 #' @rdname boostrap.data
+#' 
+#' @importFrom MASS mvrnorm
+#' 
 #' @export dataGen.Par
 
 dataGen.Par<-function(saemixObject) { # Probably could reintegrate in function .NP as only the first line changes... TODO

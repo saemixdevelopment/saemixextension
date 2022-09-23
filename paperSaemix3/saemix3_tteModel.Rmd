@@ -14,15 +14,14 @@ Use saemix version $\geq$ 3.2
 
 Run TTE and RTTE models in **saemix**
 
-This notebook uses additional code from the **saemix** development github, not yet integrated in the package. The *workDir* folder in the next chunk of code points to the folder where the user stored this code, and is needed to run the notebook (*workDir* defaults to the current working directory). Specifically, the notebook loads:
+This notebook uses additional code from the **saemix** development github (https://github.com/saemixdevelopment/saemixextension), not yet integrated in the package. The *workDir* folder in the next chunk of code points to the folder where the user stored this code, and is needed to run the notebook (*workDir* defaults to the current working directory). Specifically, the notebook loads:
 
-- code for different bootstraps in non-linear mixed effect models (Comets et al. 2021 and submitted)
-  - the bootstrap runs have been performed previously and are stored in files to be read
+- code for the MC/AGQ provided by Sebastian Ueckert (Ueckert et al. 2017)
+  - if memory issues arise the code can be run in a separate script.
+- the results for the bootstrap runs performed using different approaches (see Comets et al. Pharm Res 2021)
     - bootstraps can be run instead by switching the *runBootstrap* variable to TRUE in the first chunk of code
     - in the code, the number of bootstraps is set to 10 for speed but we recommend to use at least 200 for a 90\% CI.
   - this can be changed in the following change of code by uncommenting the line *nboot<-200* and setting the number of bootstrap samples (this may cause memory issues in **Rstudio** with older machines, if this is the case we recommend executing the code in a separate script)
-- code for the MC/AGQ provided by Sebastian Ueckert (Ueckert et al. 2017)
-  - again if memory issues arise the code can be run in a separate script.
 
 The current notebook can be executed to create an HMTL or PDF output with comments and explanations. A script version containing only the R code is also given as *saemix3_tteModel.R* in the same folder.
 
@@ -57,10 +56,6 @@ library(randtoolbox)
 # FIM by MC/AGQ (code S. Ueckert)
 dirAGQ<-file.path(saemixDir,"fimAGQ")
 
-# Bootstrap code
-source(file.path(saemixDir, "bootstrap", "saemix_bootstrap.R"))
-
-
 # Code to compute the exact FIM by MC/AGQ
 
 # library(ggplot2)
@@ -93,7 +88,9 @@ data(lung.saemix)
 saemix.data<-saemixData(name.data=lung.saemix,header=TRUE,name.group=c("id"),
       name.predictors=c("time","status","cens"),name.response=c("status"),
       name.covariates=c("age", "sex", "ph.ecog", "ph.karno", "pat.karno", "wt.loss","meal.cal"),
-      units=list(x="days",y="",covariates=c("yr","","-","%","%","cal","pounds")))
+      units=list(x="days",y="",covariates=c("yr","","-","%","%","cal","pounds")), verbose=FALSE)
+
+plotDiscreteData(saemix.data, outcome="tte", which.cov="sex")
 
 # Histogram
 hist(lung.saemix$time[lung.saemix$status==1])
@@ -142,10 +139,11 @@ weibulltte.model<-function(psi,id,xidep) {
 
 saemix.model<-saemixModel(model=weibulltte.model,description="time model",modeltype="likelihood",
   psi0=matrix(c(1,2),ncol=2,byrow=TRUE,dimnames=list(NULL,  c("lambda","beta"))),
-  transform.par=c(1,1),covariance.model=matrix(c(1,0,0,0),ncol=2, byrow=TRUE))
-saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
+  transform.par=c(1,1),covariance.model=matrix(c(1,0,0,0),ncol=2, byrow=TRUE), verbose=FALSE)
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, print=FALSE)
 tte.fit<-saemix(saemix.model,saemix.data,saemix.options)
 plot(tte.fit, plot.type="convergence")
+summary(tte.fit)
 
 ```
 
@@ -214,7 +212,7 @@ hist(simtime.maxcens[simtime.maxcens>0], breaks=30, xlim=c(0,1000), xlab="Time",
 
 ```
 
-We then use the simulation function defined above to simulate from the fitted model, adding it first to the model component, and plot VPC.
+We then use the simulation function defined above to simulate from the fitted model, adding it first to the model component, and plot VPC (we can also include the simulation function when creating the model by adding the argument *simulate.function=simulateWeibullTTE* to saemixModel in the code above).
 
 ```{r WeibullTTEVPC}
 tte.fit@model@simulate.function <- simulateWeibullTTE
@@ -228,13 +226,13 @@ Note that there are some specialised packages such as the **survsim** and the **
 
 ##### VPC using Ron's package
 
-A recent package was developed by Ron Keizer to implement VPC for different types of data. For survival data, we can use the *vpc_tte()* function from this package to produce the KM-VPC plot.
+A recent package was developed by Ron Keizer to implement VPC for different types of data. For survival data, we can also use the *vpc_tte()* function from this package to produce the KM-VPC plot.
 
 ```{r lungTTEDiagnosticVPCRon}
 library(vpc)
 
-n<-dim(ysim.tte@sim.data@datasim)[1]
-simron<-cbind(ysim.tte@sim.data@datasim,dv=rep(c(0,1), n/2))
+n<-dim(simtte.fit@sim.data@datasim)[1]
+simron<-cbind(simtte.fit@sim.data@datasim,dv=rep(c(0,1), n/2))
 colnames(simron)<-c("id","sim","time","dv")
 
 vpc_tte(sim = simron,
@@ -281,7 +279,7 @@ In the following, we first load the functions needed to compute the exact FIM. W
 
 For *mu* and *omega*, we use the results from the saemix fit.
 
-**TODO** ?
+**TODO Alexandra** ?
 
 ```{r TTEmodelFIMSEbyAGQ}
 # Code Sebastian
@@ -293,47 +291,47 @@ source(file.path(dirAGQ,"model.R"))
 saemix.fit <- tte.fit
 
 # TODO - adapt to TTE model ???
-model <- Model$new(
-  parameter_function = function(mu, b) list(alp1=mu[1]+b[1], alp2=mu[2], alp3=mu[3], alp4=mu[4], beta=mu[5] + b[2]),
-  log_likelihood_function = function(y, design, alp1, alp2, alp3, alp4, beta) {
-    logit1<-alp1 + beta*design$time
-    logit2<-logit1+alp2
-    logit3<-logit2+alp3
-    logit4<-logit3+alp4
-    pge1<-exp(logit1)/(1+exp(logit1))
-    pge2<-exp(logit2)/(1+exp(logit2))
-    pge3<-exp(logit3)/(1+exp(logit3))
-    pge4<-exp(logit4)/(1+exp(logit4))
-    pobs = (y==1)*pge1+(y==2)*(pge2 - pge1)+(y==3)*(pge3 - pge2)+(y==4)*(pge4 - pge3)+(y==5)*(1 - pge4)
-    log(pobs)
-  }, 
-  simulation_function = function(design, alp1, alp2, alp3, alp4, beta) {
-    logit1<-alp1 + beta*design$time
-    logit2<-logit1+alp2
-    logit3<-logit2+alp3
-    logit4<-logit3+alp4
-    pge1<-exp(logit1)/(1+exp(logit1))
-    pge2<-exp(logit2)/(1+exp(logit2))
-    pge3<-exp(logit3)/(1+exp(logit3))
-    pge4<-exp(logit4)/(1+exp(logit4))
-    x<-runif(length(time))
-    ysim<-1+as.integer(x>pge1)+as.integer(x>pge2)+as.integer(x>pge3)+as.integer(x>pge4)
-  },
-  inverse_simulation_function = function(design, urand,alp1, alp2, alp3, alp4, beta) {
-    if(is.null(urand)) return(seq_along(design$time))
-    logit1<-alp1 + beta*design$time
-    logit2<-logit1+alp2
-    logit3<-logit2+alp3
-    logit4<-logit3+alp4
-    pge1<-exp(logit1)/(1+exp(logit1))
-    pge2<-exp(logit2)/(1+exp(logit2))
-    pge3<-exp(logit3)/(1+exp(logit3))
-    pge4<-exp(logit4)/(1+exp(logit4))
-    1+as.integer(urand>pge1)+as.integer(urand>pge2)+as.integer(urand>pge3)+as.integer(urand>pge4)
-  },
-  mu = saemix.fit@results@fixed.effects,
-  omega = saemix.fit@results@omega[c(1,5),c(1,5)]
-  )
+# model <- Model$new(
+#   parameter_function = function(mu, b) list(alp1=mu[1]+b[1], alp2=mu[2], alp3=mu[3], alp4=mu[4], beta=mu[5] + b[2]),
+#   log_likelihood_function = function(y, design, alp1, alp2, alp3, alp4, beta) {
+#     logit1<-alp1 + beta*design$time
+#     logit2<-logit1+alp2
+#     logit3<-logit2+alp3
+#     logit4<-logit3+alp4
+#     pge1<-exp(logit1)/(1+exp(logit1))
+#     pge2<-exp(logit2)/(1+exp(logit2))
+#     pge3<-exp(logit3)/(1+exp(logit3))
+#     pge4<-exp(logit4)/(1+exp(logit4))
+#     pobs = (y==1)*pge1+(y==2)*(pge2 - pge1)+(y==3)*(pge3 - pge2)+(y==4)*(pge4 - pge3)+(y==5)*(1 - pge4)
+#     log(pobs)
+#   }, 
+#   simulation_function = function(design, alp1, alp2, alp3, alp4, beta) {
+#     logit1<-alp1 + beta*design$time
+#     logit2<-logit1+alp2
+#     logit3<-logit2+alp3
+#     logit4<-logit3+alp4
+#     pge1<-exp(logit1)/(1+exp(logit1))
+#     pge2<-exp(logit2)/(1+exp(logit2))
+#     pge3<-exp(logit3)/(1+exp(logit3))
+#     pge4<-exp(logit4)/(1+exp(logit4))
+#     x<-runif(length(time))
+#     ysim<-1+as.integer(x>pge1)+as.integer(x>pge2)+as.integer(x>pge3)+as.integer(x>pge4)
+#   },
+#   inverse_simulation_function = function(design, urand,alp1, alp2, alp3, alp4, beta) {
+#     if(is.null(urand)) return(seq_along(design$time))
+#     logit1<-alp1 + beta*design$time
+#     logit2<-logit1+alp2
+#     logit3<-logit2+alp3
+#     logit4<-logit3+alp4
+#     pge1<-exp(logit1)/(1+exp(logit1))
+#     pge2<-exp(logit2)/(1+exp(logit2))
+#     pge3<-exp(logit3)/(1+exp(logit3))
+#     pge4<-exp(logit4)/(1+exp(logit4))
+#     1+as.integer(urand>pge1)+as.integer(urand>pge2)+as.integer(urand>pge3)+as.integer(urand>pge4)
+#   },
+#   mu = saemix.fit@results@fixed.effects,
+#   omega = saemix.fit@results@omega[c(1,5),c(1,5)]
+#   )
 
 # TBContinued
 ```
@@ -438,7 +436,7 @@ simdat$risk<-as.integer(simdat$id>(nsuj/2))
 ```
 
 ```{r fitRTTE}
-saemix.data<-saemixData(name.data=simdat, name.group=c("id"), name.predictors=c("T"), name.response="status", name.covariates="risk")
+saemix.data<-saemixData(name.data=simdat, name.group=c("id"), name.predictors=c("T"), name.response="status", name.covariates="risk", verbose=FALSE)
 
 rtte.model<-function(psi,id,xidep) {
   T<-xidep[,1]
@@ -461,17 +459,19 @@ rtte.model<-function(psi,id,xidep) {
 
 saemix.model.base<-saemixModel(model=rtte.model,description="Repeated TTE model",modeltype="likelihood",
                                psi0=matrix(c(1,2),ncol=2,byrow=TRUE,dimnames=list(NULL,  c("lambda","beta"))),
-                               transform.par=c(1,1),covariance.model=matrix(c(1,0,0,1),ncol=2, byrow=TRUE))
+                               transform.par=c(1,1),covariance.model=matrix(c(1,0,0,1),ncol=2, byrow=TRUE), verbose=FALSE)
 saemix.model<-saemixModel(model=rtte.model,description="Repeated TTE model",modeltype="likelihood",
                           psi0=matrix(c(1,2),ncol=2,byrow=TRUE,dimnames=list(NULL,  c("lambda","beta"))),
                           transform.par=c(1,1),covariate.model=matrix(c(0,1),ncol=2),
-                          covariance.model=matrix(c(1,0,0,1),ncol=2, byrow=TRUE))
-saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, fim=FALSE, displayProgress=FALSE)
+                          covariance.model=matrix(c(1,0,0,1),ncol=2, byrow=TRUE), verbose=FALSE)
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, fim=FALSE, displayProgress=FALSE, print=FALSE)
 rtte.fit<-saemix(saemix.model,saemix.data,saemix.options)
 plot(rtte.fit, plot.type="convergence")
+print(rtte.fit@results)
 
 ```
 
+Work in progress: currently, no diagnostic plots available for RTTE, stay tuned for progress.
 
 #### Statistical model
 
