@@ -32,9 +32,13 @@ $1_{Y_{ij}=0} \times (1-P(Y_{ij}=1)) + 1_{Y_{ij}=1} \times P(Y_{ij}=1) $
   - new defaults: no plot for conditional distribution
 - github
   - get the hang of branches...
-- add a simulation function to generate diagnostics and simulate from the fitted model
+- [x] add a simulation function to generate diagnostics and simulate from the fitted model
   - test if simulate function exists before creatign VPC/npde
   - add an option to add this function later
+- algorithms
+    - parameter expansion SAEM (PX-SAEM), see section 9.2.7 in Marc's book
+    - IOV
+    - LOQ
 
 ### Loading
 

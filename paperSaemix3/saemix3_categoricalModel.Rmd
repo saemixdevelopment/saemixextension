@@ -10,23 +10,18 @@ output:
 ## Version
 Use saemix version $\geq$ 3.2
 
-- correction of a bug in the simulation file
-- added a simulation function for non Gaussian data models
-  - **TODO** test if function is NULL !!!
-
 ## Objective
 
 Run binary and categorical models in **saemix**
 
 This notebook uses additional code from the **saemix** development github (https://github.com/saemixdevelopment/saemixextension), not yet integrated in the package. The *workDir* folder in the next chunk of code points to the folder where the user stored this code, and is needed to run the notebook (*workDir* defaults to the current working directory). Specifically, the notebook loads:
 
-- code for different bootstraps in non-linear mixed effect models (Comets et al. 2021 and submitted)
-  - the bootstrap runs have been performed previously and are stored in files to be read
+- code for the MC/AGQ provided by Sebastian Ueckert (Ueckert et al. 2017)
+  - if memory issues arise the code can be run in a separate script.
+- the results for the bootstrap runs performed using different approaches (see Comets et al. Pharm Res 2021)
     - bootstraps can be run instead by switching the *runBootstrap* variable to TRUE in the first chunk of code
     - in the code, the number of bootstraps is set to 10 for speed but we recommend to use at least 200 for a 90\% CI.
   - this can be changed in the following change of code by uncommenting the line *nboot<-200* and setting the number of bootstrap samples (this may cause memory issues in **Rstudio** with older machines, if this is the case we recommend executing the code in a separate script)
-- code for the MC/AGQ provided by Sebastian Ueckert (Ueckert et al. 2017)
-  - again if memory issues arise the code can be run in a separate script.
 
 The current notebook can be executed to create an HMTL or PDF output with comments and explanations. A script version containing only the R code is also given as *saemix3_categoricalModel.R* in the same folder.
 
@@ -53,14 +48,9 @@ library(Matrix)
 library(randtoolbox)
 
 # FIM by MC/AGQ (code S. Ueckert)
-
 dirAGQ<-file.path(saemixDir,"fimAGQ")
 
-# Bootstrap code
-source(file.path(saemixDir, "bootstrap", "saemix_bootstrap.R"))
-
-# Code to compute the exact FIM by MC/AGQ
-
+# Automatically loaded when loading saemix
 # library(ggplot2)
 # library(MASS)
 # library(rlang)
@@ -93,19 +83,26 @@ To create the data object using saemixData, we need to specify the response colu
 data(toenail.saemix)
 
 saemix.data<-saemixData(name.data=toenail.saemix,name.group=c("id"),name.predictors=c("time","y"), name.response="y",
-                        name.covariates=c("treatment"))
+                        name.covariates=c("treatment"), verbose=FALSE)
 ```
 
 #### Exploring data
 
-The usual plot of the data object is not very informative as it alternates between 0 and 1's. Instead we plot the evolution of the frequency of infection over time in the population, stratifying by treatment. The plot is created using **ggplot2**.
+The usual plot of the data object is not very informative as it alternates between 0 and 1's. Instead we plot the evolution of the frequency of infection over time in the population, stratifying by treatment. We use the *plotDiscreteData()* function from the package, setting the *outcome* argument to *'binary'*.
 
 ```{r binaryExplore}
 # Distribution of times
 if(FALSE) hist(toenail.saemix$time, breaks=c(-1,0.25,1.25,2.25, 3.25, 7,10,15,20), freq=T)
 table(cut(toenail.saemix$time, breaks=c(-1,0.25,1.25,2.25, 3.25, 7,10,15,20)))
 
-# Explore data
+# Proportion of 0's and 1's across time
+plotDiscreteData(saemix.data, outcome='binary', which.cov="treatment")
+```
+
+We can also present the results as a barplot of the proportion of events, using **ggplot2** and **tidyverse**.
+
+```{r binaryExploreAdditional}
+# Barplots across time
 toe1 <- toenail.saemix %>%
   group_by(visit, treatment) %>%
   summarise(nev = sum(y), n=n()) %>%
@@ -175,7 +172,7 @@ simulBinary<-function(psi,id,xidep) {
 
 saemix.model<-saemixModel(model=binary.model,description="Binary model",simulate.function=simulBinary, modeltype="likelihood",
                           psi0=matrix(c(-0.5,-.15,0,0),ncol=2,byrow=TRUE,dimnames=list(NULL,c("theta1","theta2"))),
-                          transform.par=c(0,0), covariate.model=c(0,1),covariance.model=matrix(c(1,0,0,0),ncol=2), omega.init=diag(c(0.5,0.3)))
+                          transform.par=c(0,0), covariate.model=c(0,1),covariance.model=matrix(c(1,0,0,0),ncol=2), omega.init=diag(c(0.5,0.3)), verbose=FALSE)
 ```
 
 - Fit with saemix and store the results to the object *binary.fit*
@@ -186,9 +183,9 @@ saemix.model<-saemixModel(model=binary.model,description="Binary model",simulate
 
 ```{r binaryModelFit}
 # saemix fit
-saemix.options<-list(seed=1234567,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, nb.chains=10, fim=FALSE)
+saemix.options<-list(seed=1234567,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, nb.chains=10, fim=FALSE, print=FALSE)
 binary.fit<-saemix(saemix.model,saemix.data,saemix.options)
-
+summary(binary.fit)
 plot(binary.fit, plot.type="convergence")
 ```
 - results
@@ -208,26 +205,25 @@ plot(binary.fit, plot.type="convergence")
     - same definition of pevent (=$P(Y_{ij}=1)$, the probability of observing an event)
     - in *binary.model()* we then compute the probability of the observed outcome using the observed value of $Y_{ij}$ contained in *y* for each observation
     - in *simulBinary()*, we use the individual $P(Y_{ij}=1)$ predictions to simulate from a Bernouilli distribution using the *rbinom()* function
-- once the simulation function has been defined, we use the *simulateDiscreteSaemix()* function from the {\sf saemix} package to simulate *nsim* values (here 100) with the population parameters estimated in *binary.fit*
+- once the simulation function has been defined and associated with the model component of the object, we use the *simulateDiscreteSaemix()* function from the {\sf saemix} package to simulate *nsim* values (here 100) with the population parameters estimated in *binary.fit*
   - this adds a *simdata* element to the *binary.fit*
-  - we extract dataframe with the simulated data (*binary.fit@sim.data@datasim*) and add columns *visit* and *treatment* to stratify the plots
-
-```{r binarySimulate}
+  - the simulations are used to produce VPC via the *discreteVPC()* function, again specifying the outcome to be binary. We stratify the plot on the treatment covariate
+  
+```{r binaryVPC}
 #  $1_{Y_{ij}=0} \times (1-P(Y_{ij}=1)) + 1_{Y_{ij}=1} \times P(Y_{ij}=1) $
 # simulate from model (nsim=100)
 nsim<-1000
 binary.fit <- simulateDiscreteSaemix(binary.fit, nsim=nsim)
+
+discreteVPC(binary.fit, outcome="binary", which.cov="treatment")
+```
+  
+We can also extract dataframe with the simulated data (*binary.fit@sim.data@datasim*) and produce diagnostics in R. Below, using **tidyverse**, we add columns *visit* and *treatment* to plot the frequency of infection over time for each treatment.
+
+```{r binaryDiagnostics, warning=FALSE, message=FALSE}
 simdat <-binary.fit@sim.data@datasim
 simdat$visit<-rep(toenail.saemix$visit,nsim)
 simdat$treatment<-rep(toenail.saemix$treatment,nsim)
-```
-
-- VPC-like diagnostics
-  - created by hand
-- npde for categorical data (submitted)
-  - **TODO** using code from Marc
-
-```{r binaryDiagnostics, warning=FALSE, message=FALSE}
 # VPC-type diagnostic
 ytab<-NULL
 for(irep in 1:nsim) {
@@ -260,9 +256,13 @@ if(saveFigs) {
   plot(plot2)
   dev.off()
 }
+```
 
+- npde for categorical data (submitted)
+  - **TODO** using code from Marc
+
+```{r binaryDiagnosticsNpd, warning=FALSE, message=FALSE}
 # npd
-
 
 ```
 
@@ -396,8 +396,7 @@ The *knee.saemix* data represents pain scores recorded in a clinical study in 12
 - treatment was recoded as 0/1 (placebo/treatment), gender as 0/1 (male/female) 
 - {\sf Age2} represents the squared of centered Age. 
 
-The following code represents the data as barplots of the different pain scores as a function of time in study, illustrating a recovery as the proportion of lower pain scores increases.
-
+We can visualise the evolution of the proportion of each score over time using the *plotDiscreteData()* function with the outcome set to *categorical*, stratifying by treatment.
 
 ```{r kneeData}
 data(knee.saemix)
@@ -406,7 +405,14 @@ data(knee.saemix)
 saemix.data<-saemixData(name.data=knee.saemix,name.group=c("id"),
                         name.predictors=c("y", "time"), name.X=c("time"),
                         name.covariates = c("Age","Sex","treatment","Age2"),
-                        units=list(x="d",y="", covariates=c("yr","-","-","yr2")))
+                        units=list(x="d",y="", covariates=c("yr","-","-","yr2")), verbose=FALSE)
+
+plotDiscreteData(saemix.data, outcome="categorical", which.cov="treatment")
+```
+
+The following R code represents the data as barplots of the different pain scores as a function of time in study, illustrating a recovery as the proportion of lower pain scores increases.
+
+```{r kneeDataBarplot}
 gtab <- knee.saemix %>%
   group_by(time, y) %>%
   summarise(n=length(y)) %>%
@@ -482,15 +488,17 @@ simulateOrdinal<-function(psi,id,xidep) {
 }
 
 # Saemix model
-saemix.model<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood", simulate.function=simulateOrdinal,
-                          psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))),
-                          transform.par=c(0,1,1,1,1),omega.init=diag(c(100, 1, 1, 1, 1)), covariance.model = diag(c(1,0,0,0,1)))
+saemix.model<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",
+                simulate.function=simulateOrdinal, psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5, byrow=TRUE, 
+                dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))), transform.par=c(0,1,1,1,1),
+                omega.init=diag(c(100, 1, 1, 1, 1)), covariance.model = diag(c(1,0,0,0,1)), verbose=FALSE)
 
 # Fitting
-saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, fim=FALSE, nb.chains=10, nbiter.saemix=c(600,100))
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, fim=FALSE, nb.chains=10, nbiter.saemix=c(600,100), print=FALSE)
 #saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, nb.chains=10, fim=FALSE)
 
 ord.fit<-saemix(saemix.model,saemix.data,saemix.options)
+summary(ord.fit)
 plot(ord.fit, plot.type="convergence")
 
 ## Note: comparable estimates obtained with Monolix (not same, but within CI)
@@ -510,17 +518,18 @@ covmodel2[3,5]<-covmodel2[4,1]<-1
 saemix.model.cov1<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",simulate.function=simulateOrdinal,
                               psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))),
                               transform.par=c(0,1,1,1,1),omega.init=diag(rep(1,5)), covariance.model = diag(c(1,0,0,0,1)),
-                              covariate.model = covmodel1)
+                              covariate.model = covmodel1, verbose=FALSE)
 saemix.model.cov2<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",simulate.function=simulateOrdinal,
                                psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))),
                                transform.par=c(0,1,1,1,1),omega.init=diag(rep(1,5)), covariance.model = diag(c(1,0,0,0,1)),
-                               covariate.model = covmodel2)
+                               covariate.model = covmodel2, verbose=FALSE)
 
 ord.fit.cov1<-saemix(saemix.model.cov1,saemix.data,saemix.options)
 ord.fit.cov2<-saemix(saemix.model.cov2,saemix.data,saemix.options)
 BIC(ord.fit)
 BIC(ord.fit.cov1)
 BIC(ord.fit.cov2)
+summary(ord.fit.cov2)
 
 # Comparing the 3 covariate models - model with Age2 on alp1 and treatment on beta best
 compare.saemix(ord.fit, ord.fit.cov1, ord.fit.cov2)
@@ -536,43 +545,10 @@ In the code below we define a simulation function for the ordinal model and we a
 nsim<-100
 yfit<-ord.fit.cov2
 yfit<-simulateDiscreteSaemix(yfit, nsim=nsim)
-
-simdat <-yfit@sim.data@datasim
-simdat$time<-rep(yfit@data@data$time,nsim)
-simdat$treatment<-rep(yfit@data@data$treatment,nsim)
-
-ytab<-NULL
-for(irep in 1:nsim) {
-  xtab<-simdat[simdat$irep==irep,]
-  suppressMessages(
-  xtab1 <- xtab %>%
-    group_by(time, treatment, ysim) %>%
-    summarise(n=length(ysim))
-  )
-  ytab<-rbind(ytab,xtab1[,c("time","ysim","n","treatment")])
-}
-gtab <- ytab %>%
-  group_by(time, treatment, ysim) %>%
-  summarise(lower=quantile(n, c(0.05)), n=quantile(n, c(0.5)), upper=quantile(n, c(0.95))) %>%
-  mutate(y=as.factor(ysim))
-
-knee2 <- knee.saemix %>%
-  group_by(time, treatment, y) %>%
-  summarise(n=length(y)) %>%
-  mutate(y=as.factor(y))
-
-
-kneevpc <- ggplot(data = knee2, aes(x = time, y=n, fill=y, group=treatment)) + 
-  geom_ribbon(data=gtab, aes(x=time, ymin=lower, ymax=upper), alpha=0.9, colour="lightblue") +
-  geom_col(position = "dodge", width=0.5, colour="lightblue") + theme_bw() + 
-  scale_fill_brewer(palette = "Blues") + theme(legend.position = "top") +
-  labs(fill = "Score") + xlab("Time (d)") + ylab("Counts") + facet_wrap(treatment~y, nrow=2)
-
-print(kneevpc)
-
+discreteVPC(yfit, outcome="categorical")
 ```
 
-We also looked at the VPC for the median score in each treatment group and find that the model tends to underpredict the pain scores, especially in the group receiving the first therapy.
+We can also look at the VPC for the median score in each treatment group to find that the model tends to underpredict the pain scores, especially in the group receiving the first therapy.
 
 ```{r kneeMedEval}
 # VPC for median score in each group
@@ -580,6 +556,9 @@ knee3 <- knee.saemix %>%
   group_by(time, treatment) %>%
   summarise(mean=mean(y))
 
+simdat <-yfit@sim.data@datasim
+simdat$time<-rep(yfit@data@data$time,nsim)
+simdat$treatment<-rep(yfit@data@data$treatment,nsim)
 ytab<-NULL
 for(irep in 1:nsim) {
   xtab<-simdat[simdat$irep==irep,]

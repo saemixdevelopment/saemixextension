@@ -1,0 +1,228 @@
+---
+title: "Time-to-event"
+output: html_notebook
+---
+
+# Objective
+
+Investigate systematic bias with saemix compared to Monolix for TTE model
+
+### Results Alexandra
+
+- simulations avec modèle TTE, risque de base de Weibull, simulations sans IIV
+  - a fait tourner deux simulations avec un modèle de Weibull (paramètres $k$ et $l$) et un modèle de covariable ($\times e^{B Cov_i]}$)
+    - 1000 sujets et environ 25% d'évènements
+    - estimation avec une variabilité sur $l$, distribution log-normales pour les 2 paramètres, effet $\beta$ d'une covariable sur B qui est un paramètre sans variabilité avec une moyenne fixée à 0
+      - simulations initiales: avec variabilité sur $k$ ou $\lambda$: biais de 50% sur $k$, -8% sur $\lambda$ et 13% sur $\beta$
+      - update avril, biais: $k$ surestimé, $\beta$ sous-estimé (les deux d'environ 20-30%); $l$ légèrement sous-estimé mais seulement de 2-3% a priori
+      - résultats similaires quand on met la variabilité sur $k$ au lieu de $l$
+    - estimation avec une dummy variable
+      - ajout d'une variable sans effet dans le modèle, sur laquelle porte une variabilité
+      - là les résultats sont beaucoup mieux, avec seulement 10% de biais sur $k$ et 2-3% sur $\beta$ (à vérifier sur des graphes avec valeurs relatives au lieu)
+      - avec dummy variable avec IIV (valeur fixée): biais de 11% sur $k$, -2% sur $\lambda$ et 5% sur $\beta$
+- [ ] Eco
+  - regarder si en changeant les CI ou les distributions on trouve les mêmes biais
+  - essayer aussi en décochant simulated annealing
+  - quid du cas sans covariables
+
+# Setup
+
+Directories and libraries
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# Directories
+saemixDir<-"/home/eco/work/saemix/saemixextension"
+progDir<-file.path(saemixDir,"R")
+datDir<-file.path(saemixDir,"data")
+workDir<-file.path(saemixDir,"alexandra","simulationsTTE")
+
+# Libraries
+library(ggplot2)
+library(MASS)
+library(rlang)
+library(gridExtra)
+library(survival)
+```
+
+Loading saemix functions
+
+```{r testLibrary, include=FALSE}
+# Sourcing saemix functions
+  source(file.path(progDir,"aaa_generics.R"))
+  #source(file.path(progDir,"global.R"))
+  source(file.path(progDir,"SaemixData.R"))
+  source(file.path(progDir,"SaemixRes.R"))
+  source(file.path(progDir,"SaemixModel.R"))
+  source(file.path(progDir,"SaemixObject.R"))
+  source(file.path(progDir,"main.R"))
+  source(file.path(progDir,"func_aux.R"))
+  source(file.path(progDir,"main_initialiseMainAlgo.R"))
+  source(file.path(progDir,"main_estep.R"))
+  source(file.path(progDir,"main_mstep.R"))
+  source(file.path(progDir,"func_FIM.R"))
+  source(file.path(progDir,"func_npde.R"))
+  source(file.path(progDir,"func_plots.R"))
+  source(file.path(progDir,"func_distcond.R"))
+  source(file.path(progDir,"func_simulations.R"))
+  source(file.path(progDir,"compute_LL.R"))
+  source(file.path(progDir,"func_estimParam.R"))
+  source(file.path(progDir,"backward.R"))
+  source(file.path(progDir,"forward.R"))
+  source(file.path(progDir,"stepwise.R"))
+  source(file.path(progDir,"func_stepwise.R"))
+  source(file.path(progDir,"func_compare.R"))
+```
+
+### Code pour la simulation
+
+```{r simul}
+### simulation single event selon un modèle de Weibull avec une covariable en 2 modalités 
+# modele de la forme : (k/l)*(t/l)^(k-1)*exp(beta)
+
+# paramètres utilisés pour la simulation 
+N = 1000 # nb de sujets
+t.max = 30 # censure administrative
+
+## covariable 
+x=c(1,2) # 2 cat d'age
+prob=c(1/2,1/2)
+sim_age <- data.frame(id=1:N,age=sample(x,N,replace = T,prob))
+sim_age$coeff <- ifelse(sim_age$age==1,0,0.7)
+
+k=5 # 1.5
+l=40 # 50
+DC=c()
+delta=rep(1,N)
+for(i in 1:N){
+  h<-function(time){
+    (k/l)*((time/l)^(k-1))*exp(sim_age$coeff[sim_age$id==i])
+  }
+  
+  H<-function(time){
+    vec<-rep(0, length(time))
+    for (j in 1:length(time)) {
+      int=integrate(Vectorize(h), lower=0, upper=time[j])$value
+      vec[j]<-ifelse(int<100000000, int,100000000)
+    }
+    vec
+  }
+  
+  #fdr de f
+  fdr<-function(time) {
+    vec<-rep(0, length(time))
+    for (i in 1:length(time)) {
+      vec[i]<-1-exp(-H(time[i]))}
+    vec
+  }
+  
+  #On inverse la fdr ()
+  fdr.inv <- function(y){
+    vec<-rep(0, length(y))
+    for (i in 1:length(y)) {
+      vec[i]<-uniroot(function(x){fdr(x)-y[i]},interval=c(0,10000), tol=0.1)$root
+    }
+    vec
+  }
+  
+  u=runif(1,0,1)
+  DCtemp=fdr.inv(u)
+  if(DCtemp>30){
+    DCtemp=30
+    delta[i]=0
+  }
+  
+  DC[i]=DCtemp
+}
+tte.data = data.frame(id=1:N,time = DC, ev = delta, age = sim_age$age)
+table(delta)
+
+# mettre la table au bon format : on rajoute une ligne par individu t=0 ev=0
+tte.data2<-data.frame(id=tte.data$id, time=0, ev=0, age = tte.data$age)
+tte.data<-rbind(tte.data, tte.data2)
+tte.data <- tte.data[order(tte.data$id, tte.data$time),]
+tte.data$age = as.factor(tte.data$age)
+
+# Reading from file sent by Alexandra
+tte.data.save<-read.table(file.path(workDir,"table_weib.txt"), header=T)
+
+# Plot (check they look similar)
+par(mfrow=c(1,2))
+plot(survfit(Surv(tte.data$time,tte.data$ev)~1))
+
+plot(survfit(Surv(tte.data.save$time,tte.data.save$ev)~1))
+```
+
+### Running saemix
+
+- results quite close to the simulated values $\Rightarrow$ repeat 100 times to get an idea of the bias
+
+# Bug
+
+- CV=100% in the first model, problem in computation of CV for fixed effects as SE=2.21 and value=37.63 should be CV=5.8%...
+  - correct for the random effects, and for the other model => mistake in the show method for a Res object, corrected
+
+```{r saemixTTE}
+# No covariate
+saemix.data<-saemixData(name.data=tte.data,name.group=c("id"),
+      name.predictors=c("time","ev"),name.response=c("ev"),
+      name.covariates=c("age"), units=list(x="days",y="",covariates=c("yr")))
+weibulltte.model<-function(psi,id,xidep) {
+  T<-xidep[,1]
+  y<-xidep[,2] # events (1=event, 0=no event)
+  cens<-which(T==30 & y==0)
+  init <- which(T==0)
+  lambda <- psi[id,1] # Parameters of the Weibull model
+  beta <- psi[id,2]
+  Nj <- length(T)
+  
+  ind <- setdiff(1:Nj, append(init,cens)) # indices of events
+  hazard <- (beta/lambda)*(T/lambda)^(beta-1) # ln(H')
+  H <- (T/lambda)^beta # ln(H)
+  logpdf <- rep(0,Nj) # ln(l(T=0))=0
+  logpdf[cens] <- -H[cens] + H[cens-1] # ln(l(T=censoring time))
+  logpdf[ind] <- -H[ind] + H[ind-1] + log(hazard[ind]) # ln(l(T=event time))
+  return(logpdf)
+}
+saemix.model.nocov<-saemixModel(model=weibulltte.model,description="time model",modeltype="likelihood",
+  psi0=matrix(c(1,2),ncol=2,byrow=TRUE,dimnames=list(NULL,  c("lambda","beta"))),
+  transform.par=c(1,1),covariance.model=matrix(c(1,0,0,0),ncol=2, byrow=TRUE))
+
+# Adding a term exp(beta_age*age) with age=0 or 1
+saemix.data.age<-saemixData(name.data=tte.data,name.group=c("id"),
+      name.predictors=c("time","ev","age"),name.response=c("ev"), units=list(x="days",y=""))
+
+weibulltte.model.age<-function(psi,id,xidep) {
+  T<-xidep[,1]
+  y<-xidep[,2] # events (1=event, 0=no event)
+  age<-xidep[,3]
+  cens<-which(T==30 & y==0)
+  init <- which(T==0)
+  lambda <- psi[id,1] # Parameters of the Weibull model
+  beta <- psi[id,2]
+  gamma <- psi[id,3]
+  Nj <- length(T)
+  
+  ind <- setdiff(1:Nj, append(init,cens)) # indices of events
+  hazard <- (beta/lambda)*exp(gamma*as.integer(age==2))*(T/lambda)^(beta-1) # ln(H')
+  H <- exp(gamma*as.integer(age==2))*(T/lambda)^beta # ln(H)
+  logpdf <- rep(0,Nj) # ln(l(T=0))=0
+  logpdf[cens] <- -H[cens] + H[cens-1] # ln(l(T=censoring time)) # term gamma*as.integer(age==2) cancels itself ?
+  logpdf[ind] <- -H[ind] + H[ind-1] + log(hazard[ind]) # ln(l(T=event time))
+  return(logpdf)
+}
+
+saemix.model.age<-saemixModel(model=weibulltte.model.age,description="time model",modeltype="likelihood",
+  psi0=matrix(c(1,2,0.7),ncol=3,byrow=TRUE,dimnames=list(NULL,  c("lambda","beta","gamma"))),
+  transform.par=c(1,1,0),covariance.model=diag(c(1,0,0)))
+
+# Running models
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
+tte.fit.nocov<-saemix(saemix.model.nocov,saemix.data,saemix.options)
+plot(tte.fit.nocov, plot.type="convergence")
+
+tte.fit.age<-saemix(saemix.model.age,saemix.data.age,saemix.options)
+plot(tte.fit.age, plot.type="convergence")
+
+```
+

@@ -420,15 +420,15 @@ setMethod("summary","SaemixObject",
     }
 #    browser()
     if(length(object@results@se.fixed)==0) {
-       if(object@model@modeltype=="structural") {
+      if(length(grep("structural",object@model["modeltype"]))>0) {
       tab<-data.frame(c(object@results@name.fixed, object@results@name.sigma[object@results@indx.res]), c(object@results@fixed.effects,object@results@respar[object@results@indx.res]))
         }else{
           tab<-data.frame(c(object@results@name.fixed), c(object@results@fixed.effects))
         }
       colnames(tab)<-c("Parameter","Estimate")
     } else {
-       if(object@model@modeltype=="structural") {
-      tab<-data.frame(c(object@results@name.fixed, object@results@name.sigma[object@results@indx.res]), c(object@results@fixed.effects,object@results@respar[object@results@indx.res]),c(object@results@se.fixed,object@results@se.respar[object@results@indx.res]), stringsAsFactors=FALSE)
+      if(length(grep("structural",object@model["modeltype"]))>0) {
+        tab<-data.frame(c(object@results@name.fixed, object@results@name.sigma[object@results@indx.res]), c(object@results@fixed.effects,object@results@respar[object@results@indx.res]),c(object@results@se.fixed,object@results@se.respar[object@results@indx.res]), stringsAsFactors=FALSE)
         }else{
             tab<-data.frame(c(object@results@name.fixed), c(object@results@fixed.effects),c(object@results@se.fixed), stringsAsFactors=FALSE)
         }
@@ -1651,14 +1651,14 @@ createSaemixObject.initial<-function(model,data,control=list()) {
   Uargs<-xinit$Uargs
   varList<-xinit$varList
   
-  if(saemix.model["modeltype"]=="structural"){
-    xres1<-new(Class="SaemixRes",modeltype="structural",status="initial",
+  if(length(grep("structural",saemix.model["modeltype"]))>0) {
+    xres1<-new(Class="SaemixRes",modeltype=saemix.model["modeltype"],status="initial",
            name.fixed=saemix.model["name.fixed"], name.random=saemix.model["name.random"],name.sigma=saemix.model["name.sigma"],
              fixed.effects=saemix.model@psi0[saemix.model@betaest.model==1],
              fixed.psi=xinit$fixedpsi.ini,
              betaC=xinit$betas[xinit$Uargs$indx.betaC],betas=xinit$betas,
              omega=varList$omega,respar=varList$pres,MCOV=varList$MCOV)
-  } else{
+  } else {
     xres1<-new(Class="SaemixRes",modeltype=saemix.model["modeltype"],status="initial",
            name.fixed=saemix.model["name.fixed"], name.random=saemix.model["name.random"],name.sigma=saemix.model["name.sigma"],
            fixed.effects=saemix.model@psi0[saemix.model@betaest.model==1],

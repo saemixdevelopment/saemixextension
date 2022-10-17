@@ -121,7 +121,7 @@ setClass(
       message("[ SaemixModel : Error ] Invalid residual error model")
       return("Invalid residual error model")
     }
-    if(is.na(match(object@modeltype,c("structural","likelihood")))) {
+    if(is.na(sum(match(object@modeltype,c("structural","likelihood"))))) {
       message("[ SaemixModel : Error ] Invalid type of model")
       return("Invalid model type")
     }
@@ -190,7 +190,8 @@ setMethod(
   signature="SaemixModel",
   definition=function(.Object, model, description, modeltype,psi0, name.response, name.sigma, transform.par,fixed.estim, error.model,covariate.model,covariance.model,omega.init,error.init, name.modpar, verbose=TRUE){
 #    cat ("--- initialising SaemixModel Object --- \n")
-    if(missing(modeltype)) modeltype<-"structural"
+    if(missing(name.response)) name.response<-""
+    if(missing(modeltype)) modeltype<-rep("structural",length(name.response))
     .Object@modeltype<-modeltype
     if(missing(model)) {
 #      cat("Error initialising SaemixModel object:\n   The model must be a function, accepting 3 arguments: psi (a vector of parameters), id (a vector of indices) and xidep (a matrix of predictors). Please see the documentation for examples.\n")
@@ -218,7 +219,6 @@ setMethod(
         colnames(psi0)<-name.modpar<-paste("theta",1:npar)
       }
     }
-    if(missing(name.response)) name.response<-""
     .Object@name.response<-name.response
     if(!missing(covariate.model)) {
     	if(dim(psi0)[1]<2 & sum(covariate.model)>0){
@@ -470,7 +470,7 @@ setMethod("print","SaemixModel",
     if(length(x@description)>0 && nchar(x@description)>0) cat(": ",x@description)
     cat("\n")
     cat("  Model type")
-    if(length(x@modeltype)>0 && nchar(x@modeltype)>0) cat(": ",x@modeltype)
+    if(length(x@modeltype)>0 && nchar(x@modeltype[1])>0) cat(": ",x@modeltype)
     cat("\n")
     print(x@model)
     cat("  Nb of parameters:",x@nb.parameters,"\n")
@@ -483,8 +483,12 @@ setMethod("print","SaemixModel",
 #    try(colnames(tab)<-rownames(tab)<-x@name.modpar)
     print(tab,quote=FALSE)
     st1<-paste(x@name.sigma,x@error.init,sep="=")
-    if (x@modeltype=="structural"){
-    cat("  Error model:",x@error.model,", initial values:",st1[x@indx.res],"\n")
+    for(i in 1:length(x@modeltype)) {
+      i1<-0
+      if (x@modeltype[i]=="structural"){
+        i1<-i1+1
+        cat("  Error model:",x@error.model[i1],", initial values:",st1[x@indx.res],"\n") # here need to select the right indices...
+      }
     }
    if(dim(x@covariate.model)[1]>0) {
       cat("  Covariate model:")
@@ -513,7 +517,7 @@ setMethod("show","SaemixModel",
     }
     fix1<-ifelse(object@fixed.estim==1,""," [fixed]")
     cat("    ",object@nb.parameters,"parameters:", paste(object@name.modpar,fix1,sep=""),"\n")
-    if (object@modeltype=="structural")
+    if (grep("structural",object@modeltype))
       cat("     error model:",object@error.model,"\n")
     if(dim(object@covariate.model)[1]>0) {
       cat("     covariate model:\n")
@@ -878,7 +882,7 @@ predict.SaemixModel<-function(object, predictors, psi=c(), id=c(), ...) {
 # Plot the data, either as points or as lines grouped by x@name.group
 setMethod("plot",c("SaemixModel","SaemixData"),
           function(x, y, ...) {
-            if(x@modeltype!="structural") {
+            if(x@modeltype[1]!="structural") {
               message("Currently plots of the model are only available for continuous response models\n")
               return()
             }

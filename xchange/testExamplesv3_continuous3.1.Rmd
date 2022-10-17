@@ -167,7 +167,6 @@ plot(saemix.fit, plot.type="individual", smooth=TRUE)
 
 ```
 
-
 ### One random effect
 
 Note: sort the message "one-dimensional optimization by Nelder-Mead is unreliable"
@@ -266,6 +265,22 @@ if(FALSE) {
   plot(model1, saemix.data)
   plot(model1, saemix.data, psi=c(0, 200, 50))
 }
+
+# Diagnostics
+ynpde<-npdeSaemix(fit2)
+plot(ynpde)
+
+# Splitting by covariates
+plot(ynpde, plot.type="ecdf", which.cov="gender", covsplit=T)
+
+# Better than the fit without covariates
+ynpde1<-npdeSaemix(fit1)
+plot(ynpde1, plot.type="ecdf", which.cov="gender", covsplit=T)
+
+# Similar scatterplots for both models
+plot(ynpde, plot.type="x.scatter", which.cov="gender", covsplit=T)
+plot(ynpde1, plot.type="x.scatter", which.cov="gender", covsplit=T)
+
 ```
 
 
@@ -400,6 +415,13 @@ saemix.fit2<-saemix(saemix.model2,saemix.data,saemix.options)
   pval<-1-pchisq(-2*saemix.fit["results"]["ll.is"]+2*saemix.fit2["results"]["ll.is"],1)
   cat("        LRT: p=",pval,"\n")
 }
+
+# Diagnostics
+ynpde<-npdeSaemix(saemix.fit2)
+plot(ynpde)
+
+# Splitting by covariates
+plot(ynpde, plot.type="ecdf", which.cov="soil.nitrogen", covsplit=T)
 
 ```
 
