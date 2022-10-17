@@ -106,7 +106,8 @@ if(testMode) {
 
 - **TODO** 
   - add diagnostics (npd-categorical ?) 
-  - maybe check SE's with package by S. Ueckert
+  - check error in exists(object) : premier argument incorrect
+  - maybe check SE's with package by S. Ueckert (see notebook for paper on saemix 3)
 
 ```{r binary}
 if(testMode)
@@ -133,6 +134,7 @@ plot1<-ggplot(toe1, aes(x=visit, y=freq, group=treatment)) + geom_line(aes(colou
   geom_ribbon(aes(ymin=lower, ymax=upper, fill=treatment), alpha=0.2) +
   ylim(c(0,1)) + theme_bw() + theme(legend.position = "top") +
   xlab("Visit number") + ylab("Observed frequency of infection")
+print(plot1)
 
 # saemix model
 binary.model<-function(psi,id,xidep) {

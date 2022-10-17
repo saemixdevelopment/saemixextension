@@ -101,7 +101,7 @@ discreteVPC <- function(object, outcome="categorical", verbose=FALSE, ...) {
   # outcome: type of outcome (valid types are TTE, binary, categorical, count)
   # verbose: whether to print messages
   # ...: to pass additional plot options (such as title, colours, etc...) which will supersede the options in the prefs slot of object
-  if(!is(try(exists(object)),"try-error") || !is(object,"SaemixObject")) {
+  if(!is(object,"SaemixObject")) {
     message("Please provide a valid object \n")
     return()
   }

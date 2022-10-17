@@ -1,0 +1,16 @@
+DESCRIPTION : Joint Model
+
+[LONGITUDINAL]
+input={k,l,cov}
+
+EQUATION : 
+
+haz = (k/l)*((t/l)^(k-1))*exp(cov)
+
+
+
+DEFINITION:
+deces = {type=event, maxEventNumber= 1, hazard=haz}
+
+OUTPUT:
+output={deces}

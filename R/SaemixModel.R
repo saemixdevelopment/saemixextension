@@ -117,12 +117,12 @@ setClass(
 			if(sum(mydiag(object@covariance.model))==0) message("At least one parameter with IIV must be included in the model.") else message("At least one parameter with IIV must be estimated and not fixed in the model.")
 			return("Invalid IIV structure")
 		}
-    if(is.na(sum(match(object@error.model,c('constant','proportional','combined', 'exponential'))))) {
+    if(sum(is.na((match(object@error.model,c('constant','proportional','combined', 'exponential', 'likelihood')))))>0) {
       message("[ SaemixModel : Error ] Invalid residual error model")
       return("Invalid residual error model")
     }
-    if(is.na(match(object@modeltype,c("structural","likelihood")))) {
-      message("[ SaemixModel : Error ] Invalid type of model")
+    if(sum(is.na(match(object@modeltype,c("structural","likelihood"))))>0) {
+      message("[ SaemixModel : Error ] Invalid type of model (modeltypes should be either structural or likelihood)")
       return("Invalid model type")
     }
     if(!is.null(body(object@simulate.function))) { # Check the simulate.function is formally valid
@@ -140,6 +140,8 @@ setClass(
   }
 )
 
+### Eco: add vectors when dealing with multiple responses 
+
 #' @rdname initialize-methods
 #' 
 #' @param model name of the function used to compute the structural model. The
@@ -149,7 +151,7 @@ setClass(
 #' below).
 #' @param description a character string, giving a brief description of the
 #' model or the analysis
-#' @param modeltype a character string, giving the type of the model for the analysis (one of "structural" or "likelihood", defaults to structural)
+#' @param modeltype a character string, giving the type of the model for the analysis (one of "structural" or "likelihood", defaults to structural). 
 #' @param psi0 a matrix with a number of columns equal to the number of
 #' parameters in the model, and one (when no covariates are available) or two
 #' (when covariates enter the model) giving the initial estimates for the fixed
@@ -190,7 +192,8 @@ setMethod(
   signature="SaemixModel",
   definition=function(.Object, model, description, modeltype,psi0, name.response, name.sigma, transform.par,fixed.estim, error.model,covariate.model,covariance.model,omega.init,error.init, name.modpar, verbose=TRUE){
 #    cat ("--- initialising SaemixModel Object --- \n")
-    if(missing(modeltype)) modeltype<-"structural"
+    if(missing(name.response)) name.response<-""
+    if(missing(modeltype)) modeltype<-rep("structural",length(name.response))
     .Object@modeltype<-modeltype
     if(missing(model)) {
 #      cat("Error initialising SaemixModel object:\n   The model must be a function, accepting 3 arguments: psi (a vector of parameters), id (a vector of indices) and xidep (a matrix of predictors). Please see the documentation for examples.\n")
@@ -218,7 +221,6 @@ setMethod(
         colnames(psi0)<-name.modpar<-paste("theta",1:npar)
       }
     }
-    if(missing(name.response)) name.response<-""
     .Object@name.response<-name.response
     if(!missing(covariate.model)) {
     	if(dim(psi0)[1]<2 & sum(covariate.model)>0){
@@ -233,11 +235,15 @@ setMethod(
     .Object@psi0<-psi0    
     .Object@name.modpar<-name.modpar
     if(missing(error.model) || length(error.model)==0) error.model<-"constant"
-    if(sum(!error.model %in% c('constant','proportional','combined', 'exponential'))) {
+    length(error.model)<-length(.Object@modeltype)
+    error.model[.Object@modeltype=="likelihood"]<-"likelihood"
+    error.model[is.na(error.model)]<-"constant"
+    if(sum(!error.model %in% c('constant','proportional','combined', 'exponential', 'likelihood'))) {
       message("Invalid error model, switching to constant")
-      error.model[!error.model %in% c('constant','proportional','combined', 'exponential')] <- "constant"
+      error.model[!error.model %in% c('constant','proportional','combined', 'exponential','likelihood')] <- "constant"
     }
-    if(length(error.model)<length(name.response)) error.model<-rep(error.model,length.out=length(name.response))
+    # normally not needed now (already adjusted to size of modeltype)
+#    if(length(error.model)<length(name.response)) error.model<-rep(error.model,length.out=length(name.response))
     .Object@error.model<-error.model
 # Checking sizes
     .Object@nb.parameters<-npar
@@ -307,10 +313,14 @@ setMethod(
         "constant"=c(1,0),
         "exponential"=c(1,0),
         "proportional"=c(0,1),
-            "combined"=c(1,1)))
+        "combined"=c(1,1),
+        "likelihood"=c(0,0)))
      }
     }
-    if (any(error.init < 0)) stop ("Initial estimates for error model parameters should be greater than zero")
+    if (any(error.init < 0)) {
+      error.init<-abs(error.init)
+      if(verbose) message("Initial estimates for error model parameters should be non-negative, changing to absolute value")
+    }
     xres<-c()
     if(missing(name.sigma)) mis.sig<-TRUE else mis.sig<-FALSE
     if(missing(name.sigma) || length(name.sigma)!=2) name.sigma<-c("a","b")
@@ -470,7 +480,7 @@ setMethod("print","SaemixModel",
     if(length(x@description)>0 && nchar(x@description)>0) cat(": ",x@description)
     cat("\n")
     cat("  Model type")
-    if(length(x@modeltype)>0 && nchar(x@modeltype)>0) cat(": ",x@modeltype)
+    if(length(x@modeltype)>0 && nchar(x@modeltype[1])>0) cat(": ",x@modeltype)
     cat("\n")
     print(x@model)
     cat("  Nb of parameters:",x@nb.parameters,"\n")
@@ -483,8 +493,12 @@ setMethod("print","SaemixModel",
 #    try(colnames(tab)<-rownames(tab)<-x@name.modpar)
     print(tab,quote=FALSE)
     st1<-paste(x@name.sigma,x@error.init,sep="=")
-    if (x@modeltype=="structural"){
-    cat("  Error model:",x@error.model,", initial values:",st1[x@indx.res],"\n")
+    for(i in 1:length(x@modeltype)) {
+      i1<-0
+      if (x@modeltype[i]=="structural"){
+        i1<-i1+1
+        cat("  Error model:",x@error.model[i1],", initial values:",st1[x@indx.res],"\n") # here need to select the right indices...
+      }
     }
    if(dim(x@covariate.model)[1]>0) {
       cat("  Covariate model:")
@@ -513,8 +527,11 @@ setMethod("show","SaemixModel",
     }
     fix1<-ifelse(object@fixed.estim==1,""," [fixed]")
     cat("    ",object@nb.parameters,"parameters:", paste(object@name.modpar,fix1,sep=""),"\n")
-    if (object@modeltype=="structural")
-      cat("     error model:",object@error.model,"\n")
+    if (length(grep("structural",object@modeltype))>0) {
+      for(i in 1:length(object@error.model)) {
+       if(object@error.model[i]!="likelihood") cat("     error model for response",i,":",object@error.model[i],"\n")
+      }
+    }
     if(dim(object@covariate.model)[1]>0) {
       cat("     covariate model:\n")
       print(object@covariate.model) 
@@ -550,7 +567,7 @@ setMethod("showall","SaemixModel",
     cat("  Initial estimate for variance-covariance matrix:\n")
     print(object@omega.init)
     st1<-paste(object@name.sigma,object@error.init,sep="=")
-    cat("  Error model:",object@error.model,", initial values:",st1[object@indx.res],"\n")
+    cat("  Error model(s):",object@error.model,", initial values:",st1[object@indx.res],"\n")
    if(dim(object@covariate.model)[1]>0) {
       cat("  Covariate model:")
       if(sum(object@covariate.model)==0) cat(" none\n") else {
@@ -878,7 +895,7 @@ predict.SaemixModel<-function(object, predictors, psi=c(), id=c(), ...) {
 # Plot the data, either as points or as lines grouped by x@name.group
 setMethod("plot",c("SaemixModel","SaemixData"),
           function(x, y, ...) {
-            if(x@modeltype!="structural") {
+            if(x@modeltype[1]!="structural") {
               message("Currently plots of the model are only available for continuous response models\n")
               return()
             }

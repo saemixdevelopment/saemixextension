@@ -1,0 +1,114 @@
+Nonlinear mixed-effects model fit by the SAEM algorithm
+-----------------------------------
+----          Data             ----
+-----------------------------------
+Object of class SaemixData
+    longitudinal data for use with the SAEM algorithm
+Dataset data_pkpd.prop 
+    Structured data: obs ~ time + dose | id 
+    X variable for graphs: time () 
+Dataset characteristics:
+    number of subjects:     200 
+    number of observations: 4000 
+    average/min/max nb obs: 20.00  /  20  /  20 
+First 10 lines of data:
+   id time dose       obs mdv cens occ ytype
+1   1    1   75  8.432112   0    0   1     1
+2   1    1   75 56.645031   0    0   1     2
+3   1    2   75  5.720864   0    0   1     1
+4   1    2   75 73.507725   0    0   1     2
+5   1    3   75  4.499352   0    0   1     1
+6   1    3   75 35.686310   0    0   1     2
+7   1    4   75  3.713439   0    0   1     1
+8   1    4   75 59.107713   0    0   1     2
+9   1    5   75  2.761641   0    0   1     1
+10  1    5   75 42.193590   0    0   1     2
+-----------------------------------
+----          Model            ----
+-----------------------------------
+Nonlinear mixed-effects model
+  Model function:  joint pkpd
+  Model type:  structural structural
+function(psi,id,xidep) {
+  ka <- psi[id,1] 
+  V <- psi[id,2]
+  Cl <- psi[id,3]
+  Emax <- psi[id,4]
+  EC50 <- psi[id,5]
+  
+  tim<-xidep[,1] 
+  D <- xidep[,2]
+  ytype<-xidep$ytype
+  
+  ypred <- (D/V)*(ka/(ka-Cl/V))*(exp(-(Cl/V)*tim)-exp(-ka*tim))
+  ypred[ytype==2] <- Emax[ytype==2]*ypred[ytype==2]/(ypred[ytype==2]+EC50[ytype==2])
+  return(ypred)
+}
+<bytecode: 0x55977b2e24a8>
+  Nb of parameters: 5 
+      parameter names:  ka V Cl Emax EC50 
+      distribution:
+     Parameter Distribution Estimated
+[1,] ka        log-normal   Estimated
+[2,] V         log-normal   Estimated
+[3,] Cl        log-normal   Estimated
+[4,] Emax      log-normal   Estimated
+[5,] EC50      log-normal   Estimated
+  Variance-covariance matrix:
+     ka V Cl Emax EC50
+ka    1 0  0    0    0
+V     0 1  0    0    0
+Cl    0 0  1    0    0
+Emax  0 0  0    1    0
+EC50  0 0  0    0    1
+  Error model: proportional , initial values: b.1=1 b.2=1 
+  Error model: proportional , initial values: b.1=1 b.2=1 
+    No covariate in the model.
+    Initial values
+             ka V Cl Emax EC50
+Pop.CondInit  2 8  2  100    5
+-----------------------------------
+----    Key algorithm options  ----
+-----------------------------------
+    Algorithms: estimation only
+    Number of iterations:  K1=300, K2=100 
+    Number of chains:  1 
+    Seed:  12345 
+    Simulations:
+        nb of simulated datasets used for npde:  1000 
+        nb of simulated datasets used for VPC:  100 
+    Input/output
+        save the results to a file:  TRUE 
+        save the graphs to files:  TRUE 
+        directory where results should be saved:  newdir 
+----------------------------------------------------
+----                  Results                   ----
+----------------------------------------------------
+-----------------  Fixed effects  ------------------
+----------------------------------------------------
+     Parameter Estimate
+[1,] ka          1.73  
+[2,] V           8.02  
+[3,] Cl          1.97  
+[4,] Emax      103.46  
+[5,] EC50        5.23  
+[6,] b.1         0.13  
+[7,] b.2         0.13  
+----------------------------------------------------
+-----------  Variance of random effects  -----------
+----------------------------------------------------
+     Parameter   Estimate
+ka   omega2.ka   1.874   
+V    omega2.V    0.040   
+Cl   omega2.Cl   0.076   
+Emax omega2.Emax 0.019   
+EC50 omega2.EC50 0.072   
+----------------------------------------------------
+------  Correlation matrix of random effects  ------
+----------------------------------------------------
+            omega2.ka omega2.V omega2.Cl omega2.Emax omega2.EC50
+omega2.ka   1         0        0         0           0          
+omega2.V    0         1        0         0           0          
+omega2.Cl   0         0        1         0           0          
+omega2.Emax 0         0        0         1           0          
+omega2.EC50 0         0        0         0           1          

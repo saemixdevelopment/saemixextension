@@ -128,9 +128,14 @@ $$ \alpha( \phig_{i,p-1} ,  \tilde{\phig}_{i,p} ) = \min \left(1, \frac{ p( y_i|
 \item $q_{\theta_k}^{(3)}$ is the multidimensional random walk ${\cal N}( \phig_{i,p-1} , \kappa\IIV_k)$. This kernel is symmetric and then 
 $$ \alpha( \phig_{i,p-1} ,  \tilde{\phig}_{i,p} ) = \min \left(1, \frac{ p( y_i,\tilde{\phig}_{i,p};\theta_k) } { p( y_i,\phig_{i,p-1};\theta_k) } \right)$$
 \end{enumerate}
-Then, the simulation-step at iteration $k$ consists in running $m_1$ iterations of the Hasting-Metropolis with proposal $q_{\theta_k}^{(1)}$, $m_2$ iterations with proposal $q_{\theta_k}^{(2)}$, $m_3$ iterations with proposal $q_{\theta_k}^{(3)}$ and $m_4$ iterations with proposal $q_{\theta_k}^{(4)}$.
+Then, the simulation-step at iteration $k$ consists in running $m_1$ iterations of the Hasting-Metropolis with proposal $q_{\theta_k}^{(1)}$, $m_2$ iterations with proposal $q_{\theta_k}^{(2)}$ and $m_3$ iterations with proposal $q_{\theta_k}^{(3)}$.
 
-An additional kernel was proposed for the early versions of the SAEM algorithm but has been deprecated since: $q_{\theta_k}^{(')}$ is a random permutation of the $\phig_i$: generate a random permutation $\sigma$ of $\{1,2,\ldots,N\}$ and set $\tilde{\phig}_{i,p}=\phig_{\sigma(i),p-1}$.
+An additional kernel $q_{\theta_k}^{(4)}$ was proposed for the early versions of 
+the SAEM algorithm but has been deprecated since: $q_{\theta_k}^{(')}$ is a 
+random permutation of the $\phig_i$: generate a random permutation $\sigma$ of 
+$\{1,2,\ldots,N\}$ and set $\tilde{\phig}_{i,p}=\phig_{\sigma(i),p-1}$. A 
+fourth kernel is used in the fast-SAEM approach~\cite{Karimi19} (see 
+section~\ref{subsec:fsaem}).
 
 \noindent {\bf Remark 1 : \ } During the first $K_b$ iterations ("burning" iterations) of SAEM, we only run the MCMC algorithm but the parameters are not updated.
 
@@ -234,14 +239,18 @@ which is precisely the log-pdf of a multivariate Gaussian distribution with mean
 
 Hence, the f-SAEM algorithm uses the Gaussian proposal of covariance $\left( \nabla^2 \log p(y_i|\hat{\psi}_i) + \Omega^{-1}\right)^{-1}$ and mean $\hat{\psi}_i$, as an approximation of the true conditional distribution, in the MCMC sampler for non continuous data models.
 
-\section{Estimation of the Fisher Information matrix} \label{sec_fish} Let $\thes$ be the true unknown value of $\theta$, and let $\hthetag$ be the maximum likelihood estimate of $\theta$. If the observed likelihood function $\ell$ is sufficiently smooth, asymptotic theory for maximum-likelihood estimation holds and
+\section{Estimation of the uncertainty} \label{sec:SE} 
+
+\subsection{Estimation of the Fisher Information matrix} \label{sec_fish} 
+
+Let $\thes$ be the true unknown value of $\theta$, and let $\hthetag$ be the maximum likelihood estimate of $\theta$. If the observed likelihood function $\ell$ is sufficiently smooth, asymptotic theory for maximum-likelihood estimation holds and
 
 \begin{equation}
 \sqrt{N}(\hthetag-\thes) \limite{N\to \infty}{} {\mathcal N}(0,I(\thes)^{-1})
 \end{equation}
 where $I(\thes)=- \DDt \log \ell(y;\thes)$ is the true Fisher information matrix. Thus, an estimate of the asymptotic covariance of $\hthetag$ is the  inverse of the Fisher information matrix $I(\hthetag)=- \DDt \log \ell(y;\hthetag)$.
 
-\subsection{Linearization of the model}
+\subsubsection{Linearization of the model}
 The Fisher information matrix of the non-linear mixed effects model defined in (1) cannot be computed in a closed-form.
 
 An alternative is  to approximate this information matrix  by the Fisher information matrix of the Gaussian model deduced from the non-linear mixed effects model after linearization of the function $f$ around the conditional expectation of the individual Gaussian parameters $(\esp{\phi_{i}|y;\hat{\theta}}, 1\leq
@@ -251,7 +260,7 @@ i \leq N) $. The Fisher information matrix of this Gaussian model is a block mat
 
 \noindent {\bf Remark 2: } Obviously, this approach cannot be used with discrete data models\ldots
 
-\subsection{A stochastic approximation of the Fisher Information Matrix}
+\subsubsection{A stochastic approximation of the Fisher Information Matrix}
 It is possible to obtain an estimation of the Fisher information matrix using the Louis's missing information principle \cite{Louis82}:
 
 \begin{equation}\label{louis}
@@ -280,6 +289,15 @@ H_{k} &= D_k + G_k - \Delta_k \Delta_k^t
 \end{align*}
 
 In the current version of \monolix, only the linearisation approach has been implemented.
+
+\subsection{Bootstrap approaches} \label{sec:bootstrap} 
+
+Bootstrap approaches for NLMEM
+
+~\cite{Thai13}
+
+Conditional bootstrap (see conditional distributions in section~\ref{section_indivparam}
+~\cite{Comets21bootstrap}
 
 \section{Estimation of the individual parameters} \label{section_indivparam}
 

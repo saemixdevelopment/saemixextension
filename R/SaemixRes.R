@@ -469,7 +469,7 @@ setMethod("print","SaemixRes",
     }
     if(x@status %in% c("initial")) {
       cat("No fit performed yet, parameters set by user.\n")
-      if(x@modeltype=="structural") {
+      if(length(grep("structural",x@modeltype))>0) {
         tab<-cbind(c(x@name.fixed,x@name.sigma[x@indx.res]), c(x@fixed.effects,x@respar[x@indx.res]))
       }else{
         tab<-cbind(c(x@name.fixed), c(x@fixed.effects))
@@ -484,15 +484,15 @@ setMethod("print","SaemixRes",
     cat("-----------------  Fixed effects  ------------------\n")
     cat("----------------------------------------------------\n")
     if(length(x@se.fixed)==0) {
-      if(x@modeltype=="structural") {
+      if(length(grep("structural",x@modeltype))>0) {
       tab<-cbind(c(x@name.fixed,x@name.sigma[x@indx.res]), c(x@fixed.effects,x@respar[x@indx.res]))
         }else{
             tab<-cbind(c(x@name.fixed), c(x@fixed.effects))
         }
       colnames(tab)<-c("Parameter","Estimate")
     } else {
-       if(x@modeltype=="structural") {
-      tab<-cbind(c(x@name.fixed,x@name.sigma[x@indx.res]), c(x@fixed.effects,x@respar[x@indx.res]),c(x@se.fixed,x@se.respar[x@indx.res]))
+      if(length(grep("structural",x@modeltype))>0) {
+        tab<-cbind(c(x@name.fixed,x@name.sigma[x@indx.res]), c(x@fixed.effects,x@respar[x@indx.res]),c(x@se.fixed,x@se.respar[x@indx.res]))
         }else{
             tab<-cbind(c(x@name.fixed), c(x@fixed.effects),c(x@se.fixed))
         }
@@ -605,7 +605,7 @@ setMethod("show","SaemixRes",
     }
     if(object@status %in% c("initial")) {
       cat("No fit performed yet, parameters set by user.\n")
-      if(object@modeltype=="structural") {
+      if(length(grep("structural",object@modeltype))>0) {
         tab<-cbind(c(object@name.fixed,object@name.sigma[object@indx.res]), c(object@fixed.effects,object@respar[object@indx.res]))
       }else{
         tab<-cbind(c(object@name.fixed), c(object@fixed.effects))
@@ -618,15 +618,15 @@ setMethod("show","SaemixRes",
     }
     cat("Fixed effects\n")
     if(length(object@se.fixed)==0) {
-      if(object@modeltype=="structural") {
-      tab<-cbind(c(object@name.fixed,object@name.sigma[object@indx.res]), c(object@fixed.effects,object@respar[object@indx.res]))
+      if(length(grep("structural",object@modeltype))>0) {
+        tab<-cbind(c(object@name.fixed,object@name.sigma[object@indx.res]), c(object@fixed.effects,object@respar[object@indx.res]))
         }else{
             tab<-cbind(c(object@name.fixed), c(object@fixed.effects))
         }
       colnames(tab)<-c("Parameter","Estimate")
     } else {
-       if(object@modeltype=="structural") {
-            tab<-cbind(c(object@name.fixed,object@name.sigma[object@indx.res]), c(object@fixed.effects,object@respar[object@indx.res]),c(object@se.fixed,object@se.respar[object@indx.res]))
+      if(length(grep("structural",object@modeltype))>0) {
+        tab<-cbind(c(object@name.fixed,object@name.sigma[object@indx.res]), c(object@fixed.effects,object@respar[object@indx.res]),c(object@se.fixed,object@se.respar[object@indx.res]))
       tab<-cbind(tab,100*abs(as.double(tab[,3])/as.double(tab[,2])))
         }else{
             tab<-cbind(c(object@name.fixed), c(object@fixed.effects),c(object@se.fixed))
@@ -725,7 +725,7 @@ setMethod("showall","SaemixRes",
     }
     if(object@status %in% c("initial")) {
       cat("No fit performed yet, parameters set by user.\n")
-      if(object@modeltype=="structural") {
+      if(length(grep("structural",object@modeltype))>0) {
         tab<-cbind(c(object@name.fixed,object@name.sigma[object@indx.res]), c(object@fixed.effects,object@respar[object@indx.res]))
       }else{
         tab<-cbind(c(object@name.fixed), c(object@fixed.effects))
@@ -740,15 +740,15 @@ setMethod("showall","SaemixRes",
     cat("-----------------  Fixed effects  ------------------\n")
     cat("----------------------------------------------------\n")
     if(length(object@se.fixed)==0) {
-      if(object@modeltype=="structural") {
-      tab<-cbind(c(object@name.fixed,object@name.sigma[object@indx.res]), c(object@fixed.effects,object@respar[object@indx.res]))
+      if(length(grep("structural",object@modeltype))>0) {
+        tab<-cbind(c(object@name.fixed,object@name.sigma[object@indx.res]), c(object@fixed.effects,object@respar[object@indx.res]))
         }else{
             tab<-cbind(c(object@name.fixed), c(object@fixed.effects))
         }
       colnames(tab)<-c("Parameter","Estimate")
     } else {
-       if(object@modeltype=="structural") {
-            tab<-cbind(c(object@name.fixed,object@name.sigma[object@indx.res]), c(object@fixed.effects,object@respar[object@indx.res]),c(object@se.fixed,object@se.respar[object@indx.res]))
+      if(length(grep("structural",object@modeltype))>0) {
+        tab<-cbind(c(object@name.fixed,object@name.sigma[object@indx.res]), c(object@fixed.effects,object@respar[object@indx.res]),c(object@se.fixed,object@se.respar[object@indx.res]))
       tab<-cbind(tab,100*abs(as.double(tab[,3])/as.double(tab[,2])))
             nampar<-unlist(strsplit(object@name.random,"omega2."))
             nampar<-nampar[nampar!=""]
@@ -971,14 +971,14 @@ setMethod("summary","SaemixRes",
             }
             #    browser()
             if(length(object@se.fixed)==0) {
-              if(object@modeltype=="structural") {
+              if(length(grep("structural",object@modeltype))>0) {
                 tab<-data.frame(c(object@name.fixed, object@name.sigma[object@indx.res]), c(object@fixed.effects,object@respar[object@indx.res]))
               }else{
                 tab<-data.frame(c(object@name.fixed), c(object@fixed.effects))
               }
               colnames(tab)<-c("Parameter","Estimate")
             } else {
-              if(object@modeltype=="structural") {
+              if(length(grep("structural",object@modeltype))>0) {
                 tab<-data.frame(c(object@name.fixed, object@name.sigma[object@indx.res]), c(object@fixed.effects,object@respar[object@indx.res]),c(object@se.fixed,object@se.respar[object@indx.res]), stringsAsFactors=FALSE)
               }else{
                 tab<-data.frame(c(object@name.fixed), c(object@fixed.effects),c(object@se.fixed), stringsAsFactors=FALSE)
