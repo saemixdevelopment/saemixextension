@@ -1,6 +1,6 @@
 #################################################
 saemixDir <- "C:/Users/AlexandraLAVALLEY/Documents/GitHub/saemixextension"
-workDir <- file.path(saemixDir, "alexandra","ecoJoint")
+workDir <- file.path(saemixDir, "alexandra","joint_alex")
 setwd(workDir)
 
 library(ggplot2)
@@ -21,63 +21,62 @@ source(file.path(progDir,"func_plots.R")) # for saemix.plot.setoptions
 # Creating data and model objects
 
 # data
-data_pkpd.prop <- read.csv(file.path(saemixDir, "alexandra","jointTTE", "simAlex_pkpd_proportional.csv"), header=TRUE)
-dataPKPD<-saemixData(name.data=data_pkpd.prop, name.group=c("id"), name.predictors=c("time","dose"), 
-                     name.response="obs",name.ytype = "ytype")
-# Simulation parameters
-param<-c(2,8,2,100,5)
-omega.sim<-c(1.4, 0.15, 0.3, 0.15, 0.2)
-sigma.sim <- 0.2
+data_joint <- read.csv("C:/Users/AlexandraLAVALLEY/Documents/GitHub/saemixextension/alexandra/joint_alex/joint_tte2.csv", header=TRUE)
+dataJM<-saemixData(name.data=data_joint, name.group=c("id"), name.predictors=c("time"), 
+                   name.response="obs",name.ytype = "ytype")
 
-# model
-pkpd<-function(psi,id,xidep) {
-  ka <- psi[id,1] 
-  V <- psi[id,2]
-  Cl <- psi[id,3]
-  Emax <- psi[id,4]
-  EC50 <- psi[id,5]
+#model JM longi+TTE
+JMmodel<-function(psi,id,xidep) {
+  ytype<-xidep$ytype  # type of response (1: continuous, 2: event)
+  b0 <- psi[id,1]  ## coeffs
+  b1 <- psi[id,2]  ## longi
+  h0 <- psi[id,3]
+  alpha <- psi[id,4]  ## coeff de lien
   
-  tim<-xidep[,1] 
-  D <- xidep[,2]
-  ytype<-xidep$ytype
+  ypred <- b0+b1*xidep[,1]  ## pred longi 
   
-  ypred <- (D/V)*(ka/(ka-Cl/V))*(exp(-(Cl/V)*tim)-exp(-ka*tim))
-  ypred[ytype==2] <- Emax[ytype==2]*ypred[ytype==2]/(ypred[ytype==2]+EC50[ytype==2])
-  #  ypd <- Emax*ypred/(ypred+EC50)
-  #  ypred[ytype==2] <- ypd[ytype==2]
+  #obs <- xidep[ytype==2,1] # vector of observations partie survie
+  T<-xidep[ytype==2,1] # vector of times partie survie
+  Nj <- length(T)
+  cens<-which(T==max(T))  # censoring time=30
+  init <- which(T==0)
+  ind <- setdiff(1:Nj, append(init,cens)) # indices of events
+  b0b = b0[ytype==2]
+  b1b = b1[ytype==2]
+  h0b = h0[ytype==2]
+  alphab = alpha[ytype==2]
+  
+  haz <- h0b*exp(alphab*(b0b+b1b*T))
+  H <- (h0b/(alphab*b1b))*exp((b0b+b1b*T)*alphab)-(h0b/(alphab*b1b))*exp(alphab*b0b)
+  
+  logpdf <- rep(0,Nj)
+  logpdf[cens] <- -H[cens] + H[cens-1]
+  logpdf[ind] <- -H[ind] + H[ind-1] + log(haz[ind])
+  
+  ypred[ytype==2] = logpdf
   return(ypred)
 }
 
-# Proportional error model
-pkpdmodel.prop<-saemixModel(model=pkpd,description="joint pkpd",modeltype=rep("structural",2),
-                            psi0=matrix(param,ncol=5,byrow=TRUE,dimnames=list(NULL, c("ka","V","Cl","Emax","EC50"))),
-                            transform.par=c(1,1,1,1,1), covariance.model=diag(c(1,1,1,1,1)),fixed.estim = c(1,1,1,1,1),
-                            omega.init = diag(rep(0.5,5)),error.model = c("proportional","proportional"),error.init = c(0,1,0,1),
-                            name.sigma = c("a.1","b.1","a.2","b.2"))
 
-# Testing and comparing to data - added ytype to second equation
-xidep1<-dataPKPD@data[,c(3,4,9)]
-id1<-dataPKPD@data$index
-psi1<-do.call(rbind,rep(list(param),dataPKPD@N))
-fpred1 <- pkpdmodel.prop@model(psi1, id1, xidep1)
-par(mfrow=c(1,2))
-for(yt in 1:2) {
-  plot(fpred1[xidep1$ytype==yt],dataPKPD@data$obs[xidep1$ytype==yt], xlab="Population predictions", ylab="Observations", main=ifelse(yt==1,"PK","PD"), pch=20)
-  abline(0,1)
-}
+# joint TTE  
+param<-c(15,0.3,0.01,0.1)
+jointTTE<-saemixModel(model=JMmodel,description="JM lin longi one tte",modeltype=c("structural","likelihood"),
+                      psi0=matrix(param,ncol=4,byrow=TRUE,dimnames=list(NULL, c("b0","b1","h0","alpha"))),
+                      transform.par=c(0,0,1,0), covariance.model=diag(c(1,1,0,0)),
+                      fixed.estim = c(1,1,1,1),error.model = "constant",
+                      omega.init = diag(c(0.25,0.01,0,0)))
 
-# need to adjust by hand for the moment
-pkpdmodel.prop@name.sigma <-c(pkpdmodel.prop@name.sigma,"a.2","b.2")
+
 
 ################################################# Running
 # Computational function
-source(file.path(workDir,"multi_aux.R"))
-source(file.path(workDir,"multi_initialiseMainAlgo.R"))
+source(file.path(workDir,"multi_aux2.R"))
+source(file.path(workDir,"multi_initializeMainAlgo.R"))
 source(file.path(workDir,"multi_estep.R"))
 source(file.path(workDir,"multi_mstep.R"))
 source(file.path(workDir,"multi_main.R"))
-saemix.data<-dataPKPD
-saemix.model<-pkpdmodel.prop
+saemix.data<-dataJM
+saemix.model<-jointTTE
 saemix.options<-saemixControl(seed=12345, map=FALSE, fim=FALSE, ll.is=FALSE)
 
 yfit <- saemix.multi(saemix.model, saemix.data, saemix.options)

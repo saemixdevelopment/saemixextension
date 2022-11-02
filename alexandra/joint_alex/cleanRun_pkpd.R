@@ -72,7 +72,7 @@ pkpdmodel.prop@name.sigma <-c(pkpdmodel.prop@name.sigma,"a.2","b.2")
 ################################################# Running
 # Computational function
 source(file.path(workDir,"multi_aux.R"))
-source(file.path(workDir,"multi_initialiseMainAlgo.R"))
+source(file.path(workDir,"multi_initializeMainAlgo.R"))
 source(file.path(workDir,"multi_estep.R"))
 source(file.path(workDir,"multi_mstep.R"))
 source(file.path(workDir,"multi_main.R"))

@@ -1,0 +1,119 @@
+Nonlinear mixed-effects model fit by the SAEM algorithm
+-----------------------------------
+----          Data             ----
+-----------------------------------
+Object of class SaemixData
+    longitudinal data for use with the SAEM algorithm
+Dataset data_joint 
+    Structured data: obs ~ time | id 
+    Predictor: time () 
+Dataset characteristics:
+    number of subjects:     1000 
+    number of observations: 16489 
+    average/min/max nb obs: 16.49  /  3  /  33 
+First 10 lines of data:
+      id time      obs mdv cens occ ytype
+1      1    0 14.27856   0    0   1     1
+14490  1    0  0.00000   0    0   1     2
+2      1    1 14.84672   0    0   1     1
+3      1    2 14.98068   0    0   1     1
+4      1    3 15.48765   0    0   1     1
+5      1    4 15.68247   0    0   1     1
+6      1    5 15.94661   0    0   1     1
+7      1    6 16.41518   0    0   1     1
+8      1    7 16.70768   0    0   1     1
+9      1    8 17.02305   0    0   1     1
+-----------------------------------
+----          Model            ----
+-----------------------------------
+Nonlinear mixed-effects model
+  Model function:  JM lin longi one tte
+  Model type:  structural likelihood
+function(psi,id,xidep) {
+  ytype<-xidep$ytype  # type of response (1: continuous, 2: event)
+  b0 <- psi[id,1]  ## coeffs
+  b1 <- psi[id,2]  ## longi
+  h0 <- psi[id,3]
+  alpha <- psi[id,4]  ## coeff de lien
+  
+  ypred <- b0+b1*xidep[,1]  ## pred longi 
+  
+  #obs <- xidep[ytype==2,1] # vector of observations partie survie
+  T<-xidep[ytype==2,1] # vector of times partie survie
+  Nj <- length(T)
+  cens<-which(T==max(T))  # censoring time=30
+  init <- which(T==0)
+  ind <- setdiff(1:Nj, append(init,cens)) # indices of events
+  b0b = b0[ytype==2]
+  b1b = b1[ytype==2]
+  h0b = h0[ytype==2]
+  alphab = alpha[ytype==2]
+  
+  haz <- h0b*exp(alphab*(b0b+b1b*T))
+  H <- (h0b/(alphab*b1b))*exp((b0b+b1b*T)*alphab)-(h0b/(alphab*b1b))*exp(alphab*b0b)
+  
+  logpdf <- rep(0,Nj)
+  logpdf[cens] <- -H[cens] + H[cens-1]
+  logpdf[ind] <- -H[ind] + H[ind-1] + log(haz[ind])
+  
+  ypred[ytype==2] = logpdf
+  return(ypred)
+}
+<bytecode: 0x000001cf793b37a0>
+  Nb of parameters: 4 
+      parameter names:  b0 b1 h0 alpha 
+      distribution:
+     Parameter Distribution Estimated
+[1,] b0        normal       Estimated
+[2,] b1        normal       Estimated
+[3,] h0        log-normal   Estimated
+[4,] alpha     normal       Estimated
+  Variance-covariance matrix:
+      b0 b1 h0 alpha
+b0     1  0  0     0
+b1     0  1  0     0
+h0     0  0  0     0
+alpha  0  0  0     0
+  Error model: constant , initial values: a.1=1 a.1=0 
+    No covariate in the model.
+    Initial values
+             b0  b1    h0 alpha
+Pop.CondInit 15 0.3 0.005  0.15
+-----------------------------------
+----    Key algorithm options  ----
+-----------------------------------
+    Algorithms: estimation only
+    Number of iterations:  K1=300, K2=100 
+    Number of chains:  1 
+    Seed:  12345 
+    Simulations:
+        nb of simulated datasets used for npde:  1000 
+        nb of simulated datasets used for VPC:  100 
+    Input/output
+        save the results to a file:  TRUE 
+        save the graphs to files:  TRUE 
+        directory where results should be saved:  newdir 
+----------------------------------------------------
+----                  Results                   ----
+----------------------------------------------------
+-----------------  Fixed effects  ------------------
+----------------------------------------------------
+     Parameter Estimate
+[1,] b0        14.996  
+[2,] b1         0.301  
+[3,] h0         0.010  
+[4,] alpha      0.100  
+[5,] a.1        0.099  
+[6,] <NA>       0.000  
+----------------------------------------------------
+-----------  Variance of random effects  -----------
+----------------------------------------------------
+   Parameter Estimate
+b0 omega2.b0 0.25    
+b1 omega2.b1 0.01    
+----------------------------------------------------
+------  Correlation matrix of random effects  ------
+----------------------------------------------------
+          omega2.b0 omega2.b1
+omega2.b0 1         0        
+omega2.b1 0         1        

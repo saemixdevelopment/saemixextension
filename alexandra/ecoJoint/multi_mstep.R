@@ -97,13 +97,15 @@ mstep.multi<-function(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, var
 	varList$omega<-varList$omega-mydiag(mydiag(varList$omega))+mydiag(varList$diag.omega)
 
 	# Residual error
+	ytype = Dargs[["XM"]][["ytype"]]
 	if(length(grep("structural",saemix.model["modeltype"]))>0) {
 	  i1<-0
 	  for(itype in 1:length(saemix.model["modeltype"])) {
 	    if(Dargs$modeltype[itype]=="structural") {
   	    i1<-i1+1
   	    if (Dargs$error.model[itype] %in% c("constant","exponential")) {
-  	      sig2<-suffStat[[i1+3]]/Dargs$nobs
+  	      sig2<-suffStat[[i1+3]]/length(ytype[ytype==itype])
+  	      #sig2<-suffStat[[i1+3]]/Dargs$nobs
   	      if (kiter<=opt$nbiter.sa) {
   	        varList$pres[1+(i1-1)*2]<-max(varList$pres[1+(i1-1)*2]*opt$alpha1.sa,sqrt(sig2))
   	      } else {
@@ -111,7 +113,8 @@ mstep.multi<-function(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, var
   	      }
   	    }
   	    if (Dargs$error.model[itype]=="proportional") {
-  	      sig2<-suffStat[[i1+3]]/Dargs$nobs
+  	      sig2<-suffStat[[i1+3]]/length(ytype[ytype==itype])
+  	      #sig2<-suffStat[[i1+3]]/Dargs$nobs
   	      if (kiter<=opt$nbiter.sa) {
   	        varList$pres[2+(i1-1)*2]<-max(varList$pres[2+(i1-1)*2]*opt$alpha1.sa,sqrt(sig2))
   	      } else {

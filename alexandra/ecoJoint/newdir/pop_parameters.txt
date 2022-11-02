@@ -42,9 +42,11 @@ function(psi,id,xidep) {
   
   ypred <- (D/V)*(ka/(ka-Cl/V))*(exp(-(Cl/V)*tim)-exp(-ka*tim))
   ypred[ytype==2] <- Emax[ytype==2]*ypred[ytype==2]/(ypred[ytype==2]+EC50[ytype==2])
+  #  ypd <- Emax*ypred/(ypred+EC50)
+  #  ypred[ytype==2] <- ypd[ytype==2]
   return(ypred)
 }
-<bytecode: 0x55977b2e24a8>
+<bytecode: 0x000002af2cf99758>
   Nb of parameters: 5 
       parameter names:  ka V Cl Emax EC50 
       distribution:
@@ -87,22 +89,22 @@ Pop.CondInit  2 8  2  100    5
 -----------------  Fixed effects  ------------------
 ----------------------------------------------------
      Parameter Estimate
-[1,] ka          1.73  
-[2,] V           8.02  
-[3,] Cl          1.97  
-[4,] Emax      103.46  
-[5,] EC50        5.23  
-[6,] b.1         0.13  
-[7,] b.2         0.13  
+[1,] ka          1.7   
+[2,] V           8.2   
+[3,] Cl          2.0   
+[4,] Emax      101.6   
+[5,] EC50        5.1   
+[6,] b.1         0.2   
+[7,] b.2         0.2   
 ----------------------------------------------------
 -----------  Variance of random effects  -----------
 ----------------------------------------------------
      Parameter   Estimate
-ka   omega2.ka   1.874   
-V    omega2.V    0.040   
-Cl   omega2.Cl   0.076   
-Emax omega2.Emax 0.019   
-EC50 omega2.EC50 0.072   
+ka   omega2.ka   1.8233  
+V    omega2.V    0.0262  
+Cl   omega2.Cl   0.0701  
+Emax omega2.Emax 0.0031  
+EC50 omega2.EC50 0.0816  
 ----------------------------------------------------
 ------  Correlation matrix of random effects  ------
 ----------------------------------------------------
