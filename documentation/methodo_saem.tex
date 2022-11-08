@@ -239,9 +239,13 @@ which is precisely the log-pdf of a multivariate Gaussian distribution with mean
 
 Hence, the f-SAEM algorithm uses the Gaussian proposal of covariance $\left( \nabla^2 \log p(y_i|\hat{\psi}_i) + \Omega^{-1}\right)^{-1}$ and mean $\hat{\psi}_i$, as an approximation of the true conditional distribution, in the MCMC sampler for non continuous data models.
 
-\section{Estimation of the uncertainty} \label{sec:SE} 
+\section{Estimation of the uncertainty on parameter estimates} \label{sec:SE} 
 
-\subsection{Estimation of the Fisher Information matrix} \label{sec_fish} 
+For continuous outcome models, \monolix provides by default estimates of the uncertainty of parameter estimates through an asymptotic approximation based on the Fisher Information Matrix (FIM). The FIM is computed using a linear approximation of the model function $f$ (also called the {\itshape FO} method), as described in section~\ref{sec:FIM}. Because this approximation is poor for discrete outcome models, the current version of \monolix does not compute the linearised FIM for these models (work is ongoing to implement better approximations, see notebooks for how to use other packages in {\sf R} to obtain standard errors of estimation in this case).
+
+Since version 3.2, \monolix also has bootstrap methods to provide alternative estimates of parameter uncertainty (section~\ref{sec:bootstrap}).
+
+\subsection{Estimation of the Fisher Information matrix} \label{sec:FIM} 
 
 Let $\thes$ be the true unknown value of $\theta$, and let $\hthetag$ be the maximum likelihood estimate of $\theta$. If the observed likelihood function $\ell$ is sufficiently smooth, asymptotic theory for maximum-likelihood estimation holds and
 
@@ -251,17 +255,23 @@ Let $\thes$ be the true unknown value of $\theta$, and let $\hthetag$ be the max
 where $I(\thes)=- \DDt \log \ell(y;\thes)$ is the true Fisher information matrix. Thus, an estimate of the asymptotic covariance of $\hthetag$ is the  inverse of the Fisher information matrix $I(\hthetag)=- \DDt \log \ell(y;\hthetag)$.
 
 \subsubsection{Linearization of the model}
+
 The Fisher information matrix of the non-linear mixed effects model defined in (1) cannot be computed in a closed-form.
 
-An alternative is  to approximate this information matrix  by the Fisher information matrix of the Gaussian model deduced from the non-linear mixed effects model after linearization of the function $f$ around the conditional expectation of the individual Gaussian parameters $(\esp{\phi_{i}|y;\hat{\theta}}, 1\leq
+An alternative is to approximate this information matrix  by the Fisher information matrix of the Gaussian model deduced from the non-linear mixed effects model after linearization of the function $f$ around the conditional expectation of the individual Gaussian parameters $(\esp{\phi_{i}|y;\hat{\theta}}, 1\leq
 i \leq N) $. The Fisher information matrix of this Gaussian model is a block matrix (no correlations between the estimated fixed effects and the estimated variances). The gradient of $f$ is numerically computed.
 
 \noindent {\bf Remark 1: } We do not recommend the linearization of the model to estimate the parameters of the model, as it is done with the FO and FOCE algorithms. On the other hand, many numerical experiments have shown that this approach can be used to estimate the Fisher information matrix.
 
-\noindent {\bf Remark 2: } Obviously, this approach cannot be used with discrete data models\ldots
+\noindent {\bf Remark 2: } Obviously, this approach cannot be used with discrete data models since the model is defined through its likelihood. 
+
+\subsubsection{Exact computation of the FIM}
+
+Exact expressions of the FIM for discrete data models have been developed by Rivière et al. using stochastic Monte-Carlo integration~(\cite{Riviere16}) and by Ueckert et al. using Adaptive Gaussian Quadrature~(\cite{Ueckert16}). They are not currently implemented in~\monolix and since they have been developed in the context of optimal design (where the population design can usually be decomposed in a small number of elementary designs), they may be time consuming to use in the context of parameter uncertainty estimation. Nevertheless we show how to use the AGQ approach to estimate the exact FIM in the notebook showcasing discrete data models (\url{https://github.com/saemixdevelopment/saemixextension/blob/5fea5ec01191caa25ad0f55c55d2b7a3ec223600/paperSaemix3/saemix3_categoricalModel.Rmd}).
 
 \subsubsection{A stochastic approximation of the Fisher Information Matrix}
-It is possible to obtain an estimation of the Fisher information matrix using the Louis's missing information principle \cite{Louis82}:
+
+It is also possible to obtain an estimation of the Fisher information matrix using the Louis's missing information principle \cite{Louis82}:
 
 \begin{equation}\label{louis}
 \DDt \log \ell(y;\theta) = \mathrm{E}\big(\DDt \log p(y,\phig; \theta) | y ; \theta \big) +
@@ -290,14 +300,85 @@ H_{k} &= D_k + G_k - \Delta_k \Delta_k^t
 
 In the current version of \monolix, only the linearisation approach has been implemented.
 
+\subsubsection{Confidence intervals}
+
+The estimates of the SE for the $p^{\rm th}$ component of $\theta$, $\theta^{(p)}$, $\hat{\theta}^{(p)}$, can be used to derive a CI through the normal approximation, giving standard $\alpha$-level confidence intervals (CI) as:
+\begin{equation} \label{eq:normalCI}
+\theta^{(p)} \in \left[ \hat{\theta}^{(p)} - z_{\alpha/2} \hat{SE}(\hat{\theta}^{(p)}); \hat{\theta}^{(p)} + z_{1-\alpha/2} \hat{SE}(\hat{\theta}^{(p)});  \right]
+\end{equation}
+where $z_q$ is the $q$-quantile of the normal distribution. 
+
 \subsection{Bootstrap approaches} \label{sec:bootstrap} 
 
-Bootstrap approaches for NLMEM
+Bootstrap consists in repeatedly resampling the observed data with replacement and applying the original analysis to create the distribution of an estimator or a statistic of interest~(\cite{Efron79}). However, given the hierarchical nature of the NLMEM, different approaches have been advocated to ensure a proper treatment of the inter-individual and within individual variabilities (\cite{Das99}). Bootstrap approaches were implemented and compared for NLMEM in~\cite{Thai13}. More recently, a bootstrap method based on conditional distributions  (presented in section~\ref{section_indivparam}) was proposed in~\cite{Comets21bootstrap}.
 
-~\cite{Thai13}
+Let $B$ be the number of bootstrap samples to be drawn from the original dataset, a general bootstrap algorithm is:
+\begin{enumerate}
+  \item Generate a bootstrap sample by resampling from the data and/or from the estimated model
+  \item Compute the estimates of the parameters of the model for the bootstrap sample
+  \item Repeat steps 1-2 $B$ times to obtain the bootstrap distribution of the parameter estimates.
+\end{enumerate}
+The mean and standard deviation of the distribution of the bootstrap estimates $\hat{\theta}_b^{*}$ ($b=1...B$) can be viewed as the bootstrap estimates of the parameters and their SE. These could be used to derive a CI through the normal approximation using equation~\ref{eq:normalCI}. However the bootstrap distribution may be asymmetric contrary to the asymptotic estimate and it is more appropriate to compute the non-parametric or percentile CI, defined as the bootstrap $\alpha$-level CI from the bootstrap distribution~\cite{Davison97}:
+\begin{equation}
+\label{eq:Boot_CI}
+\theta \in \left[ \hat{\theta}^{*}_{\frac{\alpha}{2}}  ;\hat{\theta}^{*}_{(1-\frac{\alpha}{2})} \right]
+\end{equation}
+where $\hat{\theta}^{*}_{(\frac{\alpha}{2} \cdot B)}$ is the $\frac{\alpha}{2}$-quantile of the bootstrap distribution. Other approaches to construct CI, including Student or normal-type approximations as well as bias-corrected CI, are discussed in particular in~\cite{Davison97} and~\cite{McKinnon06}.
 
-Conditional bootstrap (see conditional distributions in section~\ref{section_indivparam}
-~\cite{Comets21bootstrap}
+In \monolix, we implemented several approaches.
+
+\paragraph{Case bootstrap (Case):} This method consists of resampling with replacement the entire subjects ($\xi_i$,$\textbf{y}_i$ where $\textbf{y}_i= (y_{i1},y_{i2},....,y_{in_i})'$) from the original data before modelling. It is also called the \emph{paired bootstrap}. It is the most straightforward way to do bootstrapping and is mostly assumption-free. Stratification may be applied when the data is non-homogeneous to preserve the distribution of a covariate or of a sampling schedule.
+
+\paragraph{Parametric residual bootstrap (Par):} The parametric bootstrap requires the strongest assumptions as it depends both on the model and the distributions of parameters and errors. This method resamples the residuals by simulating from the theoretical distributions obtained after fitting the model, here for the random effects from the normal distributions adjusted the estimated mean and variance of the initial fit. In non-linear mixed effect models, two levels of variability must be considered, within-subject and between different subjects. The bootstrap sample is obtained as follows:
+
+\begin{enumerate} 
+  \item fit the model to the data to obtain $\hat{\theta}$
+  \item draw a sample $\{\eta^{*}_i\}_{i=1, \dots, N}$ from a normal distribution with mean zero and covariance matrix $\hat{\Omega}$
+  \item draw a sample $\{\epsilon^{*}_{ij}\}_{j=1, \dots n_i}$ from a normal distribution with mean zero and covariance matrix $\mathcal{I}_{n_i}$ where $\mathcal{I}$ denotes the identity matrix
+  \item generate the bootstrap responses $y^{*}_{ij}=  f(x_{ij}, \hat{\mu}, \eta^*_i) + g(x_{ij}, \hat{\mu}, \eta^*_i, \sigma) \; \epsilon^*_{ij}$ (where we explicitly replace $\psi_i$ by $\hat{\mu}$ and $\eta^*_i$ to highlight the dependency on the resampled random effects)
+\end{enumerate}
+
+
+\paragraph{Non-parametric residual bootstrap (NP):} This method resamples with replacement from the residuals obtained after model fitting for all subjects. The bootstrap sample is obtained as follows:
+
+\begin{enumerate}
+  \item fit the model to the data to obtain $\hat{\theta}$
+  \item estimate the individual parameters $\hat{\eta}_i$ as the EBE, then center and normalise them as detailed below
+  \item draw a sample $\eta^*_i$ with replacement for $i=1,...N$ from the resulting set
+  \item calculate the residuals $\hat{\epsilon}_{ij}= y_{ij}-f(x_{ij}, \hat{\mu}, \hat{\eta}_i) $, then center and normalise them
+  \item draw a sample $\{\epsilon^{*}_{ij}\}_{j=1, \dots n_i}$ with replacement globally from the resulting set
+  \item generate the bootstrap responses $y^{*}_{ij}=  f(x_{ij}, \hat{\mu}, \eta^*_i) + g(x_{ij}, \hat{\mu}, \eta^*_i, \sigma) \; \epsilon^*_{ij}$
+\end{enumerate}
+
+The normalisation in step (b) and (d) is necessary because the EBE generally suffer from regression to the mean and their variance may be considerably smaller than the true variability in the population~(\cite{Karlsson07}). To correct for this, \cite{Carpenter03} suggested centering the residuals, to ensure their distribution has mean 0, and inflating the variance by using the ratio between the estimated and empirical variance-covariance matrices. The transformation of random effects was carried out using the eigenvalue decomposition (EVD) proposed by \cite{Thai14} to limit numerical difficulties due to almost singular matrices. This procedure reads as follows:
+
+\begin{enumerate}
+  \item center the raw estimated random effects: $\tilde{\eta_i}=\hat{\eta}_i-\bar{\eta}_i$
+  \item obtain the EVD of the estimated variance-covariance matrix: $\hat{\Omega} = V_{\Omega} \; D_{\Omega} V_{\Omega}^T$ where $ D_{\Omega} $ is the diagonal matrix containing the eigenvalues of $\hat{\Omega}$
+  \item obtain the EVD of $S$, the variance-covariance matrix of the centered random effects:  $S = V_{S} \; D_{S} V_{S}^T$ where $D_S$ is the diagonal matrix containing the eigenvalues of $S$
+  \item calculate the correction matrix $A_{\eta}$ using these two decompositions as \\
+  $A_{\eta}= V_S \; D_S^{-1/2} \; V_{\Omega} \; D_{\Omega}^{-1/2} $
+  \item transform the centered random effects using the ratio $A_\eta$: $\hat{\eta}^{'}_i=\tilde{\eta}_i \times A_\eta$
+\end{enumerate}
+
+Similarly, the residuals are transformed using the empirical variance:
+\begin{enumerate}
+  \item center the raw estimated residuals: $\tilde{\epsilon}_{ij}=\hat{\epsilon}_{ij}-\bar{\epsilon}_{ij}$
+  \item calculate the correction factor $A_{\sigma} = 1/\sigma_{emp}$ where $\sigma_{emp}$ is the empirical standard deviation of the centered residuals
+  \item transform the centered residuals using the ratio $A_\sigma$: $\hat{\epsilon}_{ij}^{'}=\tilde{\epsilon}_{ij} \times A_\sigma$
+\end{enumerate}
+
+\paragraph{Conditional non-parametric residual bootstrap (cNP):} to avoid the normalisation step, the cNP uses samples from the conditional distribution. The algorithm then becomes:
+
+\begin{enumerate} 
+  \item fit the model to the data to obtain $\hat{\theta}$ and estimate the conditional distributions
+  \item obtain $M$ samples for each vector $\eta_i$, $\eta_{i}^m$ ($m=1,...,M$) from the conditional distributions
+  \item calculate the residuals $\epsilon^{m}_{ij} = \frac{y_{ij} - f(x_{ij}, \hat{\mu}, \eta^{m}_{i}) }{g(x_{ij}, \hat{\mu}, \eta^{m}_{i},\sigma)}$, then center them
+  \item center the $\eta_{i}^m$ for each subject and draw a sample $\{ \eta^*_i \}_{i=1,...N}$ with replacement 
+  \item draw a sample \{$\epsilon^{*}_{ij}$\} with replacement globally from \{$\epsilon^{*m}_{ij}$\} %by assigning an equal probability  $\frac{1}{\sum_{i=1}^N n_i}$ to each value
+  \item generate the bootstrap responses $y^{*}_{ij}=  f(x_{ij}, \hat{\mu}, \eta^*_i) + g(x_{ij}, \hat{\mu}, \eta^*_i, \sigma) \; \epsilon^*_{ij}$
+\end{enumerate}
+In the present study we performed the resampling of residuals in steps (b) and (d) separately for each subject within their own distribution, but in homogeneous populations it would also be possible to sample globally over the residuals obtained for the entire population.
 
 \section{Estimation of the individual parameters} \label{section_indivparam}
 

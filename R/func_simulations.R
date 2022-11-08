@@ -154,7 +154,7 @@ simulateDiscreteSaemix <- function(object, nsim, seed, uncertainty=FALSE, verbos
   if(is.null(body(object@model@simulate.function)) || is(try(validObject(object@model)), "try-error")) {
     if(verbose) message("No simulate.function element in the model component, please add a simulate.function \nwith the same structure as the model functions (arguments (psi, id, xidep)), \nto return simulated responses when given a set of individual parameters (psi) 
 and the corresponding predictors (xidep) \n")
-    return(NULL)
+    return()
     } else
       simulate.function <- object@model@simulate.function
   if(missing(nsim)) nsim<-object["options"]$nb.sim

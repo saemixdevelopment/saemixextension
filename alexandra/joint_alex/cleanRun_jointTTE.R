@@ -1,11 +1,13 @@
 #################################################
-saemixDir <- "C:/Users/AlexandraLAVALLEY/Documents/GitHub/saemixextension"
+#saemixDir <- "C:/Users/AlexandraLAVALLEY/Documents/GitHub/saemixextension"
+saemixDir <- "/home/eco/work/saemix/saemixextension"
 workDir <- file.path(saemixDir, "alexandra","joint_alex")
 setwd(workDir)
 
 library(ggplot2)
 library(Cairo)
-library("viridis")  
+library("viridis")
+library(rlang)
 
 # Chargement des fonctions originelles de la librairie
 progDir<-file.path(saemixDir, "R")
@@ -21,7 +23,7 @@ source(file.path(progDir,"func_plots.R")) # for saemix.plot.setoptions
 # Creating data and model objects
 
 # data
-data_joint <- read.csv("C:/Users/AlexandraLAVALLEY/Documents/GitHub/saemixextension/alexandra/joint_alex/joint_tte2.csv", header=TRUE)
+data_joint <- read.csv(file.path(workDir,"joint_tte2.csv"), header=TRUE)
 dataJM<-saemixData(name.data=data_joint, name.group=c("id"), name.predictors=c("time"), 
                    name.response="obs",name.ytype = "ytype")
 
@@ -67,6 +69,12 @@ jointTTE<-saemixModel(model=JMmodel,description="JM lin longi one tte",modeltype
                       omega.init = diag(c(0.25,0.01,0,0)))
 
 
+jointTTE.wrong<-saemixModel(model=JMmodel,description="JM lin longi one tte",modeltype=c("structural","likelihood"),
+                      psi0=matrix(param*rnorm(4,mean=1, sd=0.2),ncol=4,byrow=TRUE,dimnames=list(NULL, c("b0","b1","h0","alpha"))),
+                      transform.par=c(0,0,1,0), covariance.model=diag(c(1,1,0,0)),
+                      fixed.estim = c(1,1,1,1),error.model = "constant",
+                      omega.init = diag(c(2,0.1,1,0.01)))
+
 
 ################################################# Running
 # Computational function
@@ -75,11 +83,13 @@ source(file.path(workDir,"multi_initializeMainAlgo.R"))
 source(file.path(workDir,"multi_estep.R"))
 source(file.path(workDir,"multi_mstep.R"))
 source(file.path(workDir,"multi_main.R"))
+source(file.path(workDir,"multi_map.R"))
 saemix.data<-dataJM
 saemix.model<-jointTTE
 saemix.options<-saemixControl(seed=12345, map=FALSE, fim=FALSE, ll.is=FALSE)
 
-yfit <- saemix.multi(saemix.model, saemix.data, saemix.options)
+yfit <- saemix.multi(jointTTE, saemix.data, saemix.options)
+yfit2 <- saemix.multi(jointTTE.wrong, saemix.data, saemix.options)
 
 # Population estimates
 yfit

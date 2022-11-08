@@ -34,6 +34,7 @@ workDir<-getwd()
 # @Eco
 workDir<-"/home/eco/work/saemix/saemixextension/paperSaemix3"
 saemixDir <- "/home/eco/work/saemix/saemixextension"
+figDir<-file.path(saemixDir,"documentation","figs")
 setwd(workDir)
 
 # Libraries
@@ -74,7 +75,7 @@ nboot <-10
 
 #### Data description
 
-The *rapi.saemix* dataset in the **saemix** package contains count data kindly made available by David Atkins (University of Washington) in his tutorial on modelling count data (Atkins et al. 2013). The data comes from a randomised controlled trial assessing the effectiveness of web-based personalised normative feedback intervention on alcohol consumption (Neighbors et al. 2010a, 2010b}. The *rapi.saemix* dataset records alcohol-related problems, as measured by the Rutgers Alcohol Problem Index (RAPI) (White et al. 1989), in freshmen at risk for heavy drinking behaviours. Students were asked to report every six months the number of alcohol-related problems, and the dataset includes 3,616 repeated measures of these counts in 818 subjects, 561 of whom had the full 5 measurements over a period of 2 years. Interesting features of this dataset are first, the longitudinal aspect which allow to evaluate changes over time, and second, the shape of the distribution of counts. Counts are often positively skewed, bounded by zero, with a large stack of data points at zero, indicating individuals and/or occasions without drinking, use, or related problems. This dataset was used in Atkins et al. (2013) to illustrate mixed effects count regression using the *glmer()* function from the **lme4** package.
+The *rapi.saemix* dataset in the **saemix** package contains count data kindly made available by David Atkins (University of Washington) in his tutorial on modelling count data (Atkins et al. 2013). The data comes from a randomised controlled trial assessing the effectiveness of web-based personalised normative feedback intervention on alcohol consumption (Neighbors et al. 2010a, 2010b}. The *rapi.saemix* dataset records alcohol-related problems, as measured by the Rutgers Alcohol Problem Index (RAPI) (White et al. 1989), in freshmen at risk for heavy drinking behaviours. Students were asked to report every six months the number of alcohol-related problems, and the dataset includes 3,616 repeated measures of these counts in 818 subjects, 561 of whom had the full 5 measurements over a period of 2 years. Interesting features of this dataset are first, the longitudinal aspect which allow to evaluate changes over time, and second, the shape of the distribution of counts. Counts are often positively skewed, bounded by zero, with a large stack of data points at zero, indicating individuals and/or occasions without drinking, use, or related problems. This dataset was used in Atkins et al. (2013) to illustrate mixed effects count regression using the *glmer()* function from the **lme4** package (Bates et al. 2015).
 
 Similarly to categorical data, we need the value of the outcome to compute the associated likelihood. Therefore, to create the data object using saemixData, we need to specify the response column both as a response (*name.response="rapi"*) and as a predictor (here, time is the first predictor and we add the response in the argument *name.predictors*). 
 
@@ -92,7 +93,16 @@ saemix.data<-saemixData(name.data=rapi.saemix, name.group=c("id"),
 We can visualise the evolution of the proportion of each count over time using the *plotDiscreteData()* function with the outcome set to *count*. Here we stratify by gender and regroup the higher scores in 3 categories.
 
 ```{r countExploreProp}
-plotDiscreteData(saemix.data, outcome="count", which.cov="gender", breaks=c(0:9, 16, 25,80))
+xpl <- plotDiscreteData(saemix.data, outcome="count", which.cov="gender", breaks=c(0:9, 16, 25,80))
+print(xpl)
+
+if(saveFigs) {
+  namfig<-"knee_rawDataPropTime.eps"
+  cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
+  plotDiscreteData(saemix.data, outcome="count", which.cov="gender", breaks=c(0:9, 16, 25,80))
+  dev.off()
+}
+
 ```
 
 The distribution of count data can also be visualised as a histogram. The over-representation of low scores can be seen when zooming on the early part of the histogram. We can also tabulate the data by stratifying on men and women to realise that there seems to be a gender difference, with more women not reporting any episode of drinking than men.
@@ -210,7 +220,7 @@ Some diagnostics for this model can be obtained by simulating from the model. To
     - same definition of pevent (=$P(Y_{ij}=k)$, the probability of observing $k$ counts)
     - in *count.poisson()* we then compute the probability of the observed outcome using the observed value of $Y_{ij}$ contained in *rapi* for each observation
     - in *countsimulate.poisson()*, we use the individual value of $\lambda(Y_{ij})$ to simulate from a Poisson distribution using the *rpoisson()* function
-- once the simulation function has been defined, we use the *simulateDiscreteSaemix()* function from the {\sf saemix} package to simulate *nsim* values (here 100) with the population parameters estimated in *poisson.fit*
+- once the simulation function has been defined, we use the *simulateDiscreteSaemix()* function from the **saemix** package to simulate *nsim* values (here 100) with the population parameters estimated in *poisson.fit*
   - this adds a *simdata* element to the *poisson.fit*
   - we then use the *discreteVPC()* function to produce VPC corresponding to the fit
 
@@ -661,6 +671,8 @@ print(df2)
 
 **Atkins D**, Baldwin S, Zheng C, Gallop R, Neighbors C (2013). A tutorial on count regression and zero-altered count models for longitudinal substance use data. *Psychology of Addictive Behaviors* 27:166–77.
 
+**Bates D**, Maechler M, Bolker B, Walker S (2015). Fitting Linear Mixed-Effects Models Using lme4. Journal of Statistical Software, 67(1), 1-48. doi:10.18637/jss.v067.i01.
+  
 **Comets E**, Rodrigues C, Jullien V, Ursino M (2021). Conditional non-parametric bootstrap for non-linear mixed effect models. *Pharmaceutical Research*, 38: 1057-66.
 
 **Neighbors CJ**, Lewis M, Atkins D, Jensen M, Walter T, Fossos N, Lee C, Larimer M  (2010a). Efficacy of web-based personalized normative feedback: A two-year randomized controlled trial. *Journal of Consulting and Clinical Psychology* 78:898–911.

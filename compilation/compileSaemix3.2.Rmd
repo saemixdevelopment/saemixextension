@@ -155,8 +155,6 @@ library(testthat)
 
 ### Running theopp example
 
-Documentation not found
-
 ```{r helpTheo}
 ?theo.saemix
 ?saemix
@@ -200,21 +198,22 @@ saemix.fit<-saemix(model=saemix.model,
 # Prints a summary of the results
 print(saemix.fit)
 
-# Outputs the estimates of individual parameters
-psi(saemix.fit)
-
-# legacy
-sim1<-simul.saemix(saemix.fit, seed=12345)
-# no simulated data
-saemix.fit@sim.data
-# simulated data
-sim1@sim.data
-
 # New function, same seed, same results
 sim2<-simulate.SaemixObject(saemix.fit, seed=12345)
 sim2@sim.data
 
-identical(sim1@sim.data, sim2@sim.data)
+# Outputs the estimates of individual parameters
+psi(saemix.fit)
+
+# legacy
+if(FALSE){
+  sim1<-simul.saemix(saemix.fit, seed=12345)
+  # no simulated data
+  saemix.fit@sim.data
+  # simulated data
+  sim1@sim.data
+  identical(sim1@sim.data, sim2@sim.data)
+}
 ```
 
 Plot results:
@@ -223,10 +222,24 @@ Plot results:
 # Shows some diagnostic plots to evaluate the fit
 plot(saemix.fit)
 plot(saemix.fit, plot.type="vpc")
+plot(saemix.fit, plot.type="individual")
+
+# Routes to npdeSaemix
 plot(saemix.fit, plot.type="npde")
 ynpde<-npdeSaemix(saemix.fit)
-plot(saemix.fit, plot.type="individual")
+# ecdf by weight
+plot(ynpde, plot.type="ecdf", which.cov="Weight", covsplit=T)
+# scatterplot by sex - not working, Sex not in ynde...
+plot(ynpde, plot.type="x.scatter", which.cov="Sex", covsplit=T)
+
 ```
+
+Bootstrap
+
+```{r theoBoot}
+
+```
+
 
 ```{r deactivateDevMode, echo=FALSE, hide=T}
 dev_mode()

@@ -1,9 +1,11 @@
 
 \section{Discrete data}
 
-\subsection{Binary data} \label{sec:toenail}
+\monolix~3.0 can now be used to estimate the parameters of a model where the outcome is a discrete response. Detailed notebooks are available on the github to show additional features.
 
-\monolix~3.0 can now be used to estimate the parameters of a model where the outcome is a discrete response. The most simple of this, but also the least informative type, is a binary response that can take the values 0 or 1. In this section, we illustrate the use of \monolix to model binary data from a randomised clinical trial comparing two treatments for fungal toenail infection. We use the {\sf toenail} dataset available in {\sf R} in the packages {\sf prLogistic} or {\sf HSAUR3}.
+\subsection{Binary data} \label{sec:toenail}
+ 
+The most simple discrete outcome, but also the least informative type, is a binary response that can take the values 0 or 1. In this section, we illustrate the use of \monolix to model binary data from a randomised clinical trial comparing two treatments for fungal toenail infection. We use the {\sf toenail} dataset available in {\sf R} in the packages {\sf prLogistic} or {\sf HSAUR3}.
 
 Data are from \cite{debacker_toenail}, a multi-center randomised comparison  of two oral treatments (A and B) for toenail infection. 294 patients are measured at seven visits, i.e. at baseline (week 0), and at weeks 4, 8, 12, 24, 36, and 48 thereafter, comprising a total of 1908 measurements. The primary end point was the absence of toenail infection and the outcome of interest is the binary variable "onycholysis" which indicates the degree of separation of the nail plate from the nail-bed (categorised as 0=none or mild versus 1=moderate or severe). Figure~\ref{fig:toenailData} shows the evolution of the number of events (left) and the proportion of events (right) in the two treatment groups over the 7 visits of the study.
 
@@ -16,6 +18,8 @@ Data are from \cite{debacker_toenail}, a multi-center randomised comparison  of 
 \caption{Toenail data. Left: number of events at each visit; right: proportion of infected subjects at each visit.} \label{fig:toenailData}
 \end{figure}
 
+The code to produce this figure using {\sf ggplot2} is given in the associated notebook found on the github (\url{https://github.com/saemixdevelopment/saemixextension/blob/5fea5ec01191caa25ad0f55c55d2b7a3ec223600/paperSaemix3/saemix3_categoricalModel.Rmd}).
+
 Several analyses have been made in the literature \cite{lesaffre2001effect,lin2011goodness}, and here we fit the logistic random effect model developed by \cite{hedeker1994random}. This model includes a random intercept ($\theta_1$, normally distributed with a standard deviation $\omega_1$),  a time effect ($\beta_2$, normally distributed with a standard deviation $\omega_2$). Treatment (A or B) ($\beta$) is included as a covariate on time. The treatments were randomised at baseline so we don't include a treatment effect on the intercept. The probability $p_{ij}=P(Y_{ij}=1 | \theta_{1,i}, \theta_{2,i})$ associated with an event $Y_{ij}$ at time $t_{ij}$ is given by the following equation for the logit:
 \begin{equation}
 logit(p_{ij}) = \ln \left( \frac{p_{ij}}{1-p_{ij}} \right) = \theta_{1,i} + \theta_{1,i} t_{ij} \label{eq:logit}
@@ -26,6 +30,11 @@ For non-gaussian models, the model function must be written to return the log-pd
 data(toenail.saemix)
 saemix.data<-saemixData(name.data=toe,name.group=c("id"),name.predictors=c("time","y"), 
     name.response="y", name.covariates=c("treatment"),name.X=c("time"))
+\end{verbatim}
+
+A plot showing the proportion of 0's and 1's across time can be produced using the {\sf plotDiscreteData()} function introduced in version 3.2.
+\begin{verbatim}
+plotDiscreteData(saemix.data, outcome='binary', which.cov="treatment")
 \end{verbatim}
 
 The model function can now be written. As previously, it must take 3 arguments, {\sf psi}, {\sf id} and {\sf xidep}. Within the body of the function, we compute the logpdf as a function of the parameters. Here for a binomial model, this means we define first the logit of the probability, then the probability itself by inverting equation~\ref{eq:logit}. We then define the probability of the observed outcome as $pevent \; \mathbb{1}_{Y=1} + (1-pevent) \; \mathbb{1}_{Y=0}$
@@ -74,24 +83,61 @@ saemix.options<-list(seed=1234567,save=FALSE,save.graphs=FALSE,
 binary.fit<-saemix(saemix.model,saemix.data,saemix.options)
 \end{verbatim}
 
-{\bf Important note:} The linear approximation of the FIM does not apply well to discrete response models. Exact computation methods to estimate the FIM without linearisation have been proposed by~\cite{Riviere16} using Hamiltonian Monte-Carlo and~\cite{Ueckert16} using adaptive Gaussian quadrature. These methods can be applied to estimate SE for the parameters but are not automatically available yet in \monolix.
+{\bf Important note:} The linear approximation of the FIM does not apply well to discrete response models. As a result, estimates of the SE are not reported for discrete data models. See the next paragraph for alternatives.
 
-\paragraph{Diagnostics:} automated visualisation or diagnostic plots have not yet been implemented for discrete response models, but we can of course create our own in R by simulating from the model. The {\sf simulateDiscreteSaemix} function uses the model fit and the simulation function (defined above) to simulate responses from the estimated parameter distribution.
+\paragraph{Uncertainty:} To estimate parameter uncertainty, we can use different approaches.
+
+Exact computation methods to estimate the FIM without linearisation have been proposed by~\cite{Riviere16} using Hamiltonian Monte-Carlo and~\cite{Ueckert16} using adaptive Gaussian quadrature. These methods can be applied to estimate SE for the parameters and we show how in the next example which has a balanced design easier to handle (section~\ref{sec:kneeCat}).
+
+Alternatively, we can use bootstrap approaches to estimate uncertainty. In~\monolix 3.2, we implemented different bootstrap approaches, including the case bootstrap (bootstrap at the level of the individual), the parametric and non-parametric residual bootstraps resampling residuals from the theoretical or empirical distributions~\cite{Thai14}, and the conditional bootstrap resampling residuals from the conditional distributions~\cite{Comets21bootstrap}.
+
+Table~\ref{tab:toenailBootstrapSE} gives the parameter estimates and associated SE estimated using 200 bootstrap samples with the Case and Conditional bootstrap approaches. Both methods yield similar confidence intervals for the different parameters.
+
+\begin{table}[!h]
+\centering
+\begin{tabular}{lrllll}
+  \hline
+  Parameter & saemix & \multicolumn{2}{c}{Case bootstrap} & \multicolumn{2}{c}{Conditional bootstrap} \\
+ &Estimate & Mean (SD) & CI & Mean (SD) & CI \\ 
+  \hline
+$\theta_1$ & -1.71 & -1.74 (0.360 & [-2.44, -1.08] & -1.53 (0.31) & [-2.20, -0.98] \\ 
+ $\theta_2$ & -0.39 & -0.40 (0.073) & [-0.56, -0.28] & -0.40 (0.044) & [-0.49, -0.32] \\ 
+ $\beta_{treatment,\theta_2}$ & -0.15 & -0.16 (0.13) & [-0.44, 0.066] & -0.15 (0.07) & [-0.29, -0.02] \\ 
+ $\omega^2_{\theta_1}$ & 16.11 & 17.06 (4.50) & [10.36, 28.23] & 14.83 (2.82) & [10.01, 21.50] \\ 
+   \hline
+\end{tabular}
+\caption{Parameter estimates using {\sf saemix}} \label{tab:toenailBootstrapSE}
+\end{table}
+
+
+\paragraph{Diagnostics:} The {\sf simulateDiscreteSaemix} function uses the model fit and the simulation function (defined above) to simulate responses from the estimated parameter distribution. The {\sf discreteVPC()} function then plots VPC of the different categories (here, 0 and 1), here split according to treatment (figure~\ref{fig:toenailTreatVPC}). This VPC plot shows a reasonable model fit in the two treatment groups.
 % ECO TODO: add Marc's npd for categorical data...
 \begin{verbatim}
 nsim<-100
 binary.fit <- simulateDiscreteSaemix(binary.fit, nsim=nsim)
-\end{verbatim}
 
-In figure~\ref{fig:toenailPropVPC} we use the simulated data in the {\sf datasim} dataframe contained in the {\sf sim.data} element of the object after the call to the function to compute a 90\% prediction interval on the proportion of events at each visit. This VPC plot shows a reasonable model fit in the two treatment groups.
+discreteVPC(binary.fit, outcome="binary", which.cov="treatment")
+\end{verbatim}
 
 \begin{figure}[!h]
 \begin{center}
-\epsfig{file=figs/toenail_globalVPC.eps,width=11cm,angle=0}
+\epsfig{file=figs/toenail_vpcByTreatment.eps,width=13cm,angle=0}
+\end{center}
+\par \kern -0.5cm
+\caption{Proportion of predicted 0' and 1's compared to the observed proportion across time, for the model fit to the toenail data, split by treatment.} \label{fig:toenailTreatVPC}
+\end{figure}
+
+Alternatively, we can again use {\sf ggplot2} to produce other diagnostic plots. In figure~\ref{fig:toenailPropVPC} we use the simulated data in the {\sf datasim} dataframe contained in the {\sf sim.data} element of the object after the call to the function to compute a 90\% prediction interval on the proportion of events (1's) at each visit. 
+
+\begin{figure}[!h]
+\begin{center}
+\epsfig{file=figs/toenail_globalVPC.eps,width=13cm,angle=0}
 \end{center}
 \par \kern -0.5cm
 \caption{Proportion of expected events compared to the observed proportion across time, for the model fit to the toenail data.} \label{fig:toenailPropVPC}
 \end{figure}
+
+%\clearpage
 
 The following code was used to produce this plot (the libraries {\sf tidyverse, ggplot2} and {\sf gridExtra} are assumed to be loaded in the {\sf R} session):
 \begin{verbatim}
@@ -138,14 +184,27 @@ plot2 <- ggplot(toe1, aes(x=visit, y=freq, group=treatment)) +
 print(plot2)
 \end{verbatim}
 
-
-\clearpage
-\newpage
+%\newpage
 
 \subsection{Categorical data} \label{sec:kneeCat}
 
-The {\sf knee.saemix} data represents pain scores recorded in a clinical study in 127 patients with sport related injuries treated with two different therapies. The pain occuring during knee movement was observed after 3,7 and 10 days of treatment. It was taken from the {\sf catdata} package in R~\cite{catdata} (dataset {\sf knee}) and reformatted as follows. A time column was added representing the day of the measurement (with 0 being the baseline value) and each observation corresponds to a different line in the dataset. Treatment was recoded as 0/1 (placebo/treatment), gender as 0/1 (male/female) and {\sf Age2} represents the squared of centered Age. Figure~\ref{fig:kneeData} shows barplots of the different pain scores as a function of time in study, illustrating a recovery as the proportion of lower pain scores increases.
+The {\sf knee.saemix} data represents pain scores recorded in a clinical study in 127 patients with sport related injuries treated with two different therapies. The pain occuring during knee movement was observed after 3,7 and 10 days of treatment. It was taken from the {\sf catdata} package in R~\cite{catdata} (dataset {\sf knee}) and reformatted as follows. A time column was added representing the day of the measurement (with 0 being the baseline value) and each observation corresponds to a different line in the dataset. Treatment was recoded as 0/1 (placebo/treatment), gender as 0/1 (male/female) and {\sf Age2} represents the squared of centered Age. The analyses described below can be found in the notebook (\url{https://github.com/saemixdevelopment/saemixextension/blob/5fea5ec01191caa25ad0f55c55d2b7a3ec223600/paperSaemix3/saemix3_categoricalModel.Rmd}).
 
+We load this data into {\sf R} and create the {\sf saemixData} object:
+\begin{verbatim}
+data(knee.saemix)
+saemix.data<-saemixData(name.data=knee.saemix,name.group=c("id"),
+         name.predictors=c("y", "time"), name.X=c("time"),
+         name.covariates = c("Age","Sex","treatment","Age2"),
+         units=list(x="d",y="", covariates=c("yr","-","-","yr2")))
+\end{verbatim}
+As previously, we need to include the outcome {\sf y} both as the response and as a predictor as we need to know the value of the outcome to compute the associated probability. We use {\sf name.X} to identify the predictor we want on the X-axis of graphs (here, the time).
+
+Again, we can visualise the data, looking at the evolution of the proportion of outcomes in each category, stratifying on treatment, using the {\sf plotDiscreteData()} function (output not shown):
+\begin{verbatim}
+plotDiscreteData(saemix.data, outcome="categorical", which.cov="treatment")
+\end{verbatim}
+We summarise the data in figure~\ref{fig:kneeData}, showing barplots of the different pain scores as a function of time in study, illustrating a recovery as the proportion of lower pain scores increases. 
 \begin{figure}[!h]
 \begin{center}
 \epsfig{file=figs/knee_barplotData.eps,width=11cm,angle=0}
@@ -154,11 +213,7 @@ The {\sf knee.saemix} data represents pain scores recorded in a clinical study i
 \caption{Barplot of the evolution of pain scores with time in the {\sf knee.saemix} dataset.} \label{fig:kneeData}
 \end{figure}
 
-\begin{verbatim}
-data(knee.saemix)
-\end{verbatim}
-
-The dataset is part of the datasets analysed in~\cite{Tutz12} with various methods (please refer to the different vignettes in the documentation of {\sf knee}), but mainly as logistic regression on the response after 10 days, or as mixed binary regression after dichotomising the response. Here, we will fit the following proportional odds model to the full data:
+\paragraph{Parameter estimation:} The {\sf knee} dataset is part of the datasets analysed in~\cite{Tutz12} with various methods (please refer to the different vignettes in the documentation of {\sf knee}), but mainly as logistic regression on the response after 10 days, or as mixed binary regression after dichotomising the response. Here, we will fit the following proportional odds model to the full data:
 The probability $p_{ij}=P(Y_{ij}=1 | \theta_{1,i}, \theta_{2,i})$ associated with an event $Y_{ij}$ at time $t_{ij}$ is given by the following equation for the logit:
 \begin{equation}
 \begin{split}
@@ -171,7 +226,7 @@ P(Y_{ij} = 4 | \psi_i) &= 1 - \sum_k=1^4 P(Y_{ij} = k | \psi_i)\\
 \end{equation}
 where $\alpha_1$ and $\beta$ have interindividual variability, $\beta$ is the effect of time, $\alpha_1$ is the probability of a pain score of 1 and the other parameters represent an incremental risk to move into the higher pain category.
 
-When the response has more than one category, we define the probability for (K-1) categories and combine them to obtain the likelihood for each observation.
+When the response has more than one category, we define the probability for (K-1) categories and combine them to obtain the likelihood for each observation. 
 
 \begin{verbatim}
 ordinal.model<-function(psi,id,xidep) {
@@ -208,15 +263,7 @@ saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, nb.chains=10,
 ord.fit<-saemix(saemix.model,saemix.data,saemix.options)
 \end{verbatim}
 
-Figure~\ref{fig:kneeMedScoreVPC}, representing a VPC of the mean value of pain score at each time point, stratified over treatment, shows some model misfit especially for treatment 0. This figure was produced using simulations from the fitted model as in the binary data examples using the simulation function below.
-\begin{figure}[!h]
-\begin{center}
-\epsfig{file=figs/knee_medianScoreVPC.eps,width=11cm,angle=0}
-\end{center}
-\par \kern -0.5cm
-\caption{VPC of the mean value of pain score in the model adjusted to the {\sf knee.saemix} dataset.} \label{fig:kneeMedScoreVPC}
-\end{figure}
-
+As previously, we define an associated simulation function to simulate from the same model:
 \begin{verbatim}
 simulateOrdinal<-function(psi,id,xidep) {
   y<-xidep[,1]
@@ -241,6 +288,61 @@ simulateOrdinal<-function(psi,id,xidep) {
 }
 \end{verbatim}
 
+We then fit the model to the data:
+\begin{verbatim}
+saemix.model<-saemixModel(model=ordinal.model, simulate.function=simulateOrdinal,
+        description="Ordinal categorical model",modeltype="likelihood",
+        psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5,byrow=TRUE,
+           dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))),
+        transform.par=c(0,1,1,1,1),
+        covariance.model = diag(c(1,0,0,0,1)))
+
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, nb.chains=10, 
+    fim=FALSE)
+
+ord.fit<-saemix(saemix.model,saemix.data,saemix.options)
+\end{verbatim}
+
+\paragraph{Uncertainty:} Both the approaches mentioned in section~\ref{sec:toenail} are computationally intensive. We show here how to use code provided by Sebastian Ueckert implementing the MC/AGQ approach~\cite{Ueckert16}, as the MCMC by Rivière et al.~\cite{Riviere16} requires the installation of {\sf rStan}. In this approach, the information matrix (FIM) over the population is first decomposed the sum of the individual FIM:
+$$
+FIM(\Psi, \Xi) = \sum_{i=1}^{N} FIM(\Psi, \xi_i)
+$$
+where $\xi_i$ denotes the individual design in subject $i$. Assuming $Q$ different elementary designs, the FIM can also be summed over the different designs weighted by the number of subjects $N_q$ in design $q$ as:
+$$
+FIM(\Psi, \Xi) = \sum_{q=1}^{Q} N_q FIM(\Psi, \xi_q)
+$$
+For the model without covariates, all subjects have the same elementary designs and we can then simply compute the associated individual FIM and multiply it by the number of subjects. For a model with covariates, we would need to compute the FIM for each combination of covariates for categorical covariates, or for each subject with continuous covariates.
+
+The notebook details the implementation of this approach for the {\sf knee.saemix} dataset. We can compare the results to the bootstrap approaches (see notebook). Table~\ref{tab:kneeSE} shows good agreement between the different methods. For the bootstrap methods, mean and SD denote respectively the mean and standard deviation of the bootstrap distribution, and the CI are obtained as the 2.5th and 97.5th quantiles of the distributions. For the FIM, we report the\monolix estimate $\hat{\theta}$, the SE computed using the FIM ($\hat{SE}$, and the CI is given by the normal approximation ($\hat{\theta} \pm 1.96 \hat{SE}$).
+
+\begin{table}[ht]
+\centering
+\begin{tabular}{rccccccc}
+  \hline
+    Param & \multicolumn{2}{c}{Case bootstrap} & \multicolumn{2}{c}{Conditional bootstrap}  & \multicolumn{2}{c}{FIM by AGQ} \\
+ & Mean (SD) & CI & Mean (SD) & CI & Estimate (SE) & CI \\ 
+  \hline
+$\alpha_1$ & -16.12 (2.28) & [-20.80, -11.70] & -14.68 (2.01) & [-18.55, -11.09] & -15.21 (2.06) & [-19.24, -11.18] \\ 
+  $\alpha_2$ &  7.07 (1.01) & [5.25, 9.22] &   5.97 (0.90) & [4.49, 7.77] &   6.51 (0.82) & [4.91, 8.11] \\ 
+  $\alpha_3$ &   8.96 (1.38) & [6.62, 11.87] &   8.40 (1.06) & [6.67, 10.69] &   8.49 (1.01) & [6.52, 10.46] \\ 
+  $\alpha_4$ &  13.26 (2.42) & [9.46, 18.64] &  12.86 (1.91) & [9.85, 17.34] &  12.48 (2.04) & [8.48, 16.47] \\ 
+  $\beta$ &  0.91 (0.11) & [0.70, 1.14] &   0.82 (0.11) & [0.63, 1.03] &   0.87 (0.12) & [0.63, 1.10] \\ 
+  $\omega^2_{\alpha_1}$ & 221.0 (64.8) & [117.4, 363.6] & 177.8 (48.5) & [99.8, 289.2] & 189.8 (54.5) & [82.9, 296.7] \\ 
+  $\omega^2_{\alpha_2}$ & 0.57 (0.18) & [0.26, 0.97] &   0.52 (0.16) & [0.25, 0.86] &   0.55 (0.17) & [0.21, 0.89] \\ 
+   \hline
+\end{tabular}
+\caption{Estimated parameters and associated uncertainty for the {\sf knee.saemix} dataset.} \label{tab:kneeSE}
+\end{table}
+
+\paragraph{Diagnostics:} As previously, we can produce VPC for each pain category using the {\sf discreteVPC()} function (see notebook). These VPC (not shown) show some model misspecification, especially in the intermediate pain scores, as well as a tendency to overestimate the improvement, driven by the reduction in the highest pain score. This suggests the impact of time and treatment are not well taken into account in the current model. Figure~\ref{fig:kneeMedScoreVPC}, representing a VPC of the mean value of pain score at each time point, stratified over treatment, shows some model misfit especially for treatment 0. This figure was produced using simulations from the fitted model as in the binary data examples using the simulation function {\sf simulateOrdinal()} given below. 
+
+\begin{figure}[!h]
+\begin{center}
+\epsfig{file=figs/knee_medianScoreVPC.eps,width=11cm,angle=0}
+\end{center}
+\par \kern -0.5cm
+\caption{VPC of the mean value of pain score in the model adjusted to the {\sf knee.saemix} dataset.} \label{fig:kneeMedScoreVPC}
+\end{figure}
 
 \subsection{Count data} 
 
@@ -279,7 +381,7 @@ poisson.fit<-saemix(saemix.model,saemix.data,saemix.options)
 
 %Web-based brief alcohol interventions have the potential to reach a large number of individuals at low cost; however, few controlled evaluations have been conducted to date. The present study was designed to evaluate the efficacy of gender-specific versus gender-nonspecific personalized normative feedback (PNF) with single versus biannual administration in a 2-year randomized controlled trial targeting a large sample of heavy-drinking college students.
 
-This dataset was kindly made available by David Atkins (University of Washington) in his tutorial on modelling count data~\cite{Atkins13} and comes from a randomised controlled trial assessing the effectiveness of web-based personalised normative feedback intervention on alcohol consumption~\cite{Neighbors10a, Neighbors10b}. The {\sf RAPI dataset} records alcohol-related problems, as measured by the Rutgers Alcohol Problem Index (RAPI)~\cite{White89}, in freshmen at risk for heavy drinking behaviours. Students were asked to report every six months the number of alcohol-related problems, and the dataset includes 3,616 repeated measures of these counts in 818 subjects, 561 of whom had the full 5 measurements over a period of 2 years. Interesting features of this dataset are first, the longitudinal aspect which allow to evaluate changes over time, and second, the shape of the distribution of counts. Counts are often positively skewed, bounded by zero, with a large stack of data points at zero, indicating individuals and/or occasions without drinking, use, or related problems. This dataset was used in~\cite{Atkins13} to illustrate mixed effects count regression using the {\sf glmer()} function from the {\sf lme4} package.
+This dataset was kindly made available by David Atkins (University of Washington) in his tutorial on modelling count data~\cite{Atkins13} and comes from a randomised controlled trial assessing the effectiveness of web-based personalised normative feedback intervention on alcohol consumption~\cite{Neighbors10a, Neighbors10b}. The {\sf RAPI dataset} records alcohol-related problems, as measured by the Rutgers Alcohol Problem Index (RAPI)~\cite{White89}, in freshmen at risk for heavy drinking behaviours. Students were asked to report every six months the number of alcohol-related problems, and the dataset includes 3,616 repeated measures of these counts in 818 subjects, 561 of whom had the full 5 measurements over a period of 2 years. Interesting features of this dataset are first, the longitudinal aspect which allow to evaluate changes over time, and second, the shape of the distribution of counts. Counts are often positively skewed, bounded by zero, with a large stack of data points at zero, indicating individuals and/or occasions without drinking, use, or related problems. This dataset was used in~\cite{Atkins13} to illustrate mixed effects count regression using the {\sf glmer()} function from the {\sf lme4} package. A detailed analysis is provided in the companion notebook on the github (\url{https://github.com/saemixdevelopment/saemixextension/blob/5fea5ec01191caa25ad0f55c55d2b7a3ec223600/paperSaemix3/saemix3_countModel.Rmd}).
 
 The dataset is available in \monolix~under the name {\sf rapi.saemix} so we read it and create our saemixData object in the usual way. Because we need the value of the outcome to compute the corresponding likelihood, the {\sf rapi} column is used both as a predictor and as the response:
 \begin{verbatim}
@@ -288,9 +390,20 @@ saemix.data<-saemixData(name.data=rapi.saemix, name.group=c("id"),
                  name.predictors=c("time","rapi"),name.response=c("rapi"),
                  name.covariates=c("gender"),
                  units=list(x="months",y="",covariates=c("")))
-hist(rapi.saemix$rapi, main="", xlab="RAPI score", breaks=30)
 \end{verbatim}
-\monolix~currently does not have automated plots for discrete outcome data, but we can produce our own histogram (here, across all measurements without taking time into account) to notice that indeed, there seems to be many subjects reporting no alcohol related problems over some periods.
+
+We can visualise the evolution of the proportion of each count over time using the {\sf plotDiscreteData()} function with the outcome set to {\sf count}. Here we stratify by gender and regroup the higher scores in 3 categories.
+\begin{verbatim}
+plotDiscreteData(saemix.data, outcome="count", which.cov="gender", breaks=c(0:9, 16, 25,80))
+\end{verbatim}
+\begin{figure}[!h]
+\begin{center}
+\epsfig{file=figs/knee_rawDataPropTime.eps,width=11cm,angle=0}
+\end{center}
+\par \kern -0.5cm
+\caption{Evolution of counts with time in the {\sf rapi.saemix} dataset, stratified by gender.} \label{fig:rapiData}
+\end{figure}
+The figure shows more subjects reporting no alcohol related problems as time progresses, as well as differences between women and men, the former reporting less alcohol related problems than men. We can also produce our own histogram, across all measurements without taking time into account, to notice that indeed, there seems to be many subjects reporting no alcohol related problems over some periods. 
 
 \paragraph{Poisson model:} the first model we can fit to this data is, as previously, the Poisson model, but this time we add a time effect. Here we will write the same model as in {\sf glmer()} to compare our results. In {\sf glmer()} a logarithmic link function is used to transform the mean of the Poisson model ($\lambda$) into a linear predictor of time and covariates. Random effects are then added to the parameters of the linear model. To take into account the change with time in {\sf saemix}, we need to rewrite the previous model to use normal distributions for the parameters and explicitely write the linear model in the function, as follows:
 \begin{verbatim}
@@ -343,9 +456,9 @@ poisson.fit.cov2<-saemix(modsmx.poi.cov2,saemix.data,saemix.options)
 \end{verbatim}
 Comparing the parameter estimates from this fit to the estimates obtained by {\sf glmer()} using a Laplace approximation in Table~2 of~\cite{Atkins13}, we find very good agreement with the SAEM algorithm.
 
-\noindent{\bf Note:} \monolix~does not provide adequate standard errors of estimation for the parameters in version 3.0. The FO-approximation of the FIM implemented in the current version of the algorithm is known to be very poor for discrete outcome models.
+\paragraph{Uncertainty:} \monolix~does not provide adequate standard errors of estimation for the parameters in version 3.0. The FO-approximation of the FIM implemented in the current version of the algorithm is known to be very poor for discrete outcome models. We can use bootstrap approaches or exact FIM computation to obtain uncertainty estimates (not shown).
 
-Some diagnostics for this model can be obtained by simulating from the model. We use the {\sf simulateDiscreteSaemix} function to obtain simulations from the model, using the estimated parameters. Here we set the number of simulations to 100 as the dataset is large and we are interested in global diagnostics. Again 
+\paragraph{Diagnostics:} Some diagnostics for this model can be obtained by simulating from the model. We use the {\sf simulateDiscreteSaemix} function to obtain simulations from the model, using the estimated parameters. Here we set the number of simulations to 100 as the dataset is large and we are interested in global diagnostics. Again we can produce VPC (not shown), and we can also look at the proportion of 0's and compare predictions with observations:
 \begin{verbatim}
 yfit1<-simulateDiscreteSaemix(poisson.fit.cov2, nsim=100)
 cat("Observed proportion of 0's", 
@@ -356,6 +469,7 @@ cat("      Poisson model, p=",
 \end{verbatim}
 
 \paragraph{Handling overdispersion:} the model predicts a lower proportion of subjects without alcohol-related problems than we observe in data, a sign of overdispersion (with a Poisson model, the mean of the Poisson distribution, $\lambda$, is equal to the variance, an assumption which is violated here). Several models can be used to take this feature into account. First, we can use the Zero-Inflated Poisson model, where the number of counts equal to 0 is increased. This model can be built as a mixture between a distribution of 0's with probability $p_0$ and a standard Poisson model. We modify our model function above to:
+\par \kern -0.5cm
 \begin{verbatim}
 count.poissonzip<-function(psi,id,xidep) {
   time<-xidep[,1]
@@ -371,6 +485,7 @@ count.poissonzip<-function(psi,id,xidep) {
 }
 \end{verbatim}
 as well as the associated simulation function:
+\par \kern -0.5cm
 \begin{verbatim}
 saemix.simulatePoissonZIP<-function(psi, id, xidep) {
   time<-xidep[,1]
@@ -386,6 +501,7 @@ saemix.simulatePoissonZIP<-function(psi, id, xidep) {
 }
 \end{verbatim}
 and fit the model using:
+\par \kern -0.5cm
 \begin{verbatim}
 modsmx.zip<-saemixModel(model=count.poissonzip,description="count model ZIP",
    modeltype="likelihood", simulate.function=saemix.simulatePoissonZIP,
@@ -394,7 +510,6 @@ modsmx.zip<-saemixModel(model=count.poissonzip,description="count model ZIP",
    transform.par=c(0,0,3), covariance.model=diag(c(1,1,0)), 
    omega.init=diag(c(0.5,0.3,0)),
    covariate.model = matrix(c(1,1,0),ncol=3, byrow=TRUE))
-
 zippoisson.fit <- saemix(modsmx.zip,saemix.data,saemix.options)
 \end{verbatim}
 where we assume a logit-normal distribution for the added parameter p0 through the transform.par argument. We could also model logit(p0) on a normal scale if we needed to add a time effect. The same approach as above can then be used to simulate from the model, and we can check that the proportion of simulated 0's is now closer to the observed value.
@@ -403,16 +518,21 @@ A second type of model used in~\cite{Atkins13} is the hurdle model, which combin
 
 Other possible models include the negative binomial model and generalised Poisson models with additional parameters handling the overdispersion.
 
-\paragraph{Diagnostics:} the simulation functions can be used to produce diagnostic plots. As an example, we can compare the expected proportion of 0's, representing subjects without alcohol problems, versus time and stratified by gender, to compare the different models (the code available as a notebook on the github for saemix). The results, shown in Figure~\ref{fig:rapiCompareProp0}. We could also look at the counts for different categories or the evolution of the median counts. 
+\par \kern -0.5cm
+\paragraph{Diagnostics:} As an example, we can compare the expected proportion of 0's, representing subjects without alcohol problems, versus time and stratified by gender, to compare the different models (see code in the notebook). The results are shown in Figure~\ref{fig:rapiCompareProp0}. We could also look at the counts for different categories or the evolution of the median counts. 
+
 
 \begin{figure}[!h]
 \begin{center}
-\epsfig{file=figs/rapi_comparePropNoDrinking.eps,width=14cm,angle=0}
+\epsfig{file=figs/rapi_comparePropNoDrinking.eps,width=11cm,angle=0}
 \end{center}
 \par \kern -0.5cm
 \caption{Proportion of subjects without drinking problems versus time, for men and women, observed and expected for the Poisson, ZIP and hurdle models, for the RAPI data.} \label{fig:rapiCompareProp0}
 \end{figure}
 
+
+\clearpage
+\newpage
 
 \section{Time-to-event data}
 
