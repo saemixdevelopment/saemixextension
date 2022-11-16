@@ -1,11 +1,14 @@
 #################################################
-saemixDir <- "C:/Users/AlexandraLAVALLEY/Documents/GitHub/saemixextension"
-workDir <- file.path(saemixDir, "alexandra","ecoJoint")
+#saemixDir <- "C:/Users/AlexandraLAVALLEY/Documents/GitHub/saemixextension"
+saemixDir <- "/home/eco/work/saemix/saemixextension"
+workDir <- file.path(saemixDir, "alexandra","joint_alex")
+modDir <- file.path(saemixDir, "alexandra","ecoJoint")
 setwd(workDir)
 
 library(ggplot2)
 library(Cairo)
 library("viridis")  
+library(rlang)
 
 # Chargement des fonctions originelles de la librairie
 progDir<-file.path(saemixDir, "R")
@@ -76,6 +79,7 @@ source(file.path(workDir,"multi_initializeMainAlgo.R"))
 source(file.path(workDir,"multi_estep.R"))
 source(file.path(workDir,"multi_mstep.R"))
 source(file.path(workDir,"multi_main.R"))
+source(file.path(workDir,"multi_map.R"))
 saemix.data<-dataPKPD
 saemix.model<-pkpdmodel.prop
 saemix.options<-saemixControl(seed=12345, map=FALSE, fim=FALSE, ll.is=FALSE)

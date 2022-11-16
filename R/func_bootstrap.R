@@ -17,9 +17,17 @@
 #' In saemix, we implemented the following bootstrap algorithms, which can be selected using the "method" argument:
 #' * case refers to case bootstrap, where resampling is performed at the level of the individual and the bootstrap sample consists in sampling with replacement from the observed individuals
 #' * residual refers to non-parametric residual bootstrap, where for each individual the residuals for the random effects and for the residual error are resampled from the individual estimates after the fit
-#' * parametric refers to parametric residual bootstrap, where these residuals are sampled from their theoretical distributions
+#' * parametric refers to parametric residual bootstrap, where these residuals are sampled from their theoretical distributions. In
+#' saemix, random effects are drawn from a normal distribution using the estimated variance in saemixObject, and transformed 
+#' to the distribution specified by the transform.par component of the model, and the residual error is drawn from a normal distribution
+#' using the estimated residual variance.
 #' * conditional refers to the conditional non-parametric bootstrap, where the random effects are resampled from the individual 
 #'   conditional distributions as in (Comets et al. 2021) and the residual errors resampled from the corresponding residuals
+#'   
+#' **Important note:** for discrete data models, all residual-based bootstraps (residual, parametric and conditional) need 
+#' a simulate.function slot to be included in the model object, as the algorithm will need to generate predictions with the 
+#' resampled individual parameters in order to generate bootstrap samples. See \code{\link{SaemixModel}} and the examples
+#' provided as notebooks for details.
 #'   
 #' @author Emmanuelle Comets <emmanuelle.comets@@inserm.fr>
 #' 
@@ -34,6 +42,87 @@
 #' 
 #' Comets E, Rodrigues C, Jullien V, Moreno U. Conditional non-parametric bootstrap for 
 #' non-linear mixed effect models. Pharmaceutical Research, 2021; 38, 1057–66.
+#' 
+#' @examples 
+#' 
+#' # Bootstrap for the theophylline data 
+#' data(theo.saemix)
+#' 
+#' saemix.data<-saemixData(name.data=theo.saemix,header=TRUE,sep=" ",na=NA, 
+#'   name.group=c("Id"),name.predictors=c("Dose","Time"),
+#'   name.response=c("Concentration"),name.covariates=c("Weight","Sex"),
+#'   units=list(x="hr",y="mg/L",covariates=c("kg","-")), name.X="Time")
+#' 
+#' model1cpt<-function(psi,id,xidep) { 
+#' 	  dose<-xidep[,1]
+#' 	  tim<-xidep[,2]  
+#' 	  ka<-psi[id,1]
+#' 	  V<-psi[id,2]
+#' 	  CL<-psi[id,3]
+#' 	  k<-CL/V
+#' 	  ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
+#' 	  return(ypred)
+#' }
+#' 
+#' saemix.model<-saemixModel(model=model1cpt,
+#'   description="One-compartment model with first-order absorption", 
+#'   psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3, byrow=TRUE,
+#'   dimnames=list(NULL, c("ka","V","CL"))),transform.par=c(1,1,1),
+#'   covariate.model=matrix(c(0,1,0,0,0,0),ncol=3,byrow=TRUE),fixed.estim=c(1,1,1),
+#'   covariance.model=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE),
+#'   omega.init=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE),error.model="constant")
+#' 
+#' saemix.options<-list(algorithm=c(1,0,0),seed=632545,save=FALSE,save.graphs=FALSE, 
+#' displayProgress=FALSE)
+#' 
+#' # Not run (strict time constraints for CRAN)
+#' \donttest{
+#' saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
+#' # Only 10 bootstrap samples here for speed, please increase to at least 200
+#' theo.case <- saemix.bootstrap(saemix.fit, method="case", nboot=10)
+#' theo.cond <- saemix.bootstrap(saemix.fit, nboot=10)
+#' }
+#' 
+#' # Bootstrap for the toenail data
+#' data(toenail.saemix)
+#' saemix.data<-saemixData(name.data=toenail.saemix,name.group=c("id"), name.predictors=c("time","y"), 
+#'  name.response="y", name.covariates=c("treatment"),name.X=c("time"))
+#'  
+#' binary.model<-function(psi,id,xidep) {
+#'   tim<-xidep[,1]
+#'   y<-xidep[,2]
+#'   inter<-psi[id,1]
+#'   slope<-psi[id,2]
+#'   logit<-inter+slope*tim
+#'   pevent<-exp(logit)/(1+exp(logit))
+#'   pobs = (y==0)*(1-pevent)+(y==1)*pevent
+#'   logpdf <- log(pobs)
+#'   return(logpdf)
+#' }
+#' simulBinary<-function(psi,id,xidep) {
+#'     tim<-xidep[,1]
+#'     y<-xidep[,2]
+#'     inter<-psi[id,1]
+#'     slope<-psi[id,2]
+#'     logit<-inter+slope*tim
+#'     pevent<-1/(1+exp(-logit))
+#'     ysim<-rbinom(length(tim),size=1, prob=pevent)
+#'     return(ysim)
+#'     }
+#' 
+#' saemix.model<-saemixModel(model=binary.model,description="Binary model",
+#'      modeltype="likelihood", simulate.function=simulBinary,
+#'      psi0=matrix(c(-5,-.1,0,0),ncol=2,byrow=TRUE,dimnames=list(NULL,c("inter","slope"))),
+#'      transform.par=c(0,0))
+#'      
+#' \donttest{
+#' saemix.options<-list(seed=1234567,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, 
+#'    nb.chains=10, fim=FALSE)
+#' binary.fit<-saemix(saemix.model,saemix.data,saemix.options)
+#' # Only 10 bootstrap samples here for speed, please increase to at least 200
+#' toenail.case <- saemix.bootstrap(binary.fit, method="case", nboot=10)
+#' toenail.cond <- saemix.bootstrap(binary.fit, nboot=10)
+#' }
 #' 
 #' @export saemix.bootstrap
 

@@ -56,6 +56,66 @@
 #' 
 #' showClass("SaemixModel")
 #' 
+#' # Model function for continuous data 
+#' ## structural model: a one-compartment model with oral absorption
+#' model1cpt<-function(psi,id,xidep) { 
+#' 	  dose<-xidep[,1]
+#' 	  tim<-xidep[,2]  
+#' 	  ka<-psi[id,1]
+#' 	  V<-psi[id,2]
+#' 	  CL<-psi[id,3]
+#' 	  k<-CL/V
+#' 	  ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
+#' 	  return(ypred)
+#' }
+#' 
+#' # Corresponding SaemixModel, assuming starting parameters ka=1, V=20, CL=0.5
+#' # and log-normal distributions for the parameters
+#' model1 <-saemixModel(model=model1cpt,
+#'   description="One-compartment model with first-order absorption", 
+#'   psi0=matrix(c(1,20,0.5),ncol=3, byrow=TRUE,
+#'   dimnames=list(NULL, c("ka","V","CL"))),transform.par=c(1,1,1))
+#' 
+#' # Model function for discrete data
+#' ## logistic regression for the probability of the observed outcome
+#' binary.model<-function(psi,id,xidep) {
+#'   tim<-xidep[,1]
+#'   y<-xidep[,2]
+#'   inter<-psi[id,1]
+#'   slope<-psi[id,2]
+#'   logit<-inter+slope*tim
+#'   pevent<-exp(logit)/(1+exp(logit))
+#'   pobs = (y==0)*(1-pevent)+(y==1)*pevent
+#'   logpdf <- log(pobs)
+#'   return(logpdf)
+#' }
+#' 
+#' ## Corresponding SaemixModel, assuming starting parameters inter=-5, slope=-1
+#' # and normal distributions for both parameters
+#' # note that the modeltype argument is set to likelihood
+#' saemix.model<-saemixModel(model=binary.model,description="Binary model",
+#'      modeltype="likelihood",
+#'      psi0=matrix(c(-5,-.1,0,0),ncol=2,byrow=TRUE,dimnames=list(NULL,c("inter","slope"))),
+#'      transform.par=c(0,0))
+#'      
+#' ## saemix cannot infer the distribution of the outcome directly from the model
+#' ## Here we therefore define a simulation function, needed for diagnostics
+#' ### Note the similarity and differences with the model function
+#' simulBinary<-function(psi,id,xidep) {
+#'     tim<-xidep[,1]
+#'     y<-xidep[,2]
+#'     inter<-psi[id,1]
+#'     slope<-psi[id,2]
+#'     logit<-inter+slope*tim
+#'     pevent<-1/(1+exp(-logit))
+#'     ysim<-rbinom(length(tim),size=1, prob=pevent)
+#'     return(ysim)
+#'     }
+#' 
+#' saemix.model<-saemixModel(model=binary.model,description="Binary model",
+#'      modeltype="likelihood", simulate.function=simulBinary,
+#'      psi0=matrix(c(-5,-.1,0,0),ncol=2,byrow=TRUE,dimnames=list(NULL,c("inter","slope"))),
+#'      transform.par=c(0,0))
 
 setClass(
   Class="SaemixModel",
@@ -345,14 +405,14 @@ setMethod(
         } else {
             if(.Object@error.model[i]=='exponential') {
               indx.res1<-1
-           }
+           } else indx.res1<-c()
         }
       }
     }
-      indx.res<-c(indx.res,indx.res1+2*(i-1))
+      if(length(indx.res1)>0) indx.res<-c(indx.res,indx.res1+2*(i-1))
     }
-    .Object@error.init[-indx.res]<-0
-    .Object@indx.res<-indx.res
+    if(length(indx.res)>0) .Object@error.init[-indx.res]<-0 # if indx.res is c() then only likelihood type responses in the model
+    if(length(indx.res)>0) .Object@indx.res<-indx.res
     .Object@betaest.model<-matrix(c(rep(1,.Object@nb.parameters), c(t(.Object@covariate.model))),ncol=.Object@nb.parameters,byrow=TRUE)
     colnames(.Object@betaest.model)<-colnames(.Object@covariate.model)
     if(!is.null(rownames(.Object@covariate.model))) {

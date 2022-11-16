@@ -205,7 +205,7 @@ plot(binary.fit, plot.type="convergence")
     - same definition of pevent (=$P(Y_{ij}=1)$, the probability of observing an event)
     - in *binary.model()* we then compute the probability of the observed outcome using the observed value of $Y_{ij}$ contained in *y* for each observation
     - in *simulBinary()*, we use the individual $P(Y_{ij}=1)$ predictions to simulate from a Bernouilli distribution using the *rbinom()* function
-- once the simulation function has been defined and associated with the model component of the object, we use the *simulateDiscreteSaemix()* function from the {\sf saemix} package to simulate *nsim* values (here 100) with the population parameters estimated in *binary.fit*
+- once the simulation function has been defined and associated with the model component of the object, we use the *simulateDiscreteSaemix()* function from the **saemix** package to simulate *nsim* values (here 100) with the population parameters estimated in *binary.fit*
   - this adds a *simdata* element to the *binary.fit*
   - the simulations are used to produce VPC via the *discreteVPC()* function, again specifying the outcome to be binary. We stratify the plot on the treatment covariate
   
@@ -216,6 +216,13 @@ nsim<-1000
 binary.fit <- simulateDiscreteSaemix(binary.fit, nsim=nsim)
 
 discreteVPC(binary.fit, outcome="binary", which.cov="treatment")
+
+if(saveFigs) {
+  namfig<-"toenail_vpcByTreatment.eps"
+  cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
+  discreteVPC(binary.fit, outcome="binary", which.cov="treatment")
+  dev.off()
+}
 ```
   
 We can also extract dataframe with the simulated data (*binary.fit@sim.data@datasim*) and produce diagnostics in R. Below, using **tidyverse**, we add columns *visit* and *treatment* to plot the frequency of infection over time for each treatment.
@@ -251,7 +258,7 @@ plot2 <- ggplot(toe1, aes(x=visit, y=freq, group=treatment)) + geom_line(aes(col
 
 print(plot2)
 if(saveFigs) {
-  namfig<-"toenail_vpcByTreatment.eps"
+  namfig<-"toenail_ggplot2VPCTreatment.eps"
   cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
   plot(plot2)
   dev.off()
@@ -383,6 +390,9 @@ if(nboot<200) cat("The number of bootstrap samples is too low to provide good es
   }
   print(df2)
 }
+
+library(xtable)
+xtable(df2)
 ```
 
 
@@ -390,11 +400,11 @@ if(nboot<200) cat("The number of bootstrap samples is too low to provide good es
 
 #### Data
 
-The *knee.saemix* data represents pain scores recorded in a clinical study in 127 patients with sport related injuries treated with two different therapies. The pain occuring during knee movement was observed after 3,7 and 10 days of treatment. It was taken from the {\sf catdata} package in R~\cite{catdata} (dataset {\sf knee}) and reformatted as follows
+The *knee.saemix* data represents pain scores recorded in a clinical study in 127 patients with sport related injuries treated with two different therapies. The pain occuring during knee movement was observed after 3,7 and 10 days of treatment. It was taken from the **catdata** package in R (Schauberger and Tutz 2020) (dataset *knee*) and reformatted as follows:
 
 - a time column was added representing the day of the measurement (with 0 being the baseline value) and each observation corresponds to a different line in the dataset
 - treatment was recoded as 0/1 (placebo/treatment), gender as 0/1 (male/female) 
-- {\sf Age2} represents the squared of centered Age. 
+- *Age2* represents the squared of centered Age. 
 
 We can visualise the evolution of the proportion of each score over time using the *plotDiscreteData()* function with the outcome set to *categorical*, stratifying by treatment.
 
@@ -730,7 +740,6 @@ df <- data.frame(param=c(model$mu,diag(model$omega)),se=est.se)
 df$rse <- abs(df$se/df$param*100)
 
 print(df)
-
 ```
 
 ###### Comparing the SE with the different approaches
@@ -744,6 +753,8 @@ l2<-paste0("[",format(ci.low, digits=2),", ",format(ci.up,digits=2, trim=T),"]")
 df2<-cbind(df2, l1, l2)
 colnames(df2)[7:8]<-paste0("FIM.",c("estimate","CI"))
 print(df2)
+tab1 <- xtable(df2)
+print.xtable(tab1, include.rownames = FALSE)
 ```
 
 ## References
@@ -751,4 +762,6 @@ print(df2)
 **Comets E**, Rodrigues C, Jullien V, Ursino M (2021). Conditional non-parametric bootstrap for non-linear mixed effect models. *Pharmaceutical Research*, 38: 1057-66.
 
 **Ueckert S**, Mentré F (2017). A new method for evaluation of the Fisher information matrix for discrete mixed effect models using Monte Carlo sampling and adaptive Gaussian quadrature. *Computational Statistics and Data Analysis*, 111: 203-19. \url{10.1016/j.csda.2016.10.011}
+
+**Schauberger G**, **Tutz G** (2020). catdata: Categorical Data. R package version 1.2.2. https://CRAN.R-project.org/package=catdata
 

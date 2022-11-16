@@ -1526,8 +1526,24 @@ replaceData.saemixObject<-function(saemixObject, newdata) {
   saemix.newdata<-saemixData(name.data=tempname, name.group=orig.data["name.group"], name.response =orig.data["name.response"], name.predictors=orig.data["name.predictors"], name.covariates=rownames(saemixObject["model"]["covariate.model"]), units=orig.data["units"], name.X=orig.data["name.X"],verbose=FALSE, sep=";")
   if(iflag==1) saemix.newdata["data"][,orig.data["name.response"]]<-NA
   
+  id<-saemix.newdata["data"][,saemix.newdata["name.group"]]
+  if(length(saemix.newdata["name.covariates"])==0) tab<-data.frame(id=id) else
+    tab<-data.frame(id=id,saemix.newdata["data"][, saemix.newdata["name.covariates",drop=FALSE]])
+  temp2<-unique(tab)
+  temp<-tab[!duplicated(id),,drop=FALSE]
+  #temp<-temp[order(temp[,1]),]
+  if(length(saemix.newdata["name.covariates"])>0) {
+    Mcovariates<-data.frame(id=rep(1,saemix.newdata@N),temp[,2:dim(temp)[2]])} else {
+      Mcovariates<-data.frame(id=rep(1,saemix.newdata@N))
+    }
+  j.cov<-which(rowSums(saemixObject["model"]["betaest.model"])>0)
+  Mcovariates<-Mcovariates[,j.cov,drop=FALSE] # eliminate all the unused covariates
+  for(icol in dim(Mcovariates)[2])
+    if(is.factor(Mcovariates[,icol])) Mcovariates[,icol]<-as.numeric(Mcovariates[,icol])-1
+  
   saemix.newObj<-saemixObject
   saemix.newObj["data"]<-saemix.newdata
+  saemix.newObj["model"]["Mcovariates"] <-Mcovariates
   saemix.newObj["results"]["cond.mean.phi"] <-matrix(nrow=0,ncol=0)
   saemix.newObj["results"]["cond.mean.psi"] <-matrix(nrow=0,ncol=0)
   saemix.newObj["results"]["cond.var.phi"] <-matrix(nrow=0,ncol=0)
