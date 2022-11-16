@@ -332,6 +332,7 @@ setMethod(
     .Object@name.sigma<-xres
     .Object@error.init<-error.init
     indx.res<-c()
+    indx.res1=c()
     for(i in 1:length(.Object@error.model)) {
       if(.Object@error.model[i]=='constant') {
         indx.res1<-1

@@ -21,7 +21,7 @@ source(file.path(progDir,"func_plots.R")) # for saemix.plot.setoptions
 # Creating data and model objects
 
 # data
-data_joint <- read.csv("C:/Users/AlexandraLAVALLEY/Documents/GitHub/saemixextension/alexandra/joint_alex/joint_tte2.csv", header=TRUE)
+data_joint <- read.csv("C:/Users/AlexandraLAVALLEY/Documents/GitHub/saemixextension/alexandra/joint_alex/datas/joint_tte.csv", header=TRUE)
 dataJM<-saemixData(name.data=data_joint, name.group=c("id"), name.predictors=c("time"), 
                    name.response="obs",name.ytype = "ytype")
 
