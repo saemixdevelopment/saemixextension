@@ -94,13 +94,15 @@ theo.saemix     6.481  0.008   6.490
 yield.saemix    5.419  0.016   5.435
 
 
-```{r compilation}
+```{r document, echo=FALSE, results=FALSE, message=FALSE, warning=FALSE}
 # Reduce size of viral load simulation data (to 500 simulations) for CRAN
 knitr::opts_chunk$set(root.dir = file.path(workDir,"saemix"))
 setwd(file.path(workDir,"saemix"))
 
 devtools::document(file.path(workDir,"saemix"))
 roxygenise()
+```
+```{r compilation}
 setwd(workDir)
 system("R CMD build saemix")
 
@@ -170,6 +172,7 @@ saemix.data<-saemixData(name.data=theo.saemix,header=TRUE,sep=" ",na=NA,
    name.response=c("Concentration"),name.covariates=c("Weight","Sex"),
    units=list(x="hr",y="mg/L", covariates=c("kg","-")), name.X="Time", verbose=FALSE)
 print(saemix.data)
+plot(saemix.data)
 
 model1cpt<-function(psi,id,xidep) { 
 	  dose<-xidep[,1]

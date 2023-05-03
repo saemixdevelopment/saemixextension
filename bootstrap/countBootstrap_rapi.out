@@ -1,0 +1,288 @@
+
+R version 3.6.3 (2020-02-29) -- "Holding the Windsock"
+Copyright (C) 2020 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R est un logiciel libre livré sans AUCUNE GARANTIE.
+Vous pouvez le redistribuer sous certaines conditions.
+Tapez 'license()' ou 'licence()' pour plus de détails.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Tapez 'demo()' pour des démonstrations, 'help()' pour l'aide
+en ligne ou 'help.start()' pour obtenir l'aide au format HTML.
+Tapez 'q()' pour quitter R.
+
+[Sauvegarde de la session précédente restaurée]
+
+> # @Eco
+> workDir<-"/home/eco/work/saemix/saemixextension/bootstrap"
+> saemixDir <- "/home/eco/work/saemix/saemixextension"
+> setwd(workDir)
+> 
+> #  Code saemix
+> progDir <- file.path(saemixDir,"R")
+> source(file.path(progDir,"aaa_generics.R"))
+> #source(file.path(progDir,"global.R"))
+> source(file.path(progDir,"SaemixData.R"))
+> source(file.path(progDir,"SaemixRes.R"))
+> source(file.path(progDir,"SaemixModel.R"))
+> source(file.path(progDir,"SaemixObject.R"))
+> source(file.path(progDir,"main.R"))
+> source(file.path(progDir,"func_aux.R"))
+> source(file.path(progDir,"main_initialiseMainAlgo.R"))
+> source(file.path(progDir,"main_estep.R"))
+> source(file.path(progDir,"main_mstep.R"))
+> source(file.path(progDir,"func_FIM.R"))
+> source(file.path(progDir,"func_npde.R"))
+> source(file.path(progDir,"func_plots.R"))
+> source(file.path(progDir,"func_distcond.R"))
+> source(file.path(progDir,"func_simulations.R"))
+> source(file.path(progDir,"compute_LL.R"))
+> source(file.path(progDir,"func_estimParam.R"))
+> source(file.path(progDir,"backward.R"))
+> source(file.path(progDir,"forward.R"))
+> source(file.path(progDir,"stepwise.R"))
+> source(file.path(progDir,"func_stepwise.R"))
+> source(file.path(progDir,"func_compare.R"))
+> 
+> # Bootstrap code
+> source(file.path(saemixDir, "bootstrap", "saemix_bootstrap.R"))
+> set.seed(42919)
+> 
+> # Number of bootstrap samples
+> nboot <- 500
+> #nboot <- 2
+> 
+> # Data
+> datDir <- file.path(saemixDir, "data")
+> rapi.saemix <- read.table(file.path(datDir, "rapi.saemix.tab"), header = T)
+> 
+> saemix.data<-saemixData(name.data=rapi.saemix, name.group=c("id"),
++                         name.predictors=c("time","rapi"),name.response=c("rapi"),
++                         name.covariates=c("gender"),
++                         units=list(x="months",y="",covariates=c("")))
+
+
+The following SaemixData object was successfully created:
+
+Object of class SaemixData
+    longitudinal data for use with the SAEM algorithm
+Dataset rapi.saemix 
+    Structured data: rapi ~ time + rapi | id 
+    X variable for graphs: time (months) 
+    covariates: gender () 
+      reference class for covariate gender :  Men 
+> # Model
+> count.poissonzip<-function(psi,id,xidep) {
++   time<-xidep[,1]
++   y<-xidep[,2]
++   intercept<-psi[id,1]
++   slope<-psi[id,2]
++   p0<-psi[id,3] # Probability of zero's
++   lambda<- exp(intercept + slope*time)
++   logp <- log(1-p0) -lambda + y*log(lambda) - log(factorial(y)) # Poisson
++   logp0 <- log(p0+(1-p0)*exp(-lambda)) # Zeroes
++   logp[y==0]<-logp0[y==0]
++   return(logp)
++ }
+> # Simulation function
+> countsimulate.poissonzip<-function(psi, id, xidep) {
++   time<-xidep[,1]
++   y<-xidep[,2]
++   ymax<-max(y)
++   intercept<-psi[id,1]
++   slope<-psi[id,2]
++   p0<-psi[id,3] # Probability of zero's
++   lambda<- exp(intercept + slope*time)
++   prob0<-rbinom(length(time), size=1, prob=p0)
++   y<-rpois(length(time), lambda=lambda)
++   y[prob0==1]<-0
++   y[y>ymax]<-ymax+1 # truncate to maximum observed value to avoid simulating aberrant values
++   return(y)
++ }
+> 
+> 
+> # Saemix model
+> saemix.model.zip.cov2<-saemixModel(model=count.poissonzip,description="count model ZIP",modeltype="likelihood",   
++                                    simulate.function = countsimulate.poissonzip,
++                                    psi0=matrix(c(1.5, 0.01, 0.2),ncol=3,byrow=TRUE,dimnames=list(NULL, c("intercept", "slope","p0"))), 
++                                    transform.par=c(0,0,3), covariance.model=diag(c(1,1,0)), omega.init=diag(c(0.5,0.3,0)),
++                                    covariate.model = matrix(c(1,1,0),ncol=3, byrow=TRUE))
+
+
+The following SaemixModel object was successfully created:
+
+Nonlinear mixed-effects model
+  Model function:  count model ZIP
+  Model type:  likelihood
+function (psi, id, xidep) 
+{
+    time <- xidep[, 1]
+    y <- xidep[, 2]
+    intercept <- psi[id, 1]
+    slope <- psi[id, 2]
+    p0 <- psi[id, 3]
+    lambda <- exp(intercept + slope * time)
+    logp <- log(1 - p0) - lambda + y * log(lambda) - log(factorial(y))
+    logp0 <- log(p0 + (1 - p0) * exp(-lambda))
+    logp[y == 0] <- logp0[y == 0]
+    return(logp)
+}
+  Nb of parameters: 3 
+      parameter names:  intercept slope p0 
+      distribution:
+     Parameter Distribution Estimated
+[1,] intercept normal       Estimated
+[2,] slope     normal       Estimated
+[3,] p0        logit        Estimated
+  Variance-covariance matrix:
+          intercept slope p0
+intercept         1     0  0
+slope             0     1  0
+p0                0     0  0
+  Covariate model:
+     intercept slope p0
+[1,]         1     1  0
+    Initial values
+             intercept slope  p0
+Pop.CondInit       1.5  0.01 0.2
+Cov.CondInit       0.0  0.00 0.0
+> 
+> # Fitting
+> saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, fim=FALSE)
+> 
+> zippoisson.fit.cov2<-saemix(saemix.model.zip.cov2,saemix.data,saemix.options)
+Nonlinear mixed-effects model fit by the SAEM algorithm
+-----------------------------------
+----          Data             ----
+-----------------------------------
+Object of class SaemixData
+    longitudinal data for use with the SAEM algorithm
+Dataset rapi.saemix 
+    Structured data: rapi ~ time + rapi | id 
+    X variable for graphs: time (months) 
+    covariates: gender () 
+      reference class for covariate gender :  Men 
+Dataset characteristics:
+    number of subjects:     818 
+    number of observations: 3616 
+    average/min/max nb obs: 4.42  /  1  /  5 
+First 10 lines of data:
+   id time rapi rapi.1 gender mdv cens occ ytype
+1   1    0    0      0    Men   0    0   1     1
+2   1    6    0      0    Men   0    0   1     1
+3   1   18    0      0    Men   0    0   1     1
+4   2    0    3      3  Women   0    0   1     1
+5   2    6    6      6  Women   0    0   1     1
+6   2   12    5      5  Women   0    0   1     1
+7   2   18    4      4  Women   0    0   1     1
+8   2   24    5      5  Women   0    0   1     1
+9   3    0    9      9    Men   0    0   1     1
+10  3   12    1      1    Men   0    0   1     1
+-----------------------------------
+----          Model            ----
+-----------------------------------
+Nonlinear mixed-effects model
+  Model function:  count model ZIP
+  Model type:  likelihood
+function (psi, id, xidep) 
+{
+    time <- xidep[, 1]
+    y <- xidep[, 2]
+    intercept <- psi[id, 1]
+    slope <- psi[id, 2]
+    p0 <- psi[id, 3]
+    lambda <- exp(intercept + slope * time)
+    logp <- log(1 - p0) - lambda + y * log(lambda) - log(factorial(y))
+    logp0 <- log(p0 + (1 - p0) * exp(-lambda))
+    logp[y == 0] <- logp0[y == 0]
+    return(logp)
+}
+<bytecode: 0x55ec3be677b8>
+  Nb of parameters: 3 
+      parameter names:  intercept slope p0 
+      distribution:
+     Parameter Distribution Estimated
+[1,] intercept normal       Estimated
+[2,] slope     normal       Estimated
+[3,] p0        logit        Estimated
+  Variance-covariance matrix:
+          intercept slope p0
+intercept         1     0  0
+slope             0     1  0
+p0                0     0  0
+  Covariate model:
+       [,1] [,2] [,3]
+gender    1    1    0
+    Initial values
+             intercept slope  p0
+Pop.CondInit       1.5  0.01 0.2
+Cov.CondInit       0.0  0.00 0.0
+-----------------------------------
+----    Key algorithm options  ----
+-----------------------------------
+    Estimation of individual parameters (MAP)
+    Estimation of log-likelihood by importance sampling
+    Number of iterations:  K1=300, K2=100 
+    Number of chains:  1 
+    Seed:  632545 
+    Number of MCMC iterations for IS:  5000 
+    Simulations:
+        nb of simulated datasets used for npde:  1000 
+        nb of simulated datasets used for VPC:  100 
+    Input/output
+        save the results to a file:  FALSE 
+        save the graphs to files:  FALSE 
+----------------------------------------------------
+----                  Results                   ----
+----------------------------------------------------
+-----------------  Fixed effects  ------------------
+----------------------------------------------------
+     Parameter              Estimate
+[1,] intercept               1.773  
+[2,] beta_gender(intercept) -0.197  
+[3,] slope                  -0.020  
+[4,] beta_gender(slope)     -0.016  
+[5,] p0                      0.075  
+----------------------------------------------------
+-----------  Variance of random effects  -----------
+----------------------------------------------------
+          Parameter        Estimate
+intercept omega2.intercept 0.7826  
+slope     omega2.slope     0.0033  
+----------------------------------------------------
+------  Correlation matrix of random effects  ------
+----------------------------------------------------
+                 omega2.intercept omega2.slope
+omega2.intercept 1                0           
+omega2.slope     0                1           
+----------------------------------------------------
+---------------  Statistical criteria  -------------
+----------------------------------------------------
+
+Likelihood computed by importance sampling
+      -2LL= 20459.27 
+      AIC = 20475.27 
+      BIC = 20512.93 
+----------------------------------------------------
+> 
+> # Case bootstrap
+> case.count <- try(saemix.bootstrap(zippoisson.fit.cov2, method="case", nboot=nboot))
+> if(is(case.count,"data.frame"))
++   write.table(case.count, file.path(workDir, "results", "rapi_caseBootstrap.res"), quote=F, row.names=FALSE)
+> 
+> # Conditional non-parametric bootstrap
+> cond.count <- try(saemix.bootstrap(zippoisson.fit.cov2, method="conditional", nboot=nboot))
+ 50 件以上の警告がありました (最初の 50 個の警告を見るには warnings() を使って下さい) 
+> if(is(cond.count,"data.frame"))
++   write.table(cond.count, file.path(workDir, "results", "rapi_condBootstrap.res"), quote=F, row.names=FALSE)
+> 
+> 
+> proc.time()
+utilisateur     système      écoulé 
+   8756.203       5.880    8763.202 

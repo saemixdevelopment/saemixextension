@@ -189,7 +189,6 @@ par(mfrow=c(1,2))
 hist(saemix.data@data$time[saemix.data@data$time>0], breaks=30, xlab="Time", main="Original data")
 hist(simtime[simtime>0], breaks=30, xlim=c(0,1000), xlab="Time", main="Simulated data")
 
-
 # Ignoring the cens column and assuming a common censoring time instead
 simulateWeibullTTE.maxcens <- function(psi,id,xidep) {
   etime<-xidep[,1]
@@ -216,7 +215,7 @@ We then use the simulation function defined above to simulate from the fitted mo
 
 ```{r WeibullTTEVPC}
 tte.fit@model@simulate.function <- simulateWeibullTTE
-simtte.fit <- simulateDiscreteSaemix(tte.fit, nsim=100)
+simtte.fit <- simulateDiscreteSaemix(tte.fit, nsim=500)
 
 gpl <- discreteVPC(simtte.fit, outcome="TTE")
 plot(gpl)
@@ -304,7 +303,7 @@ saemix.fit <- tte.fit
 #     pge4<-exp(logit4)/(1+exp(logit4))
 #     pobs = (y==1)*pge1+(y==2)*(pge2 - pge1)+(y==3)*(pge3 - pge2)+(y==4)*(pge4 - pge3)+(y==5)*(1 - pge4)
 #     log(pobs)
-#   }, 
+#   },
 #   simulation_function = function(design, alp1, alp2, alp3, alp4, beta) {
 #     logit1<-alp1 + beta*design$time
 #     logit2<-logit1+alp2
@@ -332,6 +331,49 @@ saemix.fit <- tte.fit
 #   mu = saemix.fit@results@fixed.effects,
 #   omega = saemix.fit@results@omega[c(1,5),c(1,5)]
 #   )
+#   log_likelihood_function = function(y, design, lambda, beta) {
+#     hazard <- (beta/lambda)*(design$time/lambda)^(beta-1) # ln(H')
+#     H <- (design$time/lambda)^beta # ln(H)
+#     logpdf<-rep(0,length(design$time))
+#     logpdf[]
+# 
+#   },
+# 
+# weibulltte.model<-function(psi,id,xidep) {
+#   T<-xidep[,1]
+#   y<-xidep[,2] # events (1=event, 0=no event)
+#   cens<-which(xidep[,3]==1) # censoring times (subject specific)
+#   init <- which(T==0)
+#   lambda <- psi[id,1] # Parameters of the Weibull model
+#   beta <- psi[id,2]
+#   Nj <- length(T)
+#   
+#   ind <- setdiff(1:Nj, append(init,cens)) # indices of events
+#   hazard <- (beta/lambda)*(T/lambda)^(beta-1) # ln(H')
+#   H <- (T/lambda)^beta # ln(H)
+#   logpdf <- rep(0,Nj) # ln(l(T=0))=0
+#   logpdf[cens] <- -H[cens] + H[cens-1] # ln(l(T=censoring time))
+#   logpdf[ind] <- -H[ind] + H[ind-1] + log(hazard[ind]) # ln(l(T=event time))
+#   return(logpdf)
+# }
+# 
+# simulateWeibullTTE <- function(psi,id,xidep) {
+#   T<-xidep[,1]
+#   y<-xidep[,2] # events (1=event, 0=no event)
+#   cens<-which(xidep[,3]==1) # censoring times (subject specific)
+#   init <- which(T==0)
+#   lambda <- psi[,1] # Parameters of the Weibull model
+#   beta <- psi[,2]
+#   Nj <- length(T)
+#   ind <- setdiff(1:Nj, append(init,cens)) # indices of events
+#   tevent<-T
+#   Vj<-runif(dim(psi)[1])
+#   tsim<-lambda*(-log(Vj))^(1/beta) # nsuj events
+#   tevent[T>0]<-tsim
+#   tevent[tevent[cens]>T[cens]] <- T[tevent[cens]>T[cens]]
+#   return(tevent)
+# }
+
 
 # TBContinued
 ```

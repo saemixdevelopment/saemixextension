@@ -1,0 +1,268 @@
+
+R version 3.6.3 (2020-02-29) -- "Holding the Windsock"
+Copyright (C) 2020 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R est un logiciel libre livré sans AUCUNE GARANTIE.
+Vous pouvez le redistribuer sous certaines conditions.
+Tapez 'license()' ou 'licence()' pour plus de détails.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Tapez 'demo()' pour des démonstrations, 'help()' pour l'aide
+en ligne ou 'help.start()' pour obtenir l'aide au format HTML.
+Tapez 'q()' pour quitter R.
+
+[Sauvegarde de la session précédente restaurée]
+
+> # @Eco
+> workDir<-"/home/eco/work/saemix/saemixextension/bootstrap"
+> saemixDir <- "/home/eco/work/saemix/saemixextension"
+> setwd(workDir)
+> 
+> #  Code saemix
+> progDir <- file.path(saemixDir,"R")
+> source(file.path(progDir,"aaa_generics.R"))
+> #source(file.path(progDir,"global.R"))
+> source(file.path(progDir,"SaemixData.R"))
+> source(file.path(progDir,"SaemixRes.R"))
+> source(file.path(progDir,"SaemixModel.R"))
+> source(file.path(progDir,"SaemixObject.R"))
+> source(file.path(progDir,"main.R"))
+> source(file.path(progDir,"func_aux.R"))
+> source(file.path(progDir,"main_initialiseMainAlgo.R"))
+> source(file.path(progDir,"main_estep.R"))
+> source(file.path(progDir,"main_mstep.R"))
+> source(file.path(progDir,"func_FIM.R"))
+> source(file.path(progDir,"func_npde.R"))
+> source(file.path(progDir,"func_plots.R"))
+> source(file.path(progDir,"func_distcond.R"))
+> source(file.path(progDir,"func_simulations.R"))
+> source(file.path(progDir,"compute_LL.R"))
+> source(file.path(progDir,"func_estimParam.R"))
+> source(file.path(progDir,"backward.R"))
+> source(file.path(progDir,"forward.R"))
+> source(file.path(progDir,"stepwise.R"))
+> source(file.path(progDir,"func_stepwise.R"))
+> source(file.path(progDir,"func_compare.R"))
+> 
+> # Bootstrap code
+> source(file.path(saemixDir, "bootstrap", "saemix_bootstrap.R"))
+> 
+> # Number of bootstrap samples
+> nboot <- 500
+> 
+> # Data
+> datDir <- file.path(saemixDir, "data")
+> toenail.saemix <- read.table(file.path(datDir, "toenail.saemix.tab"), header = T)
+> 
+> saemix.data<-saemixData(name.data=toenail.saemix,name.group=c("id"),name.predictors=c("time","y"), name.response="y",
++                         name.covariates=c("treatment"))
+
+
+The following SaemixData object was successfully created:
+
+Object of class SaemixData
+    longitudinal data for use with the SAEM algorithm
+Dataset toenail.saemix 
+    Structured data: y ~ time + y | id 
+    X variable for graphs: time () 
+    covariates: treatment (-) 
+      reference class for covariate treatment :  0 
+> 
+> # Model function
+> binary.model<-function(psi,id,xidep) {
++   tim<-xidep[,1]
++   y<-xidep[,2]
++   inter<-psi[id,1]
++   slope<-psi[id,2]
++   logit<-inter+slope*tim
++   pevent<-exp(logit)/(1+exp(logit))
++   logpdf<-rep(0,length(tim))
++   P.obs = (y==0)*(1-pevent)+(y==1)*pevent
++   logpdf <- log(P.obs)
++   return(logpdf)
++ }
+> 
+> # Simulation function
+> simulBinary<-function(psi,id,xidep) {
++   tim<-xidep[,1]
++   y<-xidep[,2]
++   inter<-psi[id,1]
++   slope<-psi[id,2]
++   logit<-inter+slope*tim
++   pevent<-1/(1+exp(-logit))
++   ysim<-rbinom(length(tim),size=1, prob=pevent)
++   return(ysim)
++ }
+> 
+> saemix.model<-saemixModel(model=binary.model, description="Binary model", simulate.function = simulBinary,
++                           modeltype="likelihood",
++                           psi0=matrix(c(-0.5,-.15,0,0),ncol=2,byrow=TRUE,dimnames=list(NULL,c("theta1","theta2"))),
++                           transform.par=c(0,0), covariate.model=c(0,1),covariance.model=matrix(c(1,0,0,0),ncol=2), omega.init=diag(c(0.5,0.3)))
+
+
+The following SaemixModel object was successfully created:
+
+Nonlinear mixed-effects model
+  Model function:  Binary model
+  Model type:  likelihood
+function (psi, id, xidep) 
+{
+    tim <- xidep[, 1]
+    y <- xidep[, 2]
+    inter <- psi[id, 1]
+    slope <- psi[id, 2]
+    logit <- inter + slope * tim
+    pevent <- exp(logit)/(1 + exp(logit))
+    logpdf <- rep(0, length(tim))
+    P.obs = (y == 0) * (1 - pevent) + (y == 1) * pevent
+    logpdf <- log(P.obs)
+    return(logpdf)
+}
+  Nb of parameters: 2 
+      parameter names:  theta1 theta2 
+      distribution:
+     Parameter Distribution Estimated
+[1,] theta1    normal       Estimated
+[2,] theta2    normal       Estimated
+  Variance-covariance matrix:
+       theta1 theta2
+theta1      1      0
+theta2      0      0
+  Covariate model:
+     theta1 theta2
+[1,]      0      1
+    Initial values
+             theta1 theta2
+Pop.CondInit   -0.5  -0.15
+Cov.CondInit    0.0   0.00
+> saemix.options<-list(seed=1234567,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, nb.chains=10, fim=FALSE)
+> binary.fit<-saemix(saemix.model,saemix.data,saemix.options)
+Nonlinear mixed-effects model fit by the SAEM algorithm
+-----------------------------------
+----          Data             ----
+-----------------------------------
+Object of class SaemixData
+    longitudinal data for use with the SAEM algorithm
+Dataset toenail.saemix 
+    Structured data: y ~ time + y | id 
+    X variable for graphs: time () 
+    covariates: treatment (-) 
+      reference class for covariate treatment :  0 
+Dataset characteristics:
+    number of subjects:     294 
+    number of observations: 1908 
+    average/min/max nb obs: 6.49  /  1  /  7 
+First 10 lines of data:
+   id       time y y.1 treatment mdv cens occ ytype
+1   1  0.0000000 1   1         1   0    0   1     1
+2   1  0.8571429 1   1         1   0    0   1     1
+3   1  3.5357143 1   1         1   0    0   1     1
+4   1  4.5357143 0   0         1   0    0   1     1
+5   1  7.5357143 0   0         1   0    0   1     1
+6   1 10.0357143 0   0         1   0    0   1     1
+7   1 13.0714286 0   0         1   0    0   1     1
+8   2  0.0000000 0   0         0   0    0   1     1
+9   2  0.9642857 0   0         0   0    0   1     1
+10  2  2.0000000 1   1         0   0    0   1     1
+-----------------------------------
+----          Model            ----
+-----------------------------------
+Nonlinear mixed-effects model
+  Model function:  Binary model
+  Model type:  likelihood
+function (psi, id, xidep) 
+{
+    tim <- xidep[, 1]
+    y <- xidep[, 2]
+    inter <- psi[id, 1]
+    slope <- psi[id, 2]
+    logit <- inter + slope * tim
+    pevent <- exp(logit)/(1 + exp(logit))
+    logpdf <- rep(0, length(tim))
+    P.obs = (y == 0) * (1 - pevent) + (y == 1) * pevent
+    logpdf <- log(P.obs)
+    return(logpdf)
+}
+<bytecode: 0x559a604a3b60>
+  Nb of parameters: 2 
+      parameter names:  theta1 theta2 
+      distribution:
+     Parameter Distribution Estimated
+[1,] theta1    normal       Estimated
+[2,] theta2    normal       Estimated
+  Variance-covariance matrix:
+       theta1 theta2
+theta1      1      0
+theta2      0      0
+  Covariate model:
+          [,1] [,2]
+treatment    0    1
+    Initial values
+             theta1 theta2
+Pop.CondInit   -0.5  -0.15
+Cov.CondInit    0.0   0.00
+-----------------------------------
+----    Key algorithm options  ----
+-----------------------------------
+    Estimation of individual parameters (MAP)
+    Estimation of log-likelihood by importance sampling
+    Number of iterations:  K1=300, K2=100 
+    Number of chains:  10 
+    Seed:  1234567 
+    Number of MCMC iterations for IS:  5000 
+    Simulations:
+        nb of simulated datasets used for npde:  1000 
+        nb of simulated datasets used for VPC:  100 
+    Input/output
+        save the results to a file:  FALSE 
+        save the graphs to files:  FALSE 
+----------------------------------------------------
+----                  Results                   ----
+----------------------------------------------------
+-----------------  Fixed effects  ------------------
+----------------------------------------------------
+     Parameter              Estimate
+[1,] theta1                 -1.71   
+[2,] theta2                 -0.39   
+[3,] beta_treatment(theta2) -0.15   
+----------------------------------------------------
+-----------  Variance of random effects  -----------
+----------------------------------------------------
+       Parameter     Estimate
+theta1 omega2.theta1 16      
+----------------------------------------------------
+------  Correlation matrix of random effects  ------
+----------------------------------------------------
+              omega2.theta1
+omega2.theta1 1            
+----------------------------------------------------
+---------------  Statistical criteria  -------------
+----------------------------------------------------
+
+Likelihood computed by importance sampling
+      -2LL= 1250.678 
+      AIC = 1260.678 
+      BIC = 1279.096 
+----------------------------------------------------
+> 
+> 
+> # Case bootstrap
+> case.bin <- saemix.bootstrap(binary.fit, method="case", nboot=nboot) 
+ 50 件以上の警告がありました (最初の 50 個の警告を見るには warnings() を使って下さい) 
+> write.table(case.bin, file.path(workDir, "results", "toenail_caseBootstrap.res"), quote=F, row.names=FALSE)
+> 
+> # Conditional non-parametric bootstrap
+> if(FALSE) {
++   cond.bin <- saemix.bootstrap(binary.fit, method="conditional", nboot=nboot) 
++   write.table(cond.bin, file.path(workDir, "results", "toenail_condBootstrap.res"), quote=F, row.names=FALSE)
++ }
+> 
+> proc.time()
+utilisateur     système      écoulé 
+  12427.714       6.616   12435.106 

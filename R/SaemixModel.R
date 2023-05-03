@@ -392,7 +392,7 @@ setMethod(
     .Object@name.sigma<-xres
     .Object@error.init<-error.init
     indx.res<-c()
-    indx.res1=c()
+    indx.res1<-c()
     for(i in 1:length(.Object@error.model)) {
       if(.Object@error.model[i]=='constant') {
         indx.res1<-1
@@ -731,6 +731,7 @@ setMethod("summary","SaemixModel",
 
 
 # Plot simulations from the model
+# ECO TODO: test for graphical parameters and set them properly
 # ECO TODO: adjust to multiple responses
 
 setMethod("plot","SaemixModel",
@@ -739,10 +740,10 @@ setMethod("plot","SaemixModel",
     args1<-match.call(expand.dots=TRUE)
     list.args <- list(...)
     i1<-match("verbose",names(args1))
-    if(!is.na(i1)) verbose<-FALSE else verbose<-eval(args1[[i1]])
+    if(is.na(i1)) verbose<-FALSE else verbose<-eval(args1[[i1]])
     # Set psi by default to the starting parameters given in the model (if not given as arguments)
     if(is.null(psi)) psi<-x@psi0[1,,drop=FALSE]
-    if(is.null(dim(psi)[1])) psi<-matrix(psi,nrow=1)
+    if(is.null(dim(psi)[1])) psi<-matrix(psi,nrow=1) else psi<-psi[1,,drop=FALSE]
     npred<-length(x@name.predictors)
     if(npred==0 & is.null(predictors)) npred<-1 else {
       if(npred==0 & !missing(predictors)) {
@@ -758,9 +759,14 @@ setMethod("plot","SaemixModel",
       if(verbose) message("Currently the plot can only be obtained for single-response models.\n")
       return()
     }
+    if(length(x@name.X)>0 & length(x@name.predictors)>0 && x.name.X != x@name.predictors[1]){
+      if(verbose) message("Warning: X predictor supposed to be on the first axis, exiting without plot\n")
+      return()
+    }
     npts<-100
-    psi<-matrix(rep(psi,npts+1),byrow=T,nrow=(npts+1))
-    id<-matrix(rep(1,npts+1),ncol=1)
+#    id<-rep(1,npts+1)
+    psi<-matrix(rep(psi, npts+1), byrow=T, nrow=(npts+1))
+    id<-matrix(rep(1,npts+1), ncol=1)
     xval<-range[1]+(range[2]-range[1])*c(0:100)/100
     if(npred==1) {
       xdep<-matrix(xval,ncol=1)
@@ -781,7 +787,8 @@ setMethod("plot","SaemixModel",
       message("   3. check values for the model parameters (defaults to component psi0[1,] of the model).\n")
       message("   4. the predictor used the X-axis is assumed to be in the first column; please check your model is written in a compatible way.\n")
     } else {
-      if(length(x@name.X)==0 | length(x@name.predictors)==0) message("Warning: X predictor supposed to be on the first axis\n")
+      if(length(x@name.X)==0 | length(x@name.predictors)==0) {
+        if(verbose) message("Warning: X predictor supposed to be on the first axis\n")}
       if(verbose) message("Plot characteristics:\n")
       if(npred>1) {
         for(j in 1:dim(xdep)[2]) {
@@ -793,7 +800,7 @@ setMethod("plot","SaemixModel",
       }}
       if(verbose) message("   range for X-axis:",min(xval),"-",max(xval),"\n")
       if(verbose) message("   parameters used: ", paste(x@name.modpar,"=",psi[1,],collapse=", "),"\n")
-      plot(xval,ypred,type="l",xlab=ifelse(length(x@name.X)==0, "X",x@name.X),ylab=ifelse(length(x@name.response)==0, "Response",x@name.response))
+      plot(xval,ypred,type="l",xlab=ifelse(length(x@name.X)==0, "X",x@name.X),ylab=ifelse(length(x@name.response)==0, "Response",x@name.response),...)
     }
   }
 )

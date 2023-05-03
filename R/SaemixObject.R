@@ -98,6 +98,7 @@ setMethod(
   signature="SaemixObject",
   definition= function (.Object, data, model, options=list()){
 #    cat ("--- initialising SaemixObject --- \n")
+    if(is.null(options$verbose) || (is.logical(options$verbose) & !(options$verbose))) verbose<-FALSE else verbose<-options$verbose
     ind.exp<-which(model["error.model"]=='exponential')
     if(length(ind.exp)>0) {
       y<-yobs<-data["data"][,data["name.response"]]
@@ -108,14 +109,22 @@ setMethod(
     .Object@data<-data
 # Adjusting number of covariates
     if(dim(model@covariate.model)[1]>length(data@name.covariates)) {
-      cat("The number of covariates in model (",dim(model@covariate.model)[1],") is larger than the number of covariates in the dataset (",length(data@name.covariates),"), keeping only the first",length(data@name.covariates),":",data@name.covariates,".\n")
+      message("The number of covariates in model (",dim(model@covariate.model)[1],") is larger than the number of covariates in the dataset (",length(data@name.covariates),"), keeping only the first",length(data@name.covariates),":",data@name.covariates,".\n")
       model@covariate.model<-model@covariate.model[1:length(data@name.covariates),]
     }
     if(dim(model@covariate.model)[1]<length(data@name.covariates) & dim(model@covariate.model)[1]>0) {
-    	cat("The number of covariates in model (",dim(model@covariate.model)[1],") is smaller than the number of covariates in the dataset (",length(data@name.covariates),"), assuming no covariate-parameter relationship for the remaining covariates; please check covariates:",data@name.covariates,".\n")
-    	l1<-rep(0,dim(model@covariate.model)[2])
-    	n1<-length(data@name.covariates)-dim(model@covariate.model)[1]
-    	model@covariate.model<-rbind(model@covariate.model, matrix(rep(l1,n1),nrow=n1))
+    	if(verbose) cat("The number of covariates in model (",dim(model@covariate.model)[1],") is smaller than the number of covariates in the dataset (",length(data@name.covariates),"), assuming no covariate-parameter relationship for the remaining covariates; please check covariates:",data@name.covariates,".\n")
+      if(is.null(rownames(model@covariate.model))) {
+        l1<-rep(0,dim(model@covariate.model)[2])
+        n1<-length(data@name.covariates)-dim(model@covariate.model)[1]
+        model@covariate.model<-rbind(model@covariate.model, matrix(rep(l1,n1),nrow=n1))
+      } else {
+        covmodel<-matrix(data=0, nrow=length(data@name.covariates), ncol=model@nb.parameters)
+        for(icov in 1:length(data@name.covariates)) {
+          imod <- grep(data@name.covariates[icov], rownames(model@covariate.model))
+          if(length(imod)>0) covmodel[icov]<-model@covariate.model[imod]
+        }
+      }
     }
 # setting the names of the fixed effects
     if(dim(model@covariate.model)[1]>0) {
@@ -147,7 +156,7 @@ setMethod(
       	xdat<-subset(.Object@data@data,is.na(get(icov)))
       	if(dim(xdat)[1]>0) {
       		imis<-unique(xdat[,.Object@data@name.group])
-      		cat("Missing values for covariate",as.character(icov),"for which a parameter-covariate relationship is estimated: removing subject(s)",imis,"from the dataset.\n")
+      		if(verbose) cat("Missing values for covariate",as.character(icov),"for which a parameter-covariate relationship is estimated: removing subject(s)",imis,"from the dataset.\n")
       	}
       	.Object@data<-subset(.Object@data,!is.na(get(icov)))
       }
@@ -821,6 +830,12 @@ saemix.predict<-function(object, type=c("ipred", "ypred", "ppred", "icpred")) {
   saemix.res["ppred"]<-unname(ppred)
   if(length(saemix.res["predictions"])==0)
     saemix.res["predictions"]<-data.frame(ppred=ppred) # create dataframe for predictions if not yet available
+  
+  # Population predictions as E(f(theta))
+  if("ypred" %in% type) {
+      x<-compute.sres(object)
+      saemix.res["ypred"]<-x["results"]["ypred"]
+  }
   
   # Compute predictions and residuals
   if(length(intersect(c("ipred","icpred"),type))>0) {

@@ -1,0 +1,449 @@
+---
+title: "Testing examples in saemix 3.2 - continuous models"
+author: "Emmanuelle"
+date: "10/11/2022"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+## Objective
+
+Check saemix for continuous data models
+
+# Setup
+
+- set up work directories
+- two versions toggled by testMode
+  - if testMode is FALSE, load the functions in R
+  - if testMode is TRUE, load the library in a dev_mode environment
+- aim: check the examples used in the online documentation
+  - all examples must run without error
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# Directories
+saemixDir<-"/home/eco/work/saemix/saemixextension"
+versionDir<-"/home/eco/work/saemix/versions"
+progDir<-file.path(saemixDir,"R")
+datDir<-file.path(saemixDir,"data")
+figDir<-file.path(saemixDir,"documentation","figs")
+
+# Libraries
+library(MASS)
+library(rlang)
+library(ggplot2)
+library(gridExtra)
+library(devtools)
+# library(tidyverse)
+
+# testMode TRUE => tests the compiled package in dev_mode()
+# testMode FALSE => tests the library functions by loading them
+testMode<-TRUE
+
+# Whether to save the plots for the documentation
+saveForDocs<-FALSE
+```
+
+# Testing library
+
+```{r testLibrary, include=FALSE}
+# Sourcing saemix functions
+if(!testMode) {
+  source(file.path(progDir,"aaa_generics.R"))
+  #source(file.path(progDir,"global.R"))
+  source(file.path(progDir,"SaemixData.R"))
+  source(file.path(progDir,"SaemixRes.R"))
+  source(file.path(progDir,"SaemixModel.R"))
+  source(file.path(progDir,"SaemixObject.R"))
+  source(file.path(progDir,"main.R"))
+  source(file.path(progDir,"func_aux.R"))
+  source(file.path(progDir,"main_initialiseMainAlgo.R"))
+  source(file.path(progDir,"main_estep.R"))
+  source(file.path(progDir,"main_mstep.R"))
+  source(file.path(progDir,"func_FIM.R"))
+  source(file.path(progDir,"func_plots.R"))
+  source(file.path(progDir,"func_distcond.R"))
+  source(file.path(progDir,"func_simulations.R"))
+  source(file.path(progDir,"compute_LL.R"))
+  source(file.path(progDir,"func_estimParam.R"))
+  source(file.path(progDir,"func_npde.R"))
+}
+
+# Maud
+if(!testMode) {
+  source(file.path(progDir,"backward.R"))
+  source(file.path(progDir,"forward.R"))
+  source(file.path(progDir,"stepwise.R"))
+  source(file.path(progDir,"func_stepwise.R"))
+  source(file.path(progDir,"func_compare.R"))
+}
+# Bootstrap and diagnostics
+if(!testMode) {
+source(file.path(progDir,"func_bootstrap.R"))
+source(file.path(progDir,"func_exploreData.R"))
+source(file.path(progDir,"func_discreteVPC.R"))
+}
+
+if(!testMode) {
+  library(npde)
+}
+# Loading library
+if(testMode) {
+  dev_mode()
+  install.packages(file.path(versionDir,"saemix3.2","saemix_3.2.tar.gz"),repos=NULL)
+  library(saemix)
+}
+```
+
+```{r}
+if(testMode) cat("Testing package\n") else cat("Loading libraries\n")
+```
+
+## Continuous response model
+
+### Theophylline
+
+```{r theo}
+if(testMode)
+  data(theo.saemix) else
+    theo.saemix<-read.table(file.path(datDir, "theo.saemix.tab"), header=TRUE)
+
+#Plotting the theophylline data
+plot(Concentration~Time,data=theo.saemix,xlab="Time after dose (hr)",
+ylab="Theophylline concentration (mg/L)")
+
+saemix.data<-saemixData(name.data=theo.saemix,header=TRUE,sep=" ",na=NA, 
+  name.group=c("Id"),name.predictors=c("Dose","Time"),
+  name.response=c("Concentration"),name.covariates=c("Weight","Sex"),
+  units=list(x="hr",y="mg/L",covariates=c("kg","-")), name.X="Time")
+model1cpt<-function(psi,id,xidep) { 
+    dose<-xidep[,1]
+    tim<-xidep[,2]  
+    ka<-psi[id,1]
+    V<-psi[id,2]
+    CL<-psi[id,3]
+    k<-CL/V
+    ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
+    return(ypred)
+}
+
+plot(saemix.data)
+# Default model, no covariate
+saemix.model<-saemixModel(model=model1cpt,
+       description="One-compartment model with first-order absorption",
+       psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3,byrow=TRUE, 
+       dimnames=list(NULL, c("ka","V","CL"))),transform.par=c(1,1,1))
+ # Note: remove the options save=FALSE and save.graphs=FALSE 
+ # to save the results and graphs
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
+
+saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
+plot(saemix.fit)
+plot(saemix.fit, plot.type="observations")
+
+plot(saemix.fit, plot.type="npde")
+
+# Model with covariates
+saemix.model<-saemixModel(model=model1cpt,
+                          description="One-compartment model with first-order absorption",
+                          psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3,byrow=TRUE, 
+                                      dimnames=list(NULL, c("ka","V","CL"))),transform.par=c(1,1,1), 
+                          covariate.model=matrix(c(0,0,1,0,0,0),ncol=3,byrow=TRUE),fixed.estim=c(1,1,1),
+                          covariance.model=matrix(c(1,0,0,0,1,1,0,1,1),ncol=3,byrow=TRUE),
+                          omega.init=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE),error.model="combined")
+
+saemix.options<-list(seed=39546,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
+saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
+
+# Warning message
+plot(saemix.fit, plot.type="npde")
+# using npde instead
+ynpde<-npdeSaemix(saemix.fit)
+plot(ynpde)
+
+# individual npde plots
+plot(ynpde, plot.type="x.scatter", covsplit=TRUE, which.cov=c("Weight", "Sex"))
+plot(ynpde, plot.type="ecdf", covsplit=TRUE, which.cov=c("Weight", "Sex"))
+
+plot.tnpde<-plot(ynpde, plot.type="x.scatter", ref.prof=list(Id=2), main="tnpd with reference profile ID=2")
+plot.vpc<-plot(ynpde, plot.type="vpc", main="VPC")
+grid.arrange(grobs=list(plot.tnpde, plot.vpc), nrow=1, ncol=2)
+
+# VPC
+plot(saemix.fit, plot.type="vpc")
+plot(ynpde, plot.type="vpc")
+
+#saemix.fit<-conddist.saemix(saemix.fit)
+saemix.fit<-conddist.saemix(saemix.fit, plot=TRUE)
+
+plot(saemix.fit, plot.type="individual", smooth=TRUE)
+
+```
+
+### One random effect
+
+Note: sort the message "one-dimensional optimization by Nelder-Mead is unreliable"
+
+```{r random1}
+
+model1cpt.1<-function(psi,id,xidep) {
+  dose<-xidep[,1]
+  tim<-xidep[,2]
+  ka<-psi[id,1]
+  V<-2
+  # V<-psi[id,2]
+  k<-0.5
+  CL<-k*V
+  ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
+  return(ypred)
+}
+saemix.model<-saemixModel(model=model1cpt.1,description="warfarin",modeltype="structural",
+  psi0=matrix(c(1),ncol=1,byrow=TRUE, dimnames=list(NULL, c("ka"))),
+  transform.par=c(1),omega.init=matrix(c(1),ncol=1,byrow=TRUE),
+  covariance.model=matrix(c(1),ncol=1,byrow=TRUE))
+
+saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
+
+# Alternate, fixing V and CL
+saemix.model2<-saemixModel(model=model1cpt,
+                          description="One-compartment model with first-order absorption",
+                          psi0=matrix(c(1.,20,1),ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))),
+                          transform.par=c(1,1,1), fixed.estim=c(1,0,0),
+                          covariance.model = diag(c(1,0,0)),
+                          omega.init=diag(c(1,1,1)))
+saemix.fit2<-saemix(saemix.model2,saemix.data,saemix.options)
+
+# Checking estimates are close (yes)
+saemix.fit@results
+saemix.fit2@results
+
+```
+
+### Simulated PD
+
+```{r PD1}
+if(testMode) {
+  data(PD1.saemix)
+  data(PD2.saemix)
+  } else {
+    PD1.saemix<-read.table(file.path(datDir, "PD1.saemix.tab"), header=TRUE)
+    PD2.saemix<-read.table(file.path(datDir, "PD1.saemix.tab"), header=TRUE)
+  }
+
+saemix.data<-saemixData(name.data=PD1.saemix,header=TRUE,name.group=c("subject"),
+      name.predictors=c("dose"),name.response=c("response"),
+      name.covariates=c("gender"), units=list(x="mg",y="-",covariates=c("-")))
+
+modelemax<-function(psi,id,xidep) {
+# input:
+#   psi : matrix of parameters (3 columns, E0, Emax, EC50)
+#   id : vector of indices 
+#   xidep : dependent variables (same nb of rows as length of id)
+# returns:
+#   a vector of predictions of length equal to length of id
+  dose<-xidep[,1]
+  e0<-psi[id,1]
+  emax<-psi[id,2]
+  e50<-psi[id,3]
+  f<-e0+emax*dose/(e50+dose)
+  return(f)
+}
+
+# Plotting the data
+plot(saemix.data,main="Simulated data PD1")
+# Compare models with and without covariates with LL by Importance Sampling
+model1<-saemixModel(model=modelemax,description="Emax growth model", 
+       psi0=matrix(c(20,300,20,0,0,0),ncol=3,byrow=TRUE,dimnames=list(NULL,
+       c("E0","Emax","EC50"))), transform.par=c(1,1,1),
+       covariate.model=matrix(c(0,0,0), ncol=3,byrow=TRUE),fixed.estim=c(1,1,1))
+
+model2<-saemixModel(model=modelemax,description="Emax growth model", 
+       psi0=matrix(c(20,300,20,0,0,0),ncol=3,byrow=TRUE,dimnames=list(NULL, 
+       c("E0","Emax","EC50"))), transform.par=c(1,1,1),
+       covariate.model=matrix(c(0,0,1), ncol=3,byrow=TRUE),fixed.estim=c(1,1,1))
+
+# SE not computed as not needed for the test
+saemix.options<-list(algorithms=c(0,1,1),nb.chains=3,seed=765754, 
+       nbiter.saemix=c(500,300),save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
+
+fit1<-saemix(model1,saemix.data,saemix.options)
+fit2<-saemix(model2,saemix.data,saemix.options)
+wstat<-(-2)*(fit1["results"]["ll.is"]-fit2["results"]["ll.is"])
+
+cat("LRT test for covariate effect on EC50: p-value=",1-pchisq(wstat,1),"\n")
+
+plot(fit1, plot.type="individual", smooth=T, ilist=1:12)
+
+if(FALSE) {
+  plot(model1, saemix.data)
+  plot(model1, saemix.data, psi=c(0, 200, 50))
+}
+
+# Diagnostics
+ynpde<-npdeSaemix(fit2)
+plot(ynpde)
+
+# Splitting by covariates
+plot(ynpde, plot.type="ecdf", which.cov="gender", covsplit=T)
+
+# Better than the fit without covariates
+ynpde1<-npdeSaemix(fit1)
+plot(ynpde1, plot.type="ecdf", which.cov="gender", covsplit=T)
+
+# Similar scatterplots for both models
+plot(ynpde, plot.type="x.scatter", which.cov="gender", covsplit=T)
+plot(ynpde1, plot.type="x.scatter", which.cov="gender", covsplit=T)
+
+```
+
+
+### Oxford boys
+
+```{r oxfordBoys}
+if(testMode)
+  data(oxboys.saemix) else
+    oxboys.saemix<-read.table(file.path(datDir, "oxboys.saemix.tab"), header=TRUE)
+
+saemix.data<-saemixData(name.data=oxboys.saemix,header=TRUE,
+      name.group=c("Subject"),name.predictors=c("age"),name.response=c("height"),
+      units=list(x="yr",y="cm"))
+
+# plot the data
+plot(saemix.data)
+
+growth.linear<-function(psi,id,xidep) {
+  x<-xidep[,1]
+  base<-psi[id,1]
+  slope<-psi[id,2]
+  f<-base+slope*x
+  return(f)
+}
+saemix.model<-saemixModel(model=growth.linear,description="Linear model",
+      psi0=matrix(c(140,1),ncol=2,byrow=TRUE,dimnames=list(NULL,c("base","slope"))),
+      transform.par=c(1,0),covariance.model=matrix(c(1,1,1,1),ncol=2,byrow=TRUE), 
+      error.model="constant")
+
+saemix.options<-list(algorithms=c(1,1,1),nb.chains=1,seed=201004,
+      save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
+saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
+
+ynpde<-npdeSaemix(saemix.fit)
+
+plot(ynpde, plot.type="vpc")
+```
+
+### Cow
+
+```{r cow}
+if(testMode)
+  data(cow.saemix) else
+    cow.saemix<-read.table(file.path(datDir, "cow.saemix.tab"), header=TRUE)
+
+saemix.data<-saemixData(name.data=cow.saemix,header=TRUE,name.group=c("cow"), 
+      name.predictors=c("time"),name.response=c("weight"), 
+      name.covariates=c("birthyear","twin","birthrank"), 
+      units=list(x="days",y="kg",covariates=c("yr","-","-")))
+
+growthcow<-function(psi,id,xidep) {
+  x<-xidep[,1]
+  a<-psi[id,1]
+  b<-psi[id,2]
+  k<-psi[id,3]
+  f<-a*(1-b*exp(-k*x))
+  return(f)
+}
+saemix.model<-saemixModel(model=growthcow,
+      description="Exponential growth model", 
+      psi0=matrix(c(700,0.9,0.02,0,0,0),ncol=3,byrow=TRUE, 
+        dimnames=list(NULL,c("A","B","k"))),transform.par=c(1,1,1),fixed.estim=c(1,1,1), 
+      covariate.model=matrix(c(0,0,0),ncol=3,byrow=TRUE), 
+      covariance.model=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE), 
+      omega.init=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE),error.model="constant")
+
+saemix.options<-list(algorithms=c(1,1,1),nb.chains=1,nbiter.saemix=c(200,100), 
+             seed=4526,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
+
+# Plotting the data
+plot(saemix.data,xlab="Time (day)",ylab="Weight of the cow (kg)")
+saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
+```
+
+
+### Wheat yield
+
+```{r yield}
+if(testMode)
+  data(yield.saemix) else
+    yield.saemix<-read.table(file.path(datDir, "yield.saemix.tab"), header=TRUE)
+saemix.data<-saemixData(name.data=yield.saemix,header=TRUE,name.group=c("site"),
+      name.predictors=c("dose"),name.response=c("yield"),
+      name.covariates=c("soil.nitrogen"),units=list(x="kg/ha",y="t/ha",covariates=c("kg/ha")))
+
+#  Model: linear + plateau
+yield.LP<-function(psi,id,xidep) {
+  x<-xidep[,1]
+  ymax<-psi[id,1]
+  xmax<-psi[id,2]
+  slope<-psi[id,3]
+  f<-ymax+slope*(x-xmax)
+  #'  cat(length(f),"  ",length(ymax),"\n")
+  f[x>xmax]<-ymax[x>xmax]
+  return(f)
+}
+saemix.model<-saemixModel(model=yield.LP,description="Linear plus plateau model",   
+        psi0=matrix(c(8,100,0.2,0,0,0),ncol=3,byrow=TRUE,dimnames=list(NULL,   
+            c("Ymax","Xmax","slope"))),covariate.model=matrix(c(0,0,0),ncol=3,byrow=TRUE), 
+        transform.par=c(0,0,0),covariance.model=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3, 
+            byrow=TRUE),error.model="constant")
+
+saemix.options<-list(algorithms=c(1,1,1),nb.chains=1,seed=666, 
+       save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
+
+# Plotting the data
+plot(saemix.data,xlab="Fertiliser dose (kg/ha)", ylab="Wheat yield (t/ha)")
+
+saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
+
+# Comparing the likelihoods obtained by linearisation and importance sampling 
+# to the likelihood obtained by Gaussian Quadrature
+saemix.fit<-llgq.saemix(saemix.fit)
+{
+   cat("LL by Importance sampling, LL_IS=",saemix.fit["results"]["ll.is"],"\n")
+   cat("LL by linearisation, LL_lin=",saemix.fit["results"]["ll.lin"],"\n")
+   cat("LL by Gaussian Quadrature, LL_GQ=",saemix.fit["results"]["ll.gq"],"\n")
+}
+
+# Testing for an effect of covariate soil.nitrogen on Xmax
+saemix.model2<-saemixModel(model=yield.LP,description="Linear plus plateau model", 
+         psi0=matrix(c(8,100,0.2,0,0,0),ncol=3,byrow=TRUE,dimnames=list(NULL, 
+            c("Ymax","Xmax","slope"))),covariate.model=matrix(c(0,1,0),ncol=3,byrow=TRUE), 
+         transform.par=c(0,0,0),covariance.model=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3, 
+             byrow=TRUE),error.model="constant")
+
+saemix.fit2<-saemix(saemix.model2,saemix.data,saemix.options)
+# BIC for the two models
+{
+  cat("Model without covariate, BIC=",saemix.fit["results"]["bic.is"],"\n")
+  cat("Model with covariate, BIC=",saemix.fit2["results"]["bic.is"],"\n")
+  pval<-1-pchisq(-2*saemix.fit["results"]["ll.is"]+2*saemix.fit2["results"]["ll.is"],1)
+  cat("        LRT: p=",pval,"\n")
+}
+
+# Diagnostics
+ynpde<-npdeSaemix(saemix.fit2)
+plot(ynpde)
+
+# Splitting by covariates
+plot(ynpde, plot.type="ecdf", which.cov="soil.nitrogen", covsplit=T)
+
+```
+
+## Exiting
+
+```{r exitingDevMode}
+if(testMode) {
+  dev_mode()
+}
+```
+

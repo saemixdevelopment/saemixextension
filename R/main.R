@@ -342,7 +342,7 @@ saemix<-function(model,data,control=list()) {
 #### Save the results to a file
   if(saemix.options$save | saemix.options$save.graphs) {
 # create directory to save the results
-     if(saemix.options$directory!="") xsave<-dir.create(saemix.options$directory)
+     if(saemix.options$directory!="") xsave<-dir.create(saemix.options$directory) else xsave<-TRUE
      if(!xsave) {
 # Check that we're not trying to create a directory with the same name as a file
        if(!file_test("-d",saemix.options$directory)) {

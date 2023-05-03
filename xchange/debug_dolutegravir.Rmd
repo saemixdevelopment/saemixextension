@@ -1,0 +1,137 @@
+---
+title: "Test individual functions in saemix 3.2"
+author: "Emmanuelle"
+date: "05/10/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+# Setup
+
+- set up work directories
+- two versions toggled by testMode
+  - if testMode is FALSE, load the functions in R
+  - if testMode is TRUE, use testthat functions
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# Directories
+saemixDir<-"/home/eco/work/saemix/saemixextension"
+progDir<-file.path(saemixDir,"R")
+datDir<-file.path(saemixDir,"data")
+ecoDir<-file.path(saemixDir,"testeco")
+belDir<-file.path(saemixDir,"testbelhal")
+
+# Libraries
+library(ggplot2)
+library(MASS)
+library(rlang)
+library(npde)
+
+# Libraries
+library(RColorBrewer) 
+library(gridExtra)
+library(dplyr)
+library(Cairo)
+
+#source(file.path(saemixDir, "SaemixObject.R"))
+#source(file.path(saemixDir, "func_estimParam.R"))
+
+# Prints some intermediate results
+showRes<-TRUE
+saveFigs<-TRUE
+plotByOcc <- FALSE
+nameFig<-"output_feb23.pdf"
+
+testMode<-TRUE
+
+```
+
+```{r sourceSaemixFunctions, include=FALSE}
+# Sourcing saemix functions
+if(testMode) {
+  library(saemix)
+} else {
+  source(file.path(progDir,"aaa_generics.R"))
+  #source(file.path(progDir,"global.R"))
+  source(file.path(progDir,"SaemixData.R"))
+  source(file.path(progDir,"SaemixModel.R"))
+  source(file.path(progDir,"SaemixRes.R"))
+  source(file.path(progDir,"SaemixObject.R"))
+  source(file.path(progDir,"main.R"))
+  source(file.path(progDir,"func_aux.R"))
+  source(file.path(progDir,"main_initialiseMainAlgo.R"))
+  source(file.path(progDir,"main_estep.R"))
+  source(file.path(progDir,"main_mstep.R"))
+  source(file.path(progDir,"func_FIM.R"))
+  source(file.path(progDir,"func_plots.R"))
+  source(file.path(progDir,"func_distcond.R"))
+  source(file.path(progDir,"func_simulations.R"))
+  source(file.path(progDir,"compute_LL.R"))
+  source(file.path(progDir,"func_npde.R"))
+  source(file.path(progDir,"func_estimParam.R"))
+  source(file.path(progDir,"backward.R"))
+  source(file.path(progDir,"forward.R"))
+  source(file.path(progDir,"func_stepwise.R"))
+  source(file.path(progDir,"stepwise.R"))
+  source(file.path(progDir,"func_compare.R"))
+  source(file.path(progDir,"func_bootstrap.R"))
+  source(file.path(progDir,"func_exploreData.R"))
+  source(file.path(progDir,"func_discreteVPC.R"))
+}
+```
+
+# Problem with Dolutegravir example
+
+```{r}
+# Working directory
+workDir<-"/home/eco/work/rennes/florian/birider/tdmDolu"
+setwd(workDir)
+knitr::opts_chunk$set(root.dir = workDir)
+
+datalou<-read.table(file.path(workDir,"2212_newData_modelPKDTG.csv"),header=TRUE,na=".", sep=";")
+datalou$sex <- as.integer(datalou$sex=="F")
+colnames(datalou)[c(3,5,11)]<-c("Dolutegravir","DoseDTG","darunavir")
+
+# Plot of the data
+gpdat<-data.frame(id=datalou$id, time=datalou$time, y=datalou$Dolutegravir, molecule=rep("DTG", dim(datalou)[1]), occ=datalou$occ)
+plot.data <- ggplot(gpdat, aes(x=time, y=y, group=id, colour=as.factor(occ))) + geom_point() + geom_line(colour='black') + labs(fill="Viral load") + xlab("Time after dose (hr)") + ylab("Concentrations (mg/L)") + theme(legend.position="bottom")
+
+dat<-datalou
+okdat<-TRUE
+dat$id<-gsub("UCLINI-","",dat$id,fixed=TRUE)
+
+
+# Can add more checks to make sure the data is in proper format (eg check on II, Dolutegravir, order of columns, etc...)
+
+#  dat$wt[is.na(dat$wt)]<-median(dat$wt, na.rm=TRUE)
+  dat$lwt<-log(dat$weight/70)
+  if(length(grep("occ",colnames(dat)))==0) dat$occ<-1
+  dat$id2<-paste(dat$id, dat$occ,sep=".")
+  if(length(dat$id2)!=dim(dat)[1]) cat("Check unicity of subjects + occasions\n")
+
+  # reordering the data by time (occ will be ignored)
+occdat<-dat[order(dat$id, dat$time),]
+
+#  ggplot(dat, aes(x=time, y=Dolutegravir, group=id)) + geom_line()+ geom_point()
+  saemix.data2<-saemixData(name.data=occdat,header=TRUE,sep=" ",na=NA, 
+                          name.group=c("id"),name.predictors=c("time","AMT","II"), 
+                          name.response=c("Dolutegravir"),name.covariates=c("lwt","Tabagisme","darunavir"),
+                          units=list(x="hr",y="mg/L",covariates=c("log-kg/70","-","-")))
+  cat("Plotting the data, grouped by subject, N=",saemix.data2@N,"- please check\n")
+  summary(occdat)
+  plot(saemix.data2)
+  
+  # 
+  sepdat<-occdat
+  sepdat$id<-paste(sepdat$id,sepdat$occ,sep=".")
+  saemix.data<-saemixData(name.data=sepdat,header=TRUE,sep=" ",na=NA, 
+                          name.group=c("id"),name.predictors=c("time","AMT","II"), 
+                          name.response=c("Dolutegravir"),name.covariates=c("lwt","Tabagisme","darunavir"),
+                          units=list(x="hr",y="mg/L",covariates=c("log-kg/70","-","-")))
+  cat("Plotting the data as if each occasion was a separate subject, N=",saemix.data@N,"\n")
+  plot(saemix.data, type="p")
+
+```
+

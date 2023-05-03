@@ -854,7 +854,7 @@ setMethod("print","SaemixData",
 #    if(length(x@data)>0) print(x@data)
       }
       xdat<-x@data
-      if(length(x@ocov)>0) xdat[,x@name.covariates]<-x@ocov
+      if(length(x@ocov)>0) try(xdat[,x@name.covariates]<-x@ocov)
       if(nlines==(-1)) {
         cat("Data:\n")
         print(xdat)
@@ -890,7 +890,7 @@ setMethod("show","SaemixData",
       for(icov in 1:ncov) {
       if(is.factor(object@ocov[,icov])) cat("      reference class for covariate",object@name.covariates[icov],": ",levels(object@ocov[,icov])[1],"\n")
       }
-      if(length(object@data)>0) object@data[,object@name.covariates]<-object@ocov
+      if(length(object@data)>0) try(object@data[,object@name.covariates]<-object@ocov)
       }
     }
     if(length(object@data)>0) {
@@ -929,7 +929,7 @@ setMethod("showall",signature="SaemixData",
       for(icov in 1:ncov) {
       if(is.factor(object@ocov[,icov])) cat("      reference class for covariate",object@name.covariates[icov],": ",levels(object@ocov[,icov])[1],"\n")
       }
-      if(length(object@data)>0) object@data[,object@name.covariates]<-object@ocov
+      if(length(object@data)>0) try(object@data[,object@name.covariates]<-object@ocov)
       }
     }
     cat("Dataset characteristics:\n")

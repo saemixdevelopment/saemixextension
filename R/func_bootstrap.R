@@ -139,7 +139,7 @@ saemix.bootstrap<-function(saemixObject, method="conditional", nboot=200, nsamp=
   }
   if(method=="conditional") {
     ndone <- dim(saemixObject@results@phi.samp)
-    if(!is.null(ndone)) ndone<-ndone[3]
+    if(!is.null(ndone)) ndone<-ndone[3] else ndone<-0
     if(ndone<nsamp) {
       if(saemixObject@options$warnings) message("Not enough samples in the object, sampling from the conditional distribution\n")
       saemixObject<-conddist.saemix(saemixObject, nsamp=nsamp) # estimate conditional distributions and sample residuals
@@ -155,6 +155,7 @@ saemix.bootstrap<-function(saemixObject, method="conditional", nboot=200, nsamp=
     saemix.options$fim<-FALSE
     saemix.options$displayProgress<-FALSE 
     saemix.options$save.graphs<-FALSE
+    saemix.options$save<-FALSE
     saemix.options$ll.is<-FALSE
     saemix.options$print<-FALSE
   }
@@ -164,6 +165,7 @@ saemix.bootstrap<-function(saemixObject, method="conditional", nboot=200, nsamp=
   idx.rho<-which(saemixObject@model@covariance.model[lower.tri(saemixObject@model@covariance.model)]==1)
   bootstrap.distribution<-failed.runs<-data.frame()
   nelements <- length(saemixObject@results@fixed.effects)+length(idx.iiv)+length(idx.rho)+length(idx.eps)
+  # Starting point: estimates from the fit 
   model.boot<-saemixObject["model"]
   model.boot@psi0 <- model.boot["betaest.model"]
   model.boot@psi0[model.boot["betaest.model"]==1]<-saemixObject@results@fixed.effects
@@ -202,7 +204,8 @@ saemix.bootstrap<-function(saemixObject, method="conditional", nboot=200, nsamp=
         }
         }
       }
-    }
+  }
+  if(length(idx.eps)>0) namcol<-c(namcol,saemixObject@model@name.sigma[idx.eps])
     if(length(res@ll.lin)>0) namcol<-c(namcol,"LL.lin")
 #  namcol<-c(saemixObject@results@name.fixed,saemixObject@results@name.random,namcol, saemixObject@results@name.sigma[saemixObject@results@indx.res])
 #  colnames(bootstrap.distribution)<-c("Replicate",namcol,paste("SE",namcol,sep="."),"LL.lin")
@@ -240,7 +243,7 @@ dataGen.case<- function(saemixObject) {
   smx.data@nind.obs <-saemixObject@data@nind.obs[idx.boot]
   smx.data@data<-data.boot
   orig.idx<-1:saemixObject@data@N
-  smx.data@data$index <- smx.data@data$id <- rep(1:smx.data@N,times=smx.data@nind.obs)
+  smx.data@data$index <- smx.data@data[smx.data@name.group] <- rep(1:smx.data@N,times=smx.data@nind.obs)
   # As yorig and ocov not used in fit, not included in dataset
   return(smx.data)
 }
