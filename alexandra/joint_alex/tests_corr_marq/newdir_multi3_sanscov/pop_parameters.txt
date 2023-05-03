@@ -1,0 +1,173 @@
+Nonlinear mixed-effects model fit by the SAEM algorithm
+-----------------------------------
+----          Data             ----
+-----------------------------------
+Object of class SaemixData
+    longitudinal data for use with the SAEM algorithm
+Dataset data_joint 
+    Structured data: obs ~ time | id 
+    Predictor: time () 
+Dataset characteristics:
+    number of subjects:     1000 
+    number of observations: 69920 
+    average/min/max nb obs: 69.92  /  5  /  95 
+First 10 lines of data:
+      id time       obs mdv cens occ ytype
+1      1    0 16.610030   0    0   1     1
+22641  1    0  7.086580   0    0   1     2
+45281  1    0 32.025754   0    0   1     3
+67921  1    0  0.000000   0    0   1     4
+2      1    1 15.389754   0    0   1     1
+22642  1    1  6.697130   0    0   1     2
+45282  1    1 32.922264   0    0   1     3
+3      1    2 15.575786   0    0   1     1
+22643  1    2  6.371984   0    0   1     2
+45283  1    2 33.127552   0    0   1     3
+-----------------------------------
+----          Model            ----
+-----------------------------------
+Nonlinear mixed-effects model
+  Model function:  JM 3lin+1tte
+  Model type:  structural structural structural likelihood
+function(psi,id,xidep) {
+  ytype<-xidep$ytype  
+  
+  b01 <- psi[id,1]
+  b11 <- psi[id,2]
+  b02 <- psi[id,3]
+  b12 <- psi[id,4]
+  b03 <- psi[id,5]
+  b13 <- psi[id,6]
+  h0 <- psi[id,7]
+  alpha1 <- psi[id,8]
+  alpha2 <- psi[id,9]
+  alpha3 <- psi[id,10]
+  
+  
+  T<-xidep[ytype==4,1] # vector of times partie survie
+  Nj <- length(T)
+  cens<-which(T==max(T))  # censoring time=30
+  init <- which(T==0)
+  ind <- setdiff(1:Nj, append(init,cens)) # indices of event
+  
+  b01b = unique(b01)
+  b11b = unique(b11)
+  b02b = unique(b02)
+  b12b = unique(b12)
+  b03b = unique(b03)
+  b13b = unique(b13)
+  h0b = unique(h0)
+  alpha1b = unique(alpha1)
+  alpha2b = unique(alpha2)
+  alpha3b = unique(alpha3)
+  
+  f=function(x) seq(0,x,length.out=100)
+  tab = mapply(f,T[T!=0])
+  tab = t(tab)
+  pas = tab[,2]-tab[,1]
+  
+  haz = h0b*exp(alpha1b*(b01b+b11b*tab)+alpha2b*(b02b+b12b*tab)+alpha3*(b03b+b13b*tab))
+  H = apply(haz,1,sum)*pas
+  hazt = haz[,100]
+  
+  logpdf <- rep(0,Nj)
+  logpdf[cens] <- -H[cens/2] #+ H1[cens-1] à généraliser par la suite (facile)
+  logpdf[ind] <- -H[ind/2] + log(hazt[ind/2]) #+ H1[cens-1]
+  
+  ypred = rep(NA,length(xidep[,1]))
+  
+  ypred[ytype==1] = b01[ytype==1]+b11[ytype==1]*xidep[ytype==1,1]
+  ypred[ytype==2] = b02[ytype==2]+b12[ytype==2]*xidep[ytype==2,1]
+  ypred[ytype==3] = b03[ytype==3]+b13[ytype==3]*xidep[ytype==3,1]
+  
+  ypred[ytype==4] = logpdf
+  
+  return(ypred)
+}
+<bytecode: 0x000001958b5e8a90>
+  Nb of parameters: 10 
+      parameter names:  b01 b11 b02 b12 b03 b13 h0 alpha1 alpha2 alpha3 
+      distribution:
+      Parameter Distribution Estimated
+ [1,] b01       normal       Estimated
+ [2,] b11       normal       Estimated
+ [3,] b02       normal       Estimated
+ [4,] b12       normal       Estimated
+ [5,] b03       normal       Estimated
+ [6,] b13       normal       Estimated
+ [7,] h0        log-normal   Estimated
+ [8,] alpha1    normal       Estimated
+ [9,] alpha2    normal       Estimated
+[10,] alpha3    normal       Estimated
+  Variance-covariance matrix:
+       b01 b11 b02 b12 b03 b13 h0 alpha1 alpha2 alpha3
+b01      1   0   0   0   0   0  0      0      0      0
+b11      0   1   0   0   0   0  0      0      0      0
+b02      0   0   1   0   0   0  0      0      0      0
+b12      0   0   0   1   0   0  0      0      0      0
+b03      0   0   0   0   1   0  0      0      0      0
+b13      0   0   0   0   0   1  0      0      0      0
+h0       0   0   0   0   0   0  0      0      0      0
+alpha1   0   0   0   0   0   0  0      0      0      0
+alpha2   0   0   0   0   0   0  0      0      0      0
+alpha3   0   0   0   0   0   0  0      0      0      0
+  Error model: constant , initial values: a.1=1 a.1=1 a.1=1 
+  Error model: constant , initial values: a.1=1 a.1=1 a.1=1 
+  Error model: constant , initial values: a.1=1 a.1=1 a.1=1 
+    No covariate in the model.
+    Initial values
+             b01 b11 b02  b12 b03 b13    h0 alpha1 alpha2 alpha3
+Pop.CondInit  15 0.3   7 -0.1  30 0.8 5e-05    0.1   -0.2   0.15
+-----------------------------------
+----    Key algorithm options  ----
+-----------------------------------
+    Algorithms: estimation only
+    Number of iterations:  K1=300, K2=100 
+    Number of chains:  1 
+    Seed:  12345 
+    Simulations:
+        nb of simulated datasets used for npde:  1000 
+        nb of simulated datasets used for VPC:  100 
+    Input/output
+        save the results to a file:  TRUE 
+        save the graphs to files:  TRUE 
+        directory where results should be saved:  newdir 
+----------------------------------------------------
+----                  Results                   ----
+----------------------------------------------------
+-----------------  Fixed effects  ------------------
+----------------------------------------------------
+      Parameter Estimate
+ [1,] b01       14.9854 
+ [2,] b11        0.3531 
+ [3,] b02        6.9975 
+ [4,] b12       -0.0390 
+ [5,] b03       29.9604 
+ [6,] b13        0.8072 
+ [7,] h0         0.0021 
+ [8,] alpha1     0.2272 
+ [9,] alpha2    -0.0526 
+[10,] alpha3    -0.0469 
+[11,] a.1        0.4950 
+[12,] <NA>       0.1002 
+[13,] <NA>       0.9973 
+----------------------------------------------------
+-----------  Variance of random effects  -----------
+----------------------------------------------------
+    Parameter  Estimate
+b01 omega2.b01 0.65    
+b11 omega2.b11 0.63    
+b02 omega2.b02 1.13    
+b12 omega2.b12 0.37    
+b03 omega2.b03 4.34    
+b13 omega2.b13 0.76    
+----------------------------------------------------
+------  Correlation matrix of random effects  ------
+----------------------------------------------------
+           omega2.b01 omega2.b11 omega2.b02 omega2.b12 omega2.b03 omega2.b13
+omega2.b01 1          0          0          0          0          0         
+omega2.b11 0          1          0          0          0          0         
+omega2.b02 0          0          1          0          0          0         
+omega2.b12 0          0          0          1          0          0         
+omega2.b03 0          0          0          0          1          0         
+omega2.b13 0          0          0          0          0          1         

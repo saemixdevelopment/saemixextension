@@ -1,0 +1,165 @@
+Nonlinear mixed-effects model fit by the SAEM algorithm
+-----------------------------------
+----          Data             ----
+-----------------------------------
+Object of class SaemixData
+    longitudinal data for use with the SAEM algorithm
+Dataset data_joint 
+    Structured data: obs ~ time | id 
+    Predictor: time () 
+Dataset characteristics:
+    number of subjects:     1000 
+    number of observations: 14395 
+    average/min/max nb obs: 14.39  /  5  /  35 
+First 10 lines of data:
+      id time      obs mdv cens occ ytype
+1      1    0 14.03700   0    0   1     1
+10396  1    0  0.00000   0    0   1     2
+10398  1    0  0.00000   0    0   1     3
+2      1    1 13.69963   0    0   1     1
+3      1    2 13.62361   0    0   1     1
+4      1    3 13.56678   0    0   1     1
+5      1    4 14.63312   0    0   1     1
+6      1    5 13.22313   0    0   1     1
+7      1    6 13.96554   0    0   1     1
+8      1    7 13.58401   0    0   1     1
+-----------------------------------
+----          Model            ----
+-----------------------------------
+Nonlinear mixed-effects model
+  Model function:  JM lin+competing risks
+  Model type:  structural likelihood likelihood
+function(psi,id,xidep) {
+  ytype<-xidep$ytype  
+  
+  p1 <- psi[id,1]  ## baseline risks 
+  p2 <- psi[id,2]
+  g1 <- psi[id,3]  ## effet cov sur risques 1 et 2 
+  g2 <- psi[id,4]
+  alpha1 <- psi[id,5]
+  alpha2 <- psi[id,6]
+  b0 <- psi[id,7]
+  b1 <- psi[id,8]
+  
+  T1<-xidep[ytype==2,1] # vector of times partie survie ev 1
+  Nj1 <- length(T1)
+  cens1<-which(T1==max(T1))  # censoring time=30
+  init1 <- which(T1==0)
+  ind1 <- setdiff(1:Nj1, append(init1,cens1)) # indices of events
+  
+  T2<-xidep[ytype==3,1] # vector of times partie survie ev 2
+  Nj2 <- length(T2)
+  cens2<-which(T2==max(T2))  # censoring time=30
+  init2 <- which(T2==0)
+  ind2 <- setdiff(1:Nj2, append(init2,cens2))
+  
+  p1b <- unique(p1)
+  p2b <- unique(p2)
+  g1b <- unique(g1)  
+  g2b <- unique(g2)
+  alpha1b <- unique(alpha1)
+  alpha2b <- unique(alpha2)
+  b0b <- unique(b0)
+  b1b <- unique(b1)
+  
+  f=function(x) seq(0,x,length.out=100)
+  tab1 = mapply(f,T1[T1!=0])
+  tab1 = t(tab1)
+  pas1 = tab1[,2]-tab1[,1]
+  
+  haz1 = p1b*g1b*exp(-g1b*tab1)/(1-p1b*(1-exp(-g1b*tab1)))*exp(alpha1b*(b0b+b1b*tab1))
+  H1 = apply(haz1,1,sum)*pas1
+  hazt1 = haz1[,100]
+  
+  tab2 = mapply(f,T2[T2!=0])
+  tab2 = t(tab2)
+  pas2 = tab2[,2]-tab2[,1]
+  
+  haz2 = p2b*g2b*exp(-g2b*tab2)/(1-p2b*(1-exp(-g2b*tab2)))*exp(alpha2b*(b0b+b1b*tab2))
+  H2 = apply(haz2,1,sum)*pas2
+  hazt2 = haz2[,100]
+  
+  logpdf1 <- rep(0,Nj1)
+  logpdf1[cens1] <- -H1[cens1/2] #+ H1[cens1-1] à généraliser par la suite (facile)
+  logpdf1[ind1] <- -H1[ind1/2] + log(hazt1[ind1/2]) #+ H1[ind1-1]
+  
+  logpdf2 <- rep(0,Nj2)
+  logpdf2[cens2] <- -H2[cens2/2] #+ H2[cens2-1]
+  logpdf2[ind2] <- -H2[ind2/2] + log(hazt2[ind2/2]) #+ H2[ind2-1]
+  
+  ypred = b0+b1*xidep[,1]
+  
+  ypred[ytype==2] = logpdf1
+  ypred[ytype==3] = logpdf2
+  
+  return(ypred)
+}
+<bytecode: 0x000002370d97f300>
+  Nb of parameters: 8 
+      parameter names:  p1 g1 p2 g2 alpha1 alpha2 b0 b1 
+      distribution:
+     Parameter Distribution Estimated
+[1,] p1        log-normal   Estimated
+[2,] g1        log-normal   Estimated
+[3,] p2        log-normal   Estimated
+[4,] g2        log-normal   Estimated
+[5,] alpha1    normal       Estimated
+[6,] alpha2    normal       Estimated
+[7,] b0        normal       Estimated
+[8,] b1        normal       Estimated
+  Variance-covariance matrix:
+       p1 g1 p2 g2 alpha1 alpha2 b0 b1
+p1      0  0  0  0      0      0  0  0
+g1      0  0  0  0      0      0  0  0
+p2      0  0  0  0      0      0  0  0
+g2      0  0  0  0      0      0  0  0
+alpha1  0  0  0  0      0      0  0  0
+alpha2  0  0  0  0      0      0  0  0
+b0      0  0  0  0      0      0  1  0
+b1      0  0  0  0      0      0  0  1
+  Error model: constant , initial values: a.1=1 
+    No covariate in the model.
+    Initial values
+               p1   g1  p2  g2 alpha1 alpha2 b0  b1
+Pop.CondInit 0.01 0.02 0.2 0.1      0      0 15 0.1
+-----------------------------------
+----    Key algorithm options  ----
+-----------------------------------
+    Algorithms: estimation only
+    Number of iterations:  K1=300, K2=100 
+    Number of chains:  1 
+    Seed:  12345 
+    Simulations:
+        nb of simulated datasets used for npde:  1000 
+        nb of simulated datasets used for VPC:  100 
+    Input/output
+        save the results to a file:  TRUE 
+        save the graphs to files:  TRUE 
+        directory where results should be saved:  newdir 
+----------------------------------------------------
+----                  Results                   ----
+----------------------------------------------------
+-----------------  Fixed effects  ------------------
+----------------------------------------------------
+      Parameter Estimate
+ [1,] p1         0.035  
+ [2,] g1         0.964  
+ [3,] p2         0.072  
+ [4,] g2         0.175  
+ [5,] alpha1     0.157  
+ [6,] alpha2    -0.076  
+ [7,] b0        15.025  
+ [8,] b1        -0.105  
+ [9,] a.1        0.505  
+----------------------------------------------------
+-----------  Variance of random effects  -----------
+----------------------------------------------------
+   Parameter Estimate
+b0 omega2.b0 9.8423  
+b1 omega2.b1 0.0092  
+----------------------------------------------------
+------  Correlation matrix of random effects  ------
+----------------------------------------------------
+          omega2.b0 omega2.b1
+omega2.b0 1         0        
+omega2.b1 0         1        

@@ -1,6 +1,6 @@
 #################################################
-#saemixDir <- "C:/Users/AlexandraLAVALLEY/Documents/GitHub/saemixextension"
-saemixDir <- "/home/eco/work/saemix/saemixextension"
+saemixDir <- "C:/Users/AlexandraLAVALLEY/Documents/GitHub/saemixextension"
+#saemixDir <- "/home/eco/work/saemix/saemixextension"
 workDir <- file.path(saemixDir, "alexandra","joint_alex")
 setwd(workDir)
 
@@ -25,8 +25,6 @@ source(file.path(progDir,"func_plots.R")) # for saemix.plot.setoptions
 # data
 
 data_joint <- read.csv("C:/Users/AlexandraLAVALLEY/Documents/GitHub/saemixextension/alexandra/joint_alex/datas/joint_tte.csv", header=TRUE)
-
-data_joint <- read.csv(file.path(workDir,"joint_tte2.csv"), header=TRUE)
 
 dataJM<-saemixData(name.data=data_joint, name.group=c("id"), name.predictors=c("time"), 
                    name.response="obs",name.ytype = "ytype")
@@ -69,15 +67,15 @@ param<-c(15,0.3,0.01,0.1)
 jointTTE<-saemixModel(model=JMmodel,description="JM lin longi one tte",modeltype=c("structural","likelihood"),
                       psi0=matrix(param,ncol=4,byrow=TRUE,dimnames=list(NULL, c("b0","b1","h0","alpha"))),
                       transform.par=c(0,0,1,0), covariance.model=diag(c(1,1,0,0)),
-                      fixed.estim = c(1,1,1,1),error.model = "constant",
-                      omega.init = diag(c(0.25,0.01,0,0)))
+                      fixed.estim = c(1,1,1,1),error.model = "proportional",
+                      omega.init = diag(c(0.25,0.01,0.5,0.5)))
 
 
-jointTTE.wrong<-saemixModel(model=JMmodel,description="JM lin longi one tte",modeltype=c("structural","likelihood"),
-                      psi0=matrix(param*rnorm(4,mean=1, sd=0.2),ncol=4,byrow=TRUE,dimnames=list(NULL, c("b0","b1","h0","alpha"))),
-                      transform.par=c(0,0,1,0), covariance.model=diag(c(1,1,0,0)),
-                      fixed.estim = c(1,1,1,1),error.model = "constant",
-                      omega.init = diag(c(2,0.1,1,0.01)))
+#jointTTE.wrong<-saemixModel(model=JMmodel,description="JM lin longi one tte",modeltype=c("structural","likelihood"),
+#                      psi0=matrix(param*rnorm(4,mean=1, sd=0.2),ncol=4,byrow=TRUE,dimnames=list(NULL, c("b0","b1","h0","alpha"))),
+#                      transform.par=c(0,0,1,0), covariance.model=diag(c(1,1,0,0)),
+#                      fixed.estim = c(1,1,1,1),error.model = "constant",
+#                      omega.init = diag(c(2,0.1,1,0.01)))
 
 
 ################################################# Running
@@ -105,6 +103,15 @@ omega.sim
 # Individual estimates
 yfit1 <- map.saemix(yfit)
 summary(yfit1@results@map.psi)
+
+source(file.path(workDir,"func_fim_multi.R"))
+
+fim_fit = fim.saemix(yfit)
+save(fim_fit@results,file="C:/Users/AlexandraLAVALLEY/Documents/alexandra/tab.RData")
+write.table(fim_fit@results,file="C:/Users/AlexandraLAVALLEY/Documents/alexandra/tab.txt",row.names=F)
+
+d = data.frame(par=c(fim_fit@results@name.fixed,fim_fit@results@name.random,fim_fit@results@name.sigma),est = c(fim_fit@results@fixed.effects,diag(fim_fit@results@omega)[1:2],fim_fit@results@respar[1:2]),
+               se = c(fim_fit@results@se.fixed,fim_fit@results@se.omega,fim_fit@results@se.respar))
 
 ipar<-data_pkpd.prop[!duplicated(data_pkpd.prop$id),6:10]
 plot(yfit1@results@map.psi)

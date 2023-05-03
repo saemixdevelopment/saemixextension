@@ -1,8 +1,8 @@
 #################################################
-#saemixDir <- "C:/Users/AlexandraLAVALLEY/Documents/GitHub/saemixextension"
-saemixDir <- "/home/eco/work/saemix/saemixextension"
+saemixDir <- "C:/Users/AlexandraLAVALLEY/Documents/GitHub/saemixextension"
+#saemixDir <- "/home/eco/work/saemix/saemixextension"
 workDir <- file.path(saemixDir, "alexandra","joint_alex")
-modDir <- file.path(saemixDir, "alexandra","ecoJoint")
+#modDir <- file.path(saemixDir, "alexandra","ecoJoint")
 setwd(workDir)
 
 library(ggplot2)
@@ -74,7 +74,7 @@ pkpdmodel.prop@name.sigma <-c(pkpdmodel.prop@name.sigma,"a.2","b.2")
 
 ################################################# Running
 # Computational function
-source(file.path(workDir,"multi_aux.R"))
+source(file.path(workDir,"multi_aux2.R"))
 source(file.path(workDir,"multi_initializeMainAlgo.R"))
 source(file.path(workDir,"multi_estep.R"))
 source(file.path(workDir,"multi_mstep.R"))

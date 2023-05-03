@@ -21,8 +21,8 @@ source(file.path(progDir,"func_plots.R")) # for saemix.plot.setoptions
 # Creating data and model objects
 
 # data joint TTE 
-data_joint <- read.csv("C:/Users/AlexandraLAVALLEY/Documents/GitHub/saemixextension/alexandra/joint_alex/joint_tte2.csv", header=TRUE)
-dataJM<-saemixData(name.data=data_joint, name.group=c("id"), name.predictors=c("time"), 
+data_joint <- read.csv("C:/Users/AlexandraLAVALLEY/Documents/GitHub/saemixextension/alexandra/joint_alex/datas/joint_tte.csv", header=TRUE)
+dataJM<-saemixData(name.data=data_joint, name.group=c("id"), name.predictors=c("time","obs"), 
                    name.response="obs",name.ytype = "ytype")
 
 
@@ -37,11 +37,11 @@ JMmodel<-function(psi,id,xidep) {
   ypred <- b0+b1*xidep[,1]  ## pred longi 
   
   #obs <- xidep[ytype==2,1] # vector of observations partie survie
-  T<-xidep[ytype==2,1] # vector of times partie survie
+  T<-xidep[ytype==2,1]# vector of times partie survie
   Nj <- length(T)
-  cens<-which(T==max(T))  # censoring time=30
-  init <- which(T==0)
-  ind <- setdiff(1:Nj, append(init,cens)) # indices of events
+  ev = xidep$obs[ytype==2]
+  cens<-which(ev==0)  # censoring time=30
+  ind <- which(ev==1)
   b0b = b0[ytype==2]
   b1b = b1[ytype==2]
   h0b = h0[ytype==2]
@@ -51,8 +51,8 @@ JMmodel<-function(psi,id,xidep) {
   H <- (h0b/(alphab*b1b))*exp((b0b+b1b*T)*alphab)-(h0b/(alphab*b1b))*exp(alphab*b0b)
   
   logpdf <- rep(0,Nj)
-  logpdf[cens] <- -H[cens] + H[cens-1]
-  logpdf[ind] <- -H[ind] + H[ind-1] + log(haz[ind])
+  logpdf[cens] <- -H[cens] #+ H[cens-1]
+  logpdf[ind] <- -H[ind] + log(haz[ind]) #+ H[ind-1]
   
   ypred[ytype==2] = logpdf
   return(ypred)
@@ -76,7 +76,7 @@ source(file.path(workDir,"multi_initializeMainAlgo.R"))
 # Initialisation - debug
 saemix.data<-dataJM
 saemix.model<-jointTTE
-saemix.options<-saemixControl(seed=12345)
+saemix.options<-saemixControl(seed=12345, nb.chains = 1)
 
 # Initialisation - function
 saemixObject<-new(Class="SaemixObject",data=saemix.data, model=saemix.model,options=saemix.options)
@@ -104,6 +104,7 @@ opt<-xinit$opt
 betas<-betas.ini<-xinit$betas
 fixed.psi<-xinit$fixedpsi.ini
 var.eta<-varList$diag.omega
+deltai = xinit$deltai
 
 # Initialise estimation results
 if(length(grep("structural",Dargs$modeltype))>0){
@@ -152,7 +153,7 @@ phiM<-xmcmc$phiM
 source(file.path(workDir,"multi_mstep.R"))
 
 # M-step
-xstoch<-mstep.multi(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, varList, phi, betas, suffStat)
+xstoch<-mstep.multi(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, varList, phi, betas, suffStat, deltai)
 dim(xstoch$suffStat[[1]])
 head(xstoch$suffStat[[1]])
 xstoch$suffStat[[2]]
@@ -182,12 +183,13 @@ for (kiter in 6:149) {
   
   if(opt$stepsize[kiter]>0) {
     ############# Stochastic Approximation
-    xstoch<-mstep.multi(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, varList, phi, betas, suffStat)
+    xstoch<-mstep.multi(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, varList, phi, betas, suffStat, deltai)
     varList<-xstoch$varList
     mean.phi<-xstoch$mean.phi
     phi<-xstoch$phi
     betas<-xstoch$betas
     suffStat<-xstoch$suffStat
+    deltai = xstoch$deltai
     
     beta.I<-betas[Uargs$indx.betaI]
     fixed.psi<-transphi(matrix(beta.I,nrow=1),saemix.model["transform.par"])
@@ -207,7 +209,7 @@ for (kiter in 6:149) {
 }
 
 ################################################# Stopping SA (kiter=150 to 300)
-
+kiter=150
 if(opt$flag.fmin && kiter==saemix.options$nbiter.sa) {
   Uargs$COV1<-Uargs$COV[,Uargs$ind.fix11]
   ind.prov<-!(varList$ind.eta %in% Uargs$i0.omega2)
@@ -229,12 +231,13 @@ for (kiter in 150:300) {
   
   if(opt$stepsize[kiter]>0) {
     ############# Stochastic Approximation
-    xstoch<-mstep.multi(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, varList, phi, betas, suffStat)
+    xstoch<-mstep.multi(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, varList, phi, betas, suffStat,deltai)
     varList<-xstoch$varList
     mean.phi<-xstoch$mean.phi
     phi<-xstoch$phi
     betas<-xstoch$betas
     suffStat<-xstoch$suffStat
+    deltai = xstoch$deltai
     
     beta.I<-betas[Uargs$indx.betaI]
     fixed.psi<-transphi(matrix(beta.I,nrow=1),saemix.model["transform.par"])
@@ -261,12 +264,13 @@ for (kiter in 301:saemix.options$nbiter.tot) {
   
   if(opt$stepsize[kiter]>0) {
     ############# Stochastic Approximation
-    xstoch<-mstep.multi(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, varList, phi, betas, suffStat)
+    xstoch<-mstep.multi(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, varList, phi, betas, suffStat, deltai)
     varList<-xstoch$varList
     mean.phi<-xstoch$mean.phi
     phi<-xstoch$phi
     betas<-xstoch$betas
     suffStat<-xstoch$suffStat
+    deltai = xstoch$deltai
     
     beta.I<-betas[Uargs$indx.betaI]
     fixed.psi<-transphi(matrix(beta.I,nrow=1),saemix.model["transform.par"])
@@ -284,6 +288,19 @@ for (kiter in 301:saemix.options$nbiter.tot) {
     allpar[(kiter+1),]<-allpar[kiter,]
   print(allpar[(kiter+1),])
 }
+
+d = array(data=NA,dim=c(7,7,100))
+for (i in 1:100){
+  ddi = deltai[,i] %*% t(deltai[,i])
+  d[,,i] = ddi
+}
+
+mat = 0
+for (i in 1:100){
+  mat = mat+d[,,i]
+}
+inv=solve(mat)
+sqrt(diag(inv))
 
 #################################################
 source(file.path(workDir,"multi_estep.R"))

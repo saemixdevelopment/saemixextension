@@ -23,6 +23,56 @@ compute.LLy.multi<-function(phiM,args,Dargs,DYF,pres) {
   return(U)
 }
 
+# juste pour le calcul des SE, même fonctions mais moyennée sur les phiM 
+compute.LLy.multi2<-function(phiM,args,Dargs,DYF,pres) {
+  DYF = DYF[,1:Dargs$N]
+  args$ind.ioM =  args$ind.ioM[1:length(Dargs$yobs)]
+  psiM<-transphi(phiM,Dargs$transform.par)
+  fpred<-Dargs$structural.model(psiM,Dargs$IdM[1:length(Dargs$yobs)],Dargs$XM[1:length(Dargs$yobs),])
+  ytype = Dargs[["XM"]][["ytype"]][1:length(Dargs$yobs)]
+  for(ityp in Dargs$etype.exp) fpred[Dargs$XM$ytype==ityp]<-log(cutoff(fpred[Dargs$XM$ytype==ityp]))
+  gpred<-error(fpred,pres,Dargs$XM$ytype[1:length(Dargs$yobs)])
+  for(itype in 1:length(Dargs$modeltype)) {
+    if (Dargs$modeltype[itype]=="structural"){
+      DYF[args$ind.ioM][ytype==itype]<-0.5*((Dargs$yM[1:length(Dargs$yobs)][ytype==itype]-fpred[ytype==itype])/gpred[ytype==itype])**2+log(gpred[ytype==itype])
+    } else {
+      DYF[args$ind.ioM][ytype==itype]<- -fpred[ytype==itype]
+    }
+  }
+  U<-colSums(DYF)
+  return(U)
+}
+
+compute.se_res_add<-function(phiM,args,Dargs,DYF,pres) {
+  sigma = pres[1]
+  psiM<-transphi(phiM,Dargs$transform.par)
+  fpred<-Dargs$structural.model(psiM,Dargs$IdM[1:length(Dargs$yobs)],Dargs$XM[1:length(Dargs$yobs),])
+  ni = sapply(unique(Dargs$IdM[1:length(Dargs$yobs)]),function(i) length(which(Dargs$IdM[1:length(Dargs$yobs)]==i))) - length(Dargs$modeltype[Dargs$modeltype=="likelihood"])
+  err = (Dargs$yobs-fpred)^2
+  err2 = sapply(unique(Dargs$IdM[1:length(Dargs$yobs)]), function(i) sum(err[Dargs$IdM[1:length(Dargs$yobs)]==i & Dargs$XM$ytype[1:length(Dargs$yobs)]==1]/(2*sigma**2)))
+  f = -ni*log(sigma) - err2
+  return(f)
+}
+
+compute.LLy.multi_selog<-function(phiM,args,Dargs,DYF,pres,j,coef,l,d) {
+  DYF = DYF[,1:Dargs$N]
+  args$ind.ioM =  args$ind.ioM[1:length(Dargs$yobs)]
+  psiM<-transphi(phiM,Dargs$transform.par)
+  psiM[,j] =  psiM[,j]+coef[l]*d
+  fpred<-Dargs$structural.model(psiM,Dargs$IdM[1:length(Dargs$yobs)],Dargs$XM[1:length(Dargs$yobs),])
+  ytype = Dargs[["XM"]][["ytype"]][1:length(Dargs$yobs)]
+  for(ityp in Dargs$etype.exp) fpred[Dargs$XM$ytype==ityp]<-log(cutoff(fpred[Dargs$XM$ytype==ityp]))
+  gpred<-error(fpred,pres,Dargs$XM$ytype[1:length(Dargs$yobs)])
+  for(itype in 1:length(Dargs$modeltype)) {
+    if (Dargs$modeltype[itype]=="structural"){
+      DYF[args$ind.ioM][ytype==itype]<-0.5*((Dargs$yM[1:length(Dargs$yobs)][ytype==itype]-fpred[ytype==itype])/gpred[ytype==itype])**2+log(gpred[ytype==itype])
+    } else {
+      DYF[args$ind.ioM][ytype==itype]<- -fpred[ytype==itype]
+    }
+  }
+  U<-colSums(DYF)
+  return(U)
+}
 
 compute.Uy.multi<-function(b0,phiM,pres,args,Dargs,DYF) {
   # Attention, DYF variable locale non modifiee en dehors
@@ -42,6 +92,30 @@ compute.Uy.multi<-function(b0,phiM,pres,args,Dargs,DYF) {
     }
   }
   U<-sum(DYF)
+  return(U)
+}
+
+
+
+compute.Uy.multi.lasso<-function(b0,phiM,pres,args,Dargs,DYF) {
+  # Attention, DYF variable locale non modifiee en dehors
+  lambda = 0.3
+  ytype = Dargs[["XM"]][["ytype"]]
+  args$MCOV0[args$j0.covariate]<-b0
+  phi0<-args$COV0 %*% args$MCOV0
+  phiM[,args$i0.omega2]<-do.call(rbind,rep(list(phi0),args$nchains))
+  psiM<-transphi(phiM,Dargs$transform.par)
+  fpred<-Dargs$structural.model(psiM,Dargs$IdM,Dargs$XM)
+  for(ityp in Dargs$etype.exp) fpred[Dargs$XM$ytype==ityp]<-log(cutoff(fpred[Dargs$XM$ytype==ityp]))
+  gpred<-error(fpred,pres,Dargs$XM$ytype)
+  for(itype in 1:length(Dargs$modeltype)) {
+    if (Dargs$modeltype[itype]=="structural"){
+      DYF[args$ind.ioM][ytype==itype]<-0.5*((Dargs$yM[ytype==itype]-fpred[ytype==itype])/gpred[ytype==itype])**2+log(gpred[ytype==itype])
+    } else {
+      DYF[args$ind.ioM][ytype==itype]<- -fpred[ytype==itype]
+    }
+  }
+  U<-sum(DYF)+lambda*sum(abs(psiM[,8,9,10]))
   return(U)
 }
 
@@ -78,10 +152,11 @@ error<-function(f,ab,etype) { # etype: error model
   return(g)
 }
 error.typ<-function(f,ab) {
-  #  g<-cutoff(ab[1]+ab[2]*abs(f))
-  g<-cutoff(sqrt(ab[1]^2+ab[2]^2*f^2))  # Johannes 02/21
+  g<-cutoff(abs(ab[1]+ab[2]*f))
+  #g<-cutoff(sqrt(ab[1]^2+ab[2]^2*f^2))  # Johannes 02/21
   return(g)
 }
+
 
 # ssq<-function(ab,y,f) { # Sum of squares
 # 	g<-abs(ab[1]+ab[2]*f)

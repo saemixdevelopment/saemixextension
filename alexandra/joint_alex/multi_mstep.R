@@ -1,5 +1,5 @@
 ################## Stochastic approximation - compute sufficient statistics (M-step) #####################
-mstep.multi<-function(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, varList, phi, betas, suffStat) {
+mstep.multi<-function(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, varList, phi, betas, suffStat, deltai) {
   # M-step - stochastic approximation
   # Input: kiter, Uargs, structural.model, DYF, phiM (unchanged)
   # Output: varList, phi, betas, suffStat (changed)
@@ -30,6 +30,7 @@ mstep.multi<-function(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, var
   stat3<-apply(phi**2,c(1,2),sum) #  sum on phi**2, across 3rd dimension
   if(length(suffStat)>3) statr<-rep(0,length(suffStat)-3)
   for(k in 1:Uargs$nchains) {
+    tab_ytype = Dargs$XM$ytype[1:length(Dargs$yobs)]   ### pour gérer le nombre de chaînes et que ytype soit de la meme longueur que yobs et fk 
     phik<-phi[,varList$ind.eta,k]
     stat2<-stat2+t(phik)%*%phik
     fk<-ff[,k]
@@ -37,8 +38,8 @@ mstep.multi<-function(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, var
       for(itype in 1:length(Dargs$modeltype)) {
         if(Dargs$modeltype[itype]=="structural") {
           if(!is.na(match(Dargs$error.model[itype],c("constant","exponential"))))
-            resk<-sum((Dargs$yobs[Dargs$XM$ytype==itype]-fk[Dargs$XM$ytype==itype])**2) else {
-              resk<-sum((Dargs$yobs[Dargs$XM$ytype==itype]-fk[Dargs$XM$ytype==itype])**2/cutoff(fk[Dargs$XM$ytype==itype]**2,.Machine$double.eps))
+            resk<-sum((Dargs$yobs[tab_ytype==itype]-fk[tab_ytype==itype])**2) else {
+              resk<-sum((Dargs$yobs[tab_ytype==itype]-fk[tab_ytype==itype])**2/cutoff(fk[tab_ytype==itype]**2,.Machine$double.eps))
             }
           statr[itype]<-statr[itype]+resk
         }
@@ -54,6 +55,85 @@ mstep.multi<-function(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, var
       suffStat[[i]] <- suffStat[[i]]+opt$stepsize[kiter]*(statr[i-3]/Uargs$nchains-suffStat[[i]])
   }
   
+  
+  #### gradient numerique 
+  coef = c(0,1)
+  d = 0.000001
+  
+  #ly = array(data = NA, dim=c(length(unique(Dargs$IdM)),length(coef),length(varList$pres[varList$pres!=0])))
+  #for(l in 1:length(coef)){
+  #  for(j in 1:length(varList$pres[varList$pres!=0])){
+  #    w = which(varList$pres!=0)[j]
+  #    pres = varList$pres
+  #    pres[w]<-varList$pres[w]+coef[l]*d
+  #    print(pres)
+  #    ly[,l,j] = compute.LLy.multi(phiM,Uargs,Dargs,DYF,pres)
+  #  }
+  #}
+  
+  #delta_sigma2  = -(ly[,2,1]-ly[,1,1])/d
+  nchains = Uargs$nchains
+  mphiM = apply(phi,c(1,2),mean)  # on moyenne les phi sur les chaines 
+  ly = array(data = NA, dim=c(Dargs$N,length(coef),length(varList$pres[varList$pres!=0])))
+  for(l in 1:length(coef)){
+    for(j in 1:length(varList$pres[varList$pres!=0])){
+      w = which(varList$pres!=0)[j]
+      pres = varList$pres
+      pres[w]<-varList$pres[w]+coef[l]*d
+      ly[,l,j] = compute.se_res_add(mphiM,Uargs,Dargs,DYF,pres)
+    }
+  }
+  
+  delta_sigma2  = (ly[,2,1]-ly[,1,1])/d
+  
+  # partie des theta on suppose la matrice des omega diagonale... 
+  
+  theta = c(betas[Uargs$ind.fix11],diag(omega.eta)[Uargs$ind.fix11])
+  mu = matrix(rep(betas[Uargs$ind.fix11],length(unique(Dargs$IdM[1:length(Dargs$yobs)]))),byrow = T, ncol = length(Uargs$ind.fix11))
+  #omega = omega.eta[1:length(Uargs$ind.fix11),1:length(Uargs$ind.fix11)]
+  omega = diag(omega.eta[1:length(Uargs$ind.fix11),1:length(Uargs$ind.fix11)])
+  omegab = matrix(data=omega,nrow=nrow(mu),byrow = T,ncol = length(omega))
+  
+  phiM2 = matrix(mphiM[,Uargs$ind.fix11],ncol=length(Uargs$ind.fix11))
+  #compute.LLtheta = function(mu,omega) -log(sqrt(det(omega)))-(phiM2-mu)%*%solve(omega)%*%t(phiM2-mu) faudrait voir pour que ça marche
+  compute.LLtheta = function(mu,omega) -log(sqrt(omega))-(phiM2-mu)**2 /(2*omega)
+  
+  delta_mu = (compute.LLtheta(mu+d,omegab)-compute.LLtheta(mu,omegab))/d
+  delta_omega = (compute.LLtheta(mu,omegab+d)-compute.LLtheta(mu,omegab))/d
+  
+  
+  
+  # partie des effets fixes sans iiv 
+  
+  if (length(Uargs$ind.fix10)>0){
+    lT = array(data = NA, dim=c(length(unique(Dargs$IdM[1:length(Dargs$yobs)])),length(coef),length(Uargs$ind.fix10)))
+    for(l in 1:length(coef)){
+      w = 1
+      for(j in Uargs$ind.fix10){
+        #if (Dargs$transform.par[j]==0){
+          phiM3 = mphiM
+          phiM3[,Uargs$ind.fix10] = matrix(data=rep(betas[Uargs$ind.fix10,1],length(unique(Dargs$IdM[1:length(Dargs$yobs)]))),ncol = length(Uargs$ind.fix10),byrow = T)
+          phiM3[,j] = betas[j,1]+coef[l]*d
+          lT[,l,w] = compute.LLy.multi2(phiM3,Uargs,Dargs,DYF,pres)
+        #}
+        #else{
+          #phiM3 = mphiM
+          #phiM3[,Uargs$ind.fix10] = matrix(data=rep(betas[Uargs$ind.fix10,1],length(unique(Dargs$IdM[1:length(Dargs$yobs)]))),ncol = length(Uargs$ind.fix10),byrow = T)
+          #lT[,l,w] = compute.LLy.multi_selog(phiM3,Uargs,Dargs,DYF,pres,j,coef,l,d)
+        #}
+        w = w+1 
+      }
+    }
+    
+    delta_fix  = -(lT[,2,]-lT[,1,])/(d)
+    deltai_new = matrix(c(delta_mu,delta_fix,delta_omega,delta_sigma2),ncol=Dargs$N,byrow = T)
+  }
+  else{
+    deltai_new = matrix(c(delta_mu,delta_omega,delta_sigma2),ncol=Dargs$N,byrow = T)
+  }
+  
+  deltaik = (1-opt$stepsize[kiter])*deltai + opt$stepsize[kiter]*deltai_new
+  
   ############# Maximisation
   ##### fixed effects
   
@@ -62,6 +142,7 @@ mstep.multi<-function(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, var
     betas[Uargs$ind.fix11]<-solve(comega[Uargs$ind.fix11,Uargs$ind.fix11],rowSums(temp))
     # ECO TODO: utiliser optimise dans le cas de la dimension 1
     #		if(length(Uargs$ind.fix10)>1)
+    ### coxpenalized 
     suppressWarnings(beta0<-optim(par=betas[Uargs$ind.fix10],fn=compute.Uy.multi,phiM=phiM,pres=varList$pres,args=Uargs,Dargs=Dargs,DYF=DYF,control=list(maxit=opt$maxim.maxiter))$par) # else
     #		beta0<-optimize(f=compute.Uy, interval=c(0.01,100)*betas[Uargs$ind.fix10],phiM=phiM,pres=varList$pres,args=Uargs,Dargs=Dargs,DYF=DYF)
     #		if(kiter==opt$nbiter.sa) {
@@ -97,7 +178,7 @@ mstep.multi<-function(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, var
   varList$omega<-varList$omega-mydiag(mydiag(varList$omega))+mydiag(varList$diag.omega)
   
   # Residual error
-  ytype = Dargs[["XM"]][["ytype"]]
+  ytype = Dargs[["XM"]][["ytype"]][1:length(Dargs$yobs)]
   if(length(grep("structural",saemix.model["modeltype"]))>0) {
     i1<-0
     for(itype in 1:length(saemix.model["modeltype"])) {
@@ -127,7 +208,8 @@ mstep.multi<-function(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, var
           # JR: using lower=0 in the call to optim does not work, as L-BFGS-B
           # does not cope with non-finite function values that we are obviously
           # getting. Therefore we just take the absolute values after optimizing
-          suppressWarnings(ABres<-abs(optim(par=varList$pres[c(1:2)+(i1-1)*2],fn=ssq,y=Dargs$yM,f=fpred,etype=Dargs$XM$ytype)$par))
+          suppressWarnings(ABres<-abs(optim(par=varList$pres[c(1:2)+(i1-1)*2],fn=ssq,y=Dargs$yM[Dargs$XM$ytype==itype],f=fpred[Dargs$XM$ytype==itype],etype=Dargs$XM$ytype[Dargs$XM$ytype==itype])$par))
+          #suppressWarnings(ABres<-abs(optim(par=varList$pres[c(1:2)+(i1-1)*2],fn=ssq,y=Dargs$yM,f=fpred,etype=Dargs$XM$ytype)$par))
           if (kiter<=opt$nbiter.sa) {
             for(i in 1:length(varList$pres)) varList$pres[i]<-max(varList$pres[i]*opt$alpha1.sa,ABres[i])
           }  else {
@@ -143,5 +225,37 @@ mstep.multi<-function(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, var
   }
   # Modified to add SA to constant and exponential residual error models (Edouard Ollier 10/11/2016)
   
-  return(list(varList=varList,mean.phi=mean.phi,phi=phi,betas=betas,suffStat=suffStat))
+  return(list(varList=varList,mean.phi=mean.phi,phi=phi,betas=betas,suffStat=suffStat,deltai=deltaik))
 }
+
+
+### delta_ik pour le calcul des SE 
+#mu0 = betas[1,1]
+#mu1 = betas[2,1]
+#h0 = exp(betas[3,1])
+#alpha = betas[4,1]
+#omega0 = varList$omega[1,1]
+#omega1 = varList$omega[2,2]
+#sigma = varList$pres[1]
+
+#ni = sapply(unique(Dargs$IdM[1:length(Dargs$yobs)]),function(i) length(which(Dargs$IdM[1:length(Dargs$yobs)]==i))) - length(Dargs$modeltype[Dargs$modeltype=="likelihood"])# -1 pour donnée survie 
+#mpsiM<-transphi(mphiM,Dargs$transform.par)
+#fpred<-structural.model(psiM, Dargs$IdM[1:length(Dargs$yobs)], Dargs$XM[1:length(Dargs$yobs),])
+#err = (Dargs$yobs-fpred)^2
+#err2 = sapply(unique(Dargs$IdM[1:length(Dargs$yobs)]), function(i) sum(err[Dargs$IdM[1:length(Dargs$yobs)]==i & Dargs$XM$ytype[1:length(Dargs$yobs)]==1]/sigma**3))
+
+#di = Dargs$yobs[Dargs$XM$ytype==2]
+#Ti = Dargs$XM$time[Dargs$XM$ytype==2]
+
+#f_struc = function(t) suffStat$statphi1[,1]+suffStat$statphi1[,2]*t
+
+#deltamu0 = suffStat$statphi1[,1]/omega0-(mu0/omega0)
+#deltamu1 = suffStat$statphi1[,2]/omega1-(mu1/omega1)
+#delta_omega0 = -1/(2*omega0)+mu0**2/(2*omega0**2)+suffStat$statphi3[,1]/(2*omega0**2)-(mu0*suffStat$statphi1[,1])/omega0**2
+#delta_omega1 = -1/(2*omega1)+mu1**2/(2*omega1**2)+suffStat$statphi3[,2]/(2*omega1**2)-(mu1*suffStat$statphi1[,2])/omega1**2
+#delta_sigma = -ni/sigma + err2
+#delta_h0 = di/h0 - (exp(alpha*f_struc(Ti))-exp(alpha*suffStat$statphi1[,1]))/(alpha*suffStat$statphi1[,2])
+#delta_alpha = di*f_struc(Ti)-(h0/(alpha**2*suffStat$statphi1[,2]))*(exp(alpha*f_struc(Ti))*(alpha*f_struc(Ti)-1)+exp(alpha*suffStat$statphi1[,1])*(1-alpha*suffStat$statphi1[,1]))
+#deltai_new = matrix(c(deltamu0,deltamu1,delta_h0,delta_alpha,delta_omega0,delta_omega1,delta_sigma),ncol=length(unique(Dargs$IdM)),byrow = T)
+#deltaik = (1-opt$stepsize[kiter])*deltai + opt$stepsize[kiter]*deltai_new
+

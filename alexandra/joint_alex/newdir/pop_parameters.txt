@@ -5,126 +5,102 @@ Nonlinear mixed-effects model fit by the SAEM algorithm
 Object of class SaemixData
     longitudinal data for use with the SAEM algorithm
 Dataset data_joint 
-    Structured data: obs ~ time | id 
-    Predictor: time () 
+    Structured data: obs ~ time + obs | id 
+    X variable for graphs: time () 
 Dataset characteristics:
-    number of subjects:     1000 
-    number of observations: 59999 
-    average/min/max nb obs: 60.00  /  5  /  95 
+    number of subjects:     488 
+    number of observations: 3456 
+    average/min/max nb obs: 7.08  /  2  /  18 
 First 10 lines of data:
-      id time       obs mdv cens occ ytype
-1      1    0 14.008979   0    0   1     1
-19334  1    0  7.574735   0    0   1     2
-38667  1    0 33.776137   0    0   1     3
-58000  1    0  0.000000   0    0   1     4
-2      1    1 14.231923   0    0   1     1
-19335  1    1  7.352008   0    0   1     2
-38668  1    1 36.421595   0    0   1     3
-3      1    2 15.823042   0    0   1     1
-19336  1    2  7.101707   0    0   1     2
-38669  1    2 38.239752   0    0   1     3
+      id      time obs obs.1 mdv cens occ ytype
+1      1 0.0000000  38    38   0    0   1     1
+2      1 0.2436754  31    31   0    0   1     1
+3      1 0.3805717  27    27   0    0   1     1
+11000  1 0.4134268   1     1   0    0   1     2
+4      2 0.0000000  51    51   0    0   1     1
+5      2 0.6872194  73    73   0    0   1     1
+6      2 0.9610119  90    90   0    0   1     1
+7      2 1.1882598  64    64   0    0   1     1
+8      2 1.4428869  54    54   0    0   1     1
+9      2 1.7139415  58    58   0    0   1     1
 -----------------------------------
 ----          Model            ----
 -----------------------------------
 Nonlinear mixed-effects model
-  Model function:  JM 3lin+1tte
-  Model type:  structural structural structural likelihood
+  Model function:  JM lin longi one tte
+  Model type:  structural likelihood
 function(psi,id,xidep) {
-  ytype<-xidep$ytype  
-
-  b01 <- psi[id,1]
-  b11 <- psi[id,2]
-  b02 <- psi[id,3]
-  b12 <- psi[id,4]
-  b03 <- psi[id,5]
-  b13 <- psi[id,6]
-  h0 <- psi[id,7]
-  alpha1 <- psi[id,8]
-  alpha2 <- psi[id,9]
-  alpha3 <- psi[id,10]
+  ytype<-xidep$ytype  # type of response (1: continuous, 2: event)
+  b0 <- psi[id,1] 
+  b1 <- psi[id,2] 
+  b2 <- psi[id,3]
+  a <- psi[id,4]
+  h0 <- psi[id,5]
+  alpha <- psi[id,6]  ## coeff de lien
   
+  ypred <- b0+a*(exp(-b1*xidep[,1])-exp(-b2*xidep[,1]))  ## pred longi 
   
-  T<-xidep[ytype==4,1] # vector of times partie survie
+  T<-xidep[ytype==2,1]# vector of times partie survie
   Nj <- length(T)
-  cens<-which(T==max(T))  # censoring time=30
-  init <- which(T==0)
-  ind <- setdiff(1:Nj, append(init,cens)) # indices of event
+  ev = xidep$obs[ytype==2]
+  cens<-which(ev==0)  # censoring time=30
+  ind <- which(ev==1)
+  b0b = b0[ytype==2]
+  b1b = b1[ytype==2]
+  b2b = b2[ytype==2]
+  ab = a[ytype==2]
+  h0b = h0[ytype==2]
+  alphab = alpha[ytype==2]
   
-  b01b = unique(b01)
-  b11b = unique(b11)
-  b02b = unique(b02)
-  b12b = unique(b12)
-  b03b = unique(b03)
-  b13b = unique(b13)
-  h0b = unique(h0)
-  alpha1b = unique(alpha1)
-  alpha2b = unique(alpha2)
-  alpha3b = unique(alpha3)
-  
-  f=function(x) seq(0,x,length.out=1000)
-  tab = mapply(f,T[T!=0])
+  f=function(x) seq(0,x,length.out=100)
+  tab = mapply(f,T)
   tab = t(tab)
   pas = tab[,2]-tab[,1]
   
-  haz = h0b*exp(alpha1b*(b01b+b11b*tab)+alpha2b*(b02b+b12b*tab)+alpha3*(b03b+b13b*tab))
-  H = apply(haz,1,sum)*pas
-  hazt = haz[,1000]
+  haz <- h0b*exp(alphab*(b0b+ab*(exp(-b1b*T)-exp(-b2b*T))))
+  hazt <- h0b*exp(alphab*(b0b+ab*(exp(-b1b*tab)-exp(-b2b*tab))))
+  H = apply(hazt,1,sum)*pas
   
   logpdf <- rep(0,Nj)
-  logpdf[cens] <- -H[cens/2] #+ H1[cens-1] à généraliser par la suite (facile)
-  logpdf[ind] <- -H[ind/2] + log(hazt[ind/2]) #+ H1[cens-1]
+  logpdf[cens] <- -H[cens] 
+  logpdf[ind] <- -H[ind] + log(haz[ind])
   
-  ypred = rep(NA,length(xidep[,1]))
-  
-  ypred[ytype==1] = b01[ytype==1]+b11[ytype==1]*xidep[ytype==1,1]
-  ypred[ytype==2] = b02[ytype==2]+b12[ytype==2]*xidep[ytype==2,1]
-  ypred[ytype==3] = b03[ytype==3]+b13[ytype==3]*xidep[ytype==3,1]
-
-  ypred[ytype==4] = logpdf
-  
+  ypred[ytype==2] = logpdf
   return(ypred)
 }
-<bytecode: 0x000002370d667d80>
-  Nb of parameters: 10 
-      parameter names:  b01 b11 b02 b12 b03 b13 h0 alpha1 alpha2 alpha3 
+<bytecode: 0x000001ca55a00658>
+  Nb of parameters: 6 
+      parameter names:  b0 b1 b2 a h0 alpha 
       distribution:
-      Parameter Distribution Estimated
- [1,] b01       normal       Estimated
- [2,] b11       normal       Estimated
- [3,] b02       normal       Estimated
- [4,] b12       normal       Estimated
- [5,] b03       normal       Estimated
- [6,] b13       normal       Estimated
- [7,] h0        log-normal   Estimated
- [8,] alpha1    normal       Estimated
- [9,] alpha2    normal       Estimated
-[10,] alpha3    normal       Estimated
+     Parameter Distribution Estimated
+[1,] b0        normal       Estimated
+[2,] b1        log-normal   Estimated
+[3,] b2        log-normal   Estimated
+[4,] a         log-normal   Estimated
+[5,] h0        normal       Estimated
+[6,] alpha     normal       Estimated
   Variance-covariance matrix:
-       b01 b11 b02 b12 b03 b13 h0 alpha1 alpha2 alpha3
-b01      1   0   0   0   0   0  0      0      0      0
-b11      0   1   0   0   0   0  0      0      0      0
-b02      0   0   1   0   0   0  0      0      0      0
-b12      0   0   0   1   0   0  0      0      0      0
-b03      0   0   0   0   1   0  0      0      0      0
-b13      0   0   0   0   0   1  0      0      0      0
-h0       0   0   0   0   0   0  0      0      0      0
-alpha1   0   0   0   0   0   0  0      0      0      0
-alpha2   0   0   0   0   0   0  0      0      0      0
-alpha3   0   0   0   0   0   0  0      0      0      0
-  Error model: constant , initial values: a.1=1 a.1=1 a.1=1 a.1=0 
-  Error model: constant , initial values: a.1=1 a.1=1 a.1=1 a.1=0 
-  Error model: constant , initial values: a.1=1 a.1=1 a.1=1 a.1=0 
+      b0 b1 b2 a h0 alpha
+b0     1  0  0 0  0     0
+b1     0  1  0 0  0     0
+b2     0  0  1 0  0     0
+a      0  0  0 1  0     0
+h0     0  0  0 0  0     0
+alpha  0  0  0 0  0     0
+  Error model: constant , initial values: a.1=1 
     No covariate in the model.
     Initial values
-             b01 b11 b02  b12 b03 b13    h0 alpha1 alpha2 alpha3
-Pop.CondInit  15 0.3   7 -0.1  30 0.8 5e-05    0.1   -0.2   0.15
+             b0 b1  b2   a h0  alpha
+Pop.CondInit 20  2 0.6 0.5  2 -0.039
 -----------------------------------
 ----    Key algorithm options  ----
 -----------------------------------
-    Algorithms: estimation only
+    Estimation of standard errors and linearised log-likelihood
+    Estimation of log-likelihood by importance sampling
     Number of iterations:  K1=300, K2=100 
     Number of chains:  1 
     Seed:  12345 
+    Number of MCMC iterations for IS:  5000 
     Simulations:
         nb of simulated datasets used for npde:  1000 
         nb of simulated datasets used for VPC:  100 
@@ -137,38 +113,36 @@ Pop.CondInit  15 0.3   7 -0.1  30 0.8 5e-05    0.1   -0.2   0.15
 ----------------------------------------------------
 -----------------  Fixed effects  ------------------
 ----------------------------------------------------
-      Parameter Estimate
- [1,] b01       15.03876
- [2,] b11        0.29776
- [3,] b02        6.98320
- [4,] b12       -0.10391
- [5,] b03       29.98246
- [6,] b13        0.78269
- [7,] h0         0.00006
- [8,] alpha1     0.08242
- [9,] alpha2    -0.22240
-[10,] alpha3     0.15635
-[11,] a.1        0.49531
-[12,] <NA>       0.09927
-[13,] <NA>       1.00591
-[14,] <NA>       0.00000
+     Parameter Estimate
+[1,] b0        69.770  
+[2,] b1         0.037  
+[3,] b2         0.146  
+[4,] a         32.663  
+[5,] h0         3.154  
+[6,] alpha     -0.039  
+[7,] a.1       16.644  
 ----------------------------------------------------
 -----------  Variance of random effects  -----------
 ----------------------------------------------------
-    Parameter  Estimate
-b01 omega2.b01  0.2404 
-b11 omega2.b11  0.0105 
-b02 omega2.b02  0.9284 
-b12 omega2.b12  0.0096 
-b03 omega2.b03 16.4913 
-b13 omega2.b13  0.3982 
+   Parameter Estimate
+b0 omega2.b0 309.83  
+b1 omega2.b1   5.97  
+b2 omega2.b2   7.52  
+a  omega2.a    0.15  
 ----------------------------------------------------
 ------  Correlation matrix of random effects  ------
 ----------------------------------------------------
-           omega2.b01 omega2.b11 omega2.b02 omega2.b12 omega2.b03 omega2.b13
-omega2.b01 1          0          0          0          0          0         
-omega2.b11 0          1          0          0          0          0         
-omega2.b02 0          0          1          0          0          0         
-omega2.b12 0          0          0          1          0          0         
-omega2.b03 0          0          0          0          1          0         
-omega2.b13 0          0          0          0          0          1         
+          omega2.b0 omega2.b1 omega2.b2 omega2.a
+omega2.b0 1         0         0         0       
+omega2.b1 0         1         0         0       
+omega2.b2 0         0         1         0       
+omega2.a  0         0         0         1       
+----------------------------------------------------
+---------------  Statistical criteria  -------------
+----------------------------------------------------
+
+Likelihood computed by importance sampling
+      -2LL= 28026.64 
+      AIC = 28048.64 28048.64 
+      BIC = 28094.73 28094.73 
+----------------------------------------------------

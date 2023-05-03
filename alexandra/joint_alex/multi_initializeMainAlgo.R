@@ -231,7 +231,7 @@ initialiseMainAlgo.multi<-function(saemix.data,saemix.model,saemix.options) {
     psiM<-transphi(phiM,saemix.model["transform.par"])
     fpred<-structural.model(psiM, IdM, XM)
     inan<-(is.na(fpred)+is.infinite(fpred)+(Im(fpred)!=0))
-    itest.phi<-unique(IdM[inan])
+    itest.phi<-unique(IdM[inan==1]) ### voir avec emmanuelle.... je crois que c'est unique(IdM[inan==1])
     ltest.phi<-length(itest.phi)
   }
   var.eta<-mydiag(saemix.model["omega.init"])
@@ -280,5 +280,8 @@ initialiseMainAlgo.multi<-function(saemix.data,saemix.model,saemix.options) {
             alpha0.sa=10^(-3/saemix.options$nbiter.sa),nbiter.saemix=saemix.options$nbiter.saemix,
             maxim.maxiter=saemix.options$maxim.maxiter,flag.fmin=flag.fmin)
   
-  return(list(saemix.model=saemix.model, Dargs=Dargs, Uargs=Uargs, varList=varList, opt=opt, DYF=DYF, phiM=phiM, mean.phi=mean.phi,betas=betas, fixedpsi.ini=fixedpsi.ini, allpar0=allpar0))
+  deltai = 0
+  
+  return(list(saemix.model=saemix.model, Dargs=Dargs, Uargs=Uargs, varList=varList, opt=opt, DYF=DYF, phiM=phiM, mean.phi=mean.phi,betas=betas, fixedpsi.ini=fixedpsi.ini, allpar0=allpar0, deltai = deltai))
 }
+

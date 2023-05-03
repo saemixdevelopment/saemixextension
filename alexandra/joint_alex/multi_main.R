@@ -145,6 +145,7 @@ saemix.multi<-function(model,data,control=list()) {
   betas<-betas.ini<-xinit$betas
   fixed.psi<-xinit$fixedpsi.ini
   var.eta<-varList$diag.omega
+  deltai = xinit$deltai
   # Initialise structures to hold results
   if(length(grep("structural",Dargs$modeltype))>0){
     theta0<-c(fixed.psi,var.eta[Uargs$i1.omega2],varList$pres[Uargs$ind.res])
@@ -214,12 +215,13 @@ saemix.multi<-function(model,data,control=list()) {
     # M-step
     if(opt$stepsize[kiter]>0) {
       ############# Stochastic Approximation
-      xstoch<-mstep.multi(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, varList, phi, betas, suffStat)
+      xstoch<-mstep.multi(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, varList, phi, betas, suffStat, deltai)
       varList<-xstoch$varList
       mean.phi<-xstoch$mean.phi
       phi<-xstoch$phi
       betas<-xstoch$betas
       suffStat<-xstoch$suffStat
+      deltai = xstoch$deltai
       
       beta.I<-betas[Uargs$indx.betaI]
       fixed.psi<-transphi(matrix(beta.I,nrow=1),saemix.model["transform.par"])
@@ -237,6 +239,19 @@ saemix.multi<-function(model,data,control=list()) {
     }
     # End of loop on kiter
   }
+  
+  ## inserer calcul Delattre & Kuhn 
+  d = array(data=NA,dim=c(Uargs$nb.parest[1],Uargs$nb.parest[1],Dargs$N))
+  for (i in 1:Dargs$N){
+    ddi = deltai[,i] %*% t(deltai[,i])
+    d[,,i] = ddi
+  }
+  
+  fim = 0
+  for (i in 1:Dargs$N){
+    fim = fim+d[,,i]
+  }
+  inv_fim=try(solve(fim))
   
   etaM<-xmcmc$etaM # only need etaM here (re-created in estep otherwise)
   if(saemix.options$warnings) cat("\n    Minimisation finished\n")
@@ -314,7 +329,9 @@ saemix.multi<-function(model,data,control=list()) {
   
   # Compute the Fisher Information Matrix & update saemix.res
   if(saemix.options$fim) {
-    x<-try(saemixObject<-fim.saemix(saemixObject))
+    saemixObject["results"]["fim"]<-inv_fim
+    x<-saemixObject
+    #x<-try(saemixObject<-fim.saemix(saemixObject))
     if(inherits(x,"try-error") & saemixObject@options$warnings) message("Problem estimating the FIM\n")
   }
   

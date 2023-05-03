@@ -1,0 +1,66 @@
+<DATAFILE>
+
+[FILEINFO]
+file='datas/joint_comp.csv'
+delimiter = comma
+header = {id, time, obs, ytype}
+
+[CONTENT]
+id = {use=identifier}
+time = {use=time}
+obs = {use=observation, name={y1, y2, y3}, yname={'1', '2', '3'}, type={continuous, event, event}}
+ytype = {use=observationtype}
+
+<MODEL>
+
+[INDIVIDUAL]
+input = {alpha1_pop, alpha2_pop, b0_pop, omega_b0, b1_pop, omega_b1, g1_pop, g2_pop, p1_pop, p2_pop}
+
+DEFINITION:
+alpha1 = {distribution=normal, typical=alpha1_pop, no-variability}
+alpha2 = {distribution=normal, typical=alpha2_pop, no-variability}
+b0 = {distribution=normal, typical=b0_pop, sd=omega_b0}
+b1 = {distribution=normal, typical=b1_pop, sd=omega_b1}
+g1 = {distribution=logNormal, typical=g1_pop, no-variability}
+g2 = {distribution=logNormal, typical=g2_pop, no-variability}
+p1 = {distribution=logNormal, typical=p1_pop, no-variability}
+p2 = {distribution=logNormal, typical=p2_pop, no-variability}
+
+[LONGITUDINAL]
+input = {a}
+
+file = '../../../../Code_saemix/essais/mod_joint_comp.txt'
+
+DEFINITION:
+y1 = {distribution=normal, prediction=longi, errorModel=constant(a)}
+
+<FIT>
+data = {y2, y3, y1}
+model = {deces, sortie, y1}
+
+<PARAMETER>
+a = {value=1, method=MLE}
+alpha1_pop = {value=0, method=MLE}
+alpha2_pop = {value=0, method=MLE}
+b0_pop = {value=15, method=MLE}
+b1_pop = {value=0.1, method=MLE}
+g1_pop = {value=0.05, method=MLE}
+g2_pop = {value=0.1, method=MLE}
+omega_b0 = {value=1, method=MLE}
+omega_b1 = {value=1, method=MLE}
+p1_pop = {value=0.04, method=MLE}
+p2_pop = {value=0.2, method=MLE}
+
+<MONOLIX>
+
+[TASKS]
+populationParameters()
+individualParameters(method = {conditionalMean, conditionalMode })
+fim(method = StochasticApproximation)
+logLikelihood(run = false,method = ImportanceSampling)
+plotResult(run = false,method = {indfits, parameterdistribution, covariancemodeldiagnosis, covariatemodeldiagnosis, obspred, vpc, residualsscatter, residualsdistribution, randomeffects, saemresults })
+
+[SETTINGS]
+GLOBAL:
+exportpath = 'monolix_cr'
+
