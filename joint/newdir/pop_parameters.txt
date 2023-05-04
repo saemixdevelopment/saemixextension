@@ -1,0 +1,149 @@
+Nonlinear mixed-effects model fit by the SAEM algorithm
+-----------------------------------
+----          Data             ----
+-----------------------------------
+Object of class SaemixData
+    longitudinal data for use with the SAEM algorithm
+Dataset data_joint 
+    Structured data: obs ~ time + obs | id 
+    X variable for graphs: time () 
+Dataset characteristics:
+    number of subjects:     488 
+    number of observations: 3456 
+    average/min/max nb obs: 7.08  /  2  /  18 
+First 10 lines of data:
+      id      time obs obs.1 mdv cens occ ytype
+1      1 0.0000000  38    38   0    0   1     1
+2      1 0.2436754  31    31   0    0   1     1
+3      1 0.3805717  27    27   0    0   1     1
+11000  1 0.4134268   1     1   0    0   1     2
+4      2 0.0000000  51    51   0    0   1     1
+5      2 0.6872194  73    73   0    0   1     1
+6      2 0.9610119  90    90   0    0   1     1
+7      2 1.1882598  64    64   0    0   1     1
+8      2 1.4428869  54    54   0    0   1     1
+9      2 1.7139415  58    58   0    0   1     1
+-----------------------------------
+----          Model            ----
+-----------------------------------
+Nonlinear mixed-effects model
+  Model function:  JM lin longi one tte
+  Model type:  structural likelihood
+function(psi,id,xidep) {
+  ytype<-xidep$ytype  # type of response (1: continuous, 2: event)
+  b0 <- psi[id,1] 
+  b1 <- psi[id,2] 
+  #k <- psi[id,3]
+  #l <- psi[id,4]
+  h0 <- psi[id,3]
+  alpha <- psi[id,4]  ## coeff de lien
+  
+  ypred <- b0+b1*xidep[,1]  ## pred longi 
+  
+  T<-xidep[ytype==2,1]# vector of times partie survie
+  Nj <- length(T)
+  ev = xidep$obs[ytype==2]
+  cens<-which(ev==0)  # censoring time=30
+  ind <- which(ev==1)
+  b0b = b0[ytype==2]
+  b1b = b1[ytype==2]
+  #kb = k[ytype==2]
+  #lb = l[ytype==2]
+  h0b = h0[ytype==2]
+  alphab = alpha[ytype==2]
+  
+  #f=function(x) seq(0,x,length.out=100)
+  #tab = mapply(f,T)
+  #tab = t(tab)
+  #pas = tab[,2]-tab[,1]
+  
+  #haz <- (kb/lb)*((tab/lb)^(kb-1))*exp(alphab*(b0b+b1b*tab))
+  #hazt <- (kb/lb)*((T/lb)^(kb-1))*exp(alphab*(b0b+b1b*T))
+  #haz <- kb*lb*(tab^(kb-1))*exp(alphab*(b0b+b1b*tab))
+  #hazt <-  kb*lb*(T^(kb-1))*exp(alphab*(b0b+b1b*T))
+  #H = apply(haz,1,sum)*pas
+  
+  
+  #haz <- (k/l)*((T/l)^(k-1))*exp(alphab*(b0b+b1b*T))
+  #H <- kb*(-exp(alphab*b0b))*((T/lb)^kb)*(-alphab*b1b*T)^(-kb) * Vectorize(gammainc)(kb,-alphab*b1b*T)[2,]
+  
+  haz <- h0b*exp(alphab*(b0b+b1b*T))
+  H <- (h0b/(alphab*b1b))*exp((b0b+b1b*T)*alphab)-(h0b/(alphab*b1b))*exp(alphab*b0b)
+  
+  logpdf <- rep(0,Nj)
+  logpdf[cens] <- -H[cens] #+ H[cens-1]
+  logpdf[ind] <- -H[ind] + log(haz[ind]) #+ H[ind-1]
+  
+  ypred[ytype==2] = logpdf
+  return(ypred)
+}
+<bytecode: 0x0000021e5df94c30>
+  Nb of parameters: 4 
+      parameter names:  b0 b1 h0 alpha 
+      distribution:
+     Parameter Distribution Estimated
+[1,] b0        normal       Estimated
+[2,] b1        normal       Estimated
+[3,] h0        log-normal   Estimated
+[4,] alpha     normal       Estimated
+  Variance-covariance matrix:
+      b0 b1 h0 alpha
+b0     1  0  0     0
+b1     0  1  0     0
+h0     0  0  0     0
+alpha  0  0  0     0
+  Error model: combined , initial values: a.1=1 b.1=1 
+    No covariate in the model.
+    Initial values
+             b0   b1  h0 alpha
+Pop.CondInit 73 1.25 0.6 1e-04
+-----------------------------------
+----    Key algorithm options  ----
+-----------------------------------
+    Estimation of individual parameters (MAP)
+    Estimation of standard errors and linearised log-likelihood
+    Estimation of log-likelihood by importance sampling
+    Number of iterations:  K1=300, K2=100 
+    Number of chains:  1 
+    Seed:  12345 
+    Number of MCMC iterations for IS:  5000 
+    Simulations:
+        nb of simulated datasets used for npde:  1000 
+        nb of simulated datasets used for VPC:  100 
+    Input/output
+        save the results to a file:  TRUE 
+        save the graphs to files:  FALSE 
+        directory where results should be saved:  newdir 
+----------------------------------------------------
+----                  Results                   ----
+----------------------------------------------------
+-----------------  Fixed effects  ------------------
+----------------------------------------------------
+     Parameter Estimate
+[1,] b0        73.420  
+[2,] b1         0.554  
+[3,] h0         2.853  
+[4,] alpha     -0.038  
+[5,] a.1        9.632  
+[6,] b.1        0.095  
+----------------------------------------------------
+-----------  Variance of random effects  -----------
+----------------------------------------------------
+   Parameter Estimate
+b0 omega2.b0 384     
+b1 omega2.b1  17     
+----------------------------------------------------
+------  Correlation matrix of random effects  ------
+----------------------------------------------------
+          omega2.b0 omega2.b1
+omega2.b0 1         0        
+omega2.b1 0         1        
+----------------------------------------------------
+---------------  Statistical criteria  -------------
+----------------------------------------------------
+
+Likelihood computed by importance sampling
+      -2LL= 28016.9 
+      AIC = 28032.9 28030.9 
+      BIC = 28066.42 28060.23 
+----------------------------------------------------
