@@ -252,7 +252,11 @@ saemix.multi<-function(model,data,control=list()) {
     fim = fim+d[,,i]
   }
   inv_fim=try(solve(fim))
-  colnames(inv_fim) = c(saemix.model["name.fixed"],saemix.model["name.random"],saemix.model["name.sigma"])
+  if (is_empty(Uargs$ind.fix0)){
+    colnames(inv_fim) = try(c(saemix.model["name.fixed"],saemix.model["name.random"],saemix.model["name.sigma"][saemix.model@indx.res]))
+  } else{
+  colnames(inv_fim) = try(c(saemix.model["name.fixed"][-c(Uargs$ind.fix0)],saemix.model["name.random"],saemix.model["name.sigma"][saemix.model@indx.res]))
+  }
   
   etaM<-xmcmc$etaM # only need etaM here (re-created in estep otherwise)
   if(saemix.options$warnings) cat("\n    Minimisation finished\n")

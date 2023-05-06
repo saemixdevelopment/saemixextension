@@ -77,41 +77,54 @@ mstep.multi<-function(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, var
   
   # mu and omega. Warnning: we suppose that omega is a diagonal matrix !! 
   
-  theta = c(betas[Uargs$i1.omega2],diag(omega.eta)[Uargs$i1.omega2])
-  mu = matrix(rep(betas[Uargs$i1.omega2],length(unique(Dargs$IdM[1:length(Dargs$yobs)]))),byrow = T, ncol = length(Uargs$i1.omega2))
-  #omega = omega.eta[1:length(Uargs$ind.fix11),1:length(Uargs$ind.fix11)]
-  omega = diag(omega.eta[1:length(Uargs$i1.omega2),1:length(Uargs$i1.omega2)])
-  omegab = matrix(data=omega,nrow=nrow(mu),byrow = T,ncol = length(omega))
-  
   phiM2 = matrix(mphiM[,Uargs$i1.omega2],ncol=length(Uargs$i1.omega2))
-  #compute.LLtheta = function(mu,omega) -log(sqrt(det(omega)))-(phiM2-mu)%*%solve(omega)%*%t(phiM2-mu) case if omega not diagonal --> to do 
-  compute.LLtheta = function(mu,omega) -log(sqrt(omega))-(phiM2-mu)**2 /(2*omega)
   
-  delta_mu = (compute.LLtheta(mu+d,omegab)-compute.LLtheta(mu,omegab))/d
-  delta_omega = (compute.LLtheta(mu,omegab+d)-compute.LLtheta(mu,omegab))/d
+  lmu = array(data=NA,dim=c(Dargs$N,length(Uargs$ind.fix11),length(coef))) 
+  mcov = t(t(Uargs$LCOV[Uargs$ind.fix11,Uargs$i1.omega2])%*%diag(c(betas[Uargs$ind.fix11]))) 
+  ind = which(Uargs$LCOV[Uargs$ind.fix11,Uargs$i1.omega2]==1)
+  compute.LLtheta = function(mu,omega,phiM2) -log(sqrt(omega))-(phiM2-(mu))**2 /(2*omega) # ici le mu représente mu+betaCOV
+  omega = diag(omega.eta[1:length(Uargs$i1.omega2),1:length(Uargs$i1.omega2)])
+  omegab = matrix(data=omega,nrow=Dargs$N,byrow = T,ncol = length(omega)) # mat des omega, même dimension que mu 
+  for (l in 1:length(coef)){
+    w = 1
+    for (j in ind){
+      indcol = ceiling(j/nrow(mcov))  # colonne dans phi, mu et omega correspondante
+      mcov2 = mcov
+      mcov2[j] = mcov[j]+ d*coef[l]
+      mu = (Uargs$COV[,Uargs$ind.fix11]%*%mcov2)
+      lmu[,w,l] = compute.LLtheta(mu[,indcol],omegab[,indcol],phiM2[,indcol])
+      w = w+1
+    }
+  }
+  delta_mu = (lmu[,,2]-lmu[,,1])/d
+  # for omega now 
   
-  
+  mu = (Uargs$COV[,Uargs$ind.fix11]%*%mcov)
+  delta_omega = (compute.LLtheta(mu,omegab+d,phiM2)-compute.LLtheta(mu,omegab,phiM2))/d
   
   # parameters without iiv 
-  # here, if a parameter is log-normally distributed we compute the SE of the log parameter
-  # other case possible: compute directly the standard error of the non transformed parameter (l 110 to 114)
+  
+  mcov = t(t(Uargs$LCOV[sort(c(Uargs$ind.fix10,Uargs$ind.fix0)),Uargs$i0.omega2])%*%diag(c(betas[sort(c(Uargs$ind.fix10,Uargs$ind.fix0))]))) 
+  
+  # parameters to compute gradient, minus parameters fixed for estimation  --> not optimal... but ok for dummy variables 
+  LCOV2 = Uargs$LCOV
+  LCOV2[Uargs$ind.fix0,] = 0
+  ind = which(LCOV2[sort(c(Uargs$ind.fix10,Uargs$ind.fix0)),Uargs$i0.omega2]==1)
+  nmu = length(Uargs$i1.omega2)
   
   if (length(Uargs$ind.fix10)>0){
-    lT = array(data = NA, dim=c(length(unique(Dargs$IdM[1:length(Dargs$yobs)])),length(coef),length(Uargs$ind.fix10)))
+    lT = array(data = NA, dim=c(length(unique(Dargs$IdM[1:length(Dargs$yobs)])),length(coef),length(c(Uargs$ind.fix10))))
     for(l in 1:length(coef)){
       w = 1
-      for(j in Uargs$ind.fix10){
-        #if (Dargs$transform.par[j]==0){
-          phiM3 = mphiM
-          phiM3[,Uargs$ind.fix10] = matrix(data=rep(betas[Uargs$ind.fix10,1],length(unique(Dargs$IdM[1:length(Dargs$yobs)]))),ncol = length(Uargs$ind.fix10),byrow = T)
-          phiM3[,j] = betas[j,1]+coef[l]*d
-          lT[,l,w] = compute.LLy.multi2(phiM3,Uargs,Dargs,DYF,pres)
-        #}
-        #else{
-          #phiM3 = mphiM
-          #phiM3[,Uargs$ind.fix10] = matrix(data=rep(betas[Uargs$ind.fix10,1],length(unique(Dargs$IdM[1:length(Dargs$yobs)]))),ncol = length(Uargs$ind.fix10),byrow = T)
-          #lT[,l,w] = compute.LLy.multi_selog(phiM3,Uargs,Dargs,DYF,pres,j,coef,l,d)
-        #}
+      for(j in ind){
+        indcol = nmu+ceiling(j/nrow(mcov))
+        phiM3 = mphiM
+        phiM3[,Uargs$i0.omega2] = matrix(data=rep(betas[Uargs$indx.betaI[Uargs$i0.omega2],1],length(unique(Dargs$IdM[1:length(Dargs$yobs)]))),ncol = length(Uargs$i0.omega2),byrow = T)
+        mcov2 = mcov
+        mcov2[j] = mcov[j]+ d*coef[l]
+        fix = (Uargs$COV[,sort(c(Uargs$ind.fix10,Uargs$ind.fix0))]%*%mcov2)
+        phiM3[,indcol] = fix[,c(indcol-nmu)]
+        lT[,l,w] = compute.LLy.multi2(phiM3,Uargs,Dargs,DYF,pres)
         w = w+1 
       }
     }
@@ -122,6 +135,7 @@ mstep.multi<-function(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, var
   else{
     deltai_new = matrix(c(delta_mu,delta_omega,delta_sigma),ncol=Dargs$N,byrow = T)
   }
+  
   
   deltaik = (1-opt$stepsize[kiter])*deltai + opt$stepsize[kiter]*deltai_new
   

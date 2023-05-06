@@ -7,96 +7,86 @@ Object of class SaemixData
 Dataset data_joint 
     Structured data: obs ~ time + obs | id 
     X variable for graphs: time () 
+    covariates: cov (-) 
+      reference class for covariate cov :  placebo 
 Dataset characteristics:
     number of subjects:     488 
     number of observations: 3456 
     average/min/max nb obs: 7.08  /  2  /  18 
 First 10 lines of data:
-      id      time obs obs.1 mdv cens occ ytype
-1      1 0.0000000  38    38   0    0   1     1
-2      1 0.2436754  31    31   0    0   1     1
-3      1 0.3805717  27    27   0    0   1     1
-11000  1 0.4134268   1     1   0    0   1     2
-4      2 0.0000000  51    51   0    0   1     1
-5      2 0.6872194  73    73   0    0   1     1
-6      2 0.9610119  90    90   0    0   1     1
-7      2 1.1882598  64    64   0    0   1     1
-8      2 1.4428869  54    54   0    0   1     1
-9      2 1.7139415  58    58   0    0   1     1
+      id      time obs obs.1        cov mdv cens occ ytype
+1      1 0.0000000  38    38 prednisone   0    0   1     1
+2      1 0.2436754  31    31 prednisone   0    0   1     1
+3      1 0.3805717  27    27 prednisone   0    0   1     1
+11000  1 0.4134268   1     1 prednisone   0    0   1     2
+4      2 0.0000000  51    51 prednisone   0    0   1     1
+5      2 0.6872194  73    73 prednisone   0    0   1     1
+6      2 0.9610119  90    90 prednisone   0    0   1     1
+7      2 1.1882598  64    64 prednisone   0    0   1     1
+8      2 1.4428869  54    54 prednisone   0    0   1     1
+9      2 1.7139415  58    58 prednisone   0    0   1     1
 -----------------------------------
 ----          Model            ----
 -----------------------------------
 Nonlinear mixed-effects model
-  Model function:  JM lin longi one tte
+  Model function:  JM LMEM-TTE (prothro data)
   Model type:  structural likelihood
 function(psi,id,xidep) {
   ytype<-xidep$ytype  # type of response (1: continuous, 2: event)
   b0 <- psi[id,1] 
   b1 <- psi[id,2] 
-  #k <- psi[id,3]
-  #l <- psi[id,4]
   h0 <- psi[id,3]
-  alpha <- psi[id,4]  ## coeff de lien
+  alpha <- psi[id,4] 
+  dummy <- psi[id,5]
   
-  ypred <- b0+b1*xidep[,1]  ## pred longi 
+  ypred <- b0+b1*xidep[,1]   
   
-  T<-xidep[ytype==2,1]# vector of times partie survie
+  T<-xidep[ytype==2,1]# vector of times (survival part)
   Nj <- length(T)
   ev = xidep$obs[ytype==2]
-  cens<-which(ev==0)  # censoring time=30
+  cens<-which(ev==0) 
   ind <- which(ev==1)
-  b0b = b0[ytype==2]
+  b0b = b0[ytype==2] # to have vectors of the same length as T 
   b1b = b1[ytype==2]
-  #kb = k[ytype==2]
-  #lb = l[ytype==2]
   h0b = h0[ytype==2]
   alphab = alpha[ytype==2]
+  dummyb = dummy[ytype==2]
   
-  #f=function(x) seq(0,x,length.out=100)
-  #tab = mapply(f,T)
-  #tab = t(tab)
-  #pas = tab[,2]-tab[,1]
-  
-  #haz <- (kb/lb)*((tab/lb)^(kb-1))*exp(alphab*(b0b+b1b*tab))
-  #hazt <- (kb/lb)*((T/lb)^(kb-1))*exp(alphab*(b0b+b1b*T))
-  #haz <- kb*lb*(tab^(kb-1))*exp(alphab*(b0b+b1b*tab))
-  #hazt <-  kb*lb*(T^(kb-1))*exp(alphab*(b0b+b1b*T))
-  #H = apply(haz,1,sum)*pas
-  
-  
-  #haz <- (k/l)*((T/l)^(k-1))*exp(alphab*(b0b+b1b*T))
-  #H <- kb*(-exp(alphab*b0b))*((T/lb)^kb)*(-alphab*b1b*T)^(-kb) * Vectorize(gammainc)(kb,-alphab*b1b*T)[2,]
-  
-  haz <- h0b*exp(alphab*(b0b+b1b*T))
-  H <- (h0b/(alphab*b1b))*exp((b0b+b1b*T)*alphab)-(h0b/(alphab*b1b))*exp(alphab*b0b)
+  haz <- h0b*exp(alphab*(b0b+b1b*T)+dummyb) # instantaneous hazard
+  H <- (h0b/(alphab*b1b))*exp((b0b+b1b*T)*alphab+dummyb)-(h0b/(alphab*b1b))*exp(alphab*b0b+dummyb) # cumulative hazard
   
   logpdf <- rep(0,Nj)
-  logpdf[cens] <- -H[cens] #+ H[cens-1]
-  logpdf[ind] <- -H[ind] + log(haz[ind]) #+ H[ind-1]
+  logpdf[cens] <- -H[cens] 
+  logpdf[ind] <- -H[ind] + log(haz[ind]) 
   
   ypred[ytype==2] = logpdf
   return(ypred)
 }
-<bytecode: 0x0000021e5df94c30>
-  Nb of parameters: 4 
-      parameter names:  b0 b1 h0 alpha 
+<bytecode: 0x0000021e6146e088>
+  Nb of parameters: 5 
+      parameter names:  b0 b1 h0 alpha dummy 
       distribution:
      Parameter Distribution Estimated
 [1,] b0        normal       Estimated
 [2,] b1        normal       Estimated
 [3,] h0        log-normal   Estimated
 [4,] alpha     normal       Estimated
+[5,] dummy     normal       Fixed    
   Variance-covariance matrix:
-      b0 b1 h0 alpha
-b0     1  0  0     0
-b1     0  1  0     0
-h0     0  0  0     0
-alpha  0  0  0     0
-  Error model: combined , initial values: a.1=1 b.1=1 
-    No covariate in the model.
+      b0 b1 h0 alpha dummy
+b0     1  0  0     0     0
+b1     0  1  0     0     0
+h0     0  0  0     0     0
+alpha  0  0  0     0     0
+dummy  0  0  0     0     0
+  Error model: constant , initial values: a.1=1 
+  Covariate model:
+    [,1] [,2] [,3] [,4] [,5]
+cov    1    0    0    0    1
     Initial values
-             b0   b1  h0 alpha
-Pop.CondInit 73 1.25 0.6 1e-04
+             b0   b1  h0 alpha dummy
+Pop.CondInit 73 1.25 0.6 1e-04     0
+Cov.CondInit  0 0.00 0.0 0e+00     0
 -----------------------------------
 ----    Key algorithm options  ----
 -----------------------------------
@@ -119,19 +109,21 @@ Pop.CondInit 73 1.25 0.6 1e-04
 ----------------------------------------------------
 -----------------  Fixed effects  ------------------
 ----------------------------------------------------
-     Parameter Estimate
-[1,] b0        73.420  
-[2,] b1         0.554  
-[3,] h0         2.853  
-[4,] alpha     -0.038  
-[5,] a.1        9.632  
-[6,] b.1        0.095  
+     Parameter       Estimate
+[1,] b0              76.60   
+[2,] beta_cov(b0)    -6.91   
+[3,] b1               0.56   
+[4,] h0               3.71   
+[5,] alpha           -0.04   
+[6,] dummy            0.00   
+[7,] beta_cov(dummy) -0.20   
+[8,] a.1             17.25   
 ----------------------------------------------------
 -----------  Variance of random effects  -----------
 ----------------------------------------------------
    Parameter Estimate
-b0 omega2.b0 384     
-b1 omega2.b1  17     
+b0 omega2.b0 360     
+b1 omega2.b1  15     
 ----------------------------------------------------
 ------  Correlation matrix of random effects  ------
 ----------------------------------------------------
@@ -143,7 +135,7 @@ omega2.b1 0         1
 ----------------------------------------------------
 
 Likelihood computed by importance sampling
-      -2LL= 28016.9 
-      AIC = 28032.9 28030.9 
-      BIC = 28066.42 28060.23 
+      -2LL= 28035.98 
+      AIC = 28053.98 28053.98 
+      BIC = 28091.69 28091.69 
 ----------------------------------------------------
