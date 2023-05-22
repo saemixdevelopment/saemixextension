@@ -33,12 +33,12 @@ function(psi,id,xidep) {
   ytype<-xidep$ytype  # type of response (1: continuous, 2: event)
   b0 <- psi[id,1] 
   b1 <- psi[id,2] 
-  b2 <- psi[id,3]
-  a <- psi[id,4]
-  h0 <- psi[id,5]
-  alpha <- psi[id,6]  ## coeff de lien
+  #k <- psi[id,3]
+  #l <- psi[id,4]
+  h0 <- psi[id,3]
+  alpha <- psi[id,4]  ## coeff de lien
   
-  ypred <- b0+a*(exp(-b1*xidep[,1])-exp(-b2*xidep[,1]))  ## pred longi 
+  ypred <- b0+b1*xidep[,1]  ## pred longi 
   
   T<-xidep[ytype==2,1]# vector of times partie survie
   Nj <- length(T)
@@ -47,51 +47,56 @@ function(psi,id,xidep) {
   ind <- which(ev==1)
   b0b = b0[ytype==2]
   b1b = b1[ytype==2]
-  b2b = b2[ytype==2]
-  ab = a[ytype==2]
+  #kb = k[ytype==2]
+  #lb = l[ytype==2]
   h0b = h0[ytype==2]
   alphab = alpha[ytype==2]
   
-  f=function(x) seq(0,x,length.out=100)
-  tab = mapply(f,T)
-  tab = t(tab)
-  pas = tab[,2]-tab[,1]
+  #f=function(x) seq(0,x,length.out=100)
+  #tab = mapply(f,T)
+  #tab = t(tab)
+  #pas = tab[,2]-tab[,1]
   
-  haz <- h0b*exp(alphab*(b0b+ab*(exp(-b1b*T)-exp(-b2b*T))))
-  hazt <- h0b*exp(alphab*(b0b+ab*(exp(-b1b*tab)-exp(-b2b*tab))))
-  H = apply(hazt,1,sum)*pas
+  #haz <- (kb/lb)*((tab/lb)^(kb-1))*exp(alphab*(b0b+b1b*tab))
+  #hazt <- (kb/lb)*((T/lb)^(kb-1))*exp(alphab*(b0b+b1b*T))
+  #haz <- kb*lb*(tab^(kb-1))*exp(alphab*(b0b+b1b*tab))
+  #hazt <-  kb*lb*(T^(kb-1))*exp(alphab*(b0b+b1b*T))
+  #H = apply(haz,1,sum)*pas
+  
+  
+  #haz <- (k/l)*((T/l)^(k-1))*exp(alphab*(b0b+b1b*T))
+  #H <- kb*(-exp(alphab*b0b))*((T/lb)^kb)*(-alphab*b1b*T)^(-kb) * Vectorize(gammainc)(kb,-alphab*b1b*T)[2,]
+  
+  haz <- h0b*exp(alphab*(b0b+b1b*T))
+  H <- (h0b/(alphab*b1b))*exp((b0b+b1b*T)*alphab)-(h0b/(alphab*b1b))*exp(alphab*b0b)
   
   logpdf <- rep(0,Nj)
-  logpdf[cens] <- -H[cens] 
-  logpdf[ind] <- -H[ind] + log(haz[ind])
+  logpdf[cens] <- -H[cens] #+ H[cens-1]
+  logpdf[ind] <- -H[ind] + log(haz[ind]) #+ H[ind-1]
   
   ypred[ytype==2] = logpdf
   return(ypred)
 }
-<bytecode: 0x000001ca55a00658>
-  Nb of parameters: 6 
-      parameter names:  b0 b1 b2 a h0 alpha 
+<bytecode: 0x000001330fcc9ff0>
+  Nb of parameters: 4 
+      parameter names:  b0 b1 h0 alpha 
       distribution:
      Parameter Distribution Estimated
 [1,] b0        normal       Estimated
-[2,] b1        log-normal   Estimated
-[3,] b2        log-normal   Estimated
-[4,] a         log-normal   Estimated
-[5,] h0        normal       Estimated
-[6,] alpha     normal       Estimated
+[2,] b1        normal       Estimated
+[3,] h0        log-normal   Estimated
+[4,] alpha     normal       Estimated
   Variance-covariance matrix:
-      b0 b1 b2 a h0 alpha
-b0     1  0  0 0  0     0
-b1     0  1  0 0  0     0
-b2     0  0  1 0  0     0
-a      0  0  0 1  0     0
-h0     0  0  0 0  0     0
-alpha  0  0  0 0  0     0
+      b0 b1 h0 alpha
+b0     1  0  0     0
+b1     0  1  0     0
+h0     0  0  0     0
+alpha  0  0  0     0
   Error model: constant , initial values: a.1=1 
     No covariate in the model.
     Initial values
-             b0 b1  b2   a h0  alpha
-Pop.CondInit 20  2 0.6 0.5  2 -0.039
+             b0   b1  h0 alpha
+Pop.CondInit 73 1.25 0.6 1e-04
 -----------------------------------
 ----    Key algorithm options  ----
 -----------------------------------
@@ -114,35 +119,29 @@ Pop.CondInit 20  2 0.6 0.5  2 -0.039
 -----------------  Fixed effects  ------------------
 ----------------------------------------------------
      Parameter Estimate
-[1,] b0        69.770  
-[2,] b1         0.037  
-[3,] b2         0.146  
-[4,] a         32.663  
-[5,] h0         3.154  
-[6,] alpha     -0.039  
-[7,] a.1       16.644  
+[1,] b0        73.338  
+[2,] b1         0.570  
+[3,] h0         3.094  
+[4,] alpha     -0.039  
+[5,] a.1       17.233  
 ----------------------------------------------------
 -----------  Variance of random effects  -----------
 ----------------------------------------------------
    Parameter Estimate
-b0 omega2.b0 309.83  
-b1 omega2.b1   5.97  
-b2 omega2.b2   7.52  
-a  omega2.a    0.15  
+b0 omega2.b0 369     
+b1 omega2.b1  16     
 ----------------------------------------------------
 ------  Correlation matrix of random effects  ------
 ----------------------------------------------------
-          omega2.b0 omega2.b1 omega2.b2 omega2.a
-omega2.b0 1         0         0         0       
-omega2.b1 0         1         0         0       
-omega2.b2 0         0         1         0       
-omega2.a  0         0         0         1       
+          omega2.b0 omega2.b1
+omega2.b0 1         0        
+omega2.b1 0         1        
 ----------------------------------------------------
 ---------------  Statistical criteria  -------------
 ----------------------------------------------------
 
 Likelihood computed by importance sampling
-      -2LL= 28026.64 
-      AIC = 28048.64 28048.64 
-      BIC = 28094.73 28094.73 
+      -2LL= 28050.73 
+      AIC = 28064.73 28064.73 
+      BIC = 28094.07 28094.07 
 ----------------------------------------------------

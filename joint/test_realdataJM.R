@@ -1,4 +1,4 @@
-#### Example joint model: dataset de Rizopoulos dans le package JM
+#### Joint model example : prothro dataset in R package JM
 library(JM)
 library(pracma)
 library(ggplot2)
@@ -12,23 +12,8 @@ gp
 
 table(prothros$death)
 
-t=sapply(unique(prothro$id),function(i) length(unique(prothro$pro[prothro$id==i])))
-names(t)=unique(data_all$id)
-sort(t)
-summary(t)
 
-modlin = lme(pro~time, random = ~1+time|id, data = prothro)
-modsurv = coxph(Surv(Time, death) ~ 1, data = prothros, x = TRUE)
-
-jm = jointModel(modlin, modsurv, timeVar = "time", method = "weibull-PH-GH")
-jm$Hessian
-summary(jm)
-
-
-jm2 = jointModel(modlin, modsurv, timeVar = "time", method = "piecewise-PH-GH", control = list(lng.in.kn=1))
-summary(jm2)
-
-######### avec saemix 
+######### estimation with saemix 
 
 saemixDir <- "C:/Users/AlexandraLAVALLEY/Documents/GitHub/saemixextension"
 workDir <- file.path(saemixDir, "joint")
@@ -38,7 +23,7 @@ library(Cairo)
 library("viridis")
 library(rlang)
 
-# Chargement des fonctions originelles de la librairie
+# Loading of extended functions of the library 
 progDir<-file.path(saemixDir, "R")
 source(file.path(progDir,"aaa_generics.R"))
 #source(file.path(progDir,"global.R"))
@@ -46,7 +31,7 @@ source(file.path(progDir,"SaemixData.R"))
 source(file.path(progDir,"SaemixRes.R"))
 source(file.path(progDir,"SaemixModel.R"))
 source(file.path(progDir,"SaemixObject.R"))
-source(file.path(progDir,"func_plots.R")) # for saemix.plot.setoptions
+source(file.path(progDir,"func_plots.R"))
 
 source(file.path(workDir,"multi_aux.R"))
 source(file.path(workDir,"multi_initializeMainAlgo.R"))
@@ -55,8 +40,9 @@ source(file.path(workDir,"multi_mstep.R"))
 source(file.path(workDir,"multi_main.R"))
 source(file.path(workDir,"multi_map.R"))
 source(file.path(workDir,"compute_LL_multi.R"))
-############################################## Data and model (original files)
-# Creating data and model objects
+
+############################################## Data and model
+# Formatting and creating data 
 d1 = prothro[,c(1,2,3)]
 d1$ytype=1
 colnames(d1)[2] = "obs"
@@ -70,10 +56,7 @@ dataJM<-saemixData(name.data=data_joint, name.group=c("id"), name.predictors=c("
 
 
 
-#### for initializing parameters
-
-
-# Initial parameters
+#### initializing parameters
 
 param<-c(73,1.25,0.6,0.0001)
 omega.sim<-c(18, 3, 0.05, 0.01)
@@ -120,7 +103,7 @@ jointTTE<-saemixModel(model=JMmodel,description="JM LMEM-TTE (prothro data)",mod
 
 saemix.data<-dataJM
 saemix.model<-jointTTE
-saemix.options<-saemixControl(seed=12345, map=T, fim=T, ll.is=TRUE, save.graphs = F)
+saemix.options<-saemixControl(seed=12345, map=T, fim=T, ll.is=TRUE, save.graphs = F) # please, specify save.graphs=F (currently not extended)
 yfit <- saemix.multi(saemix.model, saemix.data, saemix.options)
 
 summary(yfit) # parameter estimates + likelihood 
@@ -129,7 +112,8 @@ sqrt(diag(yfit@results@fim)) # SE of parameter estimates
 
 
 ################### WITH a nonlinear mixed-effects model ###################
-
+# time consuming because the model as no explicit likelihood expression...
+# use of numerical integration to compute joint likelihood 
 
 param<-c(20,2,0.6,0.5,2,-0.039)
 omega.sim<-c(5, 1, 0.6,0.5,0.02, 0.03)
@@ -166,7 +150,7 @@ JMmodel_nl<-function(psi,id,xidep) {
   
   haz <- h0b*exp(alphab*(b0b+ab*(exp(-b1b*T)-exp(-b2b*T))))
   hazt <- h0b*exp(alphab*(b0b+ab*(exp(-b1b*tab)-exp(-b2b*tab))))
-  H = apply(hazt,1,sum)*pas
+  H = apply(hazt,1,sum)*pas   # no close form... need to integrate numerically 
   
   logpdf <- rep(0,Nj)
   logpdf[cens] <- -H[cens] 
@@ -185,4 +169,5 @@ jointTTE_nl<-saemixModel(model=JMmodel_nl,description="JM lin longi one tte",mod
 saemix.model_nl<-jointTTE_nl
 yfit_nl <- saemix.multi(saemix.model_nl, saemix.data, saemix.options)
 
-
+yfit_nl@results@fim
+sqrt(diag(yfit_nl@results@fim))
