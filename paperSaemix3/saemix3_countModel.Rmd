@@ -1,7 +1,7 @@
 ---
 title: "Saemix 3 - count data models"
 author: "Emmanuelle"
-date: "08/2022"
+date: "06/2023"
 output:
   pdf_document: default
   html_document: default
@@ -14,14 +14,10 @@ Use saemix version $\geq$ 3.2
 
 Run binary and categorical models in **saemix**
 
-This notebook uses additional code from the **saemix** development github (https://github.com/saemixdevelopment/saemixextension), not yet integrated in the package. The *workDir* folder in the next chunk of code points to the folder where the user stored this code, and is needed to run the notebook (*workDir* defaults to the current working directory). Specifically, the notebook loads:
+This notebook uses additional result files from the **saemix** development github (https://github.com/saemixdevelopment/saemixextension), not integrated in the package to avoid bloating. The *workDir* folder in the next chunk of code points to the folder where the user stored this code, and is needed to run the notebook (*workDir* defaults to the current working directory). Specifically, the notebook loads the results for the bootstrap runs performed using different approaches (see Comets et al. Pharm Res 2021). Bootstraps can be run instead by switching the *runBootstrap* variable to TRUE in the first chunk of code:
 
-- code for the MC/AGQ provided by Sebastian Ueckert (Ueckert et al. 2017)
-  - if memory issues arise the code can be run in a separate script.
-- the results for the bootstrap runs performed using different approaches (see Comets et al. Pharm Res 2021)
-    - bootstraps can be run instead by switching the *runBootstrap* variable to TRUE in the first chunk of code
-    - in the code, the number of bootstraps is set to 10 for speed but we recommend to use at least 200 for a 90\% CI.
-  - this can be changed in the following change of code by uncommenting the line *nboot<-200* and setting the number of bootstrap samples (this may cause memory issues in **Rstudio** with older machines, if this is the case we recommend executing the code in a separate script)
+- in the code, the number of bootstraps is set to 10 for speed but we recommend to use at least 200 for a 90\% CI.
+- this can be changed in the following change of code by uncommenting the line *nboot<-200* and setting the number of bootstrap samples (this may cause memory issues in **Rstudio** with older machines, if this is the case we recommend executing the code in a separate script)
 
 The current notebook can be executed to create an HMTL or PDF output with comments and explanations. A script version containing only the R code is also given as *saemix3_countModel.R* in the same folder.
 
@@ -39,20 +35,6 @@ setwd(workDir)
 
 # Libraries
 library(saemix)
-
-# Libraries needed to compute the FIM by AGQ
-library(R6)
-library(pracma)
-library(compiler)
-library(statmod)
-library(Matrix)
-library(randtoolbox)
-
-# FIM by MC/AGQ (code S. Ueckert)
-
-dirAGQ<-file.path(saemixDir,"fimAGQ")
-
-# Code to compute the exact FIM by MC/AGQ
 
 # library(ggplot2)
 # library(MASS)
@@ -610,7 +592,7 @@ discreteVPC(ysim.hurdle1, outcome="count", breaks=c(0:9, 16, 25, 80), which.cov=
 
 #### Standard errors of estimation
 
-The computation of the FIM in **saemix** uses the so-called FOCE method, an approximation where the model function $f$ is linearised around the conditional expectation of the individual parameters. This approximation is particularly bad for discrete data models, which is why currently **saemix** doesn't provide estimation errors for count data models. For non-Gaussian models, the exact FIM should be computed, and two approaches have been proposed using either numerical integration by a combination of MC and adaptive Gaussian quadrature (MC/AGQ, Ueckert et al 2017) or stochastic integration by MCMC (Rivière et al. 2017). Both these approaches are computationally intensive. They require to define the elementary FIM associated to the observed design (here, the number of times and the gender which enters the model), and sum over all the subjects sharing the same design. Here, as in the *toenail* example, the subjects in the real dataset *rapi.saemix* were not all seen at the same times. This makes the computation of an exact FIM somewhat cumbersome, especially when stratifying on gender, as we need to compute the FIM in each combination of gender and observation times and sum the elementary FIM. We leave that to th
+The computation of the FIM in **saemix** uses the so-called FOCE method, an approximation where the model function $f$ is linearised around the conditional expectation of the individual parameters. This approximation is particularly bad for discrete data models, which is why currently **saemix** doesn't provide estimation errors for count data models. For non-Gaussian models, the exact FIM should be computed and this is currently not implemented in **saemix** (work in progress).
 
 Alternatively, different bootstrap approaches can be used in non-linear mixed effect models and have been implemented for **saemix** in Comets et al. 2021, with code available on the github for the package (https://github.com/saemixdevelopment/saemixextension).
 
@@ -678,7 +660,5 @@ print(df2)
 **Neighbors CJ**, Lewis M, Atkins D, Jensen M, Walter T, Fossos N, Lee C, Larimer M  (2010a). Efficacy of web-based personalized normative feedback: A two-year randomized controlled trial. *Journal of Consulting and Clinical Psychology* 78:898–911.
 
 **Neighbors CJ**, Barnett NP, Rohsenow DJ, Colby SM, and Monti PM (2010b).  Cost-effectiveness of a motivational lntervention for alcohol-involved youth in a hospital emergency department. *Journal of Studies on Alcohol and Drugs* 71:384–94. 
-
-**Ueckert S**, Mentré F (2017). A new method for evaluation of the Fisher information matrix for discrete mixed effect models using Monte Carlo sampling and adaptive Gaussian quadrature. *Computational Statistics and Data Analysis*, 111: 203-19. \url{10.1016/j.csda.2016.10.011}
 
 **White HR**, Labouvie EW (1989). Towards the assessment of adolescent problem drinking. *Journal of Studies on Alcohol* 50:30–7.

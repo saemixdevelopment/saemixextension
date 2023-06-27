@@ -9,27 +9,6 @@ setwd(workDir)
 # Libraries
 library(saemix)
 
-# Libraries needed to compute the FIM by AGQ
-library(R6)
-library(pracma)
-library(compiler)
-library(statmod)
-library(Matrix)
-library(randtoolbox)
-
-# FIM by MC/AGQ (code S. Ueckert)
-
-dirAGQ<-file.path(saemixDir,"fimAGQ")
-
-# Bootstrap code
-source(file.path(saemixDir, "bootstrap", "saemix_bootstrap.R"))
-
-# Code to compute the exact FIM by MC/AGQ
-
-# library(ggplot2)
-# library(MASS)
-# library(rlang)
-# library(gridExtra)
 library(tidyverse)
 
 # Whether to save the plots

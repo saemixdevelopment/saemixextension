@@ -759,7 +759,7 @@ setMethod("plot","SaemixModel",
       if(verbose) message("Currently the plot can only be obtained for single-response models.\n")
       return()
     }
-    if(length(x@name.X)>0 & length(x@name.predictors)>0 && x.name.X != x@name.predictors[1]){
+    if(length(x@name.X)>0 & length(x@name.predictors)>0 && x@name.X != x@name.predictors[1]){
       if(verbose) message("Warning: X predictor supposed to be on the first axis, exiting without plot\n")
       return()
     }
