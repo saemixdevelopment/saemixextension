@@ -372,7 +372,7 @@ setMethod(
 
 #' Get/set methods for SaemixData object
 #' 
-#' Access slots of a SaemixData object using the object\["slot"\] format
+#' Access slots of an SaemixData object using the object\["slot"\] format
 #' 
 #' @name [
 #' @aliases [<-,SaemixData-method [,SaemixData-method
@@ -1072,6 +1072,7 @@ saemix.data.setoptions<-function(saemix.data) {
     main=" ",				# title
     xlab=" ",
     ylab=" ",
+    units=saemix.data@units,
     col="black",
     pch=20,
     lty=1,
@@ -1088,9 +1089,9 @@ saemix.data.setoptions<-function(saemix.data) {
         
      if(is.null(plot.opt$name.X))
         plot.opt$name.X<-saemix.data["name.predictors"][1]
-    plot.opt$xlab<-paste(plot.opt$name.X," (",plot.opt$units$x,")", sep="")
+    plot.opt$xlab<-paste(plot.opt$name.X," (",ifelse(plot.opt$units$x=="","-",plot.opt$units$x),")", sep="")
      if(length(saemix.data["name.response"])>0)
-    plot.opt$ylab<-paste(saemix.data["name.response"]," (",saemix.data["units"]$y,")", sep="")
+    plot.opt$ylab<-paste(saemix.data["name.response"]," (",ifelse(plot.opt$units$y=="","-",plot.opt$units$y),")", sep="")
    return(plot.opt)
 }
 
@@ -1296,9 +1297,9 @@ plot.SaemixSimData<-function(x,y,irep=-1,...) {
 ####		Creating an object of SaemixData class - User-level function	####
 ####################################################################################
 
-#' Function to create a SaemixData object
+#' Function to create an SaemixData object
 #' 
-#' This function creates a SaemixData object. The only mandatory argument is
+#' This function creates an SaemixData object. The only mandatory argument is
 #' the name of the dataset. If the dataset has a header (or named columns), the
 #' program will attempt to detect which column correspond to ID, predictor(s)
 #' and response. Warning messages will be printed during the object creation
@@ -1328,7 +1329,7 @@ plot.SaemixSimData<-function(x,y,irep=-1,...) {
 #' @param verbose a boolean indicating whether messages should be printed out during the creation of the object
 #' @param automatic a boolean indicating whether to attempt automatic name recognition when some colum names are missing or wrong (defaults to TRUE)
 #' @details This function is the user-friendly constructor for the SaemixData object class. The read is a helper function, used to read the dataset, and is not intended to be called directly.
-#' @return A SaemixData object (see \code{\link{saemixData}}).
+#' @return An SaemixData object (see \code{\link{saemixData}}).
 #' @references E Comets, A Lavenu, M Lavielle M (2017). Parameter estimation in nonlinear mixed effect models using saemix,
 #' an R implementation of the SAEM algorithm. Journal of Statistical Software, 80(3):1-41.
 #' 

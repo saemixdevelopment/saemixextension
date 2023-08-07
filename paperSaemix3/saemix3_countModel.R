@@ -21,6 +21,7 @@ nboot <-10
 
 ################################################### Data
 data(rapi.saemix)
+rapi.saemix$gender <- ifelse(rapi.saemix$gender=="Men",1,0) # Female=reference class as in Atkins
 
 saemix.data<-saemixData(name.data=rapi.saemix, name.group=c("id"),
                         name.predictors=c("time","rapi"),name.response=c("rapi"),
@@ -223,7 +224,7 @@ exp(zippoisson.fit@results@fixed.effects)
 exp(zippoisson.fit.cov1@results@fixed.effects)
 exp(zippoisson.fit.cov2@results@fixed.effects)
 
-### Simulations
+### Simulations (100 simulations, may need more)
 ysim.zip2<-simulateDiscreteSaemix(zippoisson.fit.cov2,  100)
 
 cat("Observed proportion of 0's", length(yfit1@data@data$rapi[yfit1@data@data$rapi==0])/yfit1@data@ntot.obs,"\n")
@@ -276,9 +277,10 @@ plot2 <- ggplot(rapipl, aes(x=time, y=freq, group=gender)) + geom_line() +
 
 print(plot2)
 
-### VPC
+### VPC (saemix function)
 discreteVPC(ysim.zip2, outcome="count", breaks=c(0:9, 16, 25, 80), which.cov="gender")
 
+######################################################### 
 ######### VPC by hand using tidyverse
 # Grouping data by time and score
 yfit <- ysim.zip2
@@ -340,7 +342,7 @@ saemix.data1<-saemixData(name.data=rapi.saemix[rapi.saemix$rapi>0,], name.group=
                          name.covariates=c("gender"),
                          units=list(x="week",y="",covariates=c("")))
 
-rapi.saemix$y0<-as.integer(rapi.saemix$rapi==0)
+rapi.saemix$y0<-as.integer(rapi.saemix$rapi>0)
 saemix.data0<-saemixData(name.data=rapi.saemix, name.group=c("id"),
                          name.predictors=c("time","y0"),name.response=c("y0"),
                          name.covariates=c("gender"),
@@ -361,7 +363,7 @@ binary.model<-function(psi,id,xidep) {
 # Associated simulation function
 simulBinary<-function(psi,id,xidep) {
   tim<-xidep[,1]
-  y<-xidep[,2]
+#  y<-xidep[,2] # not used for simulation
   inter<-psi[id,1]
   slope<-psi[id,2]
   logit<-inter+slope*tim
@@ -371,15 +373,31 @@ simulBinary<-function(psi,id,xidep) {
 }
 saemix.hurdle0<-saemixModel(model=binary.model,description="Binary model",
                             modeltype="likelihood",simulate.function=simulBinary,
-                            psi0=matrix(c(-1.5,-.1,0,0),ncol=2,byrow=TRUE,dimnames=list(NULL,c("theta1","theta2"))),
+                            psi0=matrix(c(0.5,-.1,0,0),ncol=2,byrow=TRUE,dimnames=list(NULL,c("theta1","theta2"))),
                             transform.par=c(0,0), covariate.model=c(1,1),
                             covariance.model=matrix(c(1,0,0,1),ncol=2), omega.init=diag(c(1,0.3)))
 
 saemix.options<-list(seed=1234567,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, nb.chains=10, fim=FALSE, displayProgress=FALSE)
 
 hurdlefit0<-saemix(saemix.hurdle0,saemix.data0,saemix.options)
-cat("Expected proportion of 0's at time 0:",1/(1+exp(-hurdlefit0@results@fixed.effects[1])),"\n")
-table(rapi.saemix$rapi[rapi.saemix$time==0] == 0) # 10.6%
+
+# Taking into account IIV on theta1 to compute expected proportion of zeroes
+xcal<-rnorm(1000, mean=hurdlefit0@results@fixed.effects[1], sd=sqrt(hurdlefit0@results@omega[1,1]))
+cat("Expected proportion of 0's at time 0 (in women):",mean(1-1/(1+exp(-xcal))),"\n")
+
+tab1<-table(rapi.saemix$rapi[rapi.saemix$time==0] == 0)  
+tab.women <- table(rapi.saemix$rapi[rapi.saemix$time==0 & rapi.saemix$gender==0] == 0)  
+
+if(FALSE) {
+  cat("Observed proportion of 0's at time 0:",tab1[2]/sum(tab1),"\n") # 10.6%
+  # Not comparable because of the IIV on theta1 => see below for a comparison using data simulated under the model
+  cat("Expected proportion of 0's at time 0:",1/(1+exp(-hurdlefit0@results@fixed.effects[1])),"\n")
+  cat("Observed proportion of 0's at time 0 in women:",tab.women[2]/sum(tab.women),"\n") # 9.7%
+  # Taking into account IIV on theta1 to compute expected proportion of zeroes
+  xcal<-rnorm(1000, mean=hurdlefit0@results@fixed.effects[1], sd=sqrt(hurdlefit0@results@omega[1,1]))
+  cat("Expected proportion of 0's at time 0 (in women):",mean(1-1/(1+exp(-xcal))),"\n")
+  cat("Observed proportion of 0's at time 0 in women:",tab.women[2]/sum(tab.women),"\n") # 9.7%
+}
 
 # Fit Poisson model to saemix.data1
 saemix.hurdle1.cov2<-saemixModel(model=count.poisson,description="Count model Poisson",modeltype="likelihood",   
@@ -397,12 +415,12 @@ summary(hurdlefit1)
 
 # Simulate binary data
 # proportion of 0's in the data
-rapi.tab <- table(rapi.saemix$rapi == 0)
+rapitab <- table(rapi.saemix$rapi == 0)
 
 nsim<-100
 ysim.hurdle0 <- simulateDiscreteSaemix(hurdlefit0, nsim=nsim)
 cat("Observed proportion of 0's overall:",rapi.tab[2]/sum(rapi.tab),"\n")
-cat("Simulated proportion of 0's overall:",sum(ysim.hurdle0@sim.data@datasim$ysim)/length(ysim.hurdle0@sim.data@datasim$ysim),"\n")
+cat("Simulated proportion of 0's overall:",1-sum(ysim.hurdle0@sim.data@datasim$ysim)/length(ysim.hurdle0@sim.data@datasim$ysim),"\n")
 
 ysim.hurdle1 <- simulateDiscreteSaemix(hurdlefit1, nsim=nsim)
 

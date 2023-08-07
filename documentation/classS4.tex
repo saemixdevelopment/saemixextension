@@ -5,9 +5,9 @@
 
 This section is in progress. More information on S4 classes and \R packages can be found in tutorials on the Web. I used extensively the following manual~\cite{Genolini}.
 
-\monolix~has been programmed using the S4 classes in \R. S4 classes implement Object oriented programming (OOP) in \R, allowing to construct modular pieces of code which can be used as black boxes for large systems. Most packages in the base library and many contributed packages use the former class system, called S3. However, S4 classes are a more traditional and complete object oriented system including type checking and multiple dispatching. S4 is implemented in the methods package in base \R.
+\saemix~has been programmed using the S4 classes in \R. S4 classes implement Object oriented programming (OOP) in \R, allowing to construct modular pieces of code which can be used as black boxes for large systems. Most packages in the base library and many contributed packages use the former class system, called S3. However, S4 classes are a more traditional and complete object oriented system including type checking and multiple dispatching. S4 is implemented in the methods package in base \R.
 
-Elements of an object are called "Slots". Slots can be accessed using the @ operator, instead of the \$ operator used for lists. However, the use of @ to access the class slots is heavily discouraged outside functions programmed directly by package developers. Instead, in \monolix~accessor functions ("get" functions) and replacement functions ("set" functions) have been defined to allow access to elements of an object in the same way as one would the elements of a list in \R, through the name of the slot. If {\sf obj} is an object with a slot called "slot", we would display the value of the slot using the command:
+Elements of an object are called "Slots". Slots can be accessed using the @ operator, instead of the \$ operator used for lists. However, the use of @ to access the class slots is heavily discouraged outside functions programmed directly by package developers. Instead, in \saemix~accessor functions ("get" functions) and replacement functions ("set" functions) have been defined to allow access to elements of an object in the same way as one would the elements of a list in \R, through the name of the slot. If {\sf obj} is an object with a slot called "slot", we would display the value of the slot using the command:
 \begin{verbatim}
 obj["slot"]
 \end{verbatim}
@@ -21,11 +21,11 @@ obj["slot"]<-3
 \end{verbatim}
 would in this case produce an error.
 
-\subsection{S4 classes used in \monolix} \label{sec:saemixS4}
+\subsection{S4 classes used in \saemix} \label{sec:saemixS4}
 
 \subsubsection{Visible S4 objects}
 
-The following classes have been defined in \monolix:
+The following classes have been defined in \saemix:
 \begin{itemize}
 \item {\sf SaemixData}: this object contains the structure and data of the longitudinal dataset
 \item {\sf SaemixModel}: this object contains the structure representing a non-linear mixed effect model, used by the {\sf SAEM} algorithm
@@ -45,28 +45,28 @@ The following classes have been defined in \monolix:
 The constructor functions for the first two objects are respectively {\sf saemixData()} and {\sf saemixModel()} (with a lowercase initial letter, to distinguish it from the object classes, which start with a capital letter, since in \R lowercase and uppercase letters are different). These two functions are the functions intended to be used directly to produce the objects given as input to the {\sf saemix()} function.
 \begin{itemize}
 \item {\sf saemixData()}: the {\sf saemixData()} function requires one mandatory argument, the name of a dataframe in \R or of a file on disk containing the data. If the file has a header (or if the dataframe has column names), the program will attempt to recognise suitable names for the grouping, predictor and response variables. These may also be specified by the user, either as names or column numbers (see help page for {\sf SaemixData}).
-\item {\sf saemixModel()}: the {\sf saemixModel()} function requires two mandatory arguments: the name of a \R function computing the model in the \monolix~format (see details and examples) and a matrix giving the initial estimates of the fixed parameters in the model. This matrix should contain at least one row, with the values of the initial estimates for the population mean parameters; if covariates are present in the data and enter the model, a second row should contain  the values of the initial estimates for the covariate effects.
+\item {\sf saemixModel()}: the {\sf saemixModel()} function requires two mandatory arguments: the name of a \R function computing the model in the \saemix~format (see details and examples) and a matrix giving the initial estimates of the fixed parameters in the model. This matrix should contain at least one row, with the values of the initial estimates for the population mean parameters; if covariates are present in the data and enter the model, a second row should contain  the values of the initial estimates for the covariate effects.
 An additional argument noted \texttt{modeltype}, taking as values 'structural' or 'likelihood', allows the user to consider either models for continuous or noncontinuous observations. This value is tied to the definition of the \R function computing the model.
 \end{itemize}
 There is no constructor function for an {\sf SaemixObject} object, since such an object should be returned by the {\sf saemix()} function.
 
 \subsubsection{Hidden S4 objects}
 
-In addition to the visible objects, \monolix~also has 2 other classes which are not intended to be used directly by the user:
+In addition to the visible objects, \saemix~also has 2 other classes which are not intended to be used directly by the user:
 \begin{itemize}
 \item {\sf SaemixRepData}: this object is created during the fit by {\sf saemix()}
 \item {\sf SaemixSimData}: this object is created when simulating data
 \end{itemize}
 An {\sf SaemixObject} contains instances of these two classes. The slot of class {\sf SaemixRepData} is produced and filled during the fit, while the slot of class {\sf SaemixSimData} is produced when simulations are performed (in particular, to compute weighted residuals and npde, and produce VPC plots).
 
-\subsection{Methods for S4 objects in \monolix}
+\subsection{Methods for S4 objects in \saemix}
 
-Two types of functions have been developed for the \monolix~package:
+Two types of functions have been developed for the \saemix~package:
 \begin{itemize}
 \item methods
 \item classical functions
 \end{itemize}
-Methods are a special type of functions, which apply to objects and benefit from multiple dispatch. \R uses multiple dispatch extensively: one generic function call, such as for instance {\sf print}, is capable of dispatching on the type of its argument and calls a printing function that is specific to the data supplied. For instance, using the {\sf print()} function on a matrix will output the matrix, while using the same function on an object returned by the {\sf lm()} function will produce a summary of the linear regression fit. We used this feature to produce notably {\sf plot()} and {\sf print()} functions (see next sections) which should apply to our \monolix~objects in a user-friendly way.
+Methods are a special type of functions, which apply to objects and benefit from multiple dispatch. \R uses multiple dispatch extensively: one generic function call, such as for instance {\sf print}, is capable of dispatching on the type of its argument and calls a printing function that is specific to the data supplied. For instance, using the {\sf print()} function on a matrix will output the matrix, while using the same function on an object returned by the {\sf lm()} function will produce a summary of the linear regression fit. We used this feature to produce notably {\sf plot()} and {\sf print()} functions (see next sections) which should apply to our \saemix~objects in a user-friendly way.
 %Classical functions on the other hand apply to a set of arguments.
 
 \subsubsection{Generic methods}
@@ -90,11 +90,11 @@ The following generic methods have been defined for {\sf SaemixData}, {\sf Saemi
 \item $[$ function: the get function, used to access the value of the slots in an object
 \item $[<$-: function: the set function, used to replace the value of the slots in an object
 \end{itemize}
-Examples of calls to these functions are given in the corresponding man pages and in the documentation (chapter~\ref{chapter_example}). Additional generic methods for classes, such as {\sf initialize()}, are not user-level in the \monolix~package.
+Examples of calls to these functions are given in the corresponding man pages and in the documentation (chapter~\ref{chapter_example}). Additional generic methods for classes, such as {\sf initialize()}, are not user-level in the \saemix~package.
 
 \subsubsection{Specific methods}
 
-Specific methods have been developed for the objects in the \monolix~package. Specific methods are methods which possibly apply to objects of several classes. For all purposes, they are used like generic methods.
+Specific methods have been developed for the objects in the \saemix~package. Specific methods are methods which possibly apply to objects of several classes. For all purposes, they are used like generic methods.
 
 The following methods apply to {\sf SaemixObject} objects:
 \begin{itemize}
@@ -111,7 +111,7 @@ The following methods apply to {\sf SaemixObject} objects:
 
 Additional specific methods have been defined but are not user-level ({\sf read.saemixData()} is used by the constructor function).
 
-\subsection{Accessing S4 objects in \monolix}
+\subsection{Accessing S4 objects in \saemix}
 
 \subsubsection{Help for S4 objects and methods}
 
@@ -140,7 +140,7 @@ will only give the help page for the generic \R plot function. In the same way, 
 help("plot,SaemixObject")
 \end{verbatim}
 
-\subsubsection{Elements for S4 objects defined in \monolix}
+\subsubsection{Elements for S4 objects defined in \saemix}
 
 The elements, or slots, of the objects with class {\sf SaemixData}, {\sf SaemixModel} and {\sf SaemixObject} are described in the respective help pages. When an object is first created, some of its slots may be empty or filled in with default values.
 
@@ -158,7 +158,7 @@ saemix.data["N"]
 \end{verbatim}
 
 \begin{description}
- \item[Warning:] modifying the elements in the objects outside of dedicated functions or methods can have unwanted side-effects. For instance, if one was to change the number of subjects in the data slot of an object created by a call to {\sf saemix()}, the consistency of the object would not be guaranteed, and this could cause strange behaviour when trying to print or plot the object, or use it in subsequent functions. For this reason it is strongly recommended to only use the functions and methods defined in \monolix~to access and modify \monolix~objects. For instance, to apply the SAEM algorithm only to a subset of the subjects, it is preferable to apply the function {\sf saemixData()} to a subset of the data instead of trying the change directly the {\sf SaemixData} object.
+ \item[Warning:] modifying the elements in the objects outside of dedicated functions or methods can have unwanted side-effects. For instance, if one was to change the number of subjects in the data slot of an object created by a call to {\sf saemix()}, the consistency of the object would not be guaranteed, and this could cause strange behaviour when trying to print or plot the object, or use it in subsequent functions. For this reason it is strongly recommended to only use the functions and methods defined in \saemix~to access and modify \saemix~objects. For instance, to apply the SAEM algorithm only to a subset of the subjects, it is preferable to apply the function {\sf saemixData()} to a subset of the data instead of trying the change directly the {\sf SaemixData} object.
 \end{description}
 
 %A small amount of checking is done for certain objects to ensure their consistency.

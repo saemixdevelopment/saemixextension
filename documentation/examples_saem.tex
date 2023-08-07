@@ -250,7 +250,7 @@ $V$ (L) & 31.5 (4\%) & 0.02 (59\%) \\
 a (mg.L$^{-1}$) & 0.74 (6\%) & - \\
 \hline
 \end{tabular} 
-\caption{Pharmacokinetic parameters estimated by \monolix~for the theophylline data.} \label{tab:paramtheo}
+\caption{Pharmacokinetic parameters estimated by \saemix~for the theophylline data.} \label{tab:paramtheo}
 \end{center}
 \end{table}
 
@@ -517,7 +517,7 @@ $\beta_{gender,EC_{50}}$ (-) & 0.35 (26\%) & - & -0.06 (116\%) & - \\
 a (mg.L$^{-1}$) & 4.94 (8\%) & - & 4.67 (8\%) & - \\
 \hline
 \end{tabular} 
-\caption{Pharmacokinetic parameters estimated by \monolix~for the simulated PD data.} \label{tab:paramPD}
+\caption{Pharmacokinetic parameters estimated by \saemix~for the simulated PD data.} \label{tab:paramPD}
 \end{center}
 \end{table}
 
@@ -670,7 +670,7 @@ The result is shown in figure~\ref{fig:cow.individual}.
 
 \section{Height of Oxford boys} \label{sec:exampleoxboys}
 
-\monolix~can be used even for linear models. The dataset {\sf oxboys.saemix} was taken from the library {\sf nlme}~\cite{nlme}. It describes the evolution with age of the height of boys from Oxford, England. There is no covariate in the model, and we use a simple linear model to account for the increase in height over this age range:
+\saemix~can be used even for linear models. The dataset {\sf oxboys.saemix} was taken from the library {\sf nlme}~\cite{nlme}. It describes the evolution with age of the height of boys from Oxford, England. There is no covariate in the model, and we use a simple linear model to account for the increase in height over this age range:
 \begin{equation}
 y_{ij} = {\rm Base}_i + {\rm Slope} \; {\rm age}_{ij} + \epsilon_{ij}
 \end{equation}
@@ -858,7 +858,7 @@ Figure~\ref{fig:yieldparcov} shows the result, and indicates a decreasing trend 
 \caption{Graphs of the estimated (individual) parameters versus covariate.} \label{fig:yieldparcov}
 \end{figure}
 
-In this example, we can then show with \monolix~that the effect of the amount of soil mineral nitrogen at the end of winter is statistically significant for explaining the fluctuations of the parameter $X_{max}$ in both LP and QP models, with a drop of over 20 points in the statistical criterion. For example, the following code shows how to fit the LP-model with and without covariate effect on X$_{\rm max}$, and outputs the resulting log-likelihoods:
+In this example, we can then show with \saemix~that the effect of the amount of soil mineral nitrogen at the end of winter is statistically significant for explaining the fluctuations of the parameter $X_{max}$ in both LP and QP models, with a drop of over 20 points in the statistical criterion. For example, the following code shows how to fit the LP-model with and without covariate effect on X$_{\rm max}$, and outputs the resulting log-likelihoods:
 
 \begin{verbatim}
 saemix.model3<-saemixModel(model=yield.LP,description="Linear + plateau model",  

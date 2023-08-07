@@ -34,6 +34,7 @@ setwd(workDir)
 
 # Libraries
 library(saemix)
+library(xtable)
 
 # Automatically loaded when loading saemix
 # library(ggplot2)
@@ -53,6 +54,8 @@ runBootstrap <- FALSE # to read the results from disk
 #nboot <-10
 nboot <- 200
 
+# Stepwise algorithm for covariates (do not run in Rstudio)
+runCovKnee<-FALSE
 ```
 
 
@@ -363,8 +366,9 @@ Here we produce a table showing tbe parameters estimated on the original dataset
 
 ```{r binaryBootstrapSE}
 if(nboot<200) cat("The number of bootstrap samples is too low to provide good estimates of the confidence intervals\n") else {
-  par.estim<-c(binary.fit@results@fixed.effects,diag(binary.fit@results@omega)[binary.fit@results@indx.omega])
-  df2<-data.frame(parameter=colnames(case.bin)[-c(1)], saemix=par.estim)
+  par.estim<-c(binary.fit@results@fixed.effects,diag(binary.fit@results@omega)[binary.fit@results@indx.omega], sqrt(diag(binary.fit@results@omega)[binary.fit@results@indx.omega]))
+  namsd<-paste0("SD.",colnames(binary.fit@results@omega)[binary.fit@results@indx.omega])
+  df2<-data.frame(parameter=c(colnames(case.bin)[-c(1)],namsd), saemix=par.estim)
   for(i in 1:2) {
     if(i==1) {
       resboot1<-case.bin
@@ -373,6 +377,8 @@ if(nboot<200) cat("The number of bootstrap samples is too low to provide good es
       resboot1<-cond.bin
       namboot <-"cNP"
       }
+    ncol<-dim(resboot1)[2]
+    resboot1<-cbind(resboot1, sqrt(resboot1[,ncol]))
     mean.bootDist<-apply(resboot1, 2, mean)[-c(1)]
     sd.bootDist<-apply(resboot1, 2, sd)[-c(1)]
     quant.bootDist<-apply(resboot1[-c(1)], 2, quantile, c(0.025, 0.975))
@@ -385,8 +391,11 @@ if(nboot<200) cat("The number of bootstrap samples is too low to provide good es
   print(df2)
 }
 
-library(xtable)
-xtable(df2)
+print(xtable(df2),only.contents=TRUE, include.rownames=FALSE)
+
+# Bootstrap SE on omega instead of omega2
+# sd(sqrt(case.bin$omega2.theta1))
+# sd(sqrt(cond.bin$omega2.theta1))
 ```
 
 
@@ -398,23 +407,32 @@ The *knee.saemix* data represents pain scores recorded in a clinical study in 12
 
 - a time column was added representing the day of the measurement (with 0 being the baseline value) and each observation corresponds to a different line in the dataset
 - treatment was recoded as 0/1 (placebo/treatment), gender as 0/1 (male/female) 
-- *Age2* represents the squared of centered Age. 
+- *Age2* represents the square of centered *Age*. 
 
-We can visualise the evolution of the proportion of each score over time using the *plotDiscreteData()* function with the outcome set to *categorical*, stratifying by treatment.
+We can visualise the evolution of the proportion of each score over time using the *plotDiscreteData()* function with the outcome set to *categorical*, stratifying by treatment. In both treatment groups, the probability of lower scores (1 or 2) increases with time while the probability to obtain a high (4 or 5) pain score decreases.
 
 ```{r kneeData}
 data(knee.saemix)
 
 # Data
-saemix.data<-saemixData(name.data=knee.saemix,name.group=c("id"),
+ordknee.data<-saemixData(name.data=knee.saemix,name.group=c("id"),
                         name.predictors=c("y", "time"), name.X=c("time"),
                         name.covariates = c("Age","Sex","treatment","Age2"),
                         units=list(x="d",y="", covariates=c("yr","-","-","yr2")), verbose=FALSE)
 
-plotDiscreteData(saemix.data, outcome="categorical", which.cov="treatment")
+plotDiscreteData(ordknee.data, outcome="categorical", which.cov="treatment")
+
+plotDiscreteData(ordknee.data, outcome="categorical", which.cov="Sex")
+
+if(saveFigs) {
+  namfig<-"knee_rawDataPropTime.eps"
+  cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
+  plotDiscreteData(saemix.data, outcome="categorical", which.cov="treatment")
+  dev.off()
+}
 ```
 
-The following R code represents the data as barplots of the different pain scores as a function of time in study, illustrating a recovery as the proportion of lower pain scores increases.
+The following R code represents the data as barplots of the different pain scores as a function of time in study, also illustrating a recovery as the proportion of lower pain scores increases. Other graphs can be created to explore this data, such as the evolution of mean scores over time.
 
 ```{r kneeDataBarplot}
 gtab <- knee.saemix %>%
@@ -426,6 +444,18 @@ ggplot(data = gtab, aes(x = time, y=n, group=y, fill=y)) +
   geom_bar(stat="identity", position = "dodge") + theme_bw() + 
   scale_fill_brewer(palette = "Reds") + theme(legend.position = "top") +
   labs(fill = "Score") + xlab("Time (d)") + ylab("Counts")
+
+# Gender effect ?
+if(FALSE) {
+  gtab2 <- knee.saemix %>%
+    group_by(time, Sex) %>%
+    summarise(meanscore=mean(y))
+  
+  ggplot(data = gtab2, aes(x = time, y=meanscore, group=Sex, fill=Sex)) + 
+    geom_line() + theme_bw() + theme(legend.position = "top") +
+    labs(fill = "Score") + xlab("Time (d)") + ylab("Mean score")
+}
+
 ```
 
 #### Model
@@ -501,58 +531,75 @@ saemix.model<-saemixModel(model=ordinal.model,description="Ordinal categorical m
 saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, fim=FALSE, nb.chains=10, nbiter.saemix=c(600,100), print=FALSE)
 #saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, nb.chains=10, fim=FALSE)
 
-ord.fit<-saemix(saemix.model,saemix.data,saemix.options)
+ord.fit<-saemix(saemix.model,ordknee.data,saemix.options)
 summary(ord.fit)
 plot(ord.fit, plot.type="convergence")
 
 ## Note: comparable estimates obtained with Monolix (not same, but within CI)
 ## quite a lot of sensitivity to distributions (when using eg normal distributions in Monolix the parameters and most importantly the SE's fluctuated quite a bit)
 ```
+We then applied the stepwise algorithm proposed by Delattre et al. to simultaneously investigate the covariate model and variability structure. This was run outside Rstudio because of memory issues. The resulting model has variability on all the $\alpha$ parameters, and included treatment on $\alpha_2$ and $\beta$ and age squared on $\alpha_1$. Comparing the two models through the *compare.saemix()* function shows about 30 points improvement in the BIC.
 
+```{r kneeStepwiseAlgorithm}
+# Do not run, Rstudio fails (ran in a script as "R CMD BATCH paper_kneeCovModel.R paper_kneeCovModel.out")
+#if(runCovKnee) cov.ordfit <- step.saemix(ord.fit, trace=TRUE, direction='both')
 
-We can then fit different models. Here we considered covariates on the two parameters with interindividual variability, first testing all covariates then reducing to a model with Age2 influencing $\theta_1$ and treatment affecting the slope $\beta$, which had the lowest BICc, as shown using the *compare.saemix()* function.
+# Resulting model
+## IIV: all alphas, none on beta :-/
+## Covariates:   alp1(Age2)alp2(treatment)beta(treatment)
+covariate.model <- matrix(data=0, nrow=4, ncol=5)
+covariate.model[3,2]<-covariate.model[3,5]<-covariate.model[4,1]<-1
+ordmodel.cov<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",
+                simulate.function=simulateOrdinal, psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5, byrow=TRUE, 
+                dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))), transform.par=c(0,1,1,1,1),
+                omega.init=diag(c(100, 1, 1, 1, 1)), covariate.model=covariate.model, covariance.model = diag(c(1,1,1,1,0)), verbose=FALSE)
 
-```{r kneeCovariateModel}
 # Fitting
-covmodel2<-covmodel1<-matrix(data=0,ncol=5,nrow=4)
-covmodel1[,1]<-1
-covmodel1[,5]<-1
-covmodel2[3,5]<-covmodel2[4,1]<-1
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, fim=FALSE, nb.chains=10, nbiter.saemix=c(600,100), print=FALSE)
+#saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, nb.chains=10, fim=FALSE)
 
-saemix.model.cov1<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",simulate.function=simulateOrdinal,
-                              psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))),
-                              transform.par=c(0,1,1,1,1),omega.init=diag(rep(1,5)), covariance.model = diag(c(1,0,0,0,1)),
-                              covariate.model = covmodel1, verbose=FALSE)
-saemix.model.cov2<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",simulate.function=simulateOrdinal,
-                               psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))),
-                               transform.par=c(0,1,1,1,1),omega.init=diag(rep(1,5)), covariance.model = diag(c(1,0,0,0,1)),
-                               covariate.model = covmodel2, verbose=FALSE)
+ord.fit.cov<-saemix(ordmodel.cov,ordknee.data,saemix.options)
+summary(ord.fit.cov)
 
-ord.fit.cov1<-saemix(saemix.model.cov1,saemix.data,saemix.options)
-ord.fit.cov2<-saemix(saemix.model.cov2,saemix.data,saemix.options)
-BIC(ord.fit)
-BIC(ord.fit.cov1)
-BIC(ord.fit.cov2)
-summary(ord.fit.cov2)
-
-# Comparing the 3 covariate models - model with Age2 on alp1 and treatment on beta best
-compare.saemix(ord.fit, ord.fit.cov1, ord.fit.cov2)
+# Compare the base and covariate model 
+compare.saemix(ord.fit, ord.fit.cov)
 ```
 
 
 #### Model evaluation
 
-In the code below we define a simulation function for the ordinal model and we apply it to the covariate model, producing VPC plots with the *discreteVPC()* function (see details above for the binary example). The VPC show some model misspecification, especially in the intermediate pain scores, as well as a tendency to overestimate the improvement, driven by the reduction in the highest pain score. This suggests the impact of time and treatment are not well taken into account in the current model.
+In the code below we produce VPC plots with the *discreteVPC()* function (see details above for the binary example) for the model with covariates. The VPC show some model misspecification, especially in the intermediate pain scores, as well as a tendency to overestimate the improvement, driven by the increase in the lowest pain score. This suggests the impact of time and treatment are not well taken into account in the current model. A second plot stratified by treatment also suggests treatment effect is not properly accounted for the three lowest pain categories and across time. Finally, although Sex was not retained in the covariate model, VPC stratified on Sex seem to indicate different distributions of the pain scores between men and women, especially in the first and third categories (no or middle pain levels).
 
 ```{r kneeEval}
 ### Simulations for VPC
 nsim<-100
-yfit<-ord.fit.cov2
+yfit<-ord.fit.cov
 yfit<-simulateDiscreteSaemix(yfit, nsim=nsim)
 discreteVPC(yfit, outcome="categorical")
+discreteVPC(yfit, outcome='categorical',covsplit=TRUE, which.cov="treatment")
+discreteVPC(yfit, outcome='categorical',covsplit=TRUE, which.cov="Sex")
+
+if(saveFigs) {
+  namfig<-"knee_VPCbytreatment.eps"
+  cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
+  discreteVPC(yfit, outcome='categorical',covsplit=TRUE, which.cov="treatment")
+  dev.off()
+  namfig<-"knee_VPCbySex.eps"
+  cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
+  discreteVPC(yfit, outcome='categorical',covsplit=TRUE, which.cov="Sex")
+  dev.off()
+}
+
+if(FALSE) {
+  ### Simulations for VPC - model without covariates
+  nsim<-100
+  yfit<-ord.fit
+  yfit<-simulateDiscreteSaemix(yfit, nsim=nsim)
+  discreteVPC(yfit, outcome="categorical")
+}
 ```
 
-We can also look at the VPC for the median score in each treatment group to find that the model tends to underpredict the pain scores, especially in the group receiving the first therapy.
+We can also look at the VPC for the median score in each treatment group to find that the model tends to underpredict the pain scores, especially in the group receiving therapy 1.
 
 ```{r kneeMedEval}
 # VPC for median score in each group
@@ -592,16 +639,18 @@ if(saveFigs) {
 }
 ```
 
+Taken together, these results suggest that the proportional odds model may not be adequate to describe this data. We could investigate multinomial models to allow for different time trends within each value of score, or consider different types of models such as Markov models, but these are currently out of scope in **saemix**.
+
 #### Estimation errors
 
 ##### Boostrap methods
 
-As previously, we can assess parameters uncertainty using bootstrap approaches. Here we load the results from the two bootstrap files prepared beforehand by running the *saemix.bootstrap* code with 500 simulations. We compute the bootstrap quantiles for the 95\% CI, as well as the SD of the bootstrap distribution, corresponding to a normal approximation of the SE.
+As previously, we can assess parameters uncertainty using bootstrap approaches. Here we load the results from the two bootstrap files prepared beforehand by running the *saemix.bootstrap()* function with 500 simulations. We compute the bootstrap quantiles for the 95\% CI, as well as the SD of the bootstrap distribution, corresponding to a normal approximation of the SE.
 
 ```{r kneeBootstrap}
 if(runBootstrap) {
-  case.ordinal <- saemix.bootstrap(ord.fit, method="case", nboot=nboot) 
-  cond.ordinal <- saemix.bootstrap(ord.fit, method="conditional", nboot=nboot) 
+  case.ordinal <- saemix.bootstrap(ord.fit.cov, method="case", nboot=nboot) 
+  cond.ordinal <- saemix.bootstrap(ord.fit.cov, method="conditional", nboot=nboot) 
 } else {
  case.ordinal <- read.table(file.path(saemixDir,"bootstrap","results","knee_caseBootstrap.res"), header=T)
  cond.ordinal <- read.table(file.path(saemixDir,"bootstrap","results","knee_condBootstrap.res"), header=T)
@@ -610,7 +659,7 @@ if(runBootstrap) {
 case.ordinal <- case.ordinal[!is.na(case.ordinal[,2]),]
 cond.ordinal <- cond.ordinal[!is.na(cond.ordinal[,2]),]
 
-par.estim<-c(ord.fit@results@fixed.effects,diag(ord.fit@results@omega)[ord.fit@results@indx.omega])
+par.estim<-format(c(ord.fit@results@fixed.effects,diag(ord.fit@results@omega)[ord.fit@results@indx.omega]), digits=2, nsmall=1)
 df2<-data.frame(parameter=colnames(case.ordinal)[-c(1)], saemix=par.estim)
 for(i in 1:2) {
   if(i==1) {
@@ -620,9 +669,9 @@ for(i in 1:2) {
     resboot1<-cond.ordinal
     namboot <-"cNP"
   }
-  mean.bootDist<-apply(resboot1, 2, mean)[-c(1)]
-  sd.bootDist<-apply(resboot1, 2, sd)[-c(1)]
-  quant.bootDist<-apply(resboot1[-c(1)], 2, quantile, c(0.025, 0.975))
+  mean.bootDist<-apply(resboot1, 2, mean, na.rm=T)[-c(1)]
+  sd.bootDist<-apply(resboot1, 2, sd, na.rm=T)[-c(1)]
+  quant.bootDist<-apply(resboot1[-c(1)], 2, quantile, c(0.025, 0.975), na.rm=T)
   l1<-paste0(format(mean.bootDist, digits=2)," (",format(sd.bootDist,digits=2, trim=T),")")
   l2<-paste0("[",format(quant.bootDist[1,], digits=2),", ",format(quant.bootDist[2,],digits=2, trim=T),"]")
   df2<-cbind(df2, l1, l2)
@@ -631,11 +680,25 @@ for(i in 1:2) {
 }
 print(df2)
 
+# pretty print for paper
+df3<-df2[,c(2,4)] # case bootstrap
+rownames(df3)<-c("$\\alpha_1$","$\\alpha_2$","$\\alpha_3$","$\\alpha_4$","$\\beta$", "$\\omega_{\\alpha_1}$","$\\omega_{\\beta}$")
+print(xtable(df3), only.contents=TRUE, include.rownames=TRUE,  floating=F, sanitize.rownames.function = identity)
+
+df3<-df2[,c(2,5)] # conditional bootstrap
+rownames(df3)<-c("$\\alpha_1$","$\\alpha_2$","$\\alpha_3$","$\\alpha_4$","$\\beta$", "$\\omega_{\\alpha_1}$","$\\omega_{\\beta}$")
+print(xtable(df3), only.contents=TRUE, include.rownames=TRUE,  floating=F, sanitize.rownames.function = identity)
+
+
 ```
 
 ## References
 
 **Comets E**, Rodrigues C, Jullien V, Ursino M (2021). Conditional non-parametric bootstrap for non-linear mixed effect models. *Pharmaceutical Research*, 38: 1057-66.
+
+**Delattre M**, Lavielle M, Poursat MA (2014) A note on BIC in mixed effects models. *Electronic Journal of Statistics* 8(1) p. 456-475
+
+**Delattre M**, Poursat MA (2017) BIC strategies for model choice in a population approach. (arXiv:1612.02405)
 
 **Schauberger G**, **Tutz G** (2020). catdata: Categorical Data. R package version 1.2.2. https://CRAN.R-project.org/package=catdata
 

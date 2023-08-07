@@ -39,7 +39,7 @@ library(devtools)
 
 # testMode TRUE => tests the compiled package in dev_mode()
 # testMode FALSE => tests the library functions by loading them
-testMode<-TRUE
+testMode<-FALSE
 
 # Whether to save the plots for the documentation
 saveForDocs<-FALSE
@@ -180,6 +180,40 @@ saemix.fit<-conddist.saemix(saemix.fit, plot=TRUE)
 plot(saemix.fit, plot.type="individual", smooth=TRUE)
 
 ```
+### Using predict.SaemixModel to evaluate the initial estimates
+
+We can use the *predict.SaemixModel()* function to quickly check the initial fixed effects, either 
+
+```{r testInitialFixedEffects}
+# Predictors given as a dataframe
+ypred <- predict.SaemixModel(saemix.model, saemix.data@data[,saemix.data@name.predictors, drop=FALSE])
+
+# Predictors extracted from a saemixData object
+ypred2 <- predict.SaemixModel(saemix.model, saemix.data)
+
+# Summary of 
+cat("Check that the predictions don't give any NA and are reasonable compared to the observations\n")
+summary(ypred$predictions)
+summary(saemix.data@data[,saemix.data@name.response])
+summary(ypred2$predictions$pred-ypred$predictions$pred)
+
+cat("Overlay the predictions and the data (roughly, not accounting for different doses...)\n")
+plot(saemix.data@data$Time, saemix.data@data$Concentration, pch=20, xlab="Time (hr)", ylab="Concentrations (mg/L)", ylim=c())
+#for(i in 1:saemix.data@N) lines(ypred1$Time[ypred1$id==i], ypred1$pred[ypred1$id==i])
+ypred1 <-ypred2$predictions[order(ypred2$predictions$Time),]
+lines(loess(pred ~ Time, data=ypred1), col="Red", lwd=2)
+
+# Better increasing V and CL
+ypred3 <- predict.SaemixModel(saemix.model, saemix.data, psi=c(1,40,2))
+ypred1 <-ypred3$predictions[order(ypred2$predictions$Time),]
+lines(loess(pred ~ Time, data=ypred1), col="Blue", lwd=2)
+
+checkInitialFixedEffects(saemix.model, saemix.data)
+
+summary(predict(saemix.fit))
+```
+
+
 
 ### One random effect
 
@@ -333,6 +367,25 @@ ynpde<-npdeSaemix(saemix.fit)
 plot(ynpde, plot.type="vpc")
 ```
 
+
+```{r testInitialFixedEffectsOxford}
+# Predictors given as a dataframe
+ypred <- predict.SaemixModel(saemix.model, saemix.data@data[,saemix.data@name.predictors, drop=FALSE])
+
+# Predictors extracted from a saemixData object
+ypred2 <- predict.SaemixModel(saemix.model, saemix.data)
+
+# Summary of 
+cat("Check that the predictions don't give any NA and are reasonable compared to the observations\n")
+summary(ypred$predictions)
+summary(saemix.data@data[,saemix.data@name.response])
+summary(ypred2$predictions$pred-ypred$predictions$pred)
+
+# Graphs
+checkInitialFixedEffects(saemix.model, saemix.data)
+
+summary(predict(saemix.fit))
+```
 ### Cow
 
 ```{r cow}

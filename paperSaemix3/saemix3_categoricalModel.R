@@ -30,6 +30,7 @@ data(toenail.saemix)
 saemix.data<-saemixData(name.data=toenail.saemix,name.group=c("id"),name.predictors=c("time","y"), name.response="y",
                         name.covariates=c("treatment"))
 
+#################################### 
 #### Exploring data
 
 # Distribution of times
@@ -60,7 +61,7 @@ if(saveFigs) {
   dev.off()
 }
 
-
+#################################### 
 #### Statistical model
 
 # saemix model
@@ -100,6 +101,7 @@ binary.fit<-saemix(saemix.model,saemix.data,saemix.options)
 
 plot(binary.fit, plot.type="convergence")
 
+#################################### 
 #### Diagnostics 
 
 #  $1_{Y_{ij}=0} \times (1-P(Y_{ij}=1)) + 1_{Y_{ij}=1} \times P(Y_{ij}=1) $
@@ -145,6 +147,7 @@ if(saveFigs) {
 
 # npd TODO
 
+#################################### 
 #### Standard errors of estimation
 
 ##### Case bootstrap
@@ -256,7 +259,7 @@ if(nboot<200) cat("The number of bootstrap samples is too low to provide good es
 #### Data
 data(knee.saemix)
 
-saemix.data<-saemixData(name.data=knee.saemix,name.group=c("id"),
+ordknee.data<-saemixData(name.data=knee.saemix,name.group=c("id"),
                         name.predictors=c("y", "time"), name.X=c("time"),
                         name.covariates = c("Age","Sex","treatment","Age2"),
                         units=list(x="d",y="", covariates=c("yr","-","-","yr2")))
@@ -271,6 +274,7 @@ ggplot(data = gtab, aes(x = time, y=n, group=y, fill=y)) +
   labs(fill = "Score") + xlab("Time (d)") + ylab("Counts")
 
 
+#################################### 
 #### Model
 
 # Model for ordinal responses
@@ -328,77 +332,55 @@ saemix.model<-saemixModel(model=ordinal.model,description="Ordinal categorical m
 saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, fim=FALSE, nb.chains=10, nbiter.saemix=c(600,100))
 #saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, nb.chains=10, fim=FALSE)
 
-ord.fit<-saemix(saemix.model,saemix.data,saemix.options)
+ord.fit<-saemix(saemix.model,ordknee.data,saemix.options)
 plot(ord.fit, plot.type="convergence")
 
+#################################### 
+# Covariate model
+# Do not run, Rstudio fails (ran in a script as "R CMD BATCH paper_kneeCovModel.R paper_kneeCovModel.out")
+#if(runCovKnee) cov.ordfit <- step.saemix(ord.fit, trace=TRUE, direction='both')
+
+# Resulting model
+## IIV: all alphas, none on beta :-/
+## Covariates:   alp1(Age2)alp2(treatment)beta(treatment)
+covariate.model <- matrix(data=0, nrow=4, ncol=5)
+covariate.model[3,2]<-covariate.model[3,5]<-covariate.model[4,1]<-1
+ordmodel.cov<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",
+                          simulate.function=simulateOrdinal, psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5, byrow=TRUE, 
+                                      dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))), transform.par=c(0,1,1,1,1),
+                          omega.init=diag(c(100, 1, 1, 1, 1)), covariate.model=covariate.model, covariance.model = diag(c(1,1,1,1,0)), verbose=FALSE)
 
 # Fitting
-covmodel2<-covmodel1<-matrix(data=0,ncol=5,nrow=4)
-covmodel1[,1]<-1
-covmodel1[,5]<-1
-covmodel2[3,5]<-covmodel2[4,1]<-1
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, fim=FALSE, nb.chains=10, nbiter.saemix=c(600,100), print=FALSE)
+#saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, nb.chains=10, fim=FALSE)
 
-saemix.model.cov1<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",simulate.function=simulateOrdinal,
-                               psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))),
-                               transform.par=c(0,1,1,1,1),omega.init=diag(rep(1,5)), covariance.model = diag(c(1,0,0,0,1)),
-                               covariate.model = covmodel1)
-saemix.model.cov2<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",simulate.function=simulateOrdinal,
-                               psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))),
-                               transform.par=c(0,1,1,1,1),omega.init=diag(rep(1,5)), covariance.model = diag(c(1,0,0,0,1)),
-                               covariate.model = covmodel2)
+ord.fit.cov<-saemix(ordmodel.cov,ordknee.data,saemix.options)
+summary(ord.fit.cov)
 
-ord.fit.cov1<-saemix(saemix.model.cov1,saemix.data,saemix.options)
-ord.fit.cov2<-saemix(saemix.model.cov2,saemix.data,saemix.options)
-BIC(ord.fit)
-BIC(ord.fit.cov1)
-BIC(ord.fit.cov2)
+# Compare the base and covariate model 
+compare.saemix(ord.fit, ord.fit.cov)
 
-# Comparing the 3 covariate models - model with Age2 on alp1 and treatment on beta best
-compare.saemix(ord.fit, ord.fit.cov1, ord.fit.cov2)
-
+#################################### 
 #### Model evaluation
 
 ### Simulations for VPC
 nsim<-100
-yfit<-ord.fit.cov2
+yfit<-ord.fit.cov
 yfit<-simulateDiscreteSaemix(yfit, nsim=nsim)
-
-### VPC
 discreteVPC(yfit, outcome="categorical")
+discreteVPC(yfit, outcome='categorical',covsplit=TRUE, which.cov="treatment")
+discreteVPC(yfit, outcome='categorical',covsplit=TRUE, which.cov="Sex")
 
-### Using simdat with R
-simdat <-yfit@sim.data@datasim
-simdat$time<-rep(yfit@data@data$time,nsim)
-simdat$treatment<-rep(yfit@data@data$treatment,nsim)
-
-ytab<-NULL
-for(irep in 1:nsim) {
-  xtab<-simdat[simdat$irep==irep,]
-  suppressMessages(
-    xtab1 <- xtab %>%
-      group_by(time, treatment, ysim) %>%
-      summarise(n=length(ysim))
-  )
-  ytab<-rbind(ytab,xtab1[,c("time","ysim","n","treatment")])
+if(saveFigs) {
+  namfig<-"knee_VPCbytreatment.eps"
+  cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
+  discreteVPC(yfit, outcome='categorical',covsplit=TRUE, which.cov="treatment")
+  dev.off()
+  namfig<-"knee_VPCbySex.eps"
+  cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
+  discreteVPC(yfit, outcome='categorical',covsplit=TRUE, which.cov="Sex")
+  dev.off()
 }
-gtab <- ytab %>%
-  group_by(time, treatment, ysim) %>%
-  summarise(lower=quantile(n, c(0.05)), n=quantile(n, c(0.5)), upper=quantile(n, c(0.95))) %>%
-  mutate(y=as.factor(ysim))
-
-knee2 <- knee.saemix %>%
-  group_by(time, treatment, y) %>%
-  summarise(n=length(y)) %>%
-  mutate(y=as.factor(y))
-
-
-kneevpc <- ggplot(data = knee2, aes(x = time, y=n, fill=y, group=treatment)) + 
-  geom_ribbon(data=gtab, aes(x=time, ymin=lower, ymax=upper), alpha=0.9, colour="lightblue") +
-  geom_col(position = "dodge", width=0.5, colour="lightblue") + theme_bw() + 
-  scale_fill_brewer(palette = "Blues") + theme(legend.position = "top") +
-  labs(fill = "Score") + xlab("Time (d)") + ylab("Counts") + facet_wrap(treatment~y, nrow=2)
-
-print(kneevpc)
 
 # VPC for median score in each group
 knee3 <- knee.saemix %>%
@@ -433,7 +415,42 @@ if(saveFigs) {
   dev.off()
 }
 
+#################################### 
+### Using simdat with R to get diagnostic plots (not as nice)
+simdat <-yfit@sim.data@datasim
+simdat$time<-rep(yfit@data@data$time,nsim)
+simdat$treatment<-rep(yfit@data@data$treatment,nsim)
 
+ytab<-NULL
+for(irep in 1:nsim) {
+  xtab<-simdat[simdat$irep==irep,]
+  suppressMessages(
+    xtab1 <- xtab %>%
+      group_by(time, treatment, ysim) %>%
+      summarise(n=length(ysim))
+  )
+  ytab<-rbind(ytab,xtab1[,c("time","ysim","n","treatment")])
+}
+gtab <- ytab %>%
+  group_by(time, treatment, ysim) %>%
+  summarise(lower=quantile(n, c(0.05)), n=quantile(n, c(0.5)), upper=quantile(n, c(0.95))) %>%
+  mutate(y=as.factor(ysim))
+
+knee2 <- knee.saemix %>%
+  group_by(time, treatment, y) %>%
+  summarise(n=length(y)) %>%
+  mutate(y=as.factor(y))
+
+
+kneevpc <- ggplot(data = knee2, aes(x = time, y=n, fill=y, group=treatment)) + 
+  geom_ribbon(data=gtab, aes(x=time, ymin=lower, ymax=upper), alpha=0.9, colour="lightblue") +
+  geom_col(position = "dodge", width=0.5, colour="lightblue") + theme_bw() + 
+  scale_fill_brewer(palette = "Blues") + theme(legend.position = "top") +
+  labs(fill = "Score") + xlab("Time (d)") + ylab("Counts") + facet_wrap(treatment~y, nrow=2)
+
+print(kneevpc)
+
+#################################### 
 #### Estimation errors
 
 ##### Boostrap methods
@@ -470,3 +487,50 @@ for(i in 1:2) {
 cat("Bootstrap estimates computed with B=",dim(case.ordinal)[1],"samples\n")
 print(df2)
 
+##################################### Additional analyses for knee data - interaction therapy/gender
+
+knee.saemix$intSexTh <- ifelse(knee.saemix$Sex==1 & knee.saemix$treatment==1,1,0)
+
+ordknee.data<-saemixData(name.data=knee.saemix,name.group=c("id"),
+                        name.predictors=c("y", "time"), name.X=c("time"),
+                        name.covariates = c("Age","Sex","treatment","Age2","intSexTh"),
+                        units=list(x="d",y="", covariates=c("yr","-","-","yr2","-")))
+plotDiscreteData(ordknee.data, outcome="categorical", which.cov="intSexTh")
+plotDiscreteData(ordknee.data, outcome="categorical", which.cov="Sex")
+plotDiscreteData(ordknee.data, outcome="categorical", which.cov="treatment")
+
+covmodel4<-covmodel2
+covmodel4[3,]<-1
+
+saemix.model.cov4<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",simulate.function=simulateOrdinal,
+                               psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))),
+                               transform.par=c(0,1,1,1,1),omega.init=diag(rep(1,5)), covariance.model = diag(c(1,0,0,0,1)),
+                               covariate.model = covmodel4)
+ord.fit.cov4<-saemix(saemix.model.cov4,ordknee.data,saemix.options)
+
+### Simulations for VPC
+nsim<-100
+yfit<-ord.fit.cov4
+yfit<-simulateDiscreteSaemix(yfit, nsim=nsim)
+
+### VPC
+discreteVPC(yfit, outcome="categorical")
+discreteVPC(yfit, outcome="categorical", covsplit=TRUE, which.cov="Sex")
+discreteVPC(yfit, outcome="categorical", covsplit=TRUE, which.cov="treatment")
+
+covmodel5<-rbind(covmodel4, c(1,1,1,0,0))
+
+saemix.model.cov5<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",simulate.function=simulateOrdinal,
+                               psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))),
+                               transform.par=c(0,1,1,1,1),omega.init=diag(rep(1,5)), covariance.model = diag(c(1,0,0,0,1)),
+                               covariate.model = covmodel5)
+ord.fit.cov5<-saemix(saemix.model.cov5,ordknee.data,saemix.options)
+### Simulations for VPC
+nsim<-100
+yfit<-ord.fit.cov5
+yfit<-simulateDiscreteSaemix(yfit, nsim=nsim)
+
+### VPC
+discreteVPC(yfit, outcome="categorical")
+discreteVPC(yfit, outcome="categorical", covsplit=TRUE, which.cov="Sex")
+discreteVPC(yfit, outcome="categorical", covsplit=TRUE, which.cov="treatment")

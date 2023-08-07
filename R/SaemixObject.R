@@ -86,7 +86,7 @@ setClass(Class="SaemixObject",
 # Initialize
 #' @rdname initialize-methods
 #' 
-#' @param .Object a SaemixObject, SaemixRes, SaemixData or SaemixModel object to initialise
+#' @param .Object an SaemixObject, SaemixRes, SaemixData or SaemixModel object to initialise
 #' @param data an SaemixData object
 ## #' @param model an SaemixModel object
 #' @param options a list of options passed to the algorithm
@@ -354,7 +354,7 @@ saemixControl<-function(map=TRUE,fim=TRUE,ll.is=TRUE,ll.gq=FALSE,nbiter.saemix=c
 
 ##' Get/set methods for SaemixObject object
 ##' 
-##' Access slots of a SaemixObject object using the object\["slot"\] format
+##' Access slots of an SaemixObject object using the object\["slot"\] format
 ##' 
 #' @param x object
 #' @param i element to be replaced
@@ -1216,7 +1216,7 @@ setMethod(f="plot",
 ####			Likelihood and tests		####
 ####################################################################################
 
-#' Extract likelihood from a saemixObject resulting from a call to saemix
+#' Extract likelihood from an SaemixObject resulting from a call to saemix
 #'
 #' The likelihood in saemix can be computed by one of three methods: linearisation (linearisation of the model), importance sampling (stochastic integration) and gaussian quadrature (numerical integration). The linearised likelihood is obtained as a byproduct of the computation of the Fisher Information Matrix (argument FIM=TRUE in the options given to the saemix function).
 #' If no method argument is given, this function will attempt to extract the likelihood computed by importance sampling (method="is"), unless the object contains the likelihood computed by linearisation, in which case the function will extract this component instead.
@@ -1420,11 +1420,11 @@ setMethod("eta","SaemixObject",
   }
 )
 
-#' Extract coefficients from a saemix fit
+#' Extract coefficients from an saemix fit
 #' 
 #' @name coef.saemix
 #' 
-#' @param object a SaemixObject
+#' @param object an SaemixObject
 #' @param ... further arguments to be passed to or from other methods
 #' @return a list with 3 components:
 #' \describe{
@@ -1488,7 +1488,7 @@ vcov.SaemixObject<-function(object, ...) {
 ####			saemixObject class - Replace the data component in an saemixObject 		####
 ####################################################################################
 
-#' Replace the data element in a SaemixObject object
+#' Replace the data element in an SaemixObject object
 #' 
 #' Returns an SaemixObject object where the data object has been replaced by the data provided in a dataframe
 #'
@@ -1504,7 +1504,7 @@ vcov.SaemixObject<-function(object, ...) {
 #' @export 
 
 replaceData.saemixObject<-function(saemixObject, newdata) {
-  # Takes a saemixObject fit, changes the data object and removes all results pertaining to individual parameters and LL
+  # Takes an SaemixObject fit, changes the data object and removes all results pertaining to individual parameters and LL
   getmode <- function(v) {
     uniqv <- unique(v)
     uniqv[which.max(tabulate(match(v, uniqv)))]

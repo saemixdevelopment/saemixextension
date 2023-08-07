@@ -34,6 +34,7 @@ setwd(workDir)
 
 # Libraries
 library(saemix)
+library(gridExtra) # waffle plot
 
 # Library survival for KM plot
 library(survival)
@@ -55,18 +56,29 @@ nboot <-10
 
 #### Data description - lung cancer
 
-The example chosen to illustrate the analysis of time-to-event data in **saemix** is the NCCTG Lung Cancer Data, describing the survival in patients with advanced lung cancer from the North Central Cancer Treatment Group (Loprinzi et al. 1994). Covariates measured in the study include performance scores rating how well the patient can perform usual daily activities. We reformatted the *cancer* dataset provided in the **survival** package in R in SAEM format: patients with missing age, sex, institution or physician assessments were removed from the dataset. Status was recoded as 1 for death and 0 for a censored event, and a censoring column was added to denote whether the patient was dead or alive at the time of the last observation. A line at time=0 was added for all subjects. Finally, subjects were numbered consecutively from 0 to 1.
+The example chosen to illustrate the analysis of time-to-event data in **saemix** is the NCCTG Lung Cancer Data, describing the survival in patients with advanced lung cancer from the North Central Cancer Treatment Group (Loprinzi et al. 1994). Covariates measured in the study include performance scores rating how well the patient can perform usual daily activities. We reformatted the *cancer* dataset (previously *lung*) provided in the **survival** package in R in SAEM format: patients with missing age, sex, institution or physician assessments were removed from the dataset (3 patients removed, leaving 225 in the database). Status was recoded as 1 for death and 0 for a censored event, and a censoring column was added to denote whether the patient was dead or alive at the time of the last observation. A line at time=0 was added for all subjects. 
 
-We can plot the distribution of times as a histogram.
+We can plot the distribution of times as a histogram. Note that this dataset contains many missing values in the meal calorie column, and a few in weight loss and patient-assessed Karnofsky score. Here we set the missing patient-assessed Karnofsky scores to the median, and we don't include the other two covariates in the dataset as they have more missing values.
 
 ```{r lungTTEData}
 data(lung.saemix)
-saemix.data<-saemixData(name.data=lung.saemix,header=TRUE,name.group=c("id"),
-      name.predictors=c("time","status","cens"),name.response=c("status"),
-      name.covariates=c("age", "sex", "ph.ecog", "ph.karno", "pat.karno", "wt.loss","meal.cal"),
-      units=list(x="days",y="",covariates=c("yr","","-","%","%","cal","pounds")), verbose=FALSE)
+# all covariates (but need to manage the missing covariates)
+# ECOG status treated as continuous
+# missing patient Karnofsky scores set to median (in 3 patients)
+# other covariates still have missing values
+lung1<-lung.saemix
+lung1$pat.karno[is.na(lung1$pat.karno)]<-median(lung1$pat.karno, na.rm=TRUE)
+
+saemix.data.contPH<-saemixData(name.data=lung1,header=TRUE,name.group=c("id"),
+                        name.predictors=c("time","status","cens"),name.response=c("status"),
+                        name.covariates=c( "sex", "ph.ecog", "ph.karno", "pat.karno", "age"),
+                        units=list(x="days",y="",covariates=c("","-","%","%","yr")), verbose=FALSE)
 
 plotDiscreteData(saemix.data, outcome="tte", which.cov="sex")
+
+xplot1<-plotDiscreteData(saemix.data, outcome="tte", which.cov="sex")
+xplot2<-plotDiscreteData(saemix.data, outcome="tte", which.cov="ph.ecog")
+grid.arrange(grobs=list(xplot1, xplot2), nrow=1, ncol=2)
 
 # Histogram
 hist(lung.saemix$time[lung.saemix$status==1])
@@ -74,10 +86,19 @@ hist(lung.saemix$time[lung.saemix$status==1])
 # Note: missing data in pat.karno, wt.loss and meal.cal
 if(FALSE)
     print(summary(lung.saemix))
+
+if(saveFigs) {
+  namfig<-"lung_exploreSurv.eps"
+  cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
+  grid.arrange(grobs=list(xplot1, xplot2), nrow=1, ncol=2)
+  dev.off()
+}
 ```
 
 
 ##### Kaplan-Meier plot
+
+We can also plot the traditional Kaplan-Meier plot using the functions in the **survival** package.
 
 ```{r lungKM}
 lung.surv<-lung.saemix[lung.saemix$time>0,]
@@ -89,10 +110,16 @@ plot(nonpar.fit)
 
 #### Model for TTE data
 
-We can use a Weibull model for the hazard, parameterised as $\lambda$ and $\beta$. For individual $i$, the hazard function of this model is:
-$$ h(t) = \frac{\beta}{\lambda} \; \left(\frac{t}{\lambda}  \right) ^{\beta-1} $$
+In **saemix**, we model survival using parametric models. Here we can first use a Weibull model for the hazard, parameterised as $T_e$ and $\gamma$. For individual $i$, the hazard function of this model is:
+$$ h(t) = \frac{\gamma}{T_e} \; \left(\frac{t}{T_e}  \right) ^{\gamma-1} $$
 And the parametric survival function is given by:
-$$ S(t) = e^{ - \left( \frac{t}{\lambda} \right) ^{\beta}}$$
+$$ S(t) = e^{ - \left( \frac{t}{T_e} \right) ^{\gamma}} = e^{-H(t)$$ 
+where $H$ denotes the cumulative hazard function.
+
+In the model function in **saemix**, we define the log-likelihood of each event in the dataset:
+
+- at time 0, we set a log-likelihood of 0
+- at the time of an event, the likelihood is equal to $l(t, \delta, \psi_i$ where $\delta$ is the censoring indicator (1 if the event occurred, 0 if the time corresponds to a censoring time) and $\psi_i=(T_{e,i}, \gamma_i)$ are the individual parameters for subject $i$.
 
 ```{r tteWeibullFit}
 weibulltte.model<-function(psi,id,xidep) {
@@ -100,26 +127,26 @@ weibulltte.model<-function(psi,id,xidep) {
   y<-xidep[,2] # events (1=event, 0=no event)
   cens<-which(xidep[,3]==1) # censoring times (subject specific)
   init <- which(T==0)
-  lambda <- psi[id,1] # Parameters of the Weibull model
-  beta <- psi[id,2]
+  Te <- psi[id,1] # Parameters of the Weibull model
+  gamma <- psi[id,2]
   Nj <- length(T)
   
   ind <- setdiff(1:Nj, append(init,cens)) # indices of events
-  hazard <- (beta/lambda)*(T/lambda)^(beta-1) # ln(H')
-  H <- (T/lambda)^beta # ln(H)
+  hazard <- (gamma/Te)*(T/Te)^(gamma-1) # h
+  H <- (T/Te)^gamma # H= -ln(S)
   logpdf <- rep(0,Nj) # ln(l(T=0))=0
-  logpdf[cens] <- -H[cens] + H[cens-1] # ln(l(T=censoring time))
-  logpdf[ind] <- -H[ind] + H[ind-1] + log(hazard[ind]) # ln(l(T=event time))
+  logpdf[cens] <- -H[cens] + H[cens-1] # ln(l(T=censoring time))=ln(S)=-H
+  logpdf[ind] <- -H[ind] + H[ind-1] + log(hazard[ind]) # ln(l(T=event time))=ln(S)+ln(h)
   return(logpdf)
 }
 
-saemix.model<-saemixModel(model=weibulltte.model,description="time model",modeltype="likelihood",
-  psi0=matrix(c(1,2),ncol=2,byrow=TRUE,dimnames=list(NULL,  c("lambda","beta"))),
+saemix.model<-saemixModel(model=weibulltte.model,description="Weibull TTE model",modeltype="likelihood",
+  psi0=matrix(c(1,2),ncol=2,byrow=TRUE,dimnames=list(NULL,  c("Te","gamma"))),
   transform.par=c(1,1),covariance.model=matrix(c(1,0,0,0),ncol=2, byrow=TRUE), verbose=FALSE)
 saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, print=FALSE)
 tte.fit<-saemix(saemix.model,saemix.data,saemix.options)
 plot(tte.fit, plot.type="convergence")
-summary(tte.fit)
+print(tte.fit)
 
 ```
 
@@ -129,42 +156,48 @@ Simulating from a TTE model is slightly more complicated than for the other non 
 
 For the single event Weibull model:
 
-$$F=1-e^{-\int_0^{T} h(u) du} = 1-e^{-\left( \frac{T}{\lambda} \right)^{\beta}} \sim \mathcal{U}(0,1)$$
+$$F=1-e^{-\int_0^{T} h(u) du} = 1-e^{-\left( \frac{T}{T_e} \right)^{\gamma}} \sim \mathcal{U}(0,1)$$
 
 Assuming we simulate $U=1-V$ from $\mathcal{U}(0,1)$, we can obtain a sample from the Weibull parametric model as:
-$$ T = \lambda \left(-\ln(V) + \left( \frac{T}{\lambda} \right)^{\beta} \right)^{1/\beta}$$
-In the following we assume the first column of *xidep* contains the observed times, and that there is a common censoring time (the maximum observed time). 
+$$ T = T_e \left(-\ln(V) \right)^{1/\gamma}$$
+In the following we assume the first column of *xidep* contains the observed times, and we keep the censoring times recorded for each subject.
 
 ```{r simulWeibullTTE}
 # Simulate events based on the observed individual censoring time
 simulateWeibullTTE <- function(psi,id,xidep) {
   T<-xidep[,1]
   y<-xidep[,2] # events (1=event, 0=no event)
+  delta <- xidep[,3] # censoring indicator
   cens<-which(xidep[,3]==1) # censoring times (subject specific)
+  tmax <- max(T[cens]) # maximum censoring time observed in dataset
   init <- which(T==0)
-  lambda <- psi[,1] # Parameters of the Weibull model
-  beta <- psi[,2]
+  Te <- psi[,1] # Parameters of the Weibull model
+  gamma <- psi[,2]
   Nj <- length(T)
   ind <- setdiff(1:Nj, append(init,cens)) # indices of events
   tevent<-T
   Vj<-runif(dim(psi)[1])
-  tsim<-lambda*(-log(Vj))^(1/beta) # nsuj events
+  tsim<-Te*(-log(Vj))^(1/gamma) #   events
   tevent[T>0]<-tsim
-  tevent[tevent[cens]>T[cens]] <- T[tevent[cens]>T[cens]]
+  tevent[delta==1 & tevent>T] <- T[delta==1 & tevent>T] # subject-specific censoring time
+#  tevent[delta==0 & tevent>tmax] <- tmax # censoring to tmax (for subjects who experienced an event)
+#  tevent[tevent[dead]>tmax] <- tmax # for subjects who initially experienced the event, use maximal censoring time
   return(tevent)
 }
 
 # Checking the simulation function
 xidep1<-saemix.data@data[,saemix.data@name.predictors]
 nsuj<-saemix.data@N
-psiM<-data.frame(lambda=rnorm(nsuj, mean=tte.fit@results@fixed.effects[1], sd=2), beta=tte.fit@results@fixed.effects[2])
+psiM<-data.frame(Te=rnorm(nsuj, mean=tte.fit@results@fixed.effects[1], sd=2), gamma=tte.fit@results@fixed.effects[2])
 id1<-rep(1:nsuj, each=2)
 simtime<-simulateWeibullTTE(psiM, id1, xidep1)
 
 par(mfrow=c(1,2))
-hist(saemix.data@data$time[saemix.data@data$time>0], breaks=30, xlab="Time", main="Original data")
-hist(simtime[simtime>0], breaks=30, xlim=c(0,1000), xlab="Time", main="Simulated data")
+hist(saemix.data@data$time[saemix.data@data$time>0], breaks=30, xlim=c(0,1050),xlab="Time", main="Original data")
+hist(simtime[simtime>0], breaks=30, xlim=c(0,1050), xlab="Time", main="Simulated data")
 ```
+
+#### Diagnostics
 
 We add the simulation function to the model element of the fitted object (we can also include the simulation function when creating the model by adding the argument *simulate.function=simulateWeibullTTE* to saemixModel in the code above). We then simulate data using the fitted model and this function through the *simulateDiscreteSaemix()* function, and use the *discreteVPC()* function to obtain a Kaplan-Meier type VPC showing the prediction band for the survival function according to the model, overlaid with the actual observed survival function.
 
@@ -183,11 +216,11 @@ We could also assume a common censoring (function *simulateWeibullTTE.maxcens()*
 simulateWeibullTTE.maxcens <- function(psi,id,xidep) {
   etime<-xidep[,1]
   censoringtime <- max(etime)
-  lambda <- psi[,1]
-  beta <- psi[,2]
+  Te <- psi[,1]
+  gamma <- psi[,2]
   N<-dim(psi)[1]
   Vj<-runif(N)
-  T<-lambda*(-log(Vj))^(1/beta)
+  T<-Te*(-log(Vj))^(1/gamma)
   T[T>censoringtime]<-censoringtime
   etime[etime>0]<-T
   return(etime)
@@ -195,26 +228,24 @@ simulateWeibullTTE.maxcens <- function(psi,id,xidep) {
 simtime.maxcens<-simulateWeibullTTE.maxcens(psiM, id1, xidep1)
 
 par(mfrow=c(1,3))
-hist(saemix.data@data$time[saemix.data@data$time>0], breaks=30, xlab="Time", main="Original data")
-hist(simtime[simtime>0], breaks=30, xlim=c(0,1000), xlab="Time", main="Simulated data")
-hist(simtime.maxcens[simtime.maxcens>0], breaks=30, xlim=c(0,1000), xlab="Time", main="Simulated data")
+hist(saemix.data@data$time[saemix.data@data$time>0], breaks=30, xlim=c(0,1050), xlab="Time", main="Original data")
+hist(simtime[simtime>0], breaks=30, xlim=c(0,1050), xlab="Time", main="Simulated data")
+hist(simtime.maxcens[simtime.maxcens>0], breaks=30, xlim=c(0,1050), xlab="Time", main="Simulated data")
 
 ```
 
 Note that there are some specialised packages such as the **survsim** and the **simsurv** package that could be leveraged for this exercise. Also, a dedicated package was recently developed by Ron Keizer to implement VPC for different types of data. For survival data, we can also use the *vpc_tte()* function from this package to produce the KM-VPC plot (see additional script *saemix3_tteModel_ronVPC.R*).
 
-#### Diagnostics
-
 ##### Comparison to the KM fit
 
 With TTE data the First-Order approximation for the FIM doesn't seem to perform too badly. We can use the delta-method to obtain standard errors around the value of the survival function, using the following vector of derivatives:
 $$ \begin{pmatrix}
-\frac{\delta S}{\delta \lambda} \\
-\frac{\delta S}{\delta \beta}
+\frac{\delta S}{\delta T_e} \\
+\frac{\delta S}{\delta \gamma}
 \end{pmatrix} = 
 \begin{pmatrix}
-\frac{\beta}{\lambda} \; \left( \frac{t}{\lambda} \right)^{\beta} e^{-  \left( \frac{t}{\lambda} \right)^{\beta}} \\ 
-- \ln \left( \frac{t}{\lambda} \right) \; \left( \frac{t}{\lambda} \right)^{\beta} e^{-  \left( \frac{t}{\lambda} \right)^{\beta}} \\ 
+\frac{\gamma}{T_e} \; \left( \frac{t}{T_e} \right)^{\gamma} e^{-  \left( \frac{t}{T_e} \right)^{\gamma}} \\ 
+- \ln \left( \frac{t}{T_e} \right) \; \left( \frac{t}{T_e} \right)^{\gamma} e^{-  \left( \frac{t}{T_e} \right)^{\gamma}} \\ 
 \end{pmatrix}$$
 
 We overlay the parametric fit and its confidence interval in red over the previous non-parametric KM estimate, and find a good concordance between the two.
@@ -231,9 +262,9 @@ ypred<-exp(-(xtim/estpar[1])^(estpar[2]))
 # Computing SE for the survival curve based on linearised FIM (probably not a good idea) through the delta-method
 invfim<-solve(tte.fit@results@fim[1:2,1:2])
 xcal<- (xtim/estpar[1])^estpar[2]
-dsdbeta<- -log(xtim/estpar[1]) * xcal *exp(-xcal)
+dsdgamma<- -log(xtim/estpar[1]) * xcal *exp(-xcal)
 dsdalpha<- estpar[2]/estpar[1] * xcal *exp(-xcal)
-xmat<-rbind(dsdalpha, dsdbeta)
+xmat<-rbind(dsdalpha, dsdgamma)
 #    x1<-t(xmat[,1:3]) %*% invfim %*% xmat[,1:3]
 sesurv<-rep(0,length(xcal))
 for(i in 1:length(xcal))
@@ -247,34 +278,243 @@ lines(xtim,ypred-1.96*sesurv, col="red",lwd=1, lty=2)
 
 ```
 
+#### Selecting a parametric model
+
+We now consider alternative models to fit the same data. Given the shape of the survival functions, other classical models we can consider are the exponential (or constant hazard) model, the log-logistic model, the gamma model and the Gompertz model. The corresponding hazard functions are:
+- exponential model: $ h(t) = \frac{1}{T_e} $
+- Gompertz: $h(t) = \frac{\gamma}{T_e'} \; e^{\frac{t}{T_e'}}$ & $\gamma \; (e^{\frac{t}{T_e'}}-1)$ where $T_e'=\frac{T_e}{ln \left( 1+ \frac{ln(2)}{\gamma} \right)}$
+- gamma model: $h(t)= \frac{1}{T_e \Gamma(k)} \left( \frac{t}{T_e} \right)^{(k-1)} \, e^{-\frac{t}{T_e}}$
+- log-logistic model: $h(t) = TODO $
+
+The code below fits all these models to the lung cancer data.
+
+```{r tteCompareModel}
+# Exponential
+exptte.model<-function(psi,id,xidep) {
+  T<-xidep[,1]
+  y<-xidep[,2] # events (1=event, 0=no event)
+  cens<-which(xidep[,3]==1) # censoring times (subject specific)
+  init <- which(T==0)
+  Te <- psi[id,1] # Parameters of the Weibull model
+  Nj <- length(T)
+  
+  ind <- setdiff(1:Nj, append(init,cens)) # indices of events
+  hazard <- (1/Te) # H'
+  H <- (T/Te) #  H= -ln(S)
+  logpdf <- rep(0,Nj) # ln(l(T=0))=0
+  logpdf[cens] <- -H[cens] + H[cens-1] # ln(l(T=censoring time))=ln(S)=-H
+  logpdf[ind] <- -H[ind] + H[ind-1] + log(hazard[ind]) # ln(l(T=event time))=ln(S)+ln(h)
+
+  return(logpdf)
+}
+
+saemix.model.exp<-saemixModel(model=exptte.model,description="Exponential TTE model",modeltype="likelihood",
+  psi0=matrix(c(1),ncol=1,byrow=TRUE,dimnames=list(NULL,  c("Te"))),
+  transform.par=c(1),covariance.model=matrix(c(1),ncol=1, byrow=TRUE), verbose=FALSE)
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, print=FALSE)
+exptte.fit<-saemix(saemix.model.exp,saemix.data,saemix.options)
+plot(exptte.fit, plot.type="convergence")
+print(exptte.fit)
+
+# Gompertz
+
+gomptte.model<-function(psi,id,xidep) {
+  T<-xidep[,1]
+  y<-xidep[,2] # events (1=event, 0=no event)
+  cens<-which(xidep[,3]==1) # censoring times (subject specific)
+  init <- which(T==0)
+  Te <- psi[id,1] # Parameters of the Weibull model
+  gamma <- psi[id,2]
+  teprim <- Te/log(1+log(2)/gamma)
+  Nj <- length(T)
+  
+  ind <- setdiff(1:Nj, append(init,cens)) # indices of events
+  hazard <- (gamma/teprim)*exp(T/teprim) # h
+  H <- gamma*(exp(T/teprim)-1) # H
+  logpdf <- rep(0,Nj) # ln(l(T=0))=0
+  logpdf[cens] <- -H[cens] + H[cens-1] # ln(l(T=censoring time))=ln(S)=-H
+  logpdf[ind] <- -H[ind] + H[ind-1] + log(hazard[ind]) # ln(l(T=event time))=ln(S)+ln(h)
+  return(logpdf)
+}
+saemix.model.gomp<-saemixModel(model=gomptte.model,description="Gompertz TTE model",modeltype="likelihood",
+  psi0=matrix(c(300,2),ncol=2,byrow=TRUE,dimnames=list(NULL,  c("Te","gamma"))),
+  transform.par=c(1,1),covariance.model=matrix(c(1,0,0,0),ncol=2, byrow=TRUE), verbose=FALSE)
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, print=FALSE)
+gomptte.fit<-saemix(saemix.model.gomp,saemix.data,saemix.options)
+plot(gomptte.fit, plot.type="convergence")
+print(gomptte.fit)
+
+# Gamma
+# incomplete gamma function for (x,a) : gamma(a) * pgamma(x, a, 1, lower = FALSE)
+
+gammatte.model<-function(psi,id,xidep) {
+  T<-xidep[,1]
+  y<-xidep[,2] # events (1=event, 0=no event)
+  cens<-which(xidep[,3]==1) # censoring times (subject specific)
+  init <- which(T==0)
+  Te <- psi[id,1] # Parameters of the Weibull model
+  lambda <- psi[id,2]
+  Nj <- length(T)
+  
+  ind <- setdiff(1:Nj, append(init,cens)) # indices of events
+#  hazard <- (lambda/Te) * (lambda*T/Te)^(lambda-1) * exp(lambda*T/Te) / (gamma(lambda) - pgamma(lambda*T/Te,lambda, 1, lower=FALSE))
+  hazard <- (T/Te)^(lambda-1) * exp(-T/Te) /gamma(lambda) / Te
+#  H <- pgamma(T/Te, lambda, 1, lower=FALSE) / gamma(lambda)
+  H <- pgamma(T/Te, lambda) # incomplete gamma gammainc(x,a)=pgamma(x,a)*gamma(a) and H=gammainc(T/Te, lambda) / gamma(lambda)
+#  H <- (1-pgamma(T/Te, lambda,1, lower=FALSE))
+  logpdf <- rep(0,Nj) # ln(l(T=0))=0
+  logpdf[cens] <- -H[cens] + H[cens-1] # ln(l(T=censoring time))
+  logpdf[ind] <- -H[ind] + H[ind-1] + log(hazard[ind]) # ln(l(T=event time))
+  return(logpdf)
+}
+saemix.model.gamma<-saemixModel(model=gammatte.model,description="Gamma TTE model",modeltype="likelihood",
+  psi0=matrix(c(300,2),ncol=2,byrow=TRUE,dimnames=list(NULL,  c("Te","k"))),
+  transform.par=c(1,1),covariance.model=matrix(c(1,0,0,0),ncol=2, byrow=TRUE), verbose=FALSE)
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, print=FALSE)
+gammatte.fit<-try(saemix(saemix.model.gamma,saemix.data,saemix.options))
+plot(gammatte.fit, plot.type="convergence")
+print(gammatte.fit)
+
+
+# Log-logistic 
+logis.model<-function(psi,id,xidep) {
+  T<-xidep[,1]
+  y<-xidep[,2] # events (1=event, 0=no event)
+  cens<-which(xidep[,3]==1) # censoring times (subject specific)
+  init <- which(T==0)
+  Te <- psi[id,1] # Parameters of the Weibull model
+  gamma <- psi[id,2]
+  Nj <- length(T)
+  
+  ind <- setdiff(1:Nj, append(init,cens)) # indices of events
+  hazard <- (gamma/Te)*(T/Te)^(gamma-1) /(1+(T/Te)^gamma) # H'
+  H <- log(1+(T/Te)^gamma) # H= -ln(S)
+  logpdf <- rep(0,Nj) # ln(l(T=0))=0
+  logpdf[cens] <- -H[cens] + H[cens-1] # ln(l(T=censoring time))=ln(S)=-H
+  logpdf[ind] <- -H[ind] + H[ind-1] + log(hazard[ind]) # ln(l(T=event time))=ln(S)+ln(h)
+  return(logpdf)
+}
+
+saemix.model.logis<-saemixModel(model=logis.model,description="Log-logistic TTE model",modeltype="likelihood",
+  psi0=matrix(c(300,2),ncol=2,byrow=TRUE,dimnames=list(NULL,  c("Te","gamma"))),
+  transform.par=c(1,1),covariance.model=matrix(c(1,0,0,0),ncol=2, byrow=TRUE), verbose=FALSE)
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, print=FALSE)
+logistte.fit<-saemix(saemix.model.logis,saemix.data,saemix.options)
+plot(logistte.fit, plot.type="convergence")
+print(logistte.fit)
+
+```
+
+Comparing the models: Gompertz and Weibull have almost the same BIC. The diagnostic plots are nearly identical, with a slightly better fit towards the end with the Weibull model. 
+
+```{r tteCompareModelTab}
+# Table comparing the models
+restte<-data.frame(Model=c("Exponential","Weibull","Gompertz","Gamma","Log-logistic"), 
+           BIC=c(BIC(exptte.fit),BIC(tte.fit), BIC(gomptte.fit), BIC(gammatte.fit), BIC(logistte.fit)))
+print(restte)
+```
+
+
+```{r simuGompertzTTE}
+# Simulate events based on the observed individual censoring time
+simulateGompertzTTE <- function(psi,id,xidep) {
+  T<-xidep[,1]
+  y<-xidep[,2] # events (1=event, 0=no event)
+  delta <- xidep[,3] # censoring indicator
+  cens<-which(delta==1) # censoring times (subject specific)
+  tmax <- max(T[cens]) # maximum censoring time observed in dataset
+  init <- which(T==0)
+  Te <- psi[,1] # Parameters of the Weibull model
+  gamma <- psi[,2]
+  teprim <- Te/log(1+log(2)/gamma)
+
+  Nj <- length(T)
+  ind <- setdiff(1:Nj, append(init,cens)) # indices of events
+  tevent<-T
+  Vj<-runif(dim(psi)[1])
+  tsim<-teprim*log(1-log(Vj)/gamma) #   events
+  tevent[T>0]<-tsim
+  tevent[delta==1 & tevent>T] <- T[delta==1 & tevent>T] # subject-specific censoring time
+#  tevent[delta==0 & tevent>tmax] <- tmax # censoring to tmax (for subjects who experienced an event)
+#  tevent[tevent[dead]>tmax] <- tmax # for subjects who initially experienced the event, use maximal censoring time
+  return(tevent)
+}
+
+# Checking the simulation function
+xidep1<-saemix.data@data[,saemix.data@name.predictors]
+nsuj<-saemix.data@N
+psiM<-data.frame(Te=rnorm(nsuj, mean=gomptte.fit@results@fixed.effects[1], sd=2), gamma=gomptte.fit@results@fixed.effects[2])
+id1<-rep(1:nsuj, each=2)
+simtime<-simulateGompertzTTE(psiM, id1, xidep1)
+
+par(mfrow=c(1,2))
+hist(saemix.data@data$time[saemix.data@data$time>0], breaks=30, xlim=c(0,1050),xlab="Time", main="Original data")
+hist(simtime[simtime>0], breaks=30, xlim=c(0,1050), xlab="Time", main="Simulated data")
+
+gomptte.fit@model@simulate.function<-simulateGompertzTTE
+simgomptte.fit <- simulateDiscreteSaemix(gomptte.fit, nsim=500)
+
+gpl2 <- discreteVPC(simgomptte.fit, outcome="TTE")
+plot(gpl2)
+
+grid.arrange(gpl,gpl2, nrow=1)
+```
+#### Covariate model
+
+The following section applies a stepwise procedure to test covariates with the selected model (here the Weibull model), making use of the BIC criterion developed by Delattre et al (2014). The final model includes an effect of sex, ECOG assessement and patient Karnofsky score.
+
+The algorithm also tests different covariance structures for the model. Here, this may not be pertinent given the population can only experience a single event, therefore variability cannot really be identified.
+
+```{r stepwiseCovariateBuilding}
+# Toggle to TRUE to run (takes a while)
+if(FALSE) 
+  covtte.fit <- step.saemix(tte.fit, direction="both")
+
+# Covariate model
+
+# Covariate model with only sex and ECOG score
+
+
+```
+
+#### SE via bootstrap
+
+```{r tteSEboot}
+
+```
+
 
 ### RTTE model
 
-In this section we simulate repeated time-to-event data from a Weibull model and fit it. To simulate from a RTTE model, we simulate repeated events starting from the previous one using the inverse CDF technique. Because we don't know in advance the number of events in each subject, we lose the efficient vectorisation from **R** and this function can be considerably slower than the single event TTE.
+In this section we simulate repeated time-to-event data from a Weibull model and fit the dataset obtained. To simulate from a RTTE model, we simulate repeated events starting from the previous one using the inverse CDF technique. Because we don't know in advance the number of events in each subject, we lose the efficient vectorisation from **R** and this function can be considerably slower than the single event TTE.
+
+The simulation function now becomes:
+$$ T = T_e \left(-\ln(V) + \left( \frac{T_{j-1}}{T_e} \right)^{\gamma} \right)^{1/\gamma}$$
+where $T_{j-1}$ is the time of the last event and $T$ the time of the next event ($T_j$).
 
 ```{r RTTEsimul}
 # Simulating RTTE data by simulating from U(0,1) and inverting the cdf
 simul.rtte.unif<-function(psi) { # xidep, id not important, we only use psi
   censoringtime <- 3
   maxevents <- 30
-  lambda <- psi[,1]
-  beta <- psi[,2]
+  Te <- psi[,1]
+  gamma <- psi[,2]
   simdat<-NULL
   N<-nrow(psi)
   for(i in 1:N) {
     eventTimes<-c(0)
     T<-0
     Vj<-runif(1)
-    #    T <- (-log(Vj)*lambda[i])^(beta[i])
-    T<-lambda[i]*(-log(Vj))^(1/beta[i])
+    #    T <- (-log(Vj)*Te[i])^(gamma[i])
+    T<-Te[i]*(-log(Vj))^(1/gamma[i])
     nev<-0
     while (T < censoringtime & nev<maxevents){
       eventTimes <- c(eventTimes, T)  
       nev<-nev+1
       Vj<-runif(1)
-      #      T <- T+(-log(Vj)*lambda[i])^(beta[i])
-      #      T<-(-log(Vj)*lambda[i] + T^(1/beta[i]))^(beta[i])
-      T<-lambda[i]*(-log(Vj) + (T/lambda[i])^(beta[i]))^(1/beta[i])
+      #      T <- T+(-log(Vj)*Te[i])^(gamma[i])
+      #      T<-(-log(Vj)*Te[i] + T^(1/gamma[i]))^(gamma[i])
+      T<-Te[i]*(-log(Vj) + (T/Te[i])^(gamma[i]))^(1/gamma[i])
     }
     if(nev==maxevents) {
       message("Reached maximum number of events\n")
@@ -296,7 +536,7 @@ omega<-c(0.25,0.25)
 nsuj<-200
 risk<-rep(0,nsuj)
 risk[(nsuj/2+1):nsuj]<-1
-psiM<-data.frame(lambda=param[1]*exp(rnorm(nsuj,sd=omega[1])), beta=param[2]*exp(param[3]*risk+rnorm(nsuj,sd=omega[2])))
+psiM<-data.frame(Te=param[1]*exp(rnorm(nsuj,sd=omega[1])), gamma=param[2]*exp(param[3]*risk+rnorm(nsuj,sd=omega[2])))
 simdat <- simul.rtte.unif(psiM)
 simdat$risk<-as.integer(simdat$id>(nsuj/2))
 
@@ -311,13 +551,13 @@ rtte.model<-function(psi,id,xidep) {
   Nj <- length(T) # nb of events (including 0 and censoring times)
   # censoringtime = 6
   censoringtime = max(T) # same censoring for everyone
-  lambda <- psi[id,1]
-  beta <- psi[id,2]
+  Te <- psi[id,1]
+  gamma <- psi[id,2]
   tinit <- which(T==0) # indices of beginning of observation period
   tcens <- which(T==censoringtime) # indices of censored events 
   tevent <- setdiff(1:Nj, append(tinit,tcens)) # indices of non-censored event times
-  hazard <- (beta/lambda)*(T/lambda)^(beta-1)
-  H <- (T/lambda)^beta
+  hazard <- (gamma/Te)*(T/Te)^(gamma-1)
+  H <- (T/Te)^gamma
   logpdf <- rep(0,Nj)
   logpdf[tcens] <- -H[tcens] + H[tcens-1]
   logpdf[tevent] <- -H[tevent] + H[tevent-1] + log(hazard[tevent])
@@ -325,10 +565,10 @@ rtte.model<-function(psi,id,xidep) {
 }
 
 saemix.model.base<-saemixModel(model=rtte.model,description="Repeated TTE model",modeltype="likelihood",
-                               psi0=matrix(c(1,2),ncol=2,byrow=TRUE,dimnames=list(NULL,  c("lambda","beta"))),
+                               psi0=matrix(c(1,2),ncol=2,byrow=TRUE,dimnames=list(NULL,  c("Te","gamma"))),
                                transform.par=c(1,1),covariance.model=matrix(c(1,0,0,1),ncol=2, byrow=TRUE), verbose=FALSE)
 saemix.model<-saemixModel(model=rtte.model,description="Repeated TTE model",modeltype="likelihood",
-                          psi0=matrix(c(1,2),ncol=2,byrow=TRUE,dimnames=list(NULL,  c("lambda","beta"))),
+                          psi0=matrix(c(1,2),ncol=2,byrow=TRUE,dimnames=list(NULL,  c("Te","gamma"))),
                           transform.par=c(1,1),covariate.model=matrix(c(0,1),ncol=2),
                           covariance.model=matrix(c(1,0,0,1),ncol=2, byrow=TRUE), verbose=FALSE)
 saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, fim=FALSE, displayProgress=FALSE, print=FALSE)
@@ -348,7 +588,13 @@ A nice review of the more frequent hazard functions used in parametric models of
 
 **Comets E**, Rodrigues C, Jullien V, Ursino M (2021). Conditional non-parametric bootstrap for non-linear mixed effect models. *Pharmaceutical Research*, 38: 1057-66.
 
+**Delattre M**, Lavielle M, Poursat MA (2014) A note on BIC in mixed effects models. *Electronic Journal of Statistics* 8(1) p. 456-475
+
+**Delattre M**, Poursat MA (2017) BIC strategies for model choice in a population approach. (arXiv:1612.02405)
+
 **Keizer R** (2021). vpc: Create Visual Predictive Checks. *R package* version 1.2.2. https://CRAN.R-project.org/package=vpc
+
+**Loprinzi** et al. (1994). Prospective evaluation of prognostic variables from patient-completed questionnaires. North Central Cancer Treatment Group. *Journal of Clinical Oncology : Official Journal of the American Society of Clinical Oncology*, 12(3), 601–607. 
   
 **Morina D**, Navarro A (2014). The R package survsim for the simulation of simple and complex survival Data. *Journal of Statistical Software*, 59(2), 1–20. 
 
