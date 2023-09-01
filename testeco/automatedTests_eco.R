@@ -1,6 +1,7 @@
 # Wiping the slate clean and positioning in the right directory
 rm(list = ls())
 library(testthat)
+library(rlang) # is_missing
 
 # Testing where we are :-)
 saemixDir<-"/home/eco/work/saemix/saemixextension"

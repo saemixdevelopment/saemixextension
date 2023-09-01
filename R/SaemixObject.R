@@ -843,26 +843,30 @@ saemix.predict<-function(object, type=c("ipred", "ypred", "ppred", "icpred")) {
     pres<-saemix.res["respar"]
     if("ipred" %in% type) {
       ipred<-object["model"]["model"](saemix.res["map.psi"],index,xind) # Predictions with MAP
-      ires<-yobs-ipred
       # Individual weighted residuals
-      gpred<-error(ipred,pres,xind$ytype)
-      iwres<-(yobs-ipred)/gpred
+      if(object@model@modeltype=="structural") {
+        ires<-yobs-ipred
+        gpred<-error(ipred,pres,xind$ytype)
+        iwres<-(yobs-ipred)/gpred
+        saemix.res["iwres"]<-iwres
+        saemix.res["ires"]<-ires
+        saemix.res["predictions"]$ires<-ires
+        saemix.res["predictions"]$iwres<-iwres
+      }
       saemix.res["ipred"]<-ipred
-      saemix.res["ires"]<-ires
-      saemix.res["iwres"]<-iwres
       saemix.res["predictions"]$ipred<-ipred
-      saemix.res["predictions"]$ires<-ires
-      saemix.res["predictions"]$iwres<-iwres
     } 
     if("icpred" %in% type) {
       psiM<-transphi(saemix.res["cond.mean.phi"],object["model"]["transform.par"])
       icond.pred<-object["model"]["model"](psiM,index,xind) # Predictions with Conditional mean
-      gpred<-error(icond.pred,pres,xind$ytype)
-      icwres<-(yobs-icond.pred)/gpred
+      if(object@model@modeltype=="structural") {
+        gpred<-error(icond.pred,pres,xind$ytype)
+        icwres<-(yobs-icond.pred)/gpred
+        saemix.res["icwres"]<-icwres
+        saemix.res["predictions"]$icwres<-icwres
+      }
       saemix.res["icpred"]<-icond.pred
-      saemix.res["icwres"]<-icwres
       saemix.res["predictions"]$icpred<-icond.pred
-      saemix.res["predictions"]$icwres<-icwres
     }
   } 
   
@@ -1424,7 +1428,7 @@ setMethod("eta","SaemixObject",
 #' 
 #' @name coef.saemix
 #' 
-#' @param object an SaemixObject
+#' @param object an SaemixObject object
 #' @param ... further arguments to be passed to or from other methods
 #' @return a list with 3 components:
 #' \describe{
