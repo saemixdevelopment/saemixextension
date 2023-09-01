@@ -23,6 +23,46 @@ runcovmodelCatTTE<-FALSE
 ########################################################################################################
 #################################################### binary data: toenail
 
+if(runmodelBin) {
+  data("toenail.saemix")
+  saemix.data<-saemixData(name.data=toenail.saemix,name.group=c("id"),name.predictors=c("time","y"), name.response="y",
+                          name.covariates=c("treatment"))
+  # Model function
+  binary.model<-function(psi,id,xidep) {
+    tim<-xidep[,1]
+    y<-xidep[,2]
+    inter<-psi[id,1]
+    slope<-psi[id,2]
+    logit<-inter+slope*tim
+    pevent<-exp(logit)/(1+exp(logit))
+    logpdf<-rep(0,length(tim))
+    P.obs = (y==0)*(1-pevent)+(y==1)*pevent
+    logpdf <- log(P.obs)
+    return(logpdf)
+  }
+  # Simulation function
+  simulBinary<-function(psi,id,xidep) {
+    tim<-xidep[,1]
+    y<-xidep[,2]
+    inter<-psi[id,1]
+    slope<-psi[id,2]
+    logit<-inter+slope*tim
+    pevent<-1/(1+exp(-logit))
+    ysim<-rbinom(length(tim),size=1, prob=pevent)
+    return(ysim)
+  }
+  saemix.model<-saemixModel(model=binary.model, description="Binary model", simulate.function = simulBinary,
+                            modeltype="likelihood",
+                            psi0=matrix(c(-0.5,-.15,0,0),ncol=2,byrow=TRUE,dimnames=list(NULL,c("theta1","theta2"))),
+                            transform.par=c(0,0), covariate.model=c(0,1),covariance.model=matrix(c(1,0,0,0),ncol=2), omega.init=diag(c(0.5,0.3)))
+  saemix.options<-list(seed=1234567,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, nb.chains=10, fim=FALSE)
+  binary.fit<-saemix(saemix.model,saemix.data,saemix.options)
+  case.bin <- saemix.bootstrap(binary.fit, method="case", nboot=nboot) 
+  write.table(case.bin,file.path(workDir, "bootstrapCase_binaryCov.res"), row.names = FALSE, quote=F)
+  cond.bin <- saemix.bootstrap(binary.fit, method="conditional", nboot=nboot) 
+  write.table(cond.bin,file.path(workDir, "bootstrapCond_binaryCov.res"), row.names = FALSE, quote=F)
+}
+
 ########################################################################################################
 #################################################### categorical data: knee
 

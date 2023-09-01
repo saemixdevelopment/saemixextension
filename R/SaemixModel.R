@@ -909,7 +909,7 @@ predict.SaemixModel<-function(object, predictors, psi=c(), id=c(), ...) {
   return(list(param=cbind(id=1:dim(psi)[1],psi), predictions=data.frame(id=idkeep, xidep, pred=unname(ypred))))
 }
 
-#' Check initial fixed effects for an SaemixModel object appiled to an SaemixData object
+#' Check initial fixed effects for an SaemixModel object applied to an SaemixData object
 #' 
 #' @param object an SaemixModel object
 #' @param psi a vector or a dataframe giving the parameters for which predictions are to be computed (defaults to empty). 
@@ -928,15 +928,19 @@ predict.SaemixModel<-function(object, predictors, psi=c(), id=c(), ...) {
 #' user is responsible for giving all the predictors needed by the model function.
 #' if psi is not given, the predictions will be computed for the population parameters (first line of the psi0 slot) of the object.
 #' 
-#' @details The predictions correspond to the structure of the model; for models defined in terms of their likelihood, 
+#' @details The predictions correspond to the structure of the model. For models defined as a structural model, 
+#' individual plots for the subjects in id overlaying the predictions for the parameters psi and the individual data
+#' are shown, and the predictions correspond to f(t_ij, psi).
+#' For models defined in terms of their likelihood, the predictions returned correspond to the log-likelihood.
 #' No individual graphs are currently available for discrete data models.
 #' 
 #' @details Warning: this function is currently under development and the output may change in future versions of the package 
-#' following changes 
 #' 
 #' @seealso \code{\link[predict.SaemixModel]}, \code{\link[plotDiscreteData]},  \code{\link[ggplot]}
 #' 
-#' @return plots the data overlayed with the model predictions for each subject in id (where id is the index in the N subjects), and returns the plot invisibly (ggplot)
+#' @return the predictions corresponding to the values for each observation in the preditors of either the model f or log-likelihood. 
+#' For Gaussian data models, the function also plots the data overlayed with the model predictions for each subject in id 
+#' (where id is the index in the N subjects).
 #' 
 #' @examples 
 #' data(theo.saemix)
@@ -966,50 +970,49 @@ predict.SaemixModel<-function(object, predictors, psi=c(), id=c(), ...) {
 #' 
 #' @export 
 
-checkInitialFixedEffects<-function(object, data, psi=c(), id=c(), ...) {
+checkInitialFixedEffects<-function(model, data, psi=c(), id=c(), ...) {
   if(!is(data,"SaemixData") ) {
     message("The data argument should be an SaemixData object to extract the predictors from.\n")
     return()
   }
-  if(object@modeltype!="structural") {
-    message("Individual plots are only available for models dealing with continuous outcomes.\n")
-    return()
-  }
-  if(length(psi)==0) psi<-object["psi0"][1,,drop=FALSE]
+  addarg <- list(...)
+  verbose<-FALSE
+  if("verbose" %in% names(addarg)) verbose <- as.logical(addarg["verbose"])
+  if(is.na(verbose)) verbose<-FALSE
+  if(length(psi)==0) psi<-model["psi0"][1,,drop=FALSE]
   if(is.null(dim(psi))) psi<-as.data.frame(t(psi)) # psi given as a vector
-  if(dim(psi)[2] != object@nb.parameters) {
-    message(paste0("psi must have a number of columns equal to the number of parameters in the model (",object@nb.parameters,")\n")
+  if(dim(psi)[2] != model@nb.parameters) {
+    message(paste0("psi must have a number of columns equal to the number of parameters in the model (",model@nb.parameters,")\n")
     )
     return()
   }
-  # Select subjects corresponding to number id, or use the first 12 subjects
-  if(length(id)==0) id<-1:12
   idall<-data@data[,"index"]
-  nind.obs <- data@nind.obs
-  predictors <- data@data[,data@name.predictors,drop=FALSE]
-  id<-intersect(idall, id) # unique indexes of subjects to use for plot
-  if(length(id)==0) id<-1:12
-  idkeep <- which(data@data$index %in% id) # retrieve data for these subjects
-  xidep<-predictors[idkeep,,drop=FALSE]
-  idx<-rep(c(1:length(id)),times=nind.obs[id])   # renumber id
-  if(dim(psi)[1]==1 & length(unique(id))>1)
-    psi<-do.call(rbind,rep(list(psi),length(unique(id))))
-  colnames(psi)<-colnames(object["psi0"])
+  xidep <- data@data[,data@name.predictors]
+  #  if(dim(psi)[1]==1 & length(unique(idall))>1)
+  psi<-do.call(rbind,rep(list(psi),length(unique(idall))))
+  colnames(psi)<-colnames(model["psi0"])
   rownames(psi)<-NULL
   # Model predictions
-  ypred<-object["model"](psi, idx, xidep)
-  obspl<-data.frame(id=data@data[idkeep,data@name.group], x=data@data[idkeep,data@name.X], y=data@data[idkeep,data@name.response])
-  predpl<-data.frame(id=data@data[idkeep,data@name.group], x=data@data[idkeep,data@name.X], y=ypred)
+  ypred<-model["model"](psi, idall, xidep)
   
-  # Individual graphs
-  myplot <- ggplot(data=obspl, aes(x=x, y=y, group=id)) + geom_point() + geom_line(data=predpl) + 
-    xlab(paste0(data@name.X," (",data@units$x,")")) + ylab(paste0(data@name.response," (",data@units$y,")")) + 
-    theme_bw() + facet_wrap(.~id, nrow=3, ncol=4)
-  print(myplot)
+  # For the plot, select subjects corresponding to number id, or use the first 12 subjects
+  idplot <- intersect(idall, id)
+  if(length(idplot)==0) idplot<-1:12
+  idkeep <- which(data@data$index %in% id) # retrieve data for these subjects
   
-  invisible(myplot)
+  if(model@modeltype=="structural") {
+    # Individual graphs
+    obspl<-data.frame(id=data@data[idkeep,data@name.group], x=data@data[idkeep,data@name.X], y=data@data[idkeep,data@name.response])
+    predpl<-data.frame(id=data@data[idkeep,data@name.group], x=data@data[idkeep,data@name.X], y=ypred[idkeep])
+    myplot <- ggplot(data=obspl, aes(x=x, y=y, group=id)) + geom_point() + geom_line(data=predpl) + 
+      xlab(paste0(data@name.X," (",data@units$x,")")) + ylab(paste0(data@name.response," (",data@units$y,")")) + 
+      theme_bw() + facet_wrap(.~id, nrow=3, ncol=4)
+    print(myplot)
+  } else {
+    if(verbose) message("Individual plots are only available for models dealing with continuous outcomes.\n")
+  }
+  invisible(ypred)
 }
-
 
 ####################################################################################
 ####			SaemixModel & SaemixData class - method to plot	predictions from a model for the data in a dataset		####

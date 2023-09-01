@@ -93,15 +93,16 @@ simulateOrdinal<-function(psi,id,xidep) {
 }
 
 
+# Fitting
+saemix.options<-list(seed=632545, save=FALSE, fim=FALSE, save.graphs=FALSE, nb.chains=10, nbiter.saemix=c(600,100))
+#saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, nb.chains=10, fim=FALSE)
+
+if(FALSE) {
 # Saemix model
 saemix.model<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",
                           simulate.function = simulateOrdinal,
                           psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5,byrow=TRUE,dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))),
                           transform.par=c(0,1,1,1,1),omega.init=diag(c(100, 1, 1, 1, 1)), covariance.model = diag(c(1,0,0,0,1)))
-
-# Fitting
-saemix.options<-list(seed=632545, save=FALSE, fim=FALSE, save.graphs=FALSE, nb.chains=10, nbiter.saemix=c(600,100))
-#saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, nb.chains=10, fim=FALSE)
 
 ord.fit<-saemix(saemix.model,saemix.data,saemix.options)
 
@@ -114,4 +115,23 @@ if(is(case.ordinal,"data.frame"))
 cond.ordinal <- try(saemix.bootstrap(ord.fit, method="conditional", nboot=nboot))
 if(is(cond.ordinal,"data.frame"))
   write.table(cond.ordinal, file.path(workDir, "results", "knee_condBootstrap.res"), quote=F, row.names=FALSE)
+}
 
+    covariate.model <- matrix(data=0, nrow=2, ncol=5)
+    covariate.model[1,2]<-covariate.model[1,5]<-covariate.model[2,1]<-1
+    ordmodel.cov<-saemixModel(model=ordinal.model,description="Ordinal categorical model",
+        modeltype="likelihood",simulate.function=simulateOrdinal, 
+        psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5, byrow=TRUE, dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))), transform.par=c(0,1,1,1,1),
+        omega.init=diag(c(100, 1, 1, 1, 1)), covariate.model=covariate.model, 
+        covariance.model = diag(c(1,1,1,1,0)), verbose=FALSE)
+    ord.fit.cov<-saemix(ordmodel.cov,saemix.data,saemix.options)
+
+# Case bootstrap
+case.ordinal <- try(saemix.bootstrap(ord.fit.cov, method="case", nboot=nboot))
+if(is(case.ordinal,"data.frame"))
+  write.table(case.ordinal, file.path(workDir, "results", "knee_caseBootstrapCov.res"), quote=F, row.names=FALSE)
+
+# Conditional non-parametric bootstrap
+cond.ordinal <- try(saemix.bootstrap(ord.fit.cov, method="conditional", nboot=nboot))
+if(is(cond.ordinal,"data.frame"))
+  write.table(cond.ordinal, file.path(workDir, "results", "knee_condBootstrapCov.res"), quote=F, row.names=FALSE)

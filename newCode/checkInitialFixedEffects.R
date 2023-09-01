@@ -1,6 +1,7 @@
 #' Predictions for an SaemixModel object appiled to the predictors in a SaemixData object
 #' 
-#' @param object an SaemixModel object
+#' @param model an SaemixModel object
+#' @param data an SaemixData object (the predictors will then be extracted from the object using the name.predictors slot of the object)
 #' @param psi a vector or a dataframe giving the parameters for which predictions are to be computed (defaults to empty). 
 #' The number of columns in psi (or the number of elements of psi, if psi is given as a vector) should match the number of
 #' parameters in the model, otherwise an error message will be shown and the function will return empty.
@@ -8,7 +9,7 @@
 #' Covariates are not taken into account in the prediction. 
 #' If psi is a dataframe, each line will be used for a separate 'subject' in the predictors dataframe, as 
 #' indicated by the id argument; if id is not given, only the first line of psi will be used. 
-#' @param predictors an SaemixData object (the predictors will then be extracted from the object using the name.predictors slot of the object)
+#' If psi is empty, the parameter values will be taken from the model object
 #' @param id the vector of subjects for which individual plots will be obtained. If empty, the first 12 subjects in the dataset will be used (subject id's are taken from the name.group slot in the data object). If id is given, individual plots will be shown for the matching subjects in the dataset (eg if id=c(1:6), the first 6 subjects in the dataframe will be used for the plots, retrieving their ID from the data object)
 #' 
 #' @param \dots unused argument, for consistency with the generic
@@ -55,47 +56,47 @@
 #' 
 #' @export 
 
-checkInitialFixedEffects<-function(object, data, psi=c(), id=c(), ...) {
+checkInitialFixedEffects<-function(model, data, psi=c(), id=c(), ...) {
   if(!is(data,"SaemixData") ) {
     message("The data argument should be an SaemixData object to extract the predictors from.\n")
     return()
   }
-  if(object@modeltype!="structural") {
-    message("Individual plots are only available for models dealing with continuous outcomes.\n")
-    return()
-  }
-  if(length(psi)==0) psi<-object["psi0"][1,,drop=FALSE]
+  addarg <- list(...)
+  verbose<-FALSE
+  if("verbose" %in% names(addarg)) verbose <- as.logical(addarg["verbose"])
+  if(is.na(verbose)) verbose<-FALSE
+  if(length(psi)==0) psi<-model["psi0"][1,,drop=FALSE]
   if(is.null(dim(psi))) psi<-as.data.frame(t(psi)) # psi given as a vector
-  if(dim(psi)[2] != object@nb.parameters) {
-    message(paste0("psi must have a number of columns equal to the number of parameters in the model (",object@nb.parameters,")\n")
+  if(dim(psi)[2] != model@nb.parameters) {
+    message(paste0("psi must have a number of columns equal to the number of parameters in the model (",model@nb.parameters,")\n")
     )
     return()
   }
-  # Select subjects corresponding to number id, or use the first 12 subjects
-  if(length(id)==0) id<-1:12
   idall<-data@data[,"index"]
-  nind.obs <- data@nind.obs
-  predictors <- data@data[,data@name.predictors]
-  id<-intersect(idall, id) # unique indexes of subjects to use for plot
-  if(length(id)==0) id<-1:12
-  idkeep <- which(data@data$index %in% id) # retrieve data for these subjects
-  xidep<-predictors[idkeep,]
-  idx<-rep(c(1:length(id)),times=nind.obs[id])   # renumber id
-  if(dim(psi)[1]==1 & length(unique(id))>1)
-    psi<-do.call(rbind,rep(list(psi),length(unique(id))))
-  colnames(psi)<-colnames(object["psi0"])
+  xidep <- data@data[,data@name.predictors]
+#  if(dim(psi)[1]==1 & length(unique(idall))>1)
+    psi<-do.call(rbind,rep(list(psi),length(unique(idall))))
+  colnames(psi)<-colnames(model["psi0"])
   rownames(psi)<-NULL
   # Model predictions
-  ypred<-object["model"](psi, idx, xidep)
-  obspl<-data.frame(id=data@data[idkeep,data@name.group], x=data@data[idkeep,data@name.X], y=data@data[idkeep,data@name.response])
-  predpl<-data.frame(id=data@data[idkeep,data@name.group], x=data@data[idkeep,data@name.X], y=ypred)
-
+  ypred<-model["model"](psi, idall, xidep)
+  
+  # For the plot, select subjects corresponding to number id, or use the first 12 subjects
+  idplot <- intersect(idall, id)
+  if(length(idplot)==0) idplot<-1:12
+  idkeep <- which(data@data$index %in% id) # retrieve data for these subjects
+  
+  if(model@modeltype=="structural") {
   # Individual graphs
-  myplot <- ggplot(data=obspl, aes(x=x, y=y, group=id)) + geom_point() + geom_line(data=predpl) + 
+    obspl<-data.frame(id=data@data[idkeep,data@name.group], x=data@data[idkeep,data@name.X], y=data@data[idkeep,data@name.response])
+    predpl<-data.frame(id=data@data[idkeep,data@name.group], x=data@data[idkeep,data@name.X], y=ypred[idkeep])
+    myplot <- ggplot(data=obspl, aes(x=x, y=y, group=id)) + geom_point() + geom_line(data=predpl) + 
     xlab(paste0(data@name.X," (",data@units$x,")")) + ylab(paste0(data@name.response," (",data@units$y,")")) + 
     theme_bw() + facet_wrap(.~id, nrow=3, ncol=4)
   print(myplot)
-
-  invisible(myplot)
+  } else {
+    if(verbose) message("Individual plots are only available for models dealing with continuous outcomes.\n")
+  }
+  invisible(ypred)
 }
 
