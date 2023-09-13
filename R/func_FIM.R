@@ -358,7 +358,7 @@ fim.saemix<-function(saemixObject) {
           est1<-c(est1,omega[iom,jom])
           se1<-c(se1,sO[ipar-npar])
           if(iom==jom) {
-            se.sdcor[iom,iom]<-sqrt(CO[iom,iom])/2/sqrt(omega[iom,iom])
+            se.sdcor[iom,iom]<-se.cov[iom,iom]/2/sqrt(omega[iom,iom])
             est2<-c(est2,sqrt(omega[iom,iom]))
             se2<-c(se2,se.sdcor[iom,iom])
           } else { # compute correlation and SE on correlation using the delta-method
@@ -366,7 +366,7 @@ fim.saemix<-function(saemixObject) {
             varbet<-CO[(myidx.track[myidx.track[,1]==ipar,]-npar),(myidx.track[myidx.track[,1]==ipar,]-npar)]
             rho<-ebet[1]/sqrt(ebet[2]*ebet[3])
             debet<-c(1/sqrt(ebet[2]*ebet[3]), -ebet[1]/(ebet[2]**(3/2))/sqrt(ebet[3])/2, -ebet[1]/(ebet[3]**(3/2))/sqrt(ebet[2])/2)
-            se.sdcor[iom,jom]<-se.sdcor[jom,iom]<-t(debet) %*% varbet %*% debet
+            se.sdcor[iom,jom]<-se.sdcor[jom,iom]<-sqrt( t(debet) %*% varbet %*% debet )
             est2<-c(est2,rho)
             se2<-c(se2,se.sdcor[iom,jom])
           }
