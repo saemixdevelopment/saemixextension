@@ -17,7 +17,35 @@ output:
   - \usepackage{amssymb}
 ---
 
-# Setup
+# Context
+
+## Objective
+
+Set up a simulation suite to evaluate new versions of saemix (ideally: run before every release)
+
+- create sets of simulated data for the different types of models
+  - currently: only continuous
+  - **TODO**: other types of data
+- run this file and save the results to a file simulationSuite_versionX.X.pdf
+  - create a script to run the series of estimations on the cluster
+  - create a script to extract the results for a given version of the code 
+  - use the current script to create the pdf with tables and figures
+  
+**TODO** clarify the sequences and create clean scripts to facilitate the comparisons.
+
+## Data overview and current progress
+
+- Continuous data
+  - PD response: Emax and Hill models for dose-response data (simulated in Comets et al., *Pharm Res* 2021), sigmoid Imax model (simulated in Plan et al. *JPKPD* 2012)
+- Discrete data **TODO**
+  - binary data: simulation based on toenail data (paper saemix 3)
+  - count data: simulation based on the count data demo from Monolix with an added risk effect (Lucie, paper saemix 3)
+  - categorical data: original simulation in Jonsson et al. *JPKPD* 2004, used as a basis by Savic et al. *JPKPD* 2010 **TODO**
+- Time-to-event data **TODO**
+  - inspiration from simulations performed by Alexandra ? (TTE, competitive risks)
+  - also need RTTE
+
+## Setup
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -105,7 +133,6 @@ computeREE <- function(parestim, truepar) {
 }
 
 ```
-
 
 # Continuous data
 

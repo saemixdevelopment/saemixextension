@@ -911,7 +911,8 @@ predict.SaemixModel<-function(object, predictors, psi=c(), id=c(), ...) {
 
 #' Check initial fixed effects for an SaemixModel object applied to an SaemixData object
 #' 
-#' @param object an SaemixModel object
+#' @param model an SaemixModel object
+#' @param data an SaemixData object (the predictors will then be extracted from the object using the name.predictors slot of the object)
 #' @param psi a vector or a dataframe giving the parameters for which predictions are to be computed (defaults to empty). 
 #' The number of columns in psi (or the number of elements of psi, if psi is given as a vector) should match the number of
 #' parameters in the model, otherwise an error message will be shown and the function will return empty.
@@ -919,7 +920,6 @@ predict.SaemixModel<-function(object, predictors, psi=c(), id=c(), ...) {
 #' Covariates are not taken into account in the prediction. 
 #' If psi is a dataframe, each line will be used for a separate 'subject' in the predictors dataframe, as 
 #' indicated by the id argument; if id is not given, only the first line of psi will be used. 
-#' @param predictors an SaemixData object (the predictors will then be extracted from the object using the name.predictors slot of the object)
 #' @param id the vector of subjects for which individual plots will be obtained. If empty, the first 12 subjects in the dataset will be used (subject id's are taken from the name.group slot in the data object). If id is given, individual plots will be shown for the matching subjects in the dataset (eg if id=c(1:6), the first 6 subjects in the dataframe will be used for the plots, retrieving their ID from the data object)
 #' 
 #' @param \dots unused argument, for consistency with the generic
@@ -936,15 +936,18 @@ predict.SaemixModel<-function(object, predictors, psi=c(), id=c(), ...) {
 #' 
 #' @details Warning: this function is currently under development and the output may change in future versions of the package 
 #' 
-#' @seealso \code{\link[predict.SaemixModel]}, \code{\link[plotDiscreteData]},  \code{\link[ggplot]}
+# #' @seealso \code{\link[predict.SaemixModel]}, \code{\link[plotDiscreteData]},  \code{\link[ggplot]}
 #' 
-#' @return the predictions corresponding to the values for each observation in the preditors of either the model f or log-likelihood. 
+#' @return the predictions corresponding to the values for each observation in the predictors of either the model f or log-likelihood. 
 #' For Gaussian data models, the function also plots the data overlayed with the model predictions for each subject in id 
 #' (where id is the index in the N subjects).
 #' 
 #' @examples 
 #' data(theo.saemix)
-#' xpred<-theo.saemix[,c("Dose","Time")]
+#' saemix.data<-saemixData(name.data=theo.saemix,header=TRUE,sep=" ",na=NA, 
+#'   name.group=c("Id"),name.predictors=c("Dose","Time"),
+#'   name.response=c("Concentration"),name.covariates=c("Weight","Sex"),
+#'   units=list(x="hr",y="mg/L",covariates=c("kg","-")), name.X="Time")
 #' 
 #' model1cpt<-function(psi,id,xidep) { 
 #' 	  dose<-xidep[,1]
@@ -971,14 +974,14 @@ predict.SaemixModel<-function(object, predictors, psi=c(), id=c(), ...) {
 #' @export 
 
 checkInitialFixedEffects<-function(model, data, psi=c(), id=c(), ...) {
-  if(!is(data,"SaemixData") ) {
-    message("The data argument should be an SaemixData object to extract the predictors from.\n")
-    return()
-  }
   addarg <- list(...)
   verbose<-FALSE
   if("verbose" %in% names(addarg)) verbose <- as.logical(addarg["verbose"])
   if(is.na(verbose)) verbose<-FALSE
+  if(!is(data,"SaemixData") ) {
+    if(verbose) message("The data argument should be an SaemixData object to extract the predictors from.\n")
+    return()
+  }
   if(length(psi)==0) psi<-model["psi0"][1,,drop=FALSE]
   if(is.null(dim(psi))) psi<-as.data.frame(t(psi)) # psi given as a vector
   if(dim(psi)[2] != model@nb.parameters) {
@@ -987,7 +990,7 @@ checkInitialFixedEffects<-function(model, data, psi=c(), id=c(), ...) {
     return()
   }
   idall<-data@data[,"index"]
-  xidep <- data@data[,data@name.predictors]
+  xidep <- data@data[,data@name.predictors,drop=FALSE]
   #  if(dim(psi)[1]==1 & length(unique(idall))>1)
   psi<-do.call(rbind,rep(list(psi),length(unique(idall))))
   colnames(psi)<-colnames(model["psi0"])
@@ -998,13 +1001,13 @@ checkInitialFixedEffects<-function(model, data, psi=c(), id=c(), ...) {
   # For the plot, select subjects corresponding to number id, or use the first 12 subjects
   idplot <- intersect(idall, id)
   if(length(idplot)==0) idplot<-1:12
-  idkeep <- which(data@data$index %in% id) # retrieve data for these subjects
+  idkeep <- which(data@data$index %in% idplot) # retrieve data for these subjects
   
   if(model@modeltype=="structural") {
     # Individual graphs
     obspl<-data.frame(id=data@data[idkeep,data@name.group], x=data@data[idkeep,data@name.X], y=data@data[idkeep,data@name.response])
     predpl<-data.frame(id=data@data[idkeep,data@name.group], x=data@data[idkeep,data@name.X], y=ypred[idkeep])
-    myplot <- ggplot(data=obspl, aes(x=x, y=y, group=id)) + geom_point() + geom_line(data=predpl) + 
+    myplot <- ggplot(data=obspl, aes(x=.data$x, y=.data$y, group=.data$id)) + geom_point() + geom_line(data=predpl) + 
       xlab(paste0(data@name.X," (",data@units$x,")")) + ylab(paste0(data@name.response," (",data@units$y,")")) + 
       theme_bw() + facet_wrap(.~id, nrow=3, ncol=4)
     print(myplot)

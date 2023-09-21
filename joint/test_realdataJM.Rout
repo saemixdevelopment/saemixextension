@@ -1,0 +1,1309 @@
+
+R version 4.2.2 Patched (2022-11-10 r83330) -- "Innocent and Trusting"
+Copyright (C) 2022 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R est un logiciel libre livré sans AUCUNE GARANTIE.
+Vous pouvez le redistribuer sous certaines conditions.
+Tapez 'license()' ou 'licence()' pour plus de détails.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Tapez 'demo()' pour des démonstrations, 'help()' pour l'aide
+en ligne ou 'help.start()' pour obtenir l'aide au format HTML.
+Tapez 'q()' pour quitter R.
+
+> #### Joint model example : prothro dataset in R package JM
+> library(JM)
+Le chargement a nécessité le package : MASS
+Le chargement a nécessité le package : nlme
+Le chargement a nécessité le package : splines
+Le chargement a nécessité le package : survival
+> library(pracma)
+> library(ggplot2)
+> data("prothro")
+> data("prothros")
+> 
+> gp = ggplot(data=prothro[which(prothro$id %in% 1:20),], aes(x=time, y=pro, group = id))+geom_point(lwd=1.5)+geom_line(col="#CC0033",lwd=0.8)+theme_classic()+
++   ylab("Marker observations")+xlab("Days")+theme(axis.text = element_text(size=14),
++                                                  axis.title = element_text(size=16))
+Message d'avis :
+Using `size` aesthetic for lines was deprecated in ggplot2 3.4.0.
+ℹ Please use `linewidth` instead. 
+> gp
+> 
+> table(prothros$death)
+
+  0   1 
+196 292 
+> 
+> 
+> ######### estimation with saemix 
+> 
+> # saemixDir <- "C:/Users/AlexandraLAVALLEY/Documents/GitHub/saemixextension" # ALM
+>  saemixDir <- "/home/eco/work/saemix/saemixextension" # EC
+> # saemixDir <- getwd() # assuming we are in the saemixextension folder
+> workDir <- file.path(saemixDir, "joint")
+> setwd(workDir)
+> 
+> library(Cairo)
+> library("viridis")
+Le chargement a nécessité le package : viridisLite
+> library(rlang)
+> 
+> # Loading of extended functions of the library 
+> progDir<-file.path(saemixDir, "R")
+> source(file.path(progDir,"aaa_generics.R"))
+Une nouvelle fonction générique est créée pour ‘psi’ dans the global environment
+Une nouvelle fonction générique est créée pour ‘eta’ dans the global environment
+> #source(file.path(progDir,"global.R"))
+> source(file.path(progDir,"SaemixData.R"))
+> source(file.path(progDir,"SaemixRes.R"))
+> source(file.path(progDir,"SaemixModel.R"))
+> source(file.path(progDir,"SaemixObject.R"))
+> source(file.path(progDir,"func_plots.R"))
+> 
+> source(file.path(workDir,"multi_aux.R"))
+> source(file.path(workDir,"multi_initializeMainAlgo.R"))
+> source(file.path(workDir,"multi_estep.R"))
+> source(file.path(workDir,"multi_mstep.R"))
+> source(file.path(workDir,"multi_main.R"))
+> source(file.path(workDir,"multi_map.R"))
+> source(file.path(workDir,"compute_LL_multi.R"))
+> 
+> ############################################## Data and model
+> # Formatting and creating data 
+> d1 = prothro[,c(1,2,3)]
+> d1$ytype=1
+> colnames(d1)[2] = "obs"
+> d2 = prothros[,c(1,3,2)]
+> d2$ytype = 2
+> colnames(d2)[2] = "obs"
+> colnames(d2)[3] = "time"
+> data_joint = rbind(d1,d2)
+> dataJM<-saemixData(name.data=data_joint, name.group=c("id"), name.predictors=c("time","obs"),
++                    name.response="obs",name.ytype = "ytype")
+
+
+The following SaemixData object was successfully created:
+
+Object of class SaemixData
+    longitudinal data for use with the SAEM algorithm
+Dataset data_joint 
+    Structured data: obs ~ time + obs | id 
+    X variable for graphs: time () 
+> 
+> 
+> # Model definition 
+> 
+> JMmodel<-function(psi,id,xidep) {
++   ytype<-xidep$ytype  # type of response (1: continuous, 2: event)
++   b0 <- psi[id,1] 
++   b1 <- psi[id,2] 
++   h0 <- psi[id,3]
++   alpha <- psi[id,4] 
++   
++   ypred <- b0+b1*xidep[,1]   
++   
++   T<-xidep[ytype==2,1]# vector of times (survival part)
++   Nj <- length(T)
++   ev = xidep$obs[ytype==2]
++   cens<-which(ev==0) 
++   ind <- which(ev==1)
++   b0b = b0[ytype==2] # to have vectors of the same length as T 
++   b1b = b1[ytype==2]
++   h0b = h0[ytype==2]
++   alphab = alpha[ytype==2]
++   
++   haz <- h0b*exp(alphab*(b0b+b1b*T)) # instantaneous hazard
++   H <- (h0b/(alphab*b1b))*exp((b0b+b1b*T)*alphab)-(h0b/(alphab*b1b))*exp(alphab*b0b) # cumulative hazard
++   
++   logpdf <- rep(0,Nj)
++   logpdf[cens] <- -H[cens] 
++   logpdf[ind] <- -H[ind] + log(haz[ind]) 
++   
++   ypred[ytype==2] = logpdf
++   return(ypred)
++ }
+> 
+> 
+> #### initializing parameters
+> 
+> param<-c(73,1.25,0.6,0.0001)
+> omega.sim<-c(18, 3, 0.05, 0.01)
+> sigma.sim <- 17
+> 
+> ### saemix Model 
+> 
+> jointTTE<-saemixModel(model=JMmodel,description="JM LMEM-TTE (prothro data)",modeltype=c("structural","likelihood"),
++                       psi0=matrix(param,ncol=4,byrow=TRUE,dimnames=list(NULL, c("b0","b1","h0","alpha"))),
++                       transform.par=c(0,0,1,0), covariance.model=diag(c(1,1,0,0)),
++                       fixed.estim = c(1,1,1,1),error.model = "constant",
++                       omega.init = diag(omega.sim))
+
+
+The following SaemixModel object was successfully created:
+
+Nonlinear mixed-effects model
+  Model function:  JM LMEM-TTE (prothro data)
+  Model type:  structural likelihood
+function (psi, id, xidep) 
+{
+    ytype <- xidep$ytype
+    b0 <- psi[id, 1]
+    b1 <- psi[id, 2]
+    h0 <- psi[id, 3]
+    alpha <- psi[id, 4]
+    ypred <- b0 + b1 * xidep[, 1]
+    T <- xidep[ytype == 2, 1]
+    Nj <- length(T)
+    ev = xidep$obs[ytype == 2]
+    cens <- which(ev == 0)
+    ind <- which(ev == 1)
+    b0b = b0[ytype == 2]
+    b1b = b1[ytype == 2]
+    h0b = h0[ytype == 2]
+    alphab = alpha[ytype == 2]
+    haz <- h0b * exp(alphab * (b0b + b1b * T))
+    H <- (h0b/(alphab * b1b)) * exp((b0b + b1b * T) * alphab) - 
+        (h0b/(alphab * b1b)) * exp(alphab * b0b)
+    logpdf <- rep(0, Nj)
+    logpdf[cens] <- -H[cens]
+    logpdf[ind] <- -H[ind] + log(haz[ind])
+    ypred[ytype == 2] = logpdf
+    return(ypred)
+}
+  Nb of parameters: 4 
+      parameter names:  b0 b1 h0 alpha 
+      distribution:
+     Parameter Distribution Estimated
+[1,] b0        normal       Estimated
+[2,] b1        normal       Estimated
+[3,] h0        log-normal   Estimated
+[4,] alpha     normal       Estimated
+  Variance-covariance matrix:
+      b0 b1 h0 alpha
+b0     1  0  0     0
+b1     0  1  0     0
+h0     0  0  0     0
+alpha  0  0  0     0
+  Error model: constant , initial values: a.1=1 
+    No covariate in the model.
+    Initial values
+             b0   b1  h0 alpha
+Pop.CondInit 73 1.25 0.6 1e-04
+> 
+> saemix.data<-dataJM
+> saemix.model<-jointTTE
+> saemix.options<-saemixControl(seed=12345, map=T, fim=T, ll.is=TRUE, save.graphs = F) # please, specify save.graphs=F (currently not extended)
+> fit.jointLinTTE <- saemix.multi(saemix.model, saemix.data, saemix.options)
+Nonlinear mixed-effects model fit by the SAEM algorithm
+-----------------------------------
+----          Data             ----
+-----------------------------------
+Object of class SaemixData
+    longitudinal data for use with the SAEM algorithm
+Dataset data_joint 
+    Structured data: obs ~ time + obs | id 
+    X variable for graphs: time () 
+Dataset characteristics:
+    number of subjects:     488 
+    number of observations: 3456 
+    average/min/max nb obs: 7.08  /  2  /  18 
+First 10 lines of data:
+      id      time obs obs.1 mdv cens occ ytype
+1      1 0.0000000  38    38   0    0   1     1
+2      1 0.2436754  31    31   0    0   1     1
+3      1 0.3805717  27    27   0    0   1     1
+11000  1 0.4134268   1     1   0    0   1     2
+4      2 0.0000000  51    51   0    0   1     1
+5      2 0.6872194  73    73   0    0   1     1
+6      2 0.9610119  90    90   0    0   1     1
+7      2 1.1882598  64    64   0    0   1     1
+8      2 1.4428869  54    54   0    0   1     1
+9      2 1.7139415  58    58   0    0   1     1
+-----------------------------------
+----          Model            ----
+-----------------------------------
+Nonlinear mixed-effects model
+  Model function:  JM LMEM-TTE (prothro data)
+  Model type:  structural likelihood
+function (psi, id, xidep) 
+{
+    ytype <- xidep$ytype
+    b0 <- psi[id, 1]
+    b1 <- psi[id, 2]
+    h0 <- psi[id, 3]
+    alpha <- psi[id, 4]
+    ypred <- b0 + b1 * xidep[, 1]
+    T <- xidep[ytype == 2, 1]
+    Nj <- length(T)
+    ev = xidep$obs[ytype == 2]
+    cens <- which(ev == 0)
+    ind <- which(ev == 1)
+    b0b = b0[ytype == 2]
+    b1b = b1[ytype == 2]
+    h0b = h0[ytype == 2]
+    alphab = alpha[ytype == 2]
+    haz <- h0b * exp(alphab * (b0b + b1b * T))
+    H <- (h0b/(alphab * b1b)) * exp((b0b + b1b * T) * alphab) - 
+        (h0b/(alphab * b1b)) * exp(alphab * b0b)
+    logpdf <- rep(0, Nj)
+    logpdf[cens] <- -H[cens]
+    logpdf[ind] <- -H[ind] + log(haz[ind])
+    ypred[ytype == 2] = logpdf
+    return(ypred)
+}
+<bytecode: 0x561046752248>
+  Nb of parameters: 4 
+      parameter names:  b0 b1 h0 alpha 
+      distribution:
+     Parameter Distribution Estimated
+[1,] b0        normal       Estimated
+[2,] b1        normal       Estimated
+[3,] h0        log-normal   Estimated
+[4,] alpha     normal       Estimated
+  Variance-covariance matrix:
+      b0 b1 h0 alpha
+b0     1  0  0     0
+b1     0  1  0     0
+h0     0  0  0     0
+alpha  0  0  0     0
+  Error model: constant , initial values: a.1=1 
+    No covariate in the model.
+    Initial values
+             b0   b1  h0 alpha
+Pop.CondInit 73 1.25 0.6 1e-04
+-----------------------------------
+----    Key algorithm options  ----
+-----------------------------------
+    Estimation of individual parameters (MAP)
+    Estimation of standard errors and linearised log-likelihood
+    Estimation of log-likelihood by importance sampling
+    Number of iterations:  K1=300, K2=100 
+    Number of chains:  1 
+    Seed:  12345 
+    Number of MCMC iterations for IS:  5000 
+    Simulations:
+        nb of simulated datasets used for npde:  1000 
+        nb of simulated datasets used for VPC:  100 
+    Input/output
+        save the results to a file:  TRUE 
+        save the graphs to files:  FALSE 
+        directory where results should be saved:  newdir 
+----------------------------------------------------
+----                  Results                   ----
+----------------------------------------------------
+-----------------  Fixed effects  ------------------
+----------------------------------------------------
+     Parameter Estimate
+[1,] b0        73.338  
+[2,] b1         0.570  
+[3,] h0         3.094  
+[4,] alpha     -0.039  
+[5,] a.1       17.233  
+----------------------------------------------------
+-----------  Variance of random effects  -----------
+----------------------------------------------------
+   Parameter Estimate
+b0 omega2.b0 369     
+b1 omega2.b1  16     
+----------------------------------------------------
+------  Correlation matrix of random effects  ------
+----------------------------------------------------
+          omega2.b0 omega2.b1
+omega2.b0 1         0        
+omega2.b1 0         1        
+----------------------------------------------------
+---------------  Statistical criteria  -------------
+----------------------------------------------------
+
+Likelihood computed by importance sampling
+      -2LL= 28050.73 
+      AIC = 28064.73 28064.73 
+      BIC = 28094.07 28094.07 
+----------------------------------------------------
+> 
+> summary(fit.jointLinTTE) # parameter estimates + likelihood 
+----------------------------------------------------
+-----------------  Fixed effects  ------------------
+----------------------------------------------------
+  Parameter Estimate
+1        b0   73.338
+2        b1    0.570
+3        h0    3.094
+4     alpha   -0.039
+5       a.1   17.233
+----------------------------------------------------
+-----------  Variance of random effects  -----------
+----------------------------------------------------
+   Parameter Estimate
+b0 omega2.b0   369.33
+b1 omega2.b1    15.76
+----------------------------------------------------
+------  Correlation matrix of random effects  ------
+----------------------------------------------------
+          omega2.b0 omega2.b1
+omega2.b0 1.00      0.00     
+omega2.b1 0.00      1.00     
+----------------------------------------------------
+---------------  Statistical criteria  -------------
+----------------------------------------------------
+
+Likelihood computed by importance sampling
+      -2LL= 28050.73 
+      AIC = 28064.73 28064.73 
+      BIC = 28094.07 28094.07 
+----------------------------------------------------
+Message d'avis :
+Dans matrix(value, n, p) :
+  la longueur des données [5] n'est pas un diviseur ni un multiple du nombre de colonnes [3]
+> fit.jointLinTTE@results@fim # inverse of the Fisher Information Matrix 
+                b0            b1            h0         alpha     omega2.b0
+[1,]  1.0004032819 -5.975768e-02  0.0232522122 -3.188424e-04   2.569130851
+[2,] -0.0597576780  1.087968e-01 -0.0035186342  7.009299e-05  -0.088465304
+[3,]  0.0232522122 -3.518634e-03  0.0441352091 -6.058584e-04  -0.371007774
+[4,] -0.0003188424  7.009299e-05 -0.0006058584  9.059682e-06   0.002326825
+[5,]  2.5691308511 -8.846530e-02 -0.3710077744  2.326825e-03 988.446907983
+[6,]  0.0110253172  1.692256e-01 -0.0105168727  4.847003e-05   2.419921193
+[7,] -0.0280793906 -4.166982e-03  0.0005563514 -2.434968e-05  -0.147787916
+         omega2.b1           a.1
+[1,]  1.102532e-02 -2.807939e-02
+[2,]  1.692256e-01 -4.166982e-03
+[3,] -1.051687e-02  5.563514e-04
+[4,]  4.847003e-05 -2.434968e-05
+[5,]  2.419921e+00 -1.477879e-01
+[6,]  3.970566e+00 -7.040594e-02
+[7,] -7.040594e-02  2.981143e-02
+> sqrt(diag(fit.jointLinTTE@results@fim)) # SE of parameter estimates 
+[1]  1.00020162  0.32984363  0.21008381  0.00300993 31.43957551  1.99262797
+[7]  0.17265985
+> 
+> ## Other examples 
+> 
+> ######### Model 2: with a covariate on slope parameter (treatment: placebo or prednisone) ##############
+> 
+> # Formatting and creating data 
+> d1 = prothro[,c(1,2,3,4)]
+> d1$ytype=1
+> colnames(d1)[2] = "obs"
+> colnames(d1)[4] = "cov"
+> d2 = prothros[,c(1,3,2,4)]
+> d2$ytype = 2
+> colnames(d2)[2] = "obs"
+> colnames(d2)[3] = "time"
+> colnames(d2)[4] = "cov"
+> data_joint = rbind(d1,d2)
+> dataJM<-saemixData(name.data=data_joint, name.group=c("id"), name.predictors=c("time","obs"),
++                    name.response="obs",name.ytype = "ytype", name.covariates = "cov")
+
+
+The following SaemixData object was successfully created:
+
+Object of class SaemixData
+    longitudinal data for use with the SAEM algorithm
+Dataset data_joint 
+    Structured data: obs ~ time + obs | id 
+    X variable for graphs: time () 
+    covariates: cov (-) 
+      reference class for covariate cov :  placebo 
+> 
+> model.jointTTE<-saemixModel(model=JMmodel,description="JM LMEM-TTE (prothro data)",modeltype=c("structural","likelihood"),
++                       psi0=matrix(param,ncol=4,byrow=TRUE,dimnames=list(NULL, c("b0","b1","h0","alpha"))),
++                       transform.par=c(0,0,1,0), covariance.model=diag(c(1,1,0,0)),
++                       fixed.estim = c(1,1,1,1),error.model = "constant",
++                       omega.init = diag(omega.sim), covariate.model = c(0,1,0,0))
+
+
+The following SaemixModel object was successfully created:
+
+Nonlinear mixed-effects model
+  Model function:  JM LMEM-TTE (prothro data)
+  Model type:  structural likelihood
+function (psi, id, xidep) 
+{
+    ytype <- xidep$ytype
+    b0 <- psi[id, 1]
+    b1 <- psi[id, 2]
+    h0 <- psi[id, 3]
+    alpha <- psi[id, 4]
+    ypred <- b0 + b1 * xidep[, 1]
+    T <- xidep[ytype == 2, 1]
+    Nj <- length(T)
+    ev = xidep$obs[ytype == 2]
+    cens <- which(ev == 0)
+    ind <- which(ev == 1)
+    b0b = b0[ytype == 2]
+    b1b = b1[ytype == 2]
+    h0b = h0[ytype == 2]
+    alphab = alpha[ytype == 2]
+    haz <- h0b * exp(alphab * (b0b + b1b * T))
+    H <- (h0b/(alphab * b1b)) * exp((b0b + b1b * T) * alphab) - 
+        (h0b/(alphab * b1b)) * exp(alphab * b0b)
+    logpdf <- rep(0, Nj)
+    logpdf[cens] <- -H[cens]
+    logpdf[ind] <- -H[ind] + log(haz[ind])
+    ypred[ytype == 2] = logpdf
+    return(ypred)
+}
+<bytecode: 0x561046752248>
+  Nb of parameters: 4 
+      parameter names:  b0 b1 h0 alpha 
+      distribution:
+     Parameter Distribution Estimated
+[1,] b0        normal       Estimated
+[2,] b1        normal       Estimated
+[3,] h0        log-normal   Estimated
+[4,] alpha     normal       Estimated
+  Variance-covariance matrix:
+      b0 b1 h0 alpha
+b0     1  0  0     0
+b1     0  1  0     0
+h0     0  0  0     0
+alpha  0  0  0     0
+  Error model: constant , initial values: a.1=1 
+  Covariate model:
+     b0 b1 h0 alpha
+[1,]  0  1  0     0
+    Initial values
+             b0   b1  h0 alpha
+Pop.CondInit 73 1.25 0.6 1e-04
+Cov.CondInit  0 0.00 0.0 0e+00
+> 
+> saemix.options<-saemixControl(seed=12345, map=T, fim=T, ll.is=TRUE, save.graphs = F) # please, specify save.graphs=F (currently not extended)
+> fit.jointLinTTEcov <- saemix.multi(model.jointTTE, dataJM, saemix.options)
+Nonlinear mixed-effects model fit by the SAEM algorithm
+-----------------------------------
+----          Data             ----
+-----------------------------------
+Object of class SaemixData
+    longitudinal data for use with the SAEM algorithm
+Dataset data_joint 
+    Structured data: obs ~ time + obs | id 
+    X variable for graphs: time () 
+    covariates: cov (-) 
+      reference class for covariate cov :  placebo 
+Dataset characteristics:
+    number of subjects:     488 
+    number of observations: 3456 
+    average/min/max nb obs: 7.08  /  2  /  18 
+First 10 lines of data:
+      id      time obs obs.1        cov mdv cens occ ytype
+1      1 0.0000000  38    38 prednisone   0    0   1     1
+2      1 0.2436754  31    31 prednisone   0    0   1     1
+3      1 0.3805717  27    27 prednisone   0    0   1     1
+11000  1 0.4134268   1     1 prednisone   0    0   1     2
+4      2 0.0000000  51    51 prednisone   0    0   1     1
+5      2 0.6872194  73    73 prednisone   0    0   1     1
+6      2 0.9610119  90    90 prednisone   0    0   1     1
+7      2 1.1882598  64    64 prednisone   0    0   1     1
+8      2 1.4428869  54    54 prednisone   0    0   1     1
+9      2 1.7139415  58    58 prednisone   0    0   1     1
+-----------------------------------
+----          Model            ----
+-----------------------------------
+Nonlinear mixed-effects model
+  Model function:  JM LMEM-TTE (prothro data)
+  Model type:  structural likelihood
+function (psi, id, xidep) 
+{
+    ytype <- xidep$ytype
+    b0 <- psi[id, 1]
+    b1 <- psi[id, 2]
+    h0 <- psi[id, 3]
+    alpha <- psi[id, 4]
+    ypred <- b0 + b1 * xidep[, 1]
+    T <- xidep[ytype == 2, 1]
+    Nj <- length(T)
+    ev = xidep$obs[ytype == 2]
+    cens <- which(ev == 0)
+    ind <- which(ev == 1)
+    b0b = b0[ytype == 2]
+    b1b = b1[ytype == 2]
+    h0b = h0[ytype == 2]
+    alphab = alpha[ytype == 2]
+    haz <- h0b * exp(alphab * (b0b + b1b * T))
+    H <- (h0b/(alphab * b1b)) * exp((b0b + b1b * T) * alphab) - 
+        (h0b/(alphab * b1b)) * exp(alphab * b0b)
+    logpdf <- rep(0, Nj)
+    logpdf[cens] <- -H[cens]
+    logpdf[ind] <- -H[ind] + log(haz[ind])
+    ypred[ytype == 2] = logpdf
+    return(ypred)
+}
+<bytecode: 0x561046752248>
+  Nb of parameters: 4 
+      parameter names:  b0 b1 h0 alpha 
+      distribution:
+     Parameter Distribution Estimated
+[1,] b0        normal       Estimated
+[2,] b1        normal       Estimated
+[3,] h0        log-normal   Estimated
+[4,] alpha     normal       Estimated
+  Variance-covariance matrix:
+      b0 b1 h0 alpha
+b0     1  0  0     0
+b1     0  1  0     0
+h0     0  0  0     0
+alpha  0  0  0     0
+  Error model: constant , initial values: a.1=1 
+  Covariate model:
+    [,1] [,2] [,3] [,4]
+cov    0    1    0    0
+    Initial values
+             b0   b1  h0 alpha
+Pop.CondInit 73 1.25 0.6 1e-04
+Cov.CondInit  0 0.00 0.0 0e+00
+-----------------------------------
+----    Key algorithm options  ----
+-----------------------------------
+    Estimation of individual parameters (MAP)
+    Estimation of standard errors and linearised log-likelihood
+    Estimation of log-likelihood by importance sampling
+    Number of iterations:  K1=300, K2=100 
+    Number of chains:  1 
+    Seed:  12345 
+    Number of MCMC iterations for IS:  5000 
+    Simulations:
+        nb of simulated datasets used for npde:  1000 
+        nb of simulated datasets used for VPC:  100 
+    Input/output
+        save the results to a file:  TRUE 
+        save the graphs to files:  FALSE 
+        directory where results should be saved:  newdir 
+----------------------------------------------------
+----                  Results                   ----
+----------------------------------------------------
+-----------------  Fixed effects  ------------------
+----------------------------------------------------
+     Parameter    Estimate
+[1,] b0           73.402  
+[2,] b1            0.531  
+[3,] beta_cov(b1) -0.059  
+[4,] h0            3.210  
+[5,] alpha        -0.039  
+[6,] a.1          17.244  
+----------------------------------------------------
+-----------  Variance of random effects  -----------
+----------------------------------------------------
+   Parameter Estimate
+b0 omega2.b0 371     
+b1 omega2.b1  16     
+----------------------------------------------------
+------  Correlation matrix of random effects  ------
+----------------------------------------------------
+          omega2.b0 omega2.b1
+omega2.b0 1         0        
+omega2.b1 0         1        
+----------------------------------------------------
+---------------  Statistical criteria  -------------
+----------------------------------------------------
+
+Likelihood computed by importance sampling
+      -2LL= 28050.53 
+      AIC = 28066.53 28066.53 
+      BIC = 28100.05 28100.05 
+----------------------------------------------------
+> 
+> fit.jointLinTTEcov@results@fim # inverse of the Fisher Information Matrix 
+               b0            b1  beta_cov(b1)            h0         alpha
+[1,]  1.021660200 -0.0490033039 -0.0244228158  0.0239260554 -3.399210e-04
+[2,] -0.049003304  0.2165940053 -0.2112459467  0.0001873635  1.061870e-05
+[3,] -0.024422816 -0.2112459467  0.4223279652 -0.0080730729  1.357515e-04
+[4,]  0.023926055  0.0001873635 -0.0080730729  0.0445657761 -6.140020e-04
+[5,] -0.000339921  0.0000106187  0.0001357515 -0.0006140020  9.212747e-06
+[6,]  3.071175502 -0.9290602169  1.4619269810 -0.3862100964  2.271434e-03
+[7,]  0.043602086  0.2925407520 -0.2724883293 -0.0100988394  3.648399e-07
+[8,] -0.028310309 -0.0073348234  0.0063940912  0.0007053039 -2.566968e-05
+         omega2.b0     omega2.b1           a.1
+[1,]  3.071176e+00  4.360209e-02 -2.831031e-02
+[2,] -9.290602e-01  2.925408e-01 -7.334823e-03
+[3,]  1.461927e+00 -2.724883e-01  6.394091e-03
+[4,] -3.862101e-01 -1.009884e-02  7.053039e-04
+[5,]  2.271434e-03  3.648399e-07 -2.566968e-05
+[6,]  1.055205e+03  1.363613e+00 -1.275434e-01
+[7,]  1.363613e+00  4.632440e+00 -8.134529e-02
+[8,] -1.275434e-01 -8.134529e-02  2.994006e-02
+> sqrt(diag(fit.jointLinTTEcov@results@fim)) # SE of parameter estimates 
+[1]  1.010772081  0.465396611  0.649867652  0.211106078  0.003035251
+[6] 32.483925360  2.152310310  0.173031949
+> 
+> 
+> 
+> ######### Model 3: with a covariate on the survival model using a dummy variable (treatment: placebo or prednisone) ##############
+> 
+> # Formatting and creating data 
+> d1 = prothro[,c(1,2,3,4)]
+> d1$ytype=1
+> colnames(d1)[2] = "obs"
+> colnames(d1)[4] = "cov"
+> d2 = prothros[,c(1,3,2,4)]
+> d2$ytype = 2
+> colnames(d2)[2] = "obs"
+> colnames(d2)[3] = "time"
+> colnames(d2)[4] = "cov"
+> data_joint = rbind(d1,d2)
+> dataJM<-saemixData(name.data=data_joint, name.group=c("id"), name.predictors=c("time","obs"),
++                    name.response="obs",name.ytype = "ytype", name.covariates = "cov")
+
+
+The following SaemixData object was successfully created:
+
+Object of class SaemixData
+    longitudinal data for use with the SAEM algorithm
+Dataset data_joint 
+    Structured data: obs ~ time + obs | id 
+    X variable for graphs: time () 
+    covariates: cov (-) 
+      reference class for covariate cov :  placebo 
+> 
+> 
+> 
+> JMmodel<-function(psi,id,xidep) {
++   ytype<-xidep$ytype  # type of response (1: continuous, 2: event)
++   b0 <- psi[id,1] 
++   b1 <- psi[id,2] 
++   h0 <- psi[id,3]
++   alpha <- psi[id,4] 
++   trt <- psi[id,5]
++   
++   ypred <- b0+b1*xidep[,1]   
++   
++   T<-xidep[ytype==2,1]# vector of times (survival part)
++   Nj <- length(T)
++   ev = xidep$obs[ytype==2]
++   cens<-which(ev==0) 
++   ind <- which(ev==1)
++   b0b = b0[ytype==2] # to have vectors of the same length as T 
++   b1b = b1[ytype==2]
++   h0b = h0[ytype==2]
++   alphab = alpha[ytype==2]
++   
++   haz <- h0b*exp(alphab*(b0b+b1b*T)+trt) # instantaneous hazard
++   H <- (h0b/(alphab*b1b))*exp(alphab*(b0b+b1b*T)+trt)-(h0b/(alphab*b1b))*exp(alphab*b0b+trt) # cumulative hazard
++   
++   logpdf <- rep(0,Nj)
++   logpdf[cens] <- -H[cens] 
++   logpdf[ind] <- -H[ind] + log(haz[ind]) 
++   
++   ypred[ytype==2] = logpdf
++   return(ypred)
++ }
+> 
+> # initializing parameters 
+> param<-c(73,1.25,0.6,0.0001,0)
+> omega.sim<-c(18, 3, 0.05, 0.01, 0.01)
+> sigma.sim <- 17
+> 
+> jointTTEdummy<-saemixModel(model=JMmodel,description="JM LMEM-TTE (prothro data)",modeltype=c("structural","likelihood"),
++                       psi0=matrix(param,ncol=5,byrow=TRUE,dimnames=list(NULL, c("b0","b1","h0","alpha","trt"))),
++                       transform.par=c(0,0,1,0,0), covariance.model=diag(c(1,1,0,0,0)),
++                       fixed.estim = c(1,1,1,1,0),error.model = "constant",
++                       omega.init = diag(omega.sim),covariate.model = c(0,0,0,0,1))
+
+
+The following SaemixModel object was successfully created:
+
+Nonlinear mixed-effects model
+  Model function:  JM LMEM-TTE (prothro data)
+  Model type:  structural likelihood
+function (psi, id, xidep) 
+{
+    ytype <- xidep$ytype
+    b0 <- psi[id, 1]
+    b1 <- psi[id, 2]
+    h0 <- psi[id, 3]
+    alpha <- psi[id, 4]
+    trt <- psi[id, 5]
+    ypred <- b0 + b1 * xidep[, 1]
+    T <- xidep[ytype == 2, 1]
+    Nj <- length(T)
+    ev = xidep$obs[ytype == 2]
+    cens <- which(ev == 0)
+    ind <- which(ev == 1)
+    b0b = b0[ytype == 2]
+    b1b = b1[ytype == 2]
+    h0b = h0[ytype == 2]
+    alphab = alpha[ytype == 2]
+    haz <- h0b * exp(alphab * (b0b + b1b * T) + trt)
+    H <- (h0b/(alphab * b1b)) * exp(alphab * (b0b + b1b * T) + 
+        trt) - (h0b/(alphab * b1b)) * exp(alphab * b0b + trt)
+    logpdf <- rep(0, Nj)
+    logpdf[cens] <- -H[cens]
+    logpdf[ind] <- -H[ind] + log(haz[ind])
+    ypred[ytype == 2] = logpdf
+    return(ypred)
+}
+  Nb of parameters: 5 
+      parameter names:  b0 b1 h0 alpha trt 
+      distribution:
+     Parameter Distribution Estimated
+[1,] b0        normal       Estimated
+[2,] b1        normal       Estimated
+[3,] h0        log-normal   Estimated
+[4,] alpha     normal       Estimated
+[5,] trt       normal       Fixed    
+  Variance-covariance matrix:
+      b0 b1 h0 alpha trt
+b0     1  0  0     0   0
+b1     0  1  0     0   0
+h0     0  0  0     0   0
+alpha  0  0  0     0   0
+trt    0  0  0     0   0
+  Error model: constant , initial values: a.1=1 
+  Covariate model:
+     b0 b1 h0 alpha trt
+[1,]  0  0  0     0   1
+    Initial values
+             b0   b1  h0 alpha trt
+Pop.CondInit 73 1.25 0.6 1e-04   0
+Cov.CondInit  0 0.00 0.0 0e+00   0
+> 
+> 
+> saemix.options<-saemixControl(seed=12345, map=T, fim=T, ll.is=TRUE, save.graphs = F) # please, specify save.graphs=F (currently not extended)
+> fit.jointLinTTEdummy <- saemix.multi(jointTTEdummy, dataJM, saemix.options)
+Nonlinear mixed-effects model fit by the SAEM algorithm
+-----------------------------------
+----          Data             ----
+-----------------------------------
+Object of class SaemixData
+    longitudinal data for use with the SAEM algorithm
+Dataset data_joint 
+    Structured data: obs ~ time + obs | id 
+    X variable for graphs: time () 
+    covariates: cov (-) 
+      reference class for covariate cov :  placebo 
+Dataset characteristics:
+    number of subjects:     488 
+    number of observations: 3456 
+    average/min/max nb obs: 7.08  /  2  /  18 
+First 10 lines of data:
+      id      time obs obs.1        cov mdv cens occ ytype
+1      1 0.0000000  38    38 prednisone   0    0   1     1
+2      1 0.2436754  31    31 prednisone   0    0   1     1
+3      1 0.3805717  27    27 prednisone   0    0   1     1
+11000  1 0.4134268   1     1 prednisone   0    0   1     2
+4      2 0.0000000  51    51 prednisone   0    0   1     1
+5      2 0.6872194  73    73 prednisone   0    0   1     1
+6      2 0.9610119  90    90 prednisone   0    0   1     1
+7      2 1.1882598  64    64 prednisone   0    0   1     1
+8      2 1.4428869  54    54 prednisone   0    0   1     1
+9      2 1.7139415  58    58 prednisone   0    0   1     1
+-----------------------------------
+----          Model            ----
+-----------------------------------
+Nonlinear mixed-effects model
+  Model function:  JM LMEM-TTE (prothro data)
+  Model type:  structural likelihood
+function (psi, id, xidep) 
+{
+    ytype <- xidep$ytype
+    b0 <- psi[id, 1]
+    b1 <- psi[id, 2]
+    h0 <- psi[id, 3]
+    alpha <- psi[id, 4]
+    trt <- psi[id, 5]
+    ypred <- b0 + b1 * xidep[, 1]
+    T <- xidep[ytype == 2, 1]
+    Nj <- length(T)
+    ev = xidep$obs[ytype == 2]
+    cens <- which(ev == 0)
+    ind <- which(ev == 1)
+    b0b = b0[ytype == 2]
+    b1b = b1[ytype == 2]
+    h0b = h0[ytype == 2]
+    alphab = alpha[ytype == 2]
+    haz <- h0b * exp(alphab * (b0b + b1b * T) + trt)
+    H <- (h0b/(alphab * b1b)) * exp(alphab * (b0b + b1b * T) + 
+        trt) - (h0b/(alphab * b1b)) * exp(alphab * b0b + trt)
+    logpdf <- rep(0, Nj)
+    logpdf[cens] <- -H[cens]
+    logpdf[ind] <- -H[ind] + log(haz[ind])
+    ypred[ytype == 2] = logpdf
+    return(ypred)
+}
+<bytecode: 0x561042023918>
+  Nb of parameters: 5 
+      parameter names:  b0 b1 h0 alpha trt 
+      distribution:
+     Parameter Distribution Estimated
+[1,] b0        normal       Estimated
+[2,] b1        normal       Estimated
+[3,] h0        log-normal   Estimated
+[4,] alpha     normal       Estimated
+[5,] trt       normal       Fixed    
+  Variance-covariance matrix:
+      b0 b1 h0 alpha trt
+b0     1  0  0     0   0
+b1     0  1  0     0   0
+h0     0  0  0     0   0
+alpha  0  0  0     0   0
+trt    0  0  0     0   0
+  Error model: constant , initial values: a.1=1 
+  Covariate model:
+    [,1] [,2] [,3] [,4] [,5]
+cov    0    0    0    0    1
+    Initial values
+             b0   b1  h0 alpha trt
+Pop.CondInit 73 1.25 0.6 1e-04   0
+Cov.CondInit  0 0.00 0.0 0e+00   0
+-----------------------------------
+----    Key algorithm options  ----
+-----------------------------------
+    Estimation of individual parameters (MAP)
+    Estimation of standard errors and linearised log-likelihood
+    Estimation of log-likelihood by importance sampling
+    Number of iterations:  K1=300, K2=100 
+    Number of chains:  1 
+    Seed:  12345 
+    Number of MCMC iterations for IS:  5000 
+    Simulations:
+        nb of simulated datasets used for npde:  1000 
+        nb of simulated datasets used for VPC:  100 
+    Input/output
+        save the results to a file:  TRUE 
+        save the graphs to files:  FALSE 
+        directory where results should be saved:  newdir 
+----------------------------------------------------
+----                  Results                   ----
+----------------------------------------------------
+-----------------  Fixed effects  ------------------
+----------------------------------------------------
+     Parameter     Estimate
+[1,] b0            73.254  
+[2,] b1             0.477  
+[3,] h0             3.342  
+[4,] alpha         -0.039  
+[5,] trt            0.000  
+[6,] beta_cov(trt) -0.068  
+[7,] a.1           17.219  
+----------------------------------------------------
+-----------  Variance of random effects  -----------
+----------------------------------------------------
+   Parameter Estimate
+b0 omega2.b0 374     
+b1 omega2.b1  16     
+----------------------------------------------------
+------  Correlation matrix of random effects  ------
+----------------------------------------------------
+          omega2.b0 omega2.b1
+omega2.b0 1         0        
+omega2.b1 0         1        
+----------------------------------------------------
+---------------  Statistical criteria  -------------
+----------------------------------------------------
+
+Likelihood computed by importance sampling
+      -2LL= 28050.89 
+      AIC = 28066.89 28066.89 
+      BIC = 28100.42 28100.42 
+----------------------------------------------------
+> 
+> fit.jointLinTTEdummy@results@fim # inverse of the Fisher Information Matrix 
+                b0            b1            h0         alpha beta_cov(trt)
+[1,]  1.0196114290 -0.0614841414  0.0198258469 -2.983010e-04  3.179386e-04
+[2,] -0.0614841414  0.1090239683 -0.0049934630  1.045443e-04 -2.933518e-04
+[3,]  0.0198258469 -0.0049934630  0.0441831732 -5.664689e-04 -7.356170e-03
+[4,] -0.0002983010  0.0001045443 -0.0005664689  8.615905e-06  3.255795e-06
+[5,]  0.0003179386 -0.0002933518 -0.0073561703  3.255795e-06  1.461996e-02
+[6,]  3.3323003840 -0.3958442578  0.0162646724 -2.050907e-03 -2.581347e-01
+[7,]  0.0860147919  0.1199106298 -0.0183627608  1.568033e-04  1.928585e-03
+[8,] -0.0280889428 -0.0043130962  0.0002081874 -2.531517e-05  7.369381e-04
+         omega2.b0     omega2.b1           a.1
+[1,]  3.332300e+00  0.0860147919 -2.808894e-02
+[2,] -3.958443e-01  0.1199106298 -4.313096e-03
+[3,]  1.626467e-02 -0.0183627608  2.081874e-04
+[4,] -2.050907e-03  0.0001568033 -2.531517e-05
+[5,] -2.581347e-01  0.0019285852  7.369381e-04
+[6,]  1.085057e+03  2.5384388791 -9.438170e-02
+[7,]  2.538439e+00  4.8115127718 -8.199723e-02
+[8,] -9.438170e-02 -0.0819972344  2.985015e-02
+> sqrt(diag(fit.jointLinTTEdummy@results@fim)) # SE of parameter estimates 
+[1]  1.009758104  0.330187777  0.210197938  0.002935286  0.120913028
+[6] 32.940208224  2.193516075  0.172771970
+> 
+> 
+> 
+> 
+> ######### Model 4: with a nonlinear mixed-effects model ##########
+> # time consuming because the model as no explicit likelihood expression...
+> # use of numerical integration to compute joint likelihood 
+> 
+> # Formatting and creating data 
+> d1 = prothro[,c(1,2,3)]
+> d1$ytype=1
+> colnames(d1)[2] = "obs"
+> d2 = prothros[,c(1,3,2)]
+> d2$ytype = 2
+> colnames(d2)[2] = "obs"
+> colnames(d2)[3] = "time"
+> data_joint = rbind(d1,d2)
+> dataJM<-saemixData(name.data=data_joint, name.group=c("id"), name.predictors=c("time","obs"),
++                    name.response="obs",name.ytype = "ytype")
+
+
+The following SaemixData object was successfully created:
+
+Object of class SaemixData
+    longitudinal data for use with the SAEM algorithm
+Dataset data_joint 
+    Structured data: obs ~ time + obs | id 
+    X variable for graphs: time () 
+> 
+> # model
+> JMmodel_nl<-function(psi,id,xidep) {
++   ytype<-xidep$ytype  
++   b0 <- psi[id,1] 
++   b1 <- psi[id,2] 
++   b2 <- psi[id,3]
++   a <- psi[id,4]
++   h0 <- psi[id,5]
++   alpha <- psi[id,6]
++   
++   ypred <- b0+a*(exp(-b1*xidep[,1])-exp(-b2*xidep[,1]))  
++   
++   T<-xidep[ytype==2,1]
++   Nj <- length(T)
++   ev = xidep$obs[ytype==2]
++   cens<-which(ev==0)  
++   ind <- which(ev==1)
++   b0b = b0[ytype==2]
++   b1b = b1[ytype==2]
++   b2b = b2[ytype==2]
++   ab = a[ytype==2]
++   h0b = h0[ytype==2]
++   alphab = alpha[ytype==2]
++   
++   f=function(x) seq(0,x,length.out=100)
++   tab = mapply(f,T)
++   tab = t(tab)
++   pas = tab[,2]-tab[,1]
++   
++   haz <- h0b*exp(alphab*(b0b+ab*(exp(-b1b*T)-exp(-b2b*T))))
++   hazt <- h0b*exp(alphab*(b0b+ab*(exp(-b1b*tab)-exp(-b2b*tab))))
++   H = apply(hazt,1,sum)*pas   # no close form... need to integrate numerically 
++   
++   logpdf <- rep(0,Nj)
++   logpdf[cens] <- -H[cens] 
++   logpdf[ind] <- -H[ind] + log(haz[ind])
++   
++   ypred[ytype==2] = logpdf
++   return(ypred)
++ }
+> 
+> param<-c(20,2,0.6,0.5,2,-0.039)
+> omega.sim<-c(5, 1, 0.6,0.5,0.02, 0.03)
+> sigma.sim <- 17
+> 
+> jointTTE_nl<-saemixModel(model=JMmodel_nl,description="JM lin longi one tte",modeltype=c("structural","likelihood"),
++                       psi0=matrix(param,ncol=6,byrow=TRUE,dimnames=list(NULL, c("b0","b1","b2","a","h0","alpha"))),
++                       transform.par=c(0,1,1,1,0,0), covariance.model=diag(c(1,1,1,1,0,0)),
++                       fixed.estim = c(1,1,1,1,1,1),error.model = "constant",
++                       omega.init = diag(omega.sim))
+
+
+The following SaemixModel object was successfully created:
+
+Nonlinear mixed-effects model
+  Model function:  JM lin longi one tte
+  Model type:  structural likelihood
+function (psi, id, xidep) 
+{
+    ytype <- xidep$ytype
+    b0 <- psi[id, 1]
+    b1 <- psi[id, 2]
+    b2 <- psi[id, 3]
+    a <- psi[id, 4]
+    h0 <- psi[id, 5]
+    alpha <- psi[id, 6]
+    ypred <- b0 + a * (exp(-b1 * xidep[, 1]) - exp(-b2 * xidep[, 
+        1]))
+    T <- xidep[ytype == 2, 1]
+    Nj <- length(T)
+    ev = xidep$obs[ytype == 2]
+    cens <- which(ev == 0)
+    ind <- which(ev == 1)
+    b0b = b0[ytype == 2]
+    b1b = b1[ytype == 2]
+    b2b = b2[ytype == 2]
+    ab = a[ytype == 2]
+    h0b = h0[ytype == 2]
+    alphab = alpha[ytype == 2]
+    f = function(x) seq(0, x, length.out = 100)
+    tab = mapply(f, T)
+    tab = t(tab)
+    pas = tab[, 2] - tab[, 1]
+    haz <- h0b * exp(alphab * (b0b + ab * (exp(-b1b * T) - exp(-b2b * 
+        T))))
+    hazt <- h0b * exp(alphab * (b0b + ab * (exp(-b1b * tab) - 
+        exp(-b2b * tab))))
+    H = apply(hazt, 1, sum) * pas
+    logpdf <- rep(0, Nj)
+    logpdf[cens] <- -H[cens]
+    logpdf[ind] <- -H[ind] + log(haz[ind])
+    ypred[ytype == 2] = logpdf
+    return(ypred)
+}
+  Nb of parameters: 6 
+      parameter names:  b0 b1 b2 a h0 alpha 
+      distribution:
+     Parameter Distribution Estimated
+[1,] b0        normal       Estimated
+[2,] b1        log-normal   Estimated
+[3,] b2        log-normal   Estimated
+[4,] a         log-normal   Estimated
+[5,] h0        normal       Estimated
+[6,] alpha     normal       Estimated
+  Variance-covariance matrix:
+      b0 b1 b2 a h0 alpha
+b0     1  0  0 0  0     0
+b1     0  1  0 0  0     0
+b2     0  0  1 0  0     0
+a      0  0  0 1  0     0
+h0     0  0  0 0  0     0
+alpha  0  0  0 0  0     0
+  Error model: constant , initial values: a.1=1 
+    No covariate in the model.
+    Initial values
+             b0 b1  b2   a h0  alpha
+Pop.CondInit 20  2 0.6 0.5  2 -0.039
+> 
+> saemix.model_nl<-jointTTE_nl
+> yfit_nl <- saemix.multi(saemix.model_nl, saemix.data, saemix.options)
+Nonlinear mixed-effects model fit by the SAEM algorithm
+-----------------------------------
+----          Data             ----
+-----------------------------------
+Object of class SaemixData
+    longitudinal data for use with the SAEM algorithm
+Dataset data_joint 
+    Structured data: obs ~ time + obs | id 
+    X variable for graphs: time () 
+Dataset characteristics:
+    number of subjects:     488 
+    number of observations: 3456 
+    average/min/max nb obs: 7.08  /  2  /  18 
+First 10 lines of data:
+      id      time obs obs.1 mdv cens occ ytype
+1      1 0.0000000  38    38   0    0   1     1
+2      1 0.2436754  31    31   0    0   1     1
+3      1 0.3805717  27    27   0    0   1     1
+11000  1 0.4134268   1     1   0    0   1     2
+4      2 0.0000000  51    51   0    0   1     1
+5      2 0.6872194  73    73   0    0   1     1
+6      2 0.9610119  90    90   0    0   1     1
+7      2 1.1882598  64    64   0    0   1     1
+8      2 1.4428869  54    54   0    0   1     1
+9      2 1.7139415  58    58   0    0   1     1
+-----------------------------------
+----          Model            ----
+-----------------------------------
+Nonlinear mixed-effects model
+  Model function:  JM lin longi one tte
+  Model type:  structural likelihood
+function (psi, id, xidep) 
+{
+    ytype <- xidep$ytype
+    b0 <- psi[id, 1]
+    b1 <- psi[id, 2]
+    b2 <- psi[id, 3]
+    a <- psi[id, 4]
+    h0 <- psi[id, 5]
+    alpha <- psi[id, 6]
+    ypred <- b0 + a * (exp(-b1 * xidep[, 1]) - exp(-b2 * xidep[, 
+        1]))
+    T <- xidep[ytype == 2, 1]
+    Nj <- length(T)
+    ev = xidep$obs[ytype == 2]
+    cens <- which(ev == 0)
+    ind <- which(ev == 1)
+    b0b = b0[ytype == 2]
+    b1b = b1[ytype == 2]
+    b2b = b2[ytype == 2]
+    ab = a[ytype == 2]
+    h0b = h0[ytype == 2]
+    alphab = alpha[ytype == 2]
+    f = function(x) seq(0, x, length.out = 100)
+    tab = mapply(f, T)
+    tab = t(tab)
+    pas = tab[, 2] - tab[, 1]
+    haz <- h0b * exp(alphab * (b0b + ab * (exp(-b1b * T) - exp(-b2b * 
+        T))))
+    hazt <- h0b * exp(alphab * (b0b + ab * (exp(-b1b * tab) - 
+        exp(-b2b * tab))))
+    H = apply(hazt, 1, sum) * pas
+    logpdf <- rep(0, Nj)
+    logpdf[cens] <- -H[cens]
+    logpdf[ind] <- -H[ind] + log(haz[ind])
+    ypred[ytype == 2] = logpdf
+    return(ypred)
+}
+<bytecode: 0x561041cf18c8>
+  Nb of parameters: 6 
+      parameter names:  b0 b1 b2 a h0 alpha 
+      distribution:
+     Parameter Distribution Estimated
+[1,] b0        normal       Estimated
+[2,] b1        log-normal   Estimated
+[3,] b2        log-normal   Estimated
+[4,] a         log-normal   Estimated
+[5,] h0        normal       Estimated
+[6,] alpha     normal       Estimated
+  Variance-covariance matrix:
+      b0 b1 b2 a h0 alpha
+b0     1  0  0 0  0     0
+b1     0  1  0 0  0     0
+b2     0  0  1 0  0     0
+a      0  0  0 1  0     0
+h0     0  0  0 0  0     0
+alpha  0  0  0 0  0     0
+  Error model: constant , initial values: a.1=1 
+    No covariate in the model.
+    Initial values
+             b0 b1  b2   a h0  alpha
+Pop.CondInit 20  2 0.6 0.5  2 -0.039
+-----------------------------------
+----    Key algorithm options  ----
+-----------------------------------
+    Estimation of individual parameters (MAP)
+    Estimation of standard errors and linearised log-likelihood
+    Estimation of log-likelihood by importance sampling
+    Number of iterations:  K1=300, K2=100 
+    Number of chains:  1 
+    Seed:  12345 
+    Number of MCMC iterations for IS:  5000 
+    Simulations:
+        nb of simulated datasets used for npde:  1000 
+        nb of simulated datasets used for VPC:  100 
+    Input/output
+        save the results to a file:  TRUE 
+        save the graphs to files:  FALSE 
+        directory where results should be saved:  newdir 
+----------------------------------------------------
+----                  Results                   ----
+----------------------------------------------------
+-----------------  Fixed effects  ------------------
+----------------------------------------------------
+     Parameter Estimate
+[1,] b0        69.770  
+[2,] b1         0.037  
+[3,] b2         0.146  
+[4,] a         32.663  
+[5,] h0         3.154  
+[6,] alpha     -0.039  
+[7,] a.1       16.644  
+----------------------------------------------------
+-----------  Variance of random effects  -----------
+----------------------------------------------------
+   Parameter Estimate
+b0 omega2.b0 309.83  
+b1 omega2.b1   5.97  
+b2 omega2.b2   7.52  
+a  omega2.a    0.15  
+----------------------------------------------------
+------  Correlation matrix of random effects  ------
+----------------------------------------------------
+          omega2.b0 omega2.b1 omega2.b2 omega2.a
+omega2.b0 1         0         0         0       
+omega2.b1 0         1         0         0       
+omega2.b2 0         0         1         0       
+omega2.a  0         0         0         1       
+----------------------------------------------------
+---------------  Statistical criteria  -------------
+----------------------------------------------------
+
+Likelihood computed by importance sampling
+      -2LL= 28026.64 
+      AIC = 28048.64 28048.64 
+      BIC = 28094.73 28094.73 
+----------------------------------------------------
+> 
+> summary(yfit_nl)
+----------------------------------------------------
+-----------------  Fixed effects  ------------------
+----------------------------------------------------
+  Parameter Estimate
+1        b0   69.770
+2        b1    0.037
+3        b2    0.146
+4         a   32.663
+5        h0    3.154
+6     alpha   -0.039
+7       a.1   16.644
+----------------------------------------------------
+-----------  Variance of random effects  -----------
+----------------------------------------------------
+   Parameter Estimate
+b0 omega2.b0   309.83
+b1 omega2.b1     5.97
+b2 omega2.b2     7.52
+a   omega2.a     0.15
+----------------------------------------------------
+------  Correlation matrix of random effects  ------
+----------------------------------------------------
+          omega2.b0 omega2.b1 omega2.b2 omega2.a
+omega2.b0 1.00      0.00      0.00      0.00    
+omega2.b1 0.00      1.00      0.00      0.00    
+omega2.b2 0.00      0.00      1.00      0.00    
+omega2.a  0.00      0.00      0.00      1.00    
+----------------------------------------------------
+---------------  Statistical criteria  -------------
+----------------------------------------------------
+
+Likelihood computed by importance sampling
+      -2LL= 28026.64 
+      AIC = 28048.64 28048.64 
+      BIC = 28094.73 28094.73 
+----------------------------------------------------
+Message d'avis :
+Dans matrix(value, n, p) :
+  la longueur des données [5] n'est pas un diviseur ni un multiple du nombre de colonnes [3]
+> yfit_nl@results@fim
+                 b0            b1            b2             a           h0
+ [1,]  1.0420727962  0.0291998911 -5.852252e-02  1.468690e-03  0.044718270
+ [2,]  0.0291998911  0.1967091898  1.204371e-01  2.551650e-04 -0.005002168
+ [3,] -0.0585225162  0.1204370527  1.666303e-01 -6.263868e-03 -0.021413323
+ [4,]  0.0014686899  0.0002551650 -6.263868e-03  5.380125e-03  0.001512354
+ [5,]  0.0447182695 -0.0050021677 -2.141332e-02  1.512354e-03  0.452585937
+ [6,] -0.0002287443 -0.0000175385  9.412842e-05 -5.670664e-06 -0.001951946
+ [7,]  1.7922278983 -0.8886673656 -7.682618e-01  6.111722e-02  0.047832461
+ [8,]  0.1038953934 -0.3988190491 -1.508748e-01 -2.479352e-02 -0.141721248
+ [9,] -0.0990400559 -0.5812194754 -5.443821e-01  4.386420e-03  0.128568612
+[10,]  0.0013151086 -0.0013791841  1.387659e-03 -1.788082e-03 -0.001588080
+[11,] -0.0215324178 -0.0050667470 -1.006628e-02 -1.983130e-03  0.003387484
+              alpha    omega2.b0     omega2.b1     omega2.b2      omega2.a
+ [1,] -2.287443e-04   1.79222790  0.1038953934 -0.0990400559  1.315109e-03
+ [2,] -1.753850e-05  -0.88866737 -0.3988190491 -0.5812194754 -1.379184e-03
+ [3,]  9.412842e-05  -0.76826176 -0.1508747560 -0.5443821281  1.387659e-03
+ [4,] -5.670664e-06   0.06111722 -0.0247935248  0.0043864197 -1.788082e-03
+ [5,] -1.951946e-03   0.04783246 -0.1417212484  0.1285686119 -1.588080e-03
+ [6,]  9.185429e-06  -0.00127255  0.0005746445 -0.0006950754  1.028364e-05
+ [7,] -1.272550e-03 987.67315513 -6.0834402070 -0.4202954530 -1.711127e-01
+ [8,]  5.746445e-04  -6.08344021  3.3566952425  1.6401380049 -2.672046e-03
+ [9,] -6.950754e-04  -0.42029545  1.6401380049  4.6049712350 -8.730505e-03
+[10,]  1.028364e-05  -0.17111274 -0.0026720457 -0.0087305053  2.270218e-03
+[11,] -2.789992e-05   0.12810071 -0.0395269447 -0.0104577648 -1.810223e-04
+                a.1
+ [1,] -2.153242e-02
+ [2,] -5.066747e-03
+ [3,] -1.006628e-02
+ [4,] -1.983130e-03
+ [5,]  3.387484e-03
+ [6,] -2.789992e-05
+ [7,]  1.281007e-01
+ [8,] -3.952694e-02
+ [9,] -1.045776e-02
+[10,] -1.810223e-04
+[11,]  3.464638e-02
+> sqrt(diag(yfit_nl@results@fim))
+ [1]  1.020819669  0.443519097  0.408203773  0.073349333  0.672745075
+ [6]  0.003030747 31.427267701  1.832128610  2.145919671  0.047646800
+[11]  0.186135384
+> 
+> proc.time()
+utilisateur     système      écoulé 
+    646.786       5.646     653.119 

@@ -15,7 +15,9 @@ table(prothros$death)
 
 ######### estimation with saemix 
 
-saemixDir <- "C:/Users/AlexandraLAVALLEY/Documents/GitHub/saemixextension"
+# saemixDir <- "C:/Users/AlexandraLAVALLEY/Documents/GitHub/saemixextension" # ALM
+# saemixDir <- "/home/eco/work/saemix/saemixextension" # EC
+ saemixDir <- getwd() # assuming we are in the saemixextension folder
 workDir <- file.path(saemixDir, "joint")
 setwd(workDir)
 
@@ -105,11 +107,11 @@ jointTTE<-saemixModel(model=JMmodel,description="JM LMEM-TTE (prothro data)",mod
 saemix.data<-dataJM
 saemix.model<-jointTTE
 saemix.options<-saemixControl(seed=12345, map=T, fim=T, ll.is=TRUE, save.graphs = F) # please, specify save.graphs=F (currently not extended)
-yfit <- saemix.multi(saemix.model, saemix.data, saemix.options)
+fit.jointLinTTE <- saemix.multi(saemix.model, saemix.data, saemix.options)
 
-summary(yfit) # parameter estimates + likelihood 
-yfit@results@fim # inverse of the Fisher Information Matrix 
-sqrt(diag(yfit@results@fim)) # SE of parameter estimates 
+summary(fit.jointLinTTE) # parameter estimates + likelihood 
+fit.jointLinTTE@results@fim # inverse of the Fisher Information Matrix 
+sqrt(diag(fit.jointLinTTE@results@fim)) # SE of parameter estimates 
 
 ## Other examples 
 
@@ -129,19 +131,17 @@ data_joint = rbind(d1,d2)
 dataJM<-saemixData(name.data=data_joint, name.group=c("id"), name.predictors=c("time","obs"),
                    name.response="obs",name.ytype = "ytype", name.covariates = "cov")
 
-jointTTE<-saemixModel(model=JMmodel,description="JM LMEM-TTE (prothro data)",modeltype=c("structural","likelihood"),
+model.jointTTE<-saemixModel(model=JMmodel,description="JM LMEM-TTE (prothro data)",modeltype=c("structural","likelihood"),
                       psi0=matrix(param,ncol=4,byrow=TRUE,dimnames=list(NULL, c("b0","b1","h0","alpha"))),
                       transform.par=c(0,0,1,0), covariance.model=diag(c(1,1,0,0)),
                       fixed.estim = c(1,1,1,1),error.model = "constant",
                       omega.init = diag(omega.sim), covariate.model = c(0,1,0,0))
 
-saemix.data<-dataJM
-saemix.model<-jointTTE
 saemix.options<-saemixControl(seed=12345, map=T, fim=T, ll.is=TRUE, save.graphs = F) # please, specify save.graphs=F (currently not extended)
-yfit <- saemix.multi(saemix.model, saemix.data, saemix.options)
+fit.jointLinTTEcov <- saemix.multi(model.jointTTE, dataJM, saemix.options)
 
-yfit@results@fim # inverse of the Fisher Information Matrix 
-sqrt(diag(yfit@results@fim)) # SE of parameter estimates 
+fit.jointLinTTEcov@results@fim # inverse of the Fisher Information Matrix 
+sqrt(diag(fit.jointLinTTEcov@results@fim)) # SE of parameter estimates 
 
 
 
@@ -199,20 +199,18 @@ param<-c(73,1.25,0.6,0.0001,0)
 omega.sim<-c(18, 3, 0.05, 0.01, 0.01)
 sigma.sim <- 17
 
-jointTTE<-saemixModel(model=JMmodel,description="JM LMEM-TTE (prothro data)",modeltype=c("structural","likelihood"),
+jointTTEdummy<-saemixModel(model=JMmodel,description="JM LMEM-TTE (prothro data)",modeltype=c("structural","likelihood"),
                       psi0=matrix(param,ncol=5,byrow=TRUE,dimnames=list(NULL, c("b0","b1","h0","alpha","trt"))),
                       transform.par=c(0,0,1,0,0), covariance.model=diag(c(1,1,0,0,0)),
                       fixed.estim = c(1,1,1,1,0),error.model = "constant",
                       omega.init = diag(omega.sim),covariate.model = c(0,0,0,0,1))
 
 
-saemix.data<-dataJM
-saemix.model<-jointTTE
 saemix.options<-saemixControl(seed=12345, map=T, fim=T, ll.is=TRUE, save.graphs = F) # please, specify save.graphs=F (currently not extended)
-yfit <- saemix.multi(saemix.model, saemix.data, saemix.options)
+fit.jointLinTTEdummy <- saemix.multi(jointTTEdummy, dataJM, saemix.options)
 
-yfit@results@fim # inverse of the Fisher Information Matrix 
-sqrt(diag(yfit@results@fim)) # SE of parameter estimates 
+fit.jointLinTTEdummy@results@fim # inverse of the Fisher Information Matrix 
+sqrt(diag(fit.jointLinTTEdummy@results@fim)) # SE of parameter estimates 
 
 
 
@@ -287,5 +285,6 @@ jointTTE_nl<-saemixModel(model=JMmodel_nl,description="JM lin longi one tte",mod
 saemix.model_nl<-jointTTE_nl
 yfit_nl <- saemix.multi(saemix.model_nl, saemix.data, saemix.options)
 
+summary(yfit_nl)
 yfit_nl@results@fim
 sqrt(diag(yfit_nl@results@fim))

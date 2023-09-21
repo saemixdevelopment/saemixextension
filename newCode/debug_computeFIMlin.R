@@ -272,3 +272,9 @@ for(deps in c(1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10)) {
   jac1 <- (dLL-ll0)/(deps*theta0)
   cat("delta=",deps,": grad=",jac1,"\n")
 }
+
+############################################################################ 
+# Checking the expression of Ezi
+
+saemixObject <- theo.fit
+

@@ -179,6 +179,19 @@ saemix.bootstrap<-function(saemixObject, method="conditional", nboot=200, nsamp=
     if(method=="parametric")
       data.boot <- dataGen.Par(saemixObject)
     fit.boot<-try(saemix(model.boot, data.boot, saemix.options))
+    if(is(fit.boot,"try-error")) { # try changing the initial parameters (for categorical models)
+      model.boot2<-model.boot
+      model.boot2@psi0[model.boot2["betaest.model"]==1]<-saemixObject@results@fixed.effects*.5
+      fit.boot<-try(saemix(model.boot2, data.boot, saemix.options))
+      if(is(fit.boot,"try-error")) {
+        model.boot2@psi0[model.boot2["betaest.model"]==1]<-saemixObject@results@fixed.effects*.2
+        fit.boot<-try(saemix(model.boot2, data.boot, saemix.options))
+        if(is(fit.boot,"try-error")) {
+          model.boot2@psi0[1,]<-saemixObject@model@psi0[,1]
+          fit.boot<-try(saemix(model.boot2, data.boot, saemix.options))
+        }
+      }
+    }
     if(is(fit.boot,"try-error")) {
       l1<-c(iboot,rep(NA,nelements))
       failed.runs <- rbind(failed.runs, c(iboot, fit.boot))

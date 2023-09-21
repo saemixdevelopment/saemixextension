@@ -232,7 +232,7 @@ fim.saemix<-function(saemixObject) {
     
     # Derivatives of Vi=var(yi) for subject i, w/r to lambda (FO approximation, neglecting dVi/dmu)
     DV<-list()
-    for(ipar in 1:npar) {
+    for(ipar in 1:npar) { # probably useless if we assume dV/dbeta=0, we could just start at 1 with the first variance term
       DV[[ipar]]<-matrix(0,ncol=ni,nrow=ni)
     }
     for(iom in 1:dim(covariance.model)[1]) {
@@ -244,12 +244,15 @@ fim.saemix<-function(saemixObject) {
           #          if(iom==jom) domega[iom,jom]<-1*sqrt(omega[iom,jom]) else domega[iom,jom]<-1 # if parameterised in omega and not omega2,
           if (saemixObject["model"]["modeltype"]=="structural"){
           DV[[ipar]]<-DFi %*% domega %*% t(DFi)
+          # equivalent but without domega
+          #    if(iom==jom)  DV[[ipar]] <- (DFi[,iom]) %*% t(DFi[,iom]) else DV[[ipar]] <- (DFi[,jom]) %*% t(DFi[,iom])+(DFi[,iom] %*% t(DFi[,jom]))
           } else {
             DV[[ipar]]<-DFi %*% t(DFi)
           }
         }
       }
     }
+    
     # for(ipar in 1:nomega) {
     #   domega<-omega.null
     #   domega[ipar,ipar]<-sqrt(omega[ipar,ipar])*2
@@ -289,7 +292,7 @@ fim.saemix<-function(saemixObject) {
     blocB<-matrix(0,ncol=(nomega+nres),nrow=(nomega+nres))
     for(ij in 1:(nomega+nres)) { # columns
       for(ii in 1:(nomega+nres)) { # lines, so that blocB is ordered according to c(covariance.model)
-        blocB[ii,ij]<-sum(diag(DV[[ii+npar]] %*% invVi[[i]] %*% DV[[ij+npar]] %*% invVi[[i]] ))/2
+        blocB[ii,ij]<-sum(diag(DV[[ii+npar]] %*% invVi[[i]] %*% DV[[ij+npar]] %*% invVi[[i]] ))/2 # +npar because the first 1..npar DVs are actually 0
       }
     }
     blocC<-matrix(0,ncol=(npar),nrow=(nomega+nres))

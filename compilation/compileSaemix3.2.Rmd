@@ -102,6 +102,7 @@ setwd(file.path(workDir,"saemix"))
 devtools::document(file.path(workDir,"saemix"))
 roxygenise()
 ```
+
 ```{r compilation}
 setwd(workDir)
 system("R CMD build saemix")

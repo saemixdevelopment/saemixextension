@@ -24,7 +24,7 @@
 #' @details This function replaces the previous function (simul.saemix), which will be deprecated in future versions
 #' but can still be called as previously for compatibility purposes.
 #' 
-#' @aliases simul.saemix simulateContinuousSaemix simulateIndividualParameters
+#' @aliases simul.saemix simulateContinuousSaemix simulateIndividualParameters 
 #' 
 #' @author Emmanuelle Comets <emmanuelle.comets@@inserm.fr>, Audrey Lavenu,
 #' Marc Lavielle.
@@ -55,7 +55,7 @@ simulate.SaemixObject<-function(object, nsim, seed, predictions, outcome="contin
   # res.var: if TRUE, add residual error to the predictions to obtain simulated data (only for continuous data)
   # uncertainty: if TRUE, add uncertainty when simulating (not implemented yet)
   if(!is(object,"SaemixObject")) {
-    if(verbose) message("The argument object should be a fitted saemixObject object\n")
+    message("The argument object should be a fitted saemixObject object\n")
     return(NULL)
   }
   if(missing(predictions))
@@ -96,7 +96,7 @@ simulateIndividualParameters<-function(object, nsim, seed, uncertainty=FALSE) {
 
 simulateContinuousSaemix<-function(object, nsim, seed, predictions, res.var=TRUE,uncertainty=FALSE,...) {
   if(!is(object,"SaemixObject")) {
-    if(verbose) message("The argument object should be a fitted saemixObject object\n")
+    message("The argument object should be a fitted saemixObject object\n")
     return(NULL)
   }
   
@@ -127,7 +127,7 @@ simulateContinuousSaemix<-function(object, nsim, seed, predictions, res.var=TRUE
       gpred<-error(fpred,pres,XM$ytype)
       eps<-rnorm(length(fpred))
       sim.data<-fpred+gpred*eps
-      datasim$sim<-sim.data
+      datasim$ysim<-sim.data
     }
   } else {
     sim.pred<-sim.data<-IdM<-c()
@@ -174,6 +174,8 @@ simul.saemix<-function(object, nsim, seed, predictions=TRUE,res.var=TRUE,uncerta
 #' 
 #' @details This function calls simulate.SaemixObject with the prediction=FALSE option to 
 #' simulate individual parameters, then the simulate.function to obtain corresponding predictions.
+#' 
+#' @aliases simulateTTESaemix
 #' 
 #' @author Emmanuelle Comets <emmanuelle.comets@@inserm.fr>
 #' 

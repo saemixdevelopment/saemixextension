@@ -150,7 +150,7 @@ plotDiscreteDataElement <- function(object, outcome="categorical", mirror=FALSE,
          yresp[idx]<-0 # last event of each subject is censored
          simdata <- data.frame(index=rep(1:objectData@N, times=nind.obs), time=yevent, status=yresp)
          colnames(simdata)[2:3]<-c(objectData@name.X, objectData@name.response)
-         simdata<-cbind(simdata, cov1[rep(1:objectData@N, times=nind.obs),])
+         simdata<-cbind(simdata, covdata[rep(1:objectData@N, times=nind.obs),])
          simdata[,objectData@name.cens]<-yresp
          objectData@data <- simdata # Replicating covariate lines for the original data and replacing time and status/cens columns by the censoring indicator (0=no event, 1=event)
          objectData@nind.obs <- nind.obs

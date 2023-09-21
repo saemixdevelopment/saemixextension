@@ -16,7 +16,6 @@
 #' @seealso \code{\link{SaemixObject}},\code{\link{saemix}}
 #' @references E Comets, A Lavenu, M Lavielle M (2017). Parameter estimation in nonlinear mixed effect models using saemix,
 #' an R implementation of the SAEM algorithm. Journal of Statistical Software, 80(3):1-41.
-#' 
 #' E Kuhn, M Lavielle (2005). Maximum likelihood estimation in nonlinear mixed effects models. 
 #' Computational Statistics and Data Analysis, 49(4):1020-1038.
 #' 
