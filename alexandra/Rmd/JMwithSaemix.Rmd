@@ -1,0 +1,177 @@
+---
+title: "Using saemix package to fit joint models"
+author: "Alexandra Lavalley-Morelle"
+date: "27/09/2023"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This Rmarkdown document helps user to buid and fit joint models using the code extension available on Github.
+
+## Introduction
+
+We consider the data available in package JM: the prothro data set. 488 liver cirrhosis patients are followed at most 12 days
+with prothrombin measurements. Status (dead/censored) at the end of the follow-up is available for each patient. The objective is to assess the link between the individual prothrombin evolution with the risk of death.  
+
+```{r Packages loading}
+library(JM)
+library(pracma)
+library(ggplot2)
+library(Cairo)
+library(viridis)
+library(rlang)
+```
+
+```{r Data loading}
+data("prothro")
+data("prothros")
+
+gp = ggplot(data=prothro[which(prothro$id %in% 1:20),], aes(x=time, y=pro, group = id))+geom_point(lwd=1.5)+geom_line(col="#CC0033",lwd=0.8)+theme_classic()+
+  ylab("Prothrombin observations")+xlab("Days")+
+  theme(axis.text = element_text(size=14),axis.title = element_text(size=16))+
+  ggtitle(label = "Prothrombin evolution for the first 20 patients of the data")
+gp
+
+table(prothros$death)
+```
+
+## Joint model fit using new saemix.multi() function
+The extended code uses the same main functions as saemix package does. We therefore refer the user to the saemix documentation previously published for the detail of each function. Briefly, the main function is the saemix.multi() function used to estimate the population parameters of the (joint) model. This function requires two mandatory arguments referring to (1) the model (saemixModel object) and the data (saemixData object). The third argument is optional and concerns the algorithm settings. 
+
+#### Loading functions from Github
+
+```{r loading functions}
+saemixDir <- "C:/Users/AlexandraLAVALLEY/Documents/GitHub/saemixextension"
+workDir <- file.path(saemixDir, "joint")
+progDir<-file.path(saemixDir, "R")
+setwd(workDir)
+
+source(file.path(progDir,"aaa_generics.R"))
+source(file.path(progDir,"SaemixData.R"))
+source(file.path(progDir,"SaemixRes.R"))
+source(file.path(progDir,"SaemixModel.R"))
+source(file.path(progDir,"SaemixObject.R"))
+source(file.path(progDir,"func_plots.R"))
+
+source(file.path(workDir,"multi_aux.R"))
+source(file.path(workDir,"multi_initializeMainAlgo.R"))
+source(file.path(workDir,"multi_estep.R"))
+source(file.path(workDir,"multi_mstep.R"))
+source(file.path(workDir,"multi_main.R"))
+source(file.path(workDir,"multi_map.R"))
+source(file.path(workDir,"compute_LL_multi.R"))
+```
+
+#### Formatting data 
+The function saemixData() requires a mandatory argument which is the name of the dataset. The dataset has to be formatted in order to obtain an id column corresponding to the patient id, a time column corresponding to the sampling times, an observation column corresponding to the response observations and a ytype column corresponding to the distinct response types. Optional columns can be added if user want to model covariates for example. See saemix documentation for more details. 
+In this example, prothrombin measurements correspond to response 1 (ytype = 1) and survival measurements correspond to response 2 (ytype = 2). For the survival reponse (ytype = 2), observation is 1 in case of event (death) and 0 otherwise. 
+
+```{r Data}
+d1 = prothro[,c(1,2,3)]
+d1$ytype=1
+colnames(d1)[2] = "obs"
+d2 = prothros[,c(1,3,2)]
+d2$ytype = 2
+colnames(d2)[2] = "obs"
+colnames(d2)[3] = "time"
+data_joint = rbind(d1,d2)
+data_joint[data_joint$id==1,]
+dataJM<-saemixData(name.data=data_joint, name.group=c("id"), name.predictors=c("time","obs"),
+                   name.response="obs",name.ytype = "ytype")
+```
+
+The user is encouraged to specify optional arguments of the saemixData() function: the id variable (name.group argument), the predictor variables (name.predictors argument) with at least the sampling times, the observation variable (name.reponse argument) and the response type variable (name.ytype argument).
+
+```{r saemixData}
+saemix.data<-saemixData(name.data=data_joint, name.group=c("id"), name.predictors=c("time","obs"),
+                   name.response="obs",name.ytype = "ytype")
+```
+
+
+#### Joint model with a linear mixed-effects model and a survival model with constant baseline hazard
+
+
+The saemixModel() function requires two mandatory arguments. The first one is a R function describing the joint model involving the structural model for longitudinal observations and the likelihood contribution for the survival observations. The second one is a matrix with a number of columns equal to the number of parameters, and one (when no covariates) or several row (when covariates enter the model) giving the initial estimates of fixed-effects. 
+The user is encouraged to specify optional arguments of the saemixModel() function: the response type with the modeltype argument ("structural" for longitudinal observations and "likelihood" for survival ones), the distribution of each parameter with the transform.par argument (0 = normal, 1 = log-normal, 2 = probit and 3 = logit), the fixed or estimated parameters with the fixed.estim argument (0 = to be fixed to the initial estimate, 1 = to be estimated), if a random effects are added with the covariance.model argument (square matrix of size equal to the number of parameters giving the variance-covariance matrix of the model), the initialization of random effect variances with the omega.init argument (square matrix of size equal to the number of parameters giving the initialization of the variance-covariance matrix of the model), the error model with the error.model argument (valid types are "constant", "proportional", "combined"). Futher arguments can be considered and found in the package description. 
+
+In the following we start with a simple case: a joint model with a linear mixed-effects and a survival model involving constant baseline risk. The joint model writes: 
+
+$\begin{align}
+     y_{ij} = & m_l(t_{ij},\psi_{i}) + g[m_l(t_{ij},\psi_{i}), \sigma]\epsilon_{ij} \notag \\
+      = & \psi_{i0} + \psi_{i1}\times t_{ij} + \sigma\epsilon_{ij} \notag \\
+     h_i(t, \psi_i) = & h_0 \, \exp(\alpha \, m(t,\psi_i))
+\end{align}$
+
+We then define the model to be entered in the function. This function must have 3 arguments named psi (assumed to be a matrix with the number of columns equal to the number of parameters in the model, here 4), id (assumed to be a vector of indices matching observation number with subject index) and xidep (assumed to be a matrix with as many columns as predictors + 1 for the tpe of response, so here 3). The three arguments passed to the function will be generated automatically from the model and data object within the saemix code. The
+function must return a vector of predictions for each response, the length of which is equal to the number of rows in the predictor xidep. So in this case, the vector of predictions is composed of the longitudinal ones 
+
+```{r model definition}
+
+JMmodel<-function(psi,id,xidep) {
+  ytype<-xidep$ytype  # type of response (1: continuous, 2: event)
+  b0 <- psi[id,1] 
+  b1 <- psi[id,2] 
+  h0 <- psi[id,3]
+  alpha <- psi[id,4] 
+  
+  ypred <- b0+b1*xidep$time # structural model
+  
+  T<-xidep$time[ytype==2] # vector of times (survival response)
+  Nj <- length(T)
+  ev = xidep$obs[ytype==2] # vector of observations (survival response)
+  cens<-which(ev==0)       # with censored ones
+  ind <- which(ev==1)      # and event ones 
+  b0b = b0[ytype==2] # to have vectors of the same length as T 
+  b1b = b1[ytype==2]
+  h0b = h0[ytype==2]
+  alphab = alpha[ytype==2]
+  
+  haz <- h0b*exp(alphab*(b0b+b1b*T)) # instantaneous hazard
+  H <- (h0b/(alphab*b1b))*exp((b0b+b1b*T)*alphab)-(h0b/(alphab*b1b))*exp(alphab*b0b) # cumulative hazard (explicit expression in that case)
+  
+  logpdf <- rep(0,Nj)
+  logpdf[cens] <- -H[cens] 
+  logpdf[ind] <- -H[ind] + log(haz[ind]) 
+  
+  ypred[ytype==2] = logpdf
+  return(ypred)
+}
+
+```
+
+```{r saemixModel}
+
+#### initializing parameters
+
+param<-c(73,1.25,0.6,0.0001)
+omega.sim<-c(18, 3, 0.05, 0.01)
+sigma.sim <- 17
+
+### saemix Model 
+
+saemix.model<-saemixModel(model=JMmodel,description="JM LMEM-TTE constant baseline hazard (prothro data)", 
+                      modeltype=c("structural","likelihood"),
+                      psi0=matrix(param,ncol=4,byrow=TRUE,dimnames=list(NULL, c("b0","b1","h0","alpha"))),
+                      transform.par=c(0,0,1,0), covariance.model=diag(c(1,1,0,0)),
+                      fixed.estim = c(1,1,1,1),error.model = "constant",
+                      omega.init = diag(omega.sim))
+
+
+```
+
+In the following we specify some algorithm settings. The option fim = T is specified to obtain standard errors of parameter estimates. ll.is is specified to obtain the loglikelihood at the MLE, the AIC and BIC. Graphs are not currently adapted so please specify save.graphs = F. We run the algorithm using the saemix.multi() function. 
+
+```{r saemix options}
+saemix.options<-saemixControl(seed=12345, map=T, fim=T, ll.is=TRUE, save.graphs = F) # please, specify save.graphs=F (currently not extended)
+yfit <- saemix.multi(saemix.model, saemix.data, saemix.options)
+```
+
+
+```{r saemix options}
+print(yfit)
+yfit@results@fim  # variance covariance matrix 
+sqrt(diag(yfit@results@fim)) # standard errors of parameters estimates
+```
