@@ -338,7 +338,9 @@ setMethod(
 #' @param datasim dataframe containing the simulated data
 #' 
 #' @exportMethod initialize
+#' 
 
+## Warning: currently won't work with RTTE (not the same dimension for data and for datasim, there can be different number of events...)
 setMethod(
   f="initialize",
   signature="SaemixSimData",
@@ -358,7 +360,7 @@ setMethod(
       .Object@nsim<-0
     } else {
       .Object@datasim<-datasim
-      .Object@nsim<-dim(datasim)[1]/dim(data@data)[1]
+      .Object@nsim<-dim(datasim)[1]/dim(data@data)[1] # not for RTTE, will need to change this by hand in the simulations
     }
 # Object validation
 #    validObject(.Object)
@@ -372,7 +374,7 @@ setMethod(
 
 #' Get/set methods for SaemixData object
 #' 
-#' Access slots of a SaemixData object using the object\["slot"\] format
+#' Access slots of an SaemixData object using the object\["slot"\] format
 #' 
 #' @name [
 #' @aliases [<-,SaemixData-method [,SaemixData-method
@@ -1072,6 +1074,7 @@ saemix.data.setoptions<-function(saemix.data) {
     main=" ",				# title
     xlab=" ",
     ylab=" ",
+    units=saemix.data@units,
     col="black",
     pch=20,
     lty=1,
@@ -1088,9 +1091,9 @@ saemix.data.setoptions<-function(saemix.data) {
         
      if(is.null(plot.opt$name.X))
         plot.opt$name.X<-saemix.data["name.predictors"][1]
-    plot.opt$xlab<-paste(plot.opt$name.X," (",plot.opt$units$x,")", sep="")
+    plot.opt$xlab<-paste(plot.opt$name.X," (",ifelse(plot.opt$units$x=="","-",plot.opt$units$x),")", sep="")
      if(length(saemix.data["name.response"])>0)
-    plot.opt$ylab<-paste(saemix.data["name.response"]," (",saemix.data["units"]$y,")", sep="")
+    plot.opt$ylab<-paste(saemix.data["name.response"]," (",ifelse(plot.opt$units$y=="","-",plot.opt$units$y),")", sep="")
    return(plot.opt)
 }
 
@@ -1234,8 +1237,13 @@ plot.SaemixData<-function(x,y,...) {
 #' 
 #' @param irep which replicate datasets to use in the mirror plot (defaults to -1, causing a random simulated dataset to be sampled from the nsim
 #' simulated datasets)
+#' @param prediction if TRUE, plot the predictions without residual variability (ypred instead of ysim). Defaults to FALSE.
 #' 
 #' @aliases plot,SaemixSimData-method plot,SaemixSimData plot,SaemixSimData,ANY-method
+#' 
+#' @details this function can also be used to visualise the predictions for simulated values of the individual parameters,
+#' using the ypred element instead of the ysim element normally used here
+#' 
 ### #' @docType methods
 #' @rdname plot-SaemixData
 #' @importFrom graphics plot
@@ -1243,7 +1251,7 @@ plot.SaemixData<-function(x,y,...) {
 #' @export 
 
 # Check simulations using mirror plots
-plot.SaemixSimData<-function(x,y,irep=-1,...) {
+plot.SaemixSimData<-function(x, y, irep=-1, prediction=FALSE, ...) {
   #    oldpar <- par(no.readonly = TRUE)    # code line i
   #    on.exit(par(oldpar))            # code line i + 1
   # User-defined options
@@ -1253,6 +1261,13 @@ plot.SaemixSimData<-function(x,y,irep=-1,...) {
   }
   i1<-match("interactive",names(userPlotOptions))
   if(!is.na(i1)) interactive<-as.logical(userPlotOptions[[i1]]) else interactive<-FALSE
+
+  if(prediction) yplot <- x@datasim$ypred else yplot<-x@datasim$ysim
+  if(length(yplot)==0) {
+    message("No simulated data to plot\n")
+    return()
+  }
+
   i1<-match("warnings",names(userPlotOptions))
   if(!is.na(i1)) printwarnings<-as.logical(userPlotOptions[[i1]]) else printwarnings<-FALSE
   if(dim(x@datasim)[1]==0) {
@@ -1276,7 +1291,7 @@ plot.SaemixSimData<-function(x,y,irep=-1,...) {
       if(irep[1]<0) irep<-sample(unique(x@nsim),1)
       for(irep1 in irep) {
         if(plot.opt$main==" ") tit<-paste("Mirror plot (replication ",irep1,")",sep="") else tit<-plot.opt$main
-        tab<-data.frame(id=x@data[,x@name.group],x=x@data[,x@name.X], y=x@datasim$ysim[x@datasim$irep==irep1])
+        tab<-data.frame(id=x@data[,x@name.group],x=x@data[,x@name.X], y=yplot[x@datasim$irep==irep1])
         if(plot.type=="p" | plot.type=="b") {
           plot(tab[,"x"],tab[,"y"],xlab=plot.opt$xlab, ylab=plot.opt$ylab, col=plot.opt$col,pch=plot.opt$pch,log=logtyp,xlim=plot.opt$xlim, ylim=plot.opt$ylim,main=tit,cex=plot.opt$cex,cex.axis=plot.opt$cex.axis, cex.lab=plot.opt$cex.lab) }
         if(plot.type=="l") {
@@ -1296,9 +1311,9 @@ plot.SaemixSimData<-function(x,y,irep=-1,...) {
 ####		Creating an object of SaemixData class - User-level function	####
 ####################################################################################
 
-#' Function to create a SaemixData object
+#' Function to create an SaemixData object
 #' 
-#' This function creates a SaemixData object. The only mandatory argument is
+#' This function creates an SaemixData object. The only mandatory argument is
 #' the name of the dataset. If the dataset has a header (or named columns), the
 #' program will attempt to detect which column correspond to ID, predictor(s)
 #' and response. Warning messages will be printed during the object creation
@@ -1328,7 +1343,7 @@ plot.SaemixSimData<-function(x,y,irep=-1,...) {
 #' @param verbose a boolean indicating whether messages should be printed out during the creation of the object
 #' @param automatic a boolean indicating whether to attempt automatic name recognition when some colum names are missing or wrong (defaults to TRUE)
 #' @details This function is the user-friendly constructor for the SaemixData object class. The read is a helper function, used to read the dataset, and is not intended to be called directly.
-#' @return A SaemixData object (see \code{\link{saemixData}}).
+#' @return An SaemixData object (see \code{\link{saemixData}}).
 #' @references E Comets, A Lavenu, M Lavielle M (2017). Parameter estimation in nonlinear mixed effect models using saemix,
 #' an R implementation of the SAEM algorithm. Journal of Statistical Software, 80(3):1-41.
 #' 

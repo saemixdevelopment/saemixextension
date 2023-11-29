@@ -1,0 +1,226 @@
+---
+title: "Louis' method to compute the FIM"
+output: html_notebook
+---
+
+# Objective
+
+Implement Louis' method to compute the FIM and apply it to discrete models.
+
+$$ I_{\theta} = E (\delta_{\theta}^2 \ell ( y; \theta ) | y) $$
+
+# Discrete FIM by Louis' method
+
+Louis' missing information principle decomposes the Hessian of the log-likelihood in $\theta$ as:
+$$   \delta_{\theta}^2\ell ( y;θ ) = E ( \delta_{\theta}^2 \ell ( y ,φ ;θ )| y;θ ) + Var ( \delta_{\theta} \ell ( y ,φ ;θ )| y ;θ ) $$
+The variance-covariance matrix in the second term is further decomposed as:
+
+$$   \delta_{\theta}^2\ell ( y;θ ) = E ( \delta_{\theta}^2 \ell ( y ,φ ;θ )| y;θ ) + E (  (\delta_{\theta} \ell ( y ,φ ;θ ) -E(\delta_{\theta} \ell ( y ,φ ;θ )| y ;θ )). (\delta_{\theta} \ell ( y ,φ ;θ ) -E(\delta_{\theta} \ell ( y ,φ ;θ )| y ;θ ))^T) $$
+
+**not sure why** (decomposition used in the SA below but why use it in the MCMC method ? or is it just a re-expression of the variance ? probably...)
+
+## Stochastic approximation in Kuhn and Lavielle 2005
+
+Stochastic approximation scheme implemented during the algorithm by analogy to the stochastic approximation used to compute the conditional expectation of the log-likelihood, using approximations to compute the two components of the Louis formula:
+$$\Delta_k = \Delta_{k-1} + \gamma_k( \delta_{\theta} \ell ( y ,φ^{(k)} ;θ_k )-\Delta_{k-1}) $$
+
+$$G_k = G_{k-1} + \gamma_k(\delta_{\theta}^2 \ell ( y ,φ^{(k)} ;θ_k) + \delta_{\theta} \ell ( y ,φ^{(k)} ;θ_k ).\delta_{\theta} \ell ( y ,φ^{(k)} ;θ_k )^T -\Delta_{k-1}) $$
+$$H_k = G_{k} -\Delta_{k}.\Delta_{k}^T $$
+
+
+**Note** extension of a similar idea using the product of gradients to estimate the FIM (Delattre and Kuhn 2023)
+
+## MC approach: version for count data proposed by Savic and Lavielle, JPKPD 2009
+
+As alternative we propose to compute a stochastic approximation of the Fisher Information matrix using the Louis formula (see *Kuhn and Lavielle 2005* for more details). The procedure consists in computing first with SAEM then applying the Louis formula with θ=$\hat{\theta}$ which requires the computation of the conditional expectation and conditional variance. **These quantities are estimated by Monte-Carlo simulation: we performed 300 iterations of MCMC for the numerical experiments – these will provide 300 simulated values used to compute empirical means and variances as defined in the equation.**
+
+## Gradient approach (Delattre and Kuhn 2023)
+
+Also a stochastic approximation scheme, but targetting the product of the gradients (asymptotic equivalence):
+$$ I_{\theta} = E (\delta_{\theta}^2 \ell ( y; \theta ) | y) = -E(\delta_{\theta} \ell ( y; \theta ).\delta_{\theta} \ell ( y; \theta )^T | y) $$
+
+Implemented by Alexandra in her work on joint models.
+
+## Methods
+
+We need to compute $\ell ( y ,φ^{(k)} ;θ_k )$ at each iteration, as well as its first (a gradient) and second (a matrix) derivatives.
+
+- computation of log-likelihood for observation$y$, $l(y, \psi, \theta)$
+  - for continuous models $\ell(y, \psi, \theta)$ is equal to:
+  
+  $$\ell(y, \psi, \theta) = - 0.5\sum_j \frac{(f(x_{ij}, \psi_i)-y_{ij})^2}{g(x_{ij}, \psi_i)^2} - \sum_j \ln{(g(x_{ij}, \psi_i))} - n_j \ln{\sqrt{2\pi}}$$
+  
+  - for discrete data models $l(y, \psi, \theta)$ would be given directly by the model function (returning -$\ell(y, \psi, \theta)$)
+  
+   $$\ell(y, \psi, \theta) = \sum_j \ell (y_{ij}, \psi, \theta)$$
+   
+  - the sum over the observations for a subject $i$ are computed in function *compute.LLy*
+
+### Questions - general
+
+- why decompose the variance-covariance matrix in the Louis formula when using the MCMC approach ?
+  - could we instead just compute the variance of the $\delta_{\theta} \ell ( y ,φ ;θ )$ over the samples ?
+- computing the gradient and Jacobian of the likelihood of  $l(y, \psi, \theta)$
+  - numerical gradients ? probably...
+  - *for the theta portion, use the exact formula ?* (no need)
+- can we leverage the code from Alexandra ?
+- **is this the log-likelihood or do we need to consider also the log-likelihood portion related to the random effects ?**
+
+### Questions - related to the log-likelihood
+
+**No need to decompose the log-likelihood as below, this is for when we compute the log-likelihood by integrating over random effects ? Not sure about that, because then where do the $\mu, \beta, \Omega$ come in the equation (so we can derive w/r to them) ?**
+
+Previous questions
+
+- decomposing the complete log-likelihood $\ell(y ,φ ;θ) = \ln l(y ,φ ;θ)$
+  - should be a sum of terms $ \ell_y + \ell_{\theta}$ since $l(y_i ,φ_i ;θ) = \prod_{j} p(y_{ij} /φ_i ;θ) \prod_q p(φ_i^{(q)} /θ) $
+- computation of $l_{\theta,i}$
+  - not used currently in the code ?
+  - same shape regardless of whether the outcome is Gaussian or not
+
+$$l_{\psi,i} = - 0.5\sum_q \frac{(\psi_i^{(q)}-\mu_{q})^2}{\omega_q^2} - \sum_q \ln{(\omega_q)} - n_\eta \ln{\sqrt{2\pi}}$$
+  - one question is whether the log-likelihood is on $\psi$ (then need to account for $H$ where $\psi=H(\phi)$) or on $\phi$ (then simple sum of Gaussian terms), ie do we consider the complete data to be $(y, \phi)$ or $(y, \eta)$ ?
+  - another question is how to account for covariate effects (ie $\mu$ and $\beta$)
+  - what about parameters without IIV (they don't appear in $l_{\theta,i}$)
+    - not a problem for the SA approach (similar to the stochastic approximation proposed by Delattre and Kuhn 2004) but not clear how it works for the MC approach
+
+- functions defined in func_aux.R
+  - transphi = $h$, transformation $\phi \rightarrow \psi$ (ex: $h=\ln$)
+  - transpsi = $h^{-1}$, inverse transformation $\psi \rightarrow \phi$ (ex: $h^{-1}=e$)
+  - dtransphi = $h'$, derivative of transformation $h$
+
+
+## Setting up saemix and running examples
+
+### Setup
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Folders
+workDir<-getwd() 
+
+# @Eco
+saemixDir <- "/home/eco/work/saemix/saemixextension"
+workDir <- file.path(saemixDir, "newCode")
+setwd(workDir)
+
+# Libraries
+library(saemix)
+library(gridExtra) # waffle plot
+
+# Whether to save the plots
+saveFigs<-FALSE
+figDir <- getwd()
+```
+
+
+### Running saemix on theophylline and toenail examples
+
+```{r runUseCases}
+# Continuous data
+data(theo.saemix)
+
+saemix.data<-saemixData(name.data=theo.saemix,header=TRUE,sep=" ",na=NA,
+   name.group=c("Id"),name.predictors=c("Dose","Time"),
+   name.response=c("Concentration"),name.covariates=c("Weight","Sex"),
+   units=list(x="hr",y="mg/L", covariates=c("kg","-")), name.X="Time", verbose=FALSE)
+print(saemix.data)
+plot(saemix.data)
+
+model1cpt<-function(psi,id,xidep) { 
+	  dose<-xidep[,1]
+	  tim<-xidep[,2]  
+	  ka<-psi[id,1]
+	  V<-psi[id,2]
+	  CL<-psi[id,3]
+	  k<-CL/V
+	  ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
+	  return(ypred)
+}
+
+saemix.model<-saemixModel(model=model1cpt,
+  description="One-compartment model with first-order absorption", 
+  psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3, byrow=TRUE,
+  dimnames=list(NULL, c("ka","V","CL"))),transform.par=c(1,1,1),
+  covariate.model=matrix(c(0,1,0,0,0,0),ncol=3,byrow=TRUE),fixed.estim=c(1,1,1),
+  covariance.model=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE),
+  omega.init=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE),error.model="constant", verbose=FALSE)
+print(saemix.model)
+
+saemix.fit<-saemix(model=saemix.model,
+                   data=saemix.data,
+                   control=list(seed=632545,directory="newtheo", save=FALSE,save.graphs=FALSE, warnings=FALSE))
+
+# Prints a summary of the results
+print(saemix.fit)
+theo.fit <- saemix.fit
+theo.fit <- conddist.saemix(theo.fit, nsamp=300)
+
+# Binary data
+
+data(toenail.saemix)
+
+saemix.data<-saemixData(name.data=toenail.saemix,name.group=c("id"),name.predictors=c("time","y"), name.response="y",
+                        name.covariates=c("treatment"))
+
+# saemix model
+binary.model<-function(psi,id,xidep) {
+  tim<-xidep[,1]
+  y<-xidep[,2]
+  inter<-psi[id,1]
+  slope<-psi[id,2]
+  logit<-inter+slope*tim
+  pevent<-exp(logit)/(1+exp(logit))
+  logpdf<-rep(0,length(tim))
+  P.obs = (y==0)*(1-pevent)+(y==1)*pevent
+  logpdf <- log(P.obs)
+  return(logpdf)
+}
+
+# simulation function (used for diagnostics)
+simulBinary<-function(psi,id,xidep) {
+  tim<-xidep[,1]
+  y<-xidep[,2]
+  inter<-psi[id,1]
+  slope<-psi[id,2]
+  logit<-inter+slope*tim
+  pevent<-1/(1+exp(-logit))
+  ysim<-rbinom(length(tim),size=1, prob=pevent)
+  return(ysim)
+}
+
+saemix.model<-saemixModel(model=binary.model,description="Binary model",simulate.function=simulBinary, modeltype="likelihood",
+                          psi0=matrix(c(-0.5,-.15,0,0),ncol=2,byrow=TRUE,dimnames=list(NULL,c("theta1","theta2"))),
+                          transform.par=c(0,0), covariate.model=c(0,1),covariance.model=matrix(c(1,0,0,0),ncol=2), omega.init=diag(c(0.5,0.3)))
+
+
+# saemix fit
+saemix.options<-list(seed=1234567,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, nb.chains=10, fim=FALSE)
+binary.fit<-saemix(saemix.model,saemix.data,saemix.options)
+binary.fit <- conddist.saemix(binary.fit, nsamp=300)
+
+```
+# Implementing Louis' method
+
+TODO... WIP
+
+```{r}
+source(file.path(saemixDir,"newCode","compute_FIMLouis.R"))
+```
+
+
+## Louis method, binary data
+
+For simplicity we use the same conditional estimates throughout.
+
+
+```{r discreteLouis}
+
+```
+
+## Louis method, continuous data
+```{r contLouis}
+
+```
+

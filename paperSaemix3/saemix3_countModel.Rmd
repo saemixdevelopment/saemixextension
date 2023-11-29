@@ -1,7 +1,7 @@
 ---
 title: "Saemix 3 - count data models"
 author: "Emmanuelle"
-date: "08/2022"
+date: "06/2023"
 output:
   pdf_document: default
   html_document: default
@@ -12,16 +12,12 @@ Use saemix version $\geq$ 3.2
 
 ## Objective
 
-Run binary and categorical models in **saemix**
+Run count data models in **saemix**
 
-This notebook uses additional code from the **saemix** development github (https://github.com/saemixdevelopment/saemixextension), not yet integrated in the package. The *workDir* folder in the next chunk of code points to the folder where the user stored this code, and is needed to run the notebook (*workDir* defaults to the current working directory). Specifically, the notebook loads:
+This notebook uses additional result files from the **saemix** development github (https://github.com/saemixdevelopment/saemixextension), not integrated in the package to avoid bloating. The *workDir* folder in the next chunk of code points to the folder where the user stored this code, and is needed to run the notebook (*workDir* defaults to the current working directory). Specifically, the notebook loads the results for the bootstrap runs performed using different approaches (see Comets et al. Pharm Res 2021). Bootstraps can be run instead by switching the *runBootstrap* variable to TRUE in the first chunk of code:
 
-- code for the MC/AGQ provided by Sebastian Ueckert (Ueckert et al. 2017)
-  - if memory issues arise the code can be run in a separate script.
-- the results for the bootstrap runs performed using different approaches (see Comets et al. Pharm Res 2021)
-    - bootstraps can be run instead by switching the *runBootstrap* variable to TRUE in the first chunk of code
-    - in the code, the number of bootstraps is set to 10 for speed but we recommend to use at least 200 for a 90\% CI.
-  - this can be changed in the following change of code by uncommenting the line *nboot<-200* and setting the number of bootstrap samples (this may cause memory issues in **Rstudio** with older machines, if this is the case we recommend executing the code in a separate script)
+- in the code, the number of bootstraps is set to 10 for speed but we recommend to use at least 200 for a 90\% CI.
+- this can be changed in the following change of code by uncommenting the line *nboot<-200* and setting the number of bootstrap samples (this may cause memory issues in **Rstudio** with older machines, if this is the case we recommend executing the code in a separate script)
 
 The current notebook can be executed to create an HMTL or PDF output with comments and explanations. A script version containing only the R code is also given as *saemix3_countModel.R* in the same folder.
 
@@ -39,20 +35,6 @@ setwd(workDir)
 
 # Libraries
 library(saemix)
-
-# Libraries needed to compute the FIM by AGQ
-library(R6)
-library(pracma)
-library(compiler)
-library(statmod)
-library(Matrix)
-library(randtoolbox)
-
-# FIM by MC/AGQ (code S. Ueckert)
-
-dirAGQ<-file.path(saemixDir,"fimAGQ")
-
-# Code to compute the exact FIM by MC/AGQ
 
 # library(ggplot2)
 # library(MASS)
@@ -75,12 +57,13 @@ nboot <-10
 
 #### Data description
 
-The *rapi.saemix* dataset in the **saemix** package contains count data kindly made available by David Atkins (University of Washington) in his tutorial on modelling count data (Atkins et al. 2013). The data comes from a randomised controlled trial assessing the effectiveness of web-based personalised normative feedback intervention on alcohol consumption (Neighbors et al. 2010a, 2010b}. The *rapi.saemix* dataset records alcohol-related problems, as measured by the Rutgers Alcohol Problem Index (RAPI) (White et al. 1989), in freshmen at risk for heavy drinking behaviours. Students were asked to report every six months the number of alcohol-related problems, and the dataset includes 3,616 repeated measures of these counts in 818 subjects, 561 of whom had the full 5 measurements over a period of 2 years. Interesting features of this dataset are first, the longitudinal aspect which allow to evaluate changes over time, and second, the shape of the distribution of counts. Counts are often positively skewed, bounded by zero, with a large stack of data points at zero, indicating individuals and/or occasions without drinking, use, or related problems. This dataset was used in Atkins et al. (2013) to illustrate mixed effects count regression using the *glmer()* function from the **lme4** package (Bates et al. 2015).
+The *rapi.saemix* dataset in the **saemix** package contains count data kindly made available by David Atkins (University of Washington) in his tutorial on modelling count data (Atkins et al. 2013). The data comes from a randomised controlled trial assessing the effectiveness of web-based personalised normative feedback intervention on alcohol consumption (Neighbors et al. 2010a, 2010b}. The *rapi.saemix* dataset records alcohol-related problems, as measured by the Rutgers Alcohol Problem Index (RAPI) (White et al. 1989), in freshmen at risk for heavy drinking behaviours. Students were asked to report every six months the number of alcohol-related problems, and the dataset includes 3,616 repeated measures of these counts in 818 subjects, 561 of whom had the full 5 measurements over a period of 2 years. Interesting features of this dataset are first, the longitudinal aspect which allows to evaluate changes over time, and second, the shape of the distribution of counts. Counts are often positively skewed, bounded by zero, with a large stack of data points at zero, indicating individuals and/or occasions without drinking, use, or related problems. This dataset was used in Atkins et al. (2013) to illustrate mixed effects count regression using the *glmer()* function from the **lme4** package (Bates et al. 2015).
 
 Similarly to categorical data, we need the value of the outcome to compute the associated likelihood. Therefore, to create the data object using saemixData, we need to specify the response column both as a response (*name.response="rapi"*) and as a predictor (here, time is the first predictor and we add the response in the argument *name.predictors*). 
 
 ```{r countData}
 data(rapi.saemix)
+rapi.saemix$gender <- ifelse(rapi.saemix$gender=="Men",1,0) # Female=reference class as in Atkins
 
 saemix.data<-saemixData(name.data=rapi.saemix, name.group=c("id"),
                         name.predictors=c("time","rapi"),name.response=c("rapi"),
@@ -97,7 +80,7 @@ xpl <- plotDiscreteData(saemix.data, outcome="count", which.cov="gender", breaks
 print(xpl)
 
 if(saveFigs) {
-  namfig<-"knee_rawDataPropTime.eps"
+  namfig<-"rapi_rawDataPropTime.eps"
   cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
   plotDiscreteData(saemix.data, outcome="count", which.cov="gender", breaks=c(0:9, 16, 25,80))
   dev.off()
@@ -164,7 +147,7 @@ countsimulate.poisson<-function(psi, id, xidep) {
 
 ##### Poisson model
 
-The code below fits a base Poisson model without correlation between the parameters, as well as a model with a covariance between the two parameters and a gender effect on both parameters. 
+The code below fits a base Poisson model without correlation between the parameters, a model with a covariance between the two parameters and a gender effect on both parameters, as well as a model with a covariance between the two parameters and a gender effect on intercept only.
 
 ```{r countPoissonFit}
 ## Poisson
@@ -173,6 +156,14 @@ saemix.model.poi<-saemixModel(model=count.poisson,description="Count model Poiss
                               modeltype="likelihood",   
                               psi0=matrix(c(log(5),0.01),ncol=2,byrow=TRUE,dimnames=list(NULL, c("intercept","slope"))), 
                               transform.par=c(0,0), omega.init=diag(c(0.5, 0.5)), verbose=FALSE)
+
+### Gender effect on intercept
+saemix.model.poi.cov1<-saemixModel(model=count.poisson,description="Count model Poisson",simulate.function=countsimulate.poisson, 
+                                   modeltype="likelihood",   
+                                   psi0=matrix(c(log(5),0.01),ncol=2,byrow=TRUE,dimnames=list(NULL, c("intercept","slope"))), 
+                                   transform.par=c(0,0), omega.init=diag(c(0.5, 0.5)),
+                                   covariance.model =matrix(data=1, ncol=2, nrow=2),
+                                   covariate.model=matrix(c(1,0), ncol=2, byrow=TRUE), verbose=FALSE)
 
 ### Gender effect on intercept and slope
 saemix.model.poi.cov2<-saemixModel(model=count.poisson,description="Count model Poisson",simulate.function=countsimulate.poisson, 
@@ -186,6 +177,7 @@ saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=F
   
 ### Fit with saemix
 poisson.fit<-saemix(saemix.model.poi,saemix.data,saemix.options)
+poisson.fit.cov1<-saemix(saemix.model.poi.cov1,saemix.data,saemix.options)
 poisson.fit.cov2<-saemix(saemix.model.poi.cov2,saemix.data,saemix.options)
 #print(poisson.fit@results)
 summary(poisson.fit.cov2)
@@ -403,6 +395,13 @@ We compare the previous fit from the Poisson model with the ZIP model using the 
 ### Simulations
 ysim.zip2<-simulateDiscreteSaemix(zippoisson.fit.cov2,  100)
 discreteVPC(ysim.zip2, outcome="count", breaks=c(0:9,16,25,80), which.cov="gender")
+
+if(saveFigs) {
+  namfig<-"rapi_diagnosZIP.eps"
+  cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
+  discreteVPC(ysim.zip2, outcome="count", breaks=c(0:9,16,25,80), which.cov="gender")
+  dev.off()
+}
 ```
 
 ```{r countPoissonZIPDiagnostics}
@@ -470,7 +469,7 @@ saemix.data1<-saemixData(name.data=rapi.saemix[rapi.saemix$rapi>0,], name.group=
                          name.covariates=c("gender"),
                          units=list(x="week",y="",covariates=c("")), verbose=FALSE)
 
-rapi.saemix$y0<-as.integer(rapi.saemix$rapi==0)
+rapi.saemix$y0<-as.integer(rapi.saemix$rapi>0)
 saemix.data0<-saemixData(name.data=rapi.saemix, name.group=c("id"),
                          name.predictors=c("time","y0"),name.response=c("y0"),
                          name.covariates=c("gender"),
@@ -491,7 +490,7 @@ binary.model<-function(psi,id,xidep) {
 # Associated simulation function
 simulBinary<-function(psi,id,xidep) {
   tim<-xidep[,1]
-  y<-xidep[,2]
+#  y<-xidep[,2] # not used for simulation
   inter<-psi[id,1]
   slope<-psi[id,2]
   logit<-inter+slope*tim
@@ -501,15 +500,29 @@ simulBinary<-function(psi,id,xidep) {
 }
 saemix.hurdle0<-saemixModel(model=binary.model,description="Binary model",
                             modeltype="likelihood",simulate.function=simulBinary,
-                            psi0=matrix(c(-1.5,-.1,0,0),ncol=2,byrow=TRUE,dimnames=list(NULL,c("theta1","theta2"))),
+#                            psi0=matrix(c(-1.5,-.1,0,0),ncol=2,byrow=TRUE,dimnames=list(NULL,c("theta1","theta2"))),
+                            psi0=matrix(c(0.5,-.1,0,0),ncol=2,byrow=TRUE,dimnames=list(NULL,c("theta1","theta2"))),
                             transform.par=c(0,0), covariate.model=c(1,1),
                             covariance.model=matrix(c(1,0,0,1),ncol=2), omega.init=diag(c(1,0.3)), verbose=FALSE)
 
 saemix.options<-list(seed=1234567,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, nb.chains=10, fim=FALSE, displayProgress=FALSE, print=FALSE)
 
 hurdlefit0<-saemix(saemix.hurdle0,saemix.data0,saemix.options)
-cat("Expected proportion of 0's at time 0:",1/(1+exp(-hurdlefit0@results@fixed.effects[1])),"\n")
-table(rapi.saemix$rapi[rapi.saemix$time==0] == 0) # 10.6%
+
+tab1<-table(rapi.saemix$rapi[rapi.saemix$time==0] == 0)  
+tab.women <- table(rapi.saemix$rapi[rapi.saemix$time==0 & rapi.saemix$gender==0] == 0)  
+
+if(FALSE) {
+ cat("Observed proportion of 0's at time 0:",tab1[2]/sum(tab1),"\n") # 10.6%
+  # Not comparable because of the IIV on theta1 => see below for a comparison using data simulated under the model
+  cat("Expected proportion of 0's at time 0:",1/(1+exp(-hurdlefit0@results@fixed.effects[1])),"\n")
+  cat("Observed proportion of 0's at time 0 in women:",tab.women[2]/sum(tab.women),"\n") # 9.7%
+}
+
+# Taking into account IIV on theta1 to compute expected proportion of zeroes
+xcal<-rnorm(1000, mean=hurdlefit0@results@fixed.effects[1], sd=sqrt(hurdlefit0@results@omega[1,1]))
+cat("Expected proportion of 0's at time 0 (in women):",mean(1-1/(1+exp(-xcal))),"\n")
+cat("Observed proportion of 0's at time 0 in women:",tab.women[2]/sum(tab.women),"\n") # 9.7%
 
 # Fit Poisson model to saemix.data1
 saemix.hurdle1.cov2<-saemixModel(model=count.poisson,description="Count model Poisson",modeltype="likelihood",   
@@ -610,7 +623,7 @@ discreteVPC(ysim.hurdle1, outcome="count", breaks=c(0:9, 16, 25, 80), which.cov=
 
 #### Standard errors of estimation
 
-The computation of the FIM in **saemix** uses the so-called FOCE method, an approximation where the model function $f$ is linearised around the conditional expectation of the individual parameters. This approximation is particularly bad for discrete data models, which is why currently **saemix** doesn't provide estimation errors for count data models. For non-Gaussian models, the exact FIM should be computed, and two approaches have been proposed using either numerical integration by a combination of MC and adaptive Gaussian quadrature (MC/AGQ, Ueckert et al 2017) or stochastic integration by MCMC (Rivière et al. 2017). Both these approaches are computationally intensive. They require to define the elementary FIM associated to the observed design (here, the number of times and the gender which enters the model), and sum over all the subjects sharing the same design. Here, as in the *toenail* example, the subjects in the real dataset *rapi.saemix* were not all seen at the same times. This makes the computation of an exact FIM somewhat cumbersome, especially when stratifying on gender, as we need to compute the FIM in each combination of gender and observation times and sum the elementary FIM. We leave that to th
+The computation of the FIM in **saemix** uses the so-called FOCE method, an approximation where the model function $f$ is linearised around the conditional expectation of the individual parameters. This approximation is particularly bad for discrete data models, which is why currently **saemix** doesn't provide estimation errors for count data models. For non-Gaussian models, the exact FIM should be computed and this is currently not implemented in **saemix** (work in progress).
 
 Alternatively, different bootstrap approaches can be used in non-linear mixed effect models and have been implemented for **saemix** in Comets et al. 2021, with code available on the github for the package (https://github.com/saemixdevelopment/saemixextension).
 
@@ -678,7 +691,5 @@ print(df2)
 **Neighbors CJ**, Lewis M, Atkins D, Jensen M, Walter T, Fossos N, Lee C, Larimer M  (2010a). Efficacy of web-based personalized normative feedback: A two-year randomized controlled trial. *Journal of Consulting and Clinical Psychology* 78:898–911.
 
 **Neighbors CJ**, Barnett NP, Rohsenow DJ, Colby SM, and Monti PM (2010b).  Cost-effectiveness of a motivational lntervention for alcohol-involved youth in a hospital emergency department. *Journal of Studies on Alcohol and Drugs* 71:384–94. 
-
-**Ueckert S**, Mentré F (2017). A new method for evaluation of the Fisher information matrix for discrete mixed effect models using Monte Carlo sampling and adaptive Gaussian quadrature. *Computational Statistics and Data Analysis*, 111: 203-19. \url{10.1016/j.csda.2016.10.011}
 
 **White HR**, Labouvie EW (1989). Towards the assessment of adolescent problem drinking. *Journal of Studies on Alcohol* 50:30–7.

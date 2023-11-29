@@ -2,7 +2,7 @@
 saemixDir<-"/home/eco/work/saemix/saemixextension"
 datDir<-file.path(saemixDir,"data")
 
-# library saemix - currently (August 2022) saemix 3.1
+# library saemix - currently (July 2023) saemix 3.2
 library(saemix)
 
 # Other libraries

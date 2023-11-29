@@ -16,7 +16,6 @@
 #' @seealso \code{\link{SaemixObject}},\code{\link{saemix}}
 #' @references E Comets, A Lavenu, M Lavielle M (2017). Parameter estimation in nonlinear mixed effect models using saemix,
 #' an R implementation of the SAEM algorithm. Journal of Statistical Software, 80(3):1-41.
-#' 
 #' E Kuhn, M Lavielle (2005). Maximum likelihood estimation in nonlinear mixed effects models. 
 #' Computational Statistics and Data Analysis, 49(4):1020-1038.
 #' 
@@ -151,10 +150,13 @@ compute.sres<-function(saemixObject) {
   yobsall<-saemixObject["data"]["data"][,saemixObject["data"]["name.response"]]
   ypredall<-pd<-npde<-wres<-c()
 #  pde<-c()
-  cat("Computing WRES and npde ")
+#  if(saemixObject@model@modeltype=="structural" & saemixObject@options$warnings) cat("Computing WRES and npde ")
+  if(saemixObject@model@modeltype=="structural") cat("Computing WRES and npde ") else {
+    if(saemixObject@options$warnings) cat("Computing pd ")
+  }
   isuj1<-1
   for(isuj in unique(saemixObject["data"]["data"][,saemixObject["data"]["name.group"]])) {
-    if(isuj1%%10==1) cat(".")
+    if(isuj1%%10==1 & saemixObject@model@modeltype=="structural") cat(".")
     isuj1<-isuj1+1
     ysimi<-matrix(ysim[idsim==isuj],ncol=nsim)
 #    ysimi.pred<-ysimi[,1:saemixObject["options"]$nb.simpred]
@@ -173,49 +175,58 @@ compute.sres<-function(saemixObject) {
     pd<-c(pd,pdsuj)
     ypred<-rowMeans(ysimi)
     ypredall<-c(ypredall,ypred)
-    xerr<-0
-    if(length(yobs)==1) {
-      npde<-c(npde,qnorm(pdsuj))
-      wres<-c(wres,(yobs-ypred)/sd(t(ysimi)))
-    } else {
-# Decorrelation
-    vi<-cov(t(ysimi))
-    xmat<-try(chol(vi))
-    if(is.numeric(xmat)) {
-      sqvi<-try(solve(xmat))
-      if(!is.numeric(sqvi)) 
-        xerr<-2
-      } else xerr<-1
-    if(xerr==0) {
-    #decorrelation of the simulations
-      decsim<-t(sqvi)%*%(ysimi-ypred)
-      decobs<-t(sqvi)%*%(yobs-ypred)
-      wres<-c(wres,decobs)
-#    ydsim<-c(decsim)
-#    ydobs<-decobs
-    #Computing the pde
-      tcomp<-apply(cbind(decsim,decobs),2,"<",decobs)
-      if(!is.matrix(tcomp)) tcomp<-t(as.matrix(tcomp))
-      pdesuj<-rowMeans(tcomp)
-      pdesuj<-pdesuj+0.5/(nsim+1)
-#      pde<-c(pde,pdesuj)
-      npde<-c(npde,qnorm(pdesuj))
-    } else {
-      npde<-c(npde,rep(NA,length(yobs)))
-      wres<-c(wres,rep(NA,length(yobs)))
-    }
+    if(saemixObject@model@modeltype=="structural") {
+      xerr<-0
+      if(length(yobs)==1) {
+        npde<-c(npde,qnorm(pdsuj))
+        wres<-c(wres,(yobs-ypred)/sd(t(ysimi)))
+      } else {
+        # Decorrelation
+        vi<-cov(t(ysimi))
+        xmat<-try(chol(vi))
+        if(is.numeric(xmat)) {
+          sqvi<-try(solve(xmat))
+          if(!is.numeric(sqvi)) 
+            xerr<-2
+        } else xerr<-1
+        if(xerr==0) {
+          #decorrelation of the simulations
+          decsim<-t(sqvi)%*%(ysimi-ypred)
+          decobs<-t(sqvi)%*%(yobs-ypred)
+          wres<-c(wres,decobs)
+          #    ydsim<-c(decsim)
+          #    ydobs<-decobs
+          #Computing the pde
+          tcomp<-apply(cbind(decsim,decobs),2,"<",decobs)
+          if(!is.matrix(tcomp)) tcomp<-t(as.matrix(tcomp))
+          pdesuj<-rowMeans(tcomp)
+          pdesuj<-pdesuj+0.5/(nsim+1)
+          #      pde<-c(pde,pdesuj)
+          npde<-c(npde,qnorm(pdesuj))
+        } else {
+          npde<-c(npde,rep(NA,length(yobs)))
+          wres<-c(wres,rep(NA,length(yobs)))
+        }
+      }
     }
   }
   cat("\n")
-  saemixObject["results"]["npde"]<-npde
-  saemixObject["results"]["wres"]<-wres
+  if(saemixObject@model@modeltype=="structural") {
+    saemixObject["results"]["npde"]<-npde
+    saemixObject["results"]["wres"]<-wres
+  }
   saemixObject["results"]["ypred"]<-ypredall # = [ E_i(f(theta_i)) ]
   saemixObject["results"]["pd"]<-pd
-  if(length(saemixObject["results"]["predictions"])==0) saemixObject["results"]["predictions"]<-data.frame(ypred=ypredall,wres=wres,pd=pd,npde=npde) else {
+  if(length(saemixObject["results"]["predictions"])==0) {
+    if(saemixObject@model@modeltype=="structural") saemixObject["results"]["predictions"]<-data.frame(ypred=ypredall,wres=wres,pd=pd,npde=npde) else
+      saemixObject["results"]["predictions"]<-data.frame(ypred=ypredall,pd=pd)
+    } else {
   	saemixObject["results"]["predictions"]$ypred<-ypredall
-  	saemixObject["results"]["predictions"]$wres<-wres
-  	saemixObject["results"]["predictions"]$npde<-npde
   	saemixObject["results"]["predictions"]$pd<-pd
+   	if(saemixObject@model@modeltype=="structural") {
+  	  saemixObject["results"]["predictions"]$wres<-wres
+  	  saemixObject["results"]["predictions"]$npde<-npde
+  	}
   }
 #  return(list(ypred=ypredall,pd=pd,npd=npd,wres=wres,sim.data=ysim, sim.pred=x$sim.pred))
   return(saemixObject)

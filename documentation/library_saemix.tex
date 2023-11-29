@@ -1,21 +1,21 @@
 \chapter{The {\sf saemix} package} \label{sec:package}
 
-This chapter presents the input and output of the \monolix package. You will find the details of the settings and options in here for reference, but readers who wish to apply the methods quickly can directly skip to chapter~\ref{sec:examples} to find detailed examples of running the package.
+This chapter presents the input and output of the \saemix package. You will find the details of the settings and options in here for reference, but readers who wish to apply the methods quickly can directly skip to chapter~\ref{sec:examples} to find detailed examples of running the package.
 
-Section~\ref{sec:usingsaemix} explains how to use the \monolix library and the many settings that can be tuned, while section~\ref{sec:techystuff} contains some technical details on the structure of the package and the architecture of the main S4 classes and methods.
+Section~\ref{sec:usingsaemix} explains how to use the \saemix library and the many settings that can be tuned, while section~\ref{sec:techystuff} contains some technical details on the structure of the package and the architecture of the main S4 classes and methods.
 
 \section{Inputs and outputs} \label{sec:usingsaemix}
 
 \subsection{The inputs}
 
-To summarise, \monolix~requires to define the model and to fix some parameters used for the algorithms. First, it is necessary to define:
+To summarise, \saemix~requires to define the model and to fix some parameters used for the algorithms. First, it is necessary to define:
 \begin{itemize}
 \item the structural model, that is the regression function $f$ defined in (\ref{nlme}),
 \item the covariate model, that is the structure of the matrix $\fixed_effect$ defined in (\ref{prior}) and the covariates $(\covariate_i)$.
 \item the variance-covariance model for the random effects, that is the structure of the variance-covariance matrix $\IIV$ defined in (\ref{prior}).
 \item the residual variance model, that is the regression function $g$.
 \end{itemize}
-The only mandatory elements for a \monolix~fit are:
+The only mandatory elements for a \saemix~fit are:
 \begin{itemize}
 \item a data object, defined by at least: 
    \begin{itemize}
@@ -70,7 +70,7 @@ Then, it is necessary to specify several parameters for running the algorithms:
 \end{itemize}
 \end{itemize}
 
-In the \R~implementation of \monolix, most of these parameters, as well as other variables used by the algorithm, are set through a list which is included in the object returned by an \monolix~fit. Table~\ref{tab:options} shows the correspondance between the parameters and the elements in this list.
+In the \R~implementation of \saemix, most of these parameters, as well as other variables used by the algorithm, are set through a list which is included in the object returned by an \saemix~fit. Table~\ref{tab:options} shows the correspondance between the parameters and the elements in this list.
 \begin{center}
 \begin{longtable}{r p{8cm} p{3cm} c}
 \hline {\bf Parameter} & {\bf Meaning} & {\bf Option name} & {\bf Default value}\\
@@ -118,7 +118,7 @@ $\rho_{mcmc}$ & Confidence interval for the conditional mean and variance & {\sf
 \end{center}
 
 
-Assuming the result of the \monolix~fit has been stored in an object {\sf saemix.fit}, the list of options can be accessed using the following instruction (see section~\ref{sec:saemixS4} for more details on how to access elements of objects in \R):
+Assuming the result of the \saemix~fit has been stored in an object {\sf saemix.fit}, the list of options can be accessed using the following instruction (see section~\ref{sec:saemixS4} for more details on how to access elements of objects in \R):
 \begin{verbatim}
 saemix.fit["options"]
 \end{verbatim}
@@ -132,7 +132,7 @@ The easiest way to set options is to pass them in a list when calling the main f
 \clearpage
 \subsection{The outputs}
 
-In the \R~implementation of \monolix, the object returned after a call to the main fitting function {\sf saemix()} contains the following elements:
+In the \R~implementation of \saemix, the object returned after a call to the main fitting function {\sf saemix()} contains the following elements:
 \begin{itemize}
 \item data: the data object, created by a call to the {\sf saemixData()} function, and containing the dataset to be used in the analysis
 \item model: the model object, created by a call to the {\sf saemixModel()} function, and containing the model characteristics
@@ -237,7 +237,7 @@ Let $\IIV=(\omega_{jl}, 1\leq j,l \leq d)$. Then, for any $j,l=1,2\ldots d$, we 
 \item estimate the standard error of $\homega_{jl}$, for all $1\leq j,l \leq d$,
 %\item test ``$\omega_{jl}=0$", by computing the significance level of the Wald test.
 \end{enumerate}
-%(In this version of \monolix, the standard errors of the non diagonal elements $\homega_{jl}$, with $j\neq l$, are not computed and the Wald test is only performed for the diagonal elements of $\IIV$).
+%(In this version of \saemix, the standard errors of the non diagonal elements $\homega_{jl}$, with $j\neq l$, are not computed and the Wald test is only performed for the diagonal elements of $\IIV$).
 
 \noindent {\bf b) Estimation of the conditional distributions:}
 
@@ -246,13 +246,13 @@ The MCMC algorithm provides an estimation of the conditional means, conditional 
 The function can be called with an argument {\sf nsamp} which runs several sampling chains in parallel, providing several independent samples from the individual conditional distribution for each subject. The number of iterations necessary to obtain convergence (that is, for the successive empirical conditional mean and sd to remain within the requested precision for all chains) is reported, and if the option {\sf displayProgress} is \true, plots are produced during the estimation process showing the evolution of the different sampling chains.
 
 \begin{itemize}
-\item the conditional mode can be found in \monolix~in the results component of the object, as {\sf map.psi} (there is also a \texttt{map.phi} component for the corresponding $\phi$ and a \texttt{map.eta} for the random effects)
+\item the conditional mode can be found in \saemix~in the results component of the object, as {\sf map.psi} (there is also a \texttt{map.phi} component for the corresponding $\phi$ and a \texttt{map.eta} for the random effects)
 \item the conditional expectation can be found in {\sf cond.mean.psi} and the variance in {\sf cond.var.psi} (the corresponding $\phi$ and $\eta$ are also available)
 \end{itemize}
 
 \noindent {\bf c) Estimation of the likelihood:}
 
-The \monolix~algorithm can provide three different approximations to the likelihoods, through importance sampling, linearisation or gaussian quadrature. 
+The \saemix~algorithm can provide three different approximations to the likelihoods, through importance sampling, linearisation or gaussian quadrature. 
 
 %The Importance Sampling algorithm computes an estimate $ \ell_M(\yg;\hthetag)$ of the observed likelihood together with its standard error.
 

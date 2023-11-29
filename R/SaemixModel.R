@@ -433,7 +433,7 @@ setMethod(
 
 #' Get/set methods for SaemixModel object
 #' 
-#' Access slots of a SaemixModel object using the object\["slot"\] format
+#' Access slots of an SaemixModel object using the object\["slot"\] format
 #' 
 #' @param x object
 #' @param i element to be replaced
@@ -759,7 +759,7 @@ setMethod("plot","SaemixModel",
       if(verbose) message("Currently the plot can only be obtained for single-response models.\n")
       return()
     }
-    if(length(x@name.X)>0 & length(x@name.predictors)>0 && x.name.X != x@name.predictors[1]){
+    if(length(x@name.X)>0 & length(x@name.predictors)>0 && x@name.X != x@name.predictors[1]){
       if(verbose) message("Warning: X predictor supposed to be on the first axis, exiting without plot\n")
       return()
     }
@@ -815,14 +815,16 @@ setMethod("plot","SaemixModel",
 #' @param psi a vector or a dataframe giving the parameters for which predictions are to be computed (defaults to empty). 
 #' The number of columns in psi (or the number of elements of psi, if psi is given as a vector) should match the number of
 #' parameters in the model, otherwise an error message will be shown and the function will return empty.
-#' If psi is NA, the predictions are computed for the population parameters in the model (first line of the psi0 slot). 
+#' If psi is NA, the predictions are computed for the population parameters in the model (first line of the psi0 slot).
+#' Covariates are not taken into account in the prediction. 
 #' If psi is a dataframe, each line will be used for a separate 'subject' in the predictors dataframe, as 
 #' indicated by the id argument; if id is not given, only the first line of psi will be used. 
-#' @param predictors a dataframe with the predictors for the model (must correspond to the predictors used by the model function)
+#' @param predictors a dataframe with the predictors for the model (must correspond to the predictors used by the model function), or an SaemixData object (the predictors will then be extracted from the object).
 #' @param id a vector of indices of length equal to the number of lines in predictors, matching each line of predictors to the 
 #' corresponding line in psi, ie the parameters for this predictors (defaults to empty). If id is given, the unique values in id must be equal
 #' to the number of lines in psi, otherwise id will be set to 1. If id is given and its values do not take the consecutive values 1:N, the
 #' indices will be matched to 1:N to follow the lines in psi.
+#' 
 #' @param \dots unused argument, for consistency with the generic
 #' 
 #' @details The function uses the model slot of the SaemixModel object to obtain predictions, using the predictors object. The
@@ -875,6 +877,14 @@ setMethod("plot","SaemixModel",
 #' 
 
 predict.SaemixModel<-function(object, predictors, psi=c(), id=c(), ...) {
+  if(!is(predictors,"SaemixData")  & !is(predictors,"data.frame")) {
+    message("The predictors argument should be either a dataframe or an SaemixData object to extract the predictors from.\n")
+    return()
+  }
+  if(is(predictors,"SaemixData")) {
+    id<-predictors@data[,predictors@name.group]
+    predictors <- predictors@data[,predictors@name.predictors,drop=FALSE]
+  }
   xidep<-predictors
   if(length(id)==0 || length(id)!=dim(predictors)[1]) 
     id<-rep(1,dim(xidep)[1]) 
@@ -899,6 +909,113 @@ predict.SaemixModel<-function(object, predictors, psi=c(), id=c(), ...) {
   return(list(param=cbind(id=1:dim(psi)[1],psi), predictions=data.frame(id=idkeep, xidep, pred=unname(ypred))))
 }
 
+#' Check initial fixed effects for an SaemixModel object applied to an SaemixData object
+#' 
+#' @param model an SaemixModel object
+#' @param data an SaemixData object (the predictors will then be extracted from the object using the name.predictors slot of the object)
+#' @param psi a vector or a dataframe giving the parameters for which predictions are to be computed (defaults to empty). 
+#' The number of columns in psi (or the number of elements of psi, if psi is given as a vector) should match the number of
+#' parameters in the model, otherwise an error message will be shown and the function will return empty.
+#' If psi is NA, the predictions are computed for the population parameters in the model (first line of the psi0 slot).
+#' Covariates are not taken into account in the prediction. 
+#' If psi is a dataframe, each line will be used for a separate 'subject' in the predictors dataframe, as 
+#' indicated by the id argument; if id is not given, only the first line of psi will be used. 
+#' @param id the vector of subjects for which individual plots will be obtained. If empty, the first 12 subjects in the dataset will be used (subject id's are taken from the name.group slot in the data object). If id is given, individual plots will be shown for the matching subjects in the dataset (eg if id=c(1:6), the first 6 subjects in the dataframe will be used for the plots, retrieving their ID from the data object)
+#' 
+#' @param \dots unused argument, for consistency with the generic
+#' 
+#' @details The function uses the model slot of the SaemixModel object to obtain predictions, using the predictors object. The
+#' user is responsible for giving all the predictors needed by the model function.
+#' if psi is not given, the predictions will be computed for the population parameters (first line of the psi0 slot) of the object.
+#' 
+#' @details The predictions correspond to the structure of the model. For models defined as a structural model, 
+#' individual plots for the subjects in id overlaying the predictions for the parameters psi and the individual data
+#' are shown, and the predictions correspond to f(t_ij, psi).
+#' For models defined in terms of their likelihood, the predictions returned correspond to the log-likelihood.
+#' No individual graphs are currently available for discrete data models.
+#' 
+#' @details Warning: this function is currently under development and the output may change in future versions of the package 
+#' 
+# #' @seealso \code{\link[predict.SaemixModel]}, \code{\link[plotDiscreteData]},  \code{\link[ggplot]}
+#' 
+#' @return the predictions corresponding to the values for each observation in the predictors of either the model f or log-likelihood. 
+#' For Gaussian data models, the function also plots the data overlayed with the model predictions for each subject in id 
+#' (where id is the index in the N subjects).
+#' 
+#' @examples 
+#' data(theo.saemix)
+#' saemix.data<-saemixData(name.data=theo.saemix,header=TRUE,sep=" ",na=NA, 
+#'   name.group=c("Id"),name.predictors=c("Dose","Time"),
+#'   name.response=c("Concentration"),name.covariates=c("Weight","Sex"),
+#'   units=list(x="hr",y="mg/L",covariates=c("kg","-")), name.X="Time")
+#' 
+#' model1cpt<-function(psi,id,xidep) { 
+#' 	  dose<-xidep[,1]
+#' 	  tim<-xidep[,2]  
+#' 	  ka<-psi[id,1]
+#' 	  V<-psi[id,2]
+#' 	  CL<-psi[id,3]
+#' 	  k<-CL/V
+#' 	  ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
+#' 	  return(ypred)
+#' }
+#' 
+#' saemix.model<-saemixModel(model=model1cpt,modeltype="structural",
+#'   description="One-compartment model with first-order absorption", 
+#'   psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3, byrow=TRUE,
+#'   dimnames=list(NULL, c("ka","V","CL"))),transform.par=c(1,1,1),
+#'   covariate.model=matrix(c(0,1,0,0,0,0),ncol=3,byrow=TRUE),fixed.estim=c(1,1,1),
+#'   covariance.model=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE),
+#'   omega.init=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE),error.model="constant")
+#' 
+#' checkInitialFixedEffects(saemix.model, saemix.data, id=c(1:6))
+#' checkInitialFixedEffects(saemix.model, saemix.data, id=c(1:6), psi=c(0.5, 30, 2)) # better fit
+#' 
+#' @export 
+
+checkInitialFixedEffects<-function(model, data, psi=c(), id=c(), ...) {
+  addarg <- list(...)
+  verbose<-FALSE
+  if("verbose" %in% names(addarg)) verbose <- as.logical(addarg["verbose"])
+  if(is.na(verbose)) verbose<-FALSE
+  if(!is(data,"SaemixData") ) {
+    if(verbose) message("The data argument should be an SaemixData object to extract the predictors from.\n")
+    return()
+  }
+  if(length(psi)==0) psi<-model["psi0"][1,,drop=FALSE]
+  if(is.null(dim(psi))) psi<-as.data.frame(t(psi)) # psi given as a vector
+  if(dim(psi)[2] != model@nb.parameters) {
+    message(paste0("psi must have a number of columns equal to the number of parameters in the model (",model@nb.parameters,")\n")
+    )
+    return()
+  }
+  idall<-data@data[,"index"]
+  xidep <- data@data[,data@name.predictors,drop=FALSE]
+  #  if(dim(psi)[1]==1 & length(unique(idall))>1)
+  psi<-do.call(rbind,rep(list(psi),length(unique(idall))))
+  colnames(psi)<-colnames(model["psi0"])
+  rownames(psi)<-NULL
+  # Model predictions
+  ypred<-model["model"](psi, idall, xidep)
+  
+  # For the plot, select subjects corresponding to number id, or use the first 12 subjects
+  idplot <- intersect(idall, id)
+  if(length(idplot)==0) idplot<-1:12
+  idkeep <- which(data@data$index %in% idplot) # retrieve data for these subjects
+  
+  if(model@modeltype=="structural") {
+    # Individual graphs
+    obspl<-data.frame(id=data@data[idkeep,data@name.group], x=data@data[idkeep,data@name.X], y=data@data[idkeep,data@name.response])
+    predpl<-data.frame(id=data@data[idkeep,data@name.group], x=data@data[idkeep,data@name.X], y=ypred[idkeep])
+    myplot <- ggplot(data=obspl, aes(x=.data$x, y=.data$y, group=.data$id)) + geom_point() + geom_line(data=predpl) + 
+      xlab(paste0(data@name.X," (",data@units$x,")")) + ylab(paste0(data@name.response," (",data@units$y,")")) + 
+      theme_bw() + facet_wrap(.~id, nrow=3, ncol=4)
+    print(myplot)
+  } else {
+    if(verbose) message("Individual plots are only available for models dealing with continuous outcomes.\n")
+  }
+  invisible(ypred)
+}
 
 ####################################################################################
 ####			SaemixModel & SaemixData class - method to plot	predictions from a model for the data in a dataset		####
@@ -1034,9 +1151,9 @@ setMethod("plot",c("SaemixModel","SaemixData"),
 ####			SaemixModel class - User-level function			####
 ####################################################################################
 
-#' Function to create a SaemixModel object
+#' Function to create an SaemixModel object
 #' 
-#' This function creates a SaemixModel object. The two mandatory arguments are
+#' This function creates an SaemixModel object. The two mandatory arguments are
 #' the name of a R function computing the model in the SAEMIX format (see
 #' details and examples) and a matrix psi0 giving the initial estimates of the
 #' fixed parameters in the model, with one row for the population mean
@@ -1091,7 +1208,7 @@ setMethod("plot",c("SaemixModel","SaemixData"),
 #' @param name.modpar names of the model parameters, if they are not given as
 #' the column names (or names) of psi0
 #' @param verbose a boolean, controlling whether information about the created should be printed out. Defaults to TRUE
-#' @return A SaemixModel object (see \code{\link{saemixModel}}).
+#' @return An SaemixModel object (see \code{\link{saemixModel}}).
 #' @author Emmanuelle Comets <emmanuelle.comets@@inserm.fr>, Audrey Lavenu,
 #' Marc Lavielle.
 #' @seealso \code{\link{SaemixData}},\code{\link{SaemixModel}},

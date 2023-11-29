@@ -5,9 +5,10 @@ if(getRversion() >= "2.15.1")  utils::globalVariables(c(".x"))
 
 #' Plot non Gaussian data
 #' 
-#' This function provides exploration plots for non Gaussian longitudinal data (work in progress)
+#' This function provides exploration plots for non Gaussian longitudinal data (work in progress, doesn't work yet for RTTE)
 #' 
-#' @param object an SaemixData object returned by the \code{\link{saemixData}} function.
+#' @param object an SaemixData object returned by the \code{\link{saemixData}} function. 
+#' For plotDiscreteDataElement, an SaemixObject object returned by the \code{\link{saemix}} function
 #' @param outcome type of outcome (valid types are "TTE", "binary", "categorical", "count")
 #' @param verbose whether to print messages (defaults to FALSE)
 #' @param \dots additional arguments, used to pass graphical options (to be implemented, currently not available)
@@ -68,8 +69,7 @@ if(getRversion() >= "2.15.1")  utils::globalVariables(c(".x"))
 
 plotDiscreteData <- function(object, outcome="continuous", verbose=FALSE, ...) {
   # object
-  ## an object resulting from a call to saemix
-  ## must have a sim.data object containing data simulated under the model
+  ## an SaemixData object
   # outcome: type of outcome (valid types are TTE, binary, categorical, count)
   # verbose: whether to print messages
   # ...: to pass additional plot options (such as title, colours, etc...) which will supersede the options in the prefs slot of object
@@ -104,6 +104,86 @@ plotDiscreteData <- function(object, outcome="continuous", verbose=FALSE, ...) {
     xplot <- exploreDataCat(object, max.cat=max.cat, verbose=verbose, ...)
   }
   
+  return(xplot)
+}
+
+#' @rdname plotDiscreteData
+#' 
+#' @param mirror if TRUE, plots a mirror plot of the same type as the data (the object must include simulated data)
+#' @param irep number of the replication to use in the mirror plot
+
+plotDiscreteDataElement <- function(object, outcome="categorical", mirror=FALSE, irep=1, verbose=FALSE, ...) {
+  # object
+  ## an object resulting from a call to saemix
+  ## if mirror=FALSE, plot the data 
+  ## if mirror=TRUE, plot mirror plots (must have a sim.data object containing data simulated under the model)
+  # outcome: type of outcome (valid types are TTE, binary, categorical, count)
+  # irep: for mirror plots, replication to plot
+  # verbose: whether to print messages
+  # ...: to pass additional plot options (such as title, colours, etc...) which will supersede the options in the prefs slot of object
+  if(!is(object,"SaemixObject")) {
+    message("Please provide a valid SaemixObject object (created by a call to saemix()) \n")
+    return()
+  }
+  objectData <- object@data
+  outcome<-tolower(outcome)
+  if(outcome=="event") outcome<-"tte"
+  if(mirror) {
+    if(object@sim.data@nsim==0) {
+      message("Please simulate data before trying to plot it \n")
+      return()
+    }
+    irep<-try(trunc(irep))
+    if(irep>object@sim.data@nsim | irep<1) irep<-1
+    if(outcome %in% c("tte","rtte")) {
+     if(outcome=="tte") 
+       objectData@data[objectData@name.X]<-object@sim.data@datasim$ysim[object@sim.data@datasim$irep==irep] else {# RTTE... more complicated
+         origdata <- objectData@data
+         covdata <- origdata[!duplicated(origdata$index), c(objectData@name.group, objectData@name.cens, objectData@name.occ,objectData@name.covariates)]
+         yevent <- object@sim.data@datasim$ysim[object@sim.data@datasim$irep==irep]
+         yresp <- as.integer(yevent>0) # 1=event, 0=initial
+         idx<-which(yevent==0) # time=0
+         idx1<-c(idx[-c(1)],length(yevent)+1)
+         nind.obs<-c(idx1[1]-1,diff(idx))
+         idx<-c(idx-1,length(yresp)) # last time before time=0, remove -1
+         idx<-idx[idx>0]
+         yresp[idx]<-0 # last event of each subject is censored
+         simdata <- data.frame(index=rep(1:objectData@N, times=nind.obs), time=yevent, status=yresp)
+         colnames(simdata)[2:3]<-c(objectData@name.X, objectData@name.response)
+         simdata<-cbind(simdata, covdata[rep(1:objectData@N, times=nind.obs),])
+         simdata[,objectData@name.cens]<-yresp
+         objectData@data <- simdata # Replicating covariate lines for the original data and replacing time and status/cens columns by the censoring indicator (0=no event, 1=event)
+         objectData@nind.obs <- nind.obs
+         objectData@ntot.obs<- dim(simdata)[1]
+     } 
+    } else 
+        objectData@data[objectData@name.response] <- object@sim.data@datasim$ysim[object@sim.data@datasim$irep==irep]
+  }
+  if(is.na(match(outcome,c("continuous","tte","count","categorical","binary","rtte")))) {
+#    if(verbose) message("Please specify a valid outcome type (continuous (default), tte, count, categorical, binary). RTTE are currently not supported.")
+    if(verbose) message("Please specify a valid outcome type (continuous (default), tte, rtte, count, categorical, binary).")
+    return()
+  }
+  userPlotOptions  = list(...)
+  if(!is.na(pmatch(outcome,"continuous"))) # TODO: switch to ggplot
+    xplot<-plot(objectData)
+  if(outcome %in% c("tte","rtte")) {
+    xplot <- exploreDataTTE(objectData, verbose=verbose, ...)
+  }
+  if(outcome=="count") {
+    # different options; if hist=TRUE, plot a histogram
+    #    xplot <- exploreDataCountHist(object, verbose=verbose, ...)
+    # if trend=TRUE, plot trend of counts with time TODO
+    xplot <- exploreDataCat(objectData, verbose=verbose, ...)
+  }
+  if(outcome %in% c("binary","categorical")) {
+    if(outcome=="binary") {
+      max.cat<-2
+    } else {
+      max.cat<-length(unique(objectData@data[,objectData@name.response]))
+    }
+    xplot <- exploreDataCat(objectData, max.cat=max.cat, verbose=verbose, ...)
+  }
   return(xplot)
 }
 

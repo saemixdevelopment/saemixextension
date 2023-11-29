@@ -232,7 +232,7 @@ fim.saemix<-function(saemixObject) {
     
     # Derivatives of Vi=var(yi) for subject i, w/r to lambda (FO approximation, neglecting dVi/dmu)
     DV<-list()
-    for(ipar in 1:npar) {
+    for(ipar in 1:npar) { # probably useless if we assume dV/dbeta=0, we could just start at 1 with the first variance term
       DV[[ipar]]<-matrix(0,ncol=ni,nrow=ni)
     }
     for(iom in 1:dim(covariance.model)[1]) {
@@ -244,12 +244,15 @@ fim.saemix<-function(saemixObject) {
           #          if(iom==jom) domega[iom,jom]<-1*sqrt(omega[iom,jom]) else domega[iom,jom]<-1 # if parameterised in omega and not omega2,
           if (saemixObject["model"]["modeltype"]=="structural"){
           DV[[ipar]]<-DFi %*% domega %*% t(DFi)
+          # equivalent but without domega
+          #    if(iom==jom)  DV[[ipar]] <- (DFi[,iom]) %*% t(DFi[,iom]) else DV[[ipar]] <- (DFi[,jom]) %*% t(DFi[,iom])+(DFi[,iom] %*% t(DFi[,jom]))
           } else {
             DV[[ipar]]<-DFi %*% t(DFi)
           }
         }
       }
     }
+    
     # for(ipar in 1:nomega) {
     #   domega<-omega.null
     #   domega[ipar,ipar]<-sqrt(omega[ipar,ipar])*2
@@ -289,7 +292,7 @@ fim.saemix<-function(saemixObject) {
     blocB<-matrix(0,ncol=(nomega+nres),nrow=(nomega+nres))
     for(ij in 1:(nomega+nres)) { # columns
       for(ii in 1:(nomega+nres)) { # lines, so that blocB is ordered according to c(covariance.model)
-        blocB[ii,ij]<-sum(diag(DV[[ii+npar]] %*% invVi[[i]] %*% DV[[ij+npar]] %*% invVi[[i]] ))/2
+        blocB[ii,ij]<-sum(diag(DV[[ii+npar]] %*% invVi[[i]] %*% DV[[ij+npar]] %*% invVi[[i]] ))/2 # +npar because the first 1..npar DVs are actually 0
       }
     }
     blocC<-matrix(0,ncol=(npar),nrow=(nomega+nres))
@@ -358,7 +361,7 @@ fim.saemix<-function(saemixObject) {
           est1<-c(est1,omega[iom,jom])
           se1<-c(se1,sO[ipar-npar])
           if(iom==jom) {
-            se.sdcor[iom,iom]<-sqrt(CO[iom,iom])/2/sqrt(omega[iom,iom])
+            se.sdcor[iom,iom]<-se.cov[iom,iom]/2/sqrt(omega[iom,iom])
             est2<-c(est2,sqrt(omega[iom,iom]))
             se2<-c(se2,se.sdcor[iom,iom])
           } else { # compute correlation and SE on correlation using the delta-method
@@ -366,7 +369,7 @@ fim.saemix<-function(saemixObject) {
             varbet<-CO[(myidx.track[myidx.track[,1]==ipar,]-npar),(myidx.track[myidx.track[,1]==ipar,]-npar)]
             rho<-ebet[1]/sqrt(ebet[2]*ebet[3])
             debet<-c(1/sqrt(ebet[2]*ebet[3]), -ebet[1]/(ebet[2]**(3/2))/sqrt(ebet[3])/2, -ebet[1]/(ebet[3]**(3/2))/sqrt(ebet[2])/2)
-            se.sdcor[iom,jom]<-se.sdcor[jom,iom]<-t(debet) %*% varbet %*% debet
+            se.sdcor[iom,jom]<-se.sdcor[jom,iom]<-sqrt( t(debet) %*% varbet %*% debet )
             est2<-c(est2,rho)
             se2<-c(se2,se.sdcor[iom,jom])
           }

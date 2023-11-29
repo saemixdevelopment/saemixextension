@@ -38,12 +38,12 @@ $$\etagi \sim_{i.i.d.} {\cal N}(0,\IIV)$$
 The within-group errors ($\varepsilon_{ij}$)  are  supposed  to be  Gaussian random variables  with mean  zero and variance $1$.
 Furthermore, we suppose that the $\varepsilon_{ij}$ and the $\eta_{i}$ are mutually independent.
 
-Different error models can be used in \monolix~3.0:
+Different error models can be used in \saemix~3.0:
 \begin{itemize}
 \item the constant error model assumes that $g=a$ and $\xi=a$,
 \item the proportional error model assumes that $g=b\,f$ and $\xi=b$,
 %\item a combined error model assumes that $g=a+b\,f$ and $\xi=(a,b)$,
-\item a combined error model assumes that $g=\sqrt{a^2+b^2\,f^2}$ and $\xi=(a,b)$ (note: this was changed in\monolix 3.0 from the previous model which was $g=a+b\,f$)
+\item a combined error model assumes that $g=\sqrt{a^2+b^2\,f^2}$ and $\xi=(a,b)$ (note: this was changed in\saemix 3.0 from the previous model which was $g=a+b\,f$)
 %\item a combined error model with power assumes that $g=a+b\,f^c$ and $\xi=(a,b,c)$,
 %\item \ldots
 \end{itemize}
@@ -53,7 +53,7 @@ Furthermore, all these error models can be applied to some transformation of the
 t(y_{ij})=t(f(x_{ij},\psigi))+ g(x_{ij},\psigi,\xi)\varepsilon_{ij}
 \end{eqnarray}
 
-In the current version of \monolix, the exponential error model is also available: it assumes that $y>0$ and that:
+In the current version of \saemix, the exponential error model is also available: it assumes that $y>0$ and that:
 \begin{eqnarray*}
 t(y) &=& \log(y) \\
 y&=&f e^{g\varepsilon}
@@ -95,7 +95,7 @@ $$0\leq\prob(y_{ij}\prec c_1|\psi_i)\leq\prob(y_{ij}\prec c_2|\psi_i)\leq \cdots
 
 $$\prob(y_{ij}=c_k|y_{i,j-1},y_{i,j-2},y_{i,j-3},…,\psi_i)=\prob(y_{ij}=c_k|y_{i,j-1},\psi_i)$$
 
-Such a model is currently not within the scope of \monolix.
+Such a model is currently not within the scope of \saemix.
 
 \paragraph{Count data:} Count data can take a number of possible values, possibly infinite, and again we model the probability of each count. A common model is the Poisson model with parameter $\lambda$, where for subject $i$ at time $x_{ij}$ the probability of observing a count equal to $k$ is given by:
 
@@ -193,8 +193,8 @@ where $\beta_{k^\star} = 0$.
 The variance of the random effects can also depend on this categorical covariate:
 $$ \etagi \sim \mathcal{N}(0, \IIV_k) \ \ \ {\rm if } \ \ G_i=k $$
 
-\noindent {\bf Remark:} It is assumed in \monolix~3.0 that the categorical covariate has only 2 categories (binary covariate). It is also assumed that the variance remains the same for both groups. Covariates with more than 2 categories can always be recoded into (N-1) binary covariates using dummy variables but this is for the moment up to the user.
-%It is assumed in \monolix that the correlation matrix of the random effect is the same for all the groups. In other words, only the variances of the random effects can  differ from one group to another.
+\noindent {\bf Remark:} It is assumed in \saemix~3.0 that the categorical covariate has only 2 categories (binary covariate). It is also assumed that the variance remains the same for both groups. Covariates with more than 2 categories can always be recoded into (N-1) binary covariates using dummy variables but this is for the moment up to the user.
+%It is assumed in \saemix that the correlation matrix of the random effect is the same for all the groups. In other words, only the variances of the random effects can  differ from one group to another.
 
 \subsection{General form of the non-linear mixed effect model (NLMEM)}
 

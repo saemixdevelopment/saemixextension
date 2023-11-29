@@ -62,8 +62,7 @@ if(!testMode) {
   source(file.path(progDir,"func_bootstrap.R"))
   source(file.path(progDir,"func_exploreData.R"))
   source(file.path(progDir,"func_discreteVPC.R"))
-
-}
+} else library(saemix)
 ```
 
 ## notes from Belhal (notes.txt in testbelhal)
@@ -272,6 +271,10 @@ head(predict(xmod, xpred, psi=c(2, 40, 0.5))$predictions)
 indpsi<-data.frame(ka=2, V=seq(25,47,2), CL=seq(2.5,4.7, 0.2))
 head(predict(xmod, xpred, psi=indpsi)$predictions)
 
+# Check individual fixed effects
+checkInitialFixedEffects(xmod, smx.data, id=c(1:6))
+checkInitialFixedEffects(xmod, smx.data, id=c(1:6), psi=c(0.5, 30, 2))
+
 ```
 
 ## Results: SaemixRes object
@@ -388,6 +391,54 @@ saemix.fit3<-saemix(saemix.model3,saemix.data,saemix.options)
 
 theo.fit1<-saemix.fit
 theo.fit3<-saemix.fit3
+
+if(FALSE) { # done later
+  # MAP
+theo.fit1<-map.saemix(theo.fit1)
+
+# Predictions - ipred, population predictions using MAP
+theo.fit1<-saemix.predict(theo.fit1, type=c("ipred","ppred"))
+
+# Conditional distributions
+theo.fit1<-conddist.saemix(theo.fit1)
+
+# Predictions - icpred, population predictions using conditional distributions
+theo.fit1<-saemix.predict(theo.fit1, type=c("icpred"))
+
+# Simulate
+theo.fit1<-simulate(theo.fit1)
+
+# Residuals
+theo.fit1<-compute.sres(theo.fit1)
+
+# Predictions - population predictions as E(f())
+theo.fit1<-saemix.predict(theo.fit1, type=c("ypred"))
+
+# Residuals
+theo.fit1<-compute.sres(theo.fit1)
+
+# Data and convergence plots
+plot(theo.fit1, plot.type="convergence")
+plot(theo.fit1, plot.type="likelihood")
+plot(theo.fit1, plot.type="data")
+
+# Random effects
+plot(theo.fit1, plot.type="random.effects")
+plot(theo.fit1, plot.type="correlations")
+plot(theo.fit1, plot.type="marginal.distribution")
+
+
+# Default plots
+plot(theo.fit1)
+
+# Diagnostics
+plot(theo.fit1, plot.type="observations.vs.predictions")
+plot(theo.fit1, plot.type="individual.fit")
+plot(theo.fit1, plot.type="population.fit")
+plot(theo.fit1, plot.type="both.fit")
+plot(theo.fit1, plot.type="vpc")
+}
+
 
 ```
 

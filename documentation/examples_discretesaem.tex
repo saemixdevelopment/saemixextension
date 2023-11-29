@@ -1,11 +1,11 @@
 
 \section{Discrete data}
 
-\monolix~3.0 can now be used to estimate the parameters of a model where the outcome is a discrete response. Detailed notebooks are available on the github to show additional features.
+\saemix~3.0 can now be used to estimate the parameters of a model where the outcome is a discrete response. Detailed notebooks are available on the github to showcase additional features.
 
 \subsection{Binary data} \label{sec:toenail}
  
-The most simple discrete outcome, but also the least informative type, is a binary response that can take the values 0 or 1. In this section, we illustrate the use of \monolix to model binary data from a randomised clinical trial comparing two treatments for fungal toenail infection. We use the {\sf toenail} dataset available in {\sf R} in the packages {\sf prLogistic} or {\sf HSAUR3}.
+The most simple discrete outcome, but also the least informative type, is a binary response that can take the values 0 or 1. In this section, we illustrate the use of \saemix to model binary data from a randomised clinical trial comparing two treatments for fungal toenail infection. We use the {\sf toenail} dataset available in {\sf R} in the packages {\sf prLogistic} or {\sf HSAUR3}.
 
 Data are from \cite{debacker_toenail}, a multi-center randomised comparison  of two oral treatments (A and B) for toenail infection. 294 patients are measured at seven visits, i.e. at baseline (week 0), and at weeks 4, 8, 12, 24, 36, and 48 thereafter, comprising a total of 1908 measurements. The primary end point was the absence of toenail infection and the outcome of interest is the binary variable "onycholysis" which indicates the degree of separation of the nail plate from the nail-bed (categorised as 0=none or mild versus 1=moderate or severe). Figure~\ref{fig:toenailData} shows the evolution of the number of events (left) and the proportion of events (right) in the two treatment groups over the 7 visits of the study.
 
@@ -66,7 +66,7 @@ simulBinary<-function(psi,id,xidep) {
 }
 \end{verbatim}
 
-To tell \monolix~that we are now dealing with non-continuous responses, we add the argument {\sf modeltype='likelihood'} to the definition of the model using the function {\sf saemixModel}. We assume only the intercept has interindividual variability, and follows a normal distribution. We set the covariate model for a treatment effect on $\theta_2$. We pass the simulation function in the {\sf simulate.function} argument (optional).
+To tell \saemix~that we are now dealing with non-continuous responses, we add the argument {\sf modeltype='likelihood'} to the definition of the model using the function {\sf saemixModel}. We assume only the intercept has interindividual variability, and follows a normal distribution. We set the covariate model for a treatment effect on $\theta_2$. We pass the simulation function in the {\sf simulate.function} argument (optional).
 \begin{verbatim}
 saemix.model<-saemixModel(model=binary.model,description="Binary model",
     modeltype="likelihood", simulate.function=simulBinary,
@@ -87,9 +87,9 @@ binary.fit<-saemix(saemix.model,saemix.data,saemix.options)
 
 \paragraph{Uncertainty:} To estimate parameter uncertainty, we can use different approaches.
 
-Exact computation methods to estimate the FIM without linearisation have been proposed by~\cite{Riviere16} using Hamiltonian Monte-Carlo and~\cite{Ueckert16} using adaptive Gaussian quadrature. These methods can be applied to estimate SE for the parameters and we show how in the next example which has a balanced design easier to handle (section~\ref{sec:kneeCat}).
+Exact computation algorithms to estimate the FIM without linearisation have been proposed by~\cite{Riviere16} using Hamiltonian Monte-Carlo and~\cite{Ueckert16} using adaptive Gaussian quadrature. These methods have been developed in the context of optimal design, and compute the expected FIM for a given design. When the design is sufficiently homogenous and the number of subjects is large, the observed FIM is expected to be close to the expected FIM so we can leverage this approach to provide an approximate estimate SE for the parameters. We show how in the next example which has a balanced design easier to handle (section~\ref{sec:kneeCat}). Alternatively, we can use bootstrap approaches to estimate uncertainty. 
 
-Alternatively, we can use bootstrap approaches to estimate uncertainty. In~\monolix 3.2, we implemented different bootstrap approaches, including the case bootstrap (bootstrap at the level of the individual), the parametric and non-parametric residual bootstraps resampling residuals from the theoretical or empirical distributions~\cite{Thai14}, and the conditional bootstrap resampling residuals from the conditional distributions~\cite{Comets21bootstrap}.
+In~\saemix 3.2, we implemented different bootstrap approaches, including the case bootstrap (bootstrap at the level of the individual), the parametric and non-parametric residual bootstraps resampling residuals from the theoretical or empirical distributions~\cite{Thai14}, and the conditional bootstrap resampling residuals from the conditional distributions~\cite{Comets21bootstrap}.
 
 Table~\ref{tab:toenailBootstrapSE} gives the parameter estimates and associated SE estimated using 200 bootstrap samples with the Case and Conditional bootstrap approaches. Both methods yield similar confidence intervals for the different parameters.
 
@@ -313,7 +313,7 @@ FIM(\Psi, \Xi) = \sum_{q=1}^{Q} N_q FIM(\Psi, \xi_q)
 $$
 For the model without covariates, all subjects have the same elementary designs and we can then simply compute the associated individual FIM and multiply it by the number of subjects. For a model with covariates, we would need to compute the FIM for each combination of covariates for categorical covariates, or for each subject with continuous covariates.
 
-The notebook details the implementation of this approach for the {\sf knee.saemix} dataset. We can compare the results to the bootstrap approaches (see notebook). Table~\ref{tab:kneeSE} shows good agreement between the different methods. For the bootstrap methods, mean and SD denote respectively the mean and standard deviation of the bootstrap distribution, and the CI are obtained as the 2.5th and 97.5th quantiles of the distributions. For the FIM, we report the\monolix estimate $\hat{\theta}$, the SE computed using the FIM ($\hat{SE}$, and the CI is given by the normal approximation ($\hat{\theta} \pm 1.96 \hat{SE}$).
+The notebook details the implementation of this approach for the {\sf knee.saemix} dataset. We can compare the results to the bootstrap approaches (see notebook). Table~\ref{tab:kneeSE} shows good agreement between the different methods. For the bootstrap methods, mean and SD denote respectively the mean and standard deviation of the bootstrap distribution, and the CI are obtained as the 2.5th and 97.5th quantiles of the distributions. For the FIM, we report the\saemix estimate $\hat{\theta}$, the SE computed using the FIM ($\hat{SE}$, and the CI is given by the normal approximation ($\hat{\theta} \pm 1.96 \hat{SE}$).
 
 \begin{table}[ht]
 \centering
@@ -383,7 +383,7 @@ poisson.fit<-saemix(saemix.model,saemix.data,saemix.options)
 
 This dataset was kindly made available by David Atkins (University of Washington) in his tutorial on modelling count data~\cite{Atkins13} and comes from a randomised controlled trial assessing the effectiveness of web-based personalised normative feedback intervention on alcohol consumption~\cite{Neighbors10a, Neighbors10b}. The {\sf RAPI dataset} records alcohol-related problems, as measured by the Rutgers Alcohol Problem Index (RAPI)~\cite{White89}, in freshmen at risk for heavy drinking behaviours. Students were asked to report every six months the number of alcohol-related problems, and the dataset includes 3,616 repeated measures of these counts in 818 subjects, 561 of whom had the full 5 measurements over a period of 2 years. Interesting features of this dataset are first, the longitudinal aspect which allow to evaluate changes over time, and second, the shape of the distribution of counts. Counts are often positively skewed, bounded by zero, with a large stack of data points at zero, indicating individuals and/or occasions without drinking, use, or related problems. This dataset was used in~\cite{Atkins13} to illustrate mixed effects count regression using the {\sf glmer()} function from the {\sf lme4} package. A detailed analysis is provided in the companion notebook on the github (\url{https://github.com/saemixdevelopment/saemixextension/blob/5fea5ec01191caa25ad0f55c55d2b7a3ec223600/paperSaemix3/saemix3_countModel.Rmd}).
 
-The dataset is available in \monolix~under the name {\sf rapi.saemix} so we read it and create our saemixData object in the usual way. Because we need the value of the outcome to compute the corresponding likelihood, the {\sf rapi} column is used both as a predictor and as the response:
+The dataset is available in \saemix~under the name {\sf rapi.saemix} so we read it and create our saemixData object in the usual way. Because we need the value of the outcome to compute the corresponding likelihood, the {\sf rapi} column is used both as a predictor and as the response:
 \begin{verbatim}
 data(rapi.saemix)
 saemix.data<-saemixData(name.data=rapi.saemix, name.group=c("id"),
@@ -432,7 +432,7 @@ saemix.simulatePoisson<-function(psi, id, xidep) {
 }
 \end{verbatim}
 
-Defining and fitting this model in \monolix, we have:
+Defining and fitting this model in \saemix, we have:
 \begin{verbatim}
 saemix.model.poi<-saemixModel(model=count.poisson,description="Count model Poisson",
     modeltype="likelihood", simulate.function=saemix.simulatePoisson,
@@ -456,7 +456,7 @@ poisson.fit.cov2<-saemix(modsmx.poi.cov2,saemix.data,saemix.options)
 \end{verbatim}
 Comparing the parameter estimates from this fit to the estimates obtained by {\sf glmer()} using a Laplace approximation in Table~2 of~\cite{Atkins13}, we find very good agreement with the SAEM algorithm.
 
-\paragraph{Uncertainty:} \monolix~does not provide adequate standard errors of estimation for the parameters in version 3.0. The FO-approximation of the FIM implemented in the current version of the algorithm is known to be very poor for discrete outcome models. We can use bootstrap approaches or exact FIM computation to obtain uncertainty estimates (not shown).
+\paragraph{Uncertainty:} \saemix~does not provide adequate standard errors of estimation for the parameters in version 3.0. The FO-approximation of the FIM implemented in the current version of the algorithm is known to be very poor for discrete outcome models. We can use bootstrap approaches or exact FIM computation to obtain uncertainty estimates (not shown).
 
 \paragraph{Diagnostics:} Some diagnostics for this model can be obtained by simulating from the model. We use the {\sf simulateDiscreteSaemix} function to obtain simulations from the model, using the estimated parameters. Here we set the number of simulations to 100 as the dataset is large and we are interested in global diagnostics. Again we can produce VPC (not shown), and we can also look at the proportion of 0's and compare predictions with observations:
 \begin{verbatim}
@@ -554,7 +554,7 @@ Then, the vector of population parameters is $\theta = (\lambda_{\rm pop}, \beta
 The survival function for this model is:
 $$ S(t) = e^{ - \left( \frac{t}{\lambda} \right) ^{\beta}}$$
 
-The model function for \monolix~needs to define the log-pdf for each observation. At time 0, it is 0 (no event has occurred yet). For a censored event, the log-likelihood is equal to the logarithm of the survival function since the beginning of the observation period, while for an observed event we add the logarithm of the hazard at the time of the event. In the model below, we pass individual censoring times as the third predictor, so that each individual may have his or her own follow-up duration.
+The model function for \saemix~needs to define the log-pdf for each observation. At time 0, it is 0 (no event has occurred yet). For a censored event, the log-likelihood is equal to the logarithm of the survival function since the beginning of the observation period, while for an observed event we add the logarithm of the hazard at the time of the event. In the model below, we pass individual censoring times as the third predictor, so that each individual may have his or her own follow-up duration.
 
 \begin{verbatim}
 weibulltte.model<-function(psi,id,xidep) {
@@ -577,7 +577,7 @@ weibulltte.model<-function(psi,id,xidep) {
 \end{verbatim}
 
 
-{\bf Important note:} In TTE models with a single event, there is not enough information to estimate interindividual variability, but \monolix~needs at least one parameter to run. In this case, we include a random effect in the model but it cannot be estimated properly.
+{\bf Important note:} In TTE models with a single event, there is not enough information to estimate interindividual variability, but \saemix~needs at least one parameter to run. In this case, we include a random effect in the model but it cannot be estimated properly.
 
 
 \paragraph{Diagnostics:} Automated visualisation or diagnostic plots have not yet been implemented for discrete response models, but we can of course create our own in R. In Figure~\ref{fig:lungcompareKM} we used the linear approximation of the FIM and the delta-method to compute a very rough estimate of the confidence interval on the predicted survival curve, overlaying it to the non-parametric Kaplan-Meier estimate provided by the {\sf survival} package. Here despite its shortcomings the FIM approximation seems to be adequate.

@@ -144,7 +144,7 @@ binary.model<-function(psi,id,xidep) {
   slope<-psi[id,2]
   logit<-inter+slope*tim
   pevent<-exp(logit)/(1+exp(logit))
-  logpdf<-rep(0,length(tim))
+#  logpdf<-rep(0,length(tim))
   P.obs = (y==0)*(1-pevent)+(y==1)*pevent
   logpdf <- log(P.obs)
   return(logpdf)

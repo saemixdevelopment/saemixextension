@@ -51,7 +51,7 @@ Then, $\theta_{k+1}$ is obtained in the maximization step as follows:
 \end{eqnarray}
 
 
-\noindent {\bf Remark 1:  } The sequence of step sizes used in \monolix~decreases as $k^{-a}$. More precisely, for any sequence of integers $K_1,K_2,\ldots,K_J$ and any sequence $a_1,a_2,\ldots,a_J$ of real numbers such that $0\leq a_1 <a_2<\ldots<a_J\leq 1$, we define the sequence of step sizes $(\gamma_k)$ as follows:
+\noindent {\bf Remark 1:  } The sequence of step sizes used in \saemix~decreases as $k^{-a}$. More precisely, for any sequence of integers $K_1,K_2,\ldots,K_J$ and any sequence $a_1,a_2,\ldots,a_J$ of real numbers such that $0\leq a_1 <a_2<\ldots<a_J\leq 1$, we define the sequence of step sizes $(\gamma_k)$ as follows:
 \begin{equation} \label{stepsize1}
 \gamma_k = \frac{1}{k^{a_1}} \quad \mbox{for any } 1\leq k \leq K_1
 \end{equation}
@@ -180,7 +180,7 @@ These large values of the variances make the conditional distribution $p(\phi|y;
 
 \noindent {\bf Remark 1:} The Simulated Annealing version of SAEM is performed during the first $K_{sa}$ iterations. Of course, SAEM without any simulated annealing can be run by setting $\tau=0$. On the other hand, simulated annealing is obtained with $\tau$ close to 1.
 
-\noindent {\bf Remark 2:} We can use two different coefficients $\tau_1$ and $\tau_2$ for $\IIV$ and $\ag^2$ in \monolix. It is possible, for example, to choose $\tau_1<1$ and $\tau_2>1$, with a small initial residual variance and large initial inter-subject variances. In this case, SAEM tries to obtain the best possible fit during the first iterations, allowing a large inter-subject variability. During the next iterations, this variability is reduced and the residual variance increases until reaching the best possible trade-off between these two criteria.
+\noindent {\bf Remark 2:} We can use two different coefficients $\tau_1$ and $\tau_2$ for $\IIV$ and $\ag^2$ in \saemix. It is possible, for example, to choose $\tau_1<1$ and $\tau_2>1$, with a small initial residual variance and large initial inter-subject variances. In this case, SAEM tries to obtain the best possible fit during the first iterations, allowing a large inter-subject variability. During the next iterations, this variability is reduced and the residual variance increases until reaching the best possible trade-off between these two criteria.
 
 \subsection{The MCMC-SAEM algorithm for non continuous data models}
 
@@ -195,7 +195,7 @@ According to the definition of the model, the algorithm presents a slight variat
 The whole purpose of the f-SAEM is to accelerate the convergence of the MLE estimation leveraging a simple and efficient new MCMC proposal.
 This proposal is obtained via two different techniques depending on the nature of the model.
 
-\textbf{For continuous data models}, we linearize the structural model $f(x_{i}, \psi_i)$ around a particular point, $\hat{\psi}_i$, which is the MAP (Maximum A Posteriori) of the conditional distributions of the individual parameters $\psi_i$ given the observations noted $p(\psi_i|y_i) $. This particular point is tractable since we have the following identity, by Bayes rule:
+\textbf{For continuous data models}, we linearise the structural model $f(x_{i}, \psi_i)$ around a particular point, $\hat{\psi}_i$, which is the MAP (Maximum A Posteriori) of the conditional distributions of the individual parameters $\psi_i$ given the observations noted $p(\psi_i|y_i) $. This particular point is tractable since we have the following identity, by Bayes rule:
 
 \begin{equation}
 \arg \max \limits_{\psi_i \in \mathbb{R}^p} p(\psi_i|y_i) = \arg \max \limits_{\psi_i \in \mathbb{R}^p} p(y_i|\psi_i)p(\psi_i) \eqs.
@@ -208,7 +208,7 @@ f(x_{i},\psi_i) \approx f(x_{i},\hat{\psi}_i) + J_{f(x_{i},\hat{\psi}_i)}(\psi_i
 \end{equation}
 where $J_{f(x_{i},\hat{\psi}_i)} \in \mathbb{R}^{n_i \times p}$ is the Jacobian of $f$ evaluated at $\hat{\psi}_i$. 
 
-Remark that the conditional distribution of the individual parameters given the observations under this linearized model is tractable and is a Gaussian distribution of covariance:
+Remark that the conditional distribution of the individual parameters given the observations under this linearised model is tractable and is a Gaussian distribution of covariance:
 
 
 \begin{equation}
@@ -241,9 +241,9 @@ Hence, the f-SAEM algorithm uses the Gaussian proposal of covariance $\left( \na
 
 \section{Estimation of the uncertainty on parameter estimates} \label{sec:SE} 
 
-For continuous outcome models, \monolix provides by default estimates of the uncertainty of parameter estimates through an asymptotic approximation based on the Fisher Information Matrix (FIM). The FIM is computed using a linear approximation of the model function $f$ (also called the {\itshape FO} method), as described in section~\ref{sec:FIM}. Because this approximation is poor for discrete outcome models, the current version of \monolix does not compute the linearised FIM for these models (work is ongoing to implement better approximations, see notebooks for how to use other packages in {\sf R} to obtain standard errors of estimation in this case).
+For continuous outcome models, \saemix provides by default estimates of the uncertainty of parameter estimates through an asymptotic approximation based on the Fisher Information Matrix (FIM). The FIM is computed using a linear approximation of the model function $f$ (also called the {\itshape FO} method), as described in section~\ref{sec:FIM}. Because this approximation is poor for discrete outcome models, the current version of \saemix does not compute the linearised FIM for these models (work is ongoing to implement better approximations, see notebooks for how to use other packages in {\sf R} to obtain standard errors of estimation in this case).
 
-Since version 3.2, \monolix also has bootstrap methods to provide alternative estimates of parameter uncertainty (section~\ref{sec:bootstrap}).
+Since version 3.2, \saemix also has bootstrap methods to provide alternative estimates of parameter uncertainty (section~\ref{sec:bootstrap}).
 
 \subsection{Estimation of the Fisher Information matrix} \label{sec:FIM} 
 
@@ -254,20 +254,20 @@ Let $\thes$ be the true unknown value of $\theta$, and let $\hthetag$ be the max
 \end{equation}
 where $I(\thes)=- \DDt \log \ell(y;\thes)$ is the true Fisher information matrix. Thus, an estimate of the asymptotic covariance of $\hthetag$ is the  inverse of the Fisher information matrix $I(\hthetag)=- \DDt \log \ell(y;\hthetag)$.
 
-\subsubsection{Linearization of the model}
+\subsubsection{linearisation of the model}
 
 The Fisher information matrix of the non-linear mixed effects model defined in (1) cannot be computed in a closed-form.
 
-An alternative is to approximate this information matrix  by the Fisher information matrix of the Gaussian model deduced from the non-linear mixed effects model after linearization of the function $f$ around the conditional expectation of the individual Gaussian parameters $(\esp{\phi_{i}|y;\hat{\theta}}, 1\leq
+An alternative is to approximate this information matrix  by the Fisher information matrix of the Gaussian model deduced from the non-linear mixed effects model after linearisation of the function $f$ around the conditional expectation of the individual Gaussian parameters $(\esp{\phi_{i}|y;\hat{\theta}}, 1\leq
 i \leq N) $. The Fisher information matrix of this Gaussian model is a block matrix (no correlations between the estimated fixed effects and the estimated variances). The gradient of $f$ is numerically computed.
 
-\noindent {\bf Remark 1: } We do not recommend the linearization of the model to estimate the parameters of the model, as it is done with the FO and FOCE algorithms. On the other hand, many numerical experiments have shown that this approach can be used to estimate the Fisher information matrix.
+\noindent {\bf Remark 1: } We do not recommend the linearisation of the model to estimate the parameters of the model, as it is done with the FO and FOCE algorithms. On the other hand, many numerical experiments have shown that this approach can be used to estimate the Fisher information matrix.
 
 \noindent {\bf Remark 2: } Obviously, this approach cannot be used with discrete data models since the model is defined through its likelihood. 
 
 \subsubsection{Exact computation of the FIM}
 
-Exact expressions of the FIM for discrete data models have been developed by Rivière et al. using stochastic Monte-Carlo integration~(\cite{Riviere16}) and by Ueckert et al. using Adaptive Gaussian Quadrature~(\cite{Ueckert16}). They are not currently implemented in~\monolix and since they have been developed in the context of optimal design (where the population design can usually be decomposed in a small number of elementary designs), they may be time consuming to use in the context of parameter uncertainty estimation. Nevertheless we show how to use the AGQ approach to estimate the exact FIM in the notebook showcasing discrete data models (\url{https://github.com/saemixdevelopment/saemixextension/blob/5fea5ec01191caa25ad0f55c55d2b7a3ec223600/paperSaemix3/saemix3_categoricalModel.Rmd}).
+Exact expressions of the FIM for discrete data models have been developed by Rivière et al. using stochastic Monte-Carlo integration~(\cite{Riviere16}) and by Ueckert et al. using Adaptive Gaussian Quadrature~(\cite{Ueckert16}). They are not currently implemented in~\saemix and since they have been developed in the context of optimal design (where the population design can usually be decomposed in a small number of elementary designs), they may be time consuming to use in the context of parameter uncertainty estimation. Nevertheless we show how to use the AGQ approach to estimate the exact FIM in the notebook showcasing discrete data models (\url{https://github.com/saemixdevelopment/saemixextension/blob/5fea5ec01191caa25ad0f55c55d2b7a3ec223600/paperSaemix3/saemix3_categoricalModel.Rmd}).
 
 \subsubsection{A stochastic approximation of the Fisher Information Matrix}
 
@@ -298,7 +298,7 @@ G_k  &=   G_{k-1}   +   \gamma_k  \left(  \Dt \log f(y, \phi_k; \theta_k) \Dt \l
 H_{k} &= D_k + G_k - \Delta_k \Delta_k^t
 \end{align*}
 
-In the current version of \monolix, only the linearisation approach has been implemented.
+In the current version of \saemix, only the linearisation approach has been implemented.
 
 \subsubsection{Confidence intervals}
 
@@ -325,7 +325,7 @@ The mean and standard deviation of the distribution of the bootstrap estimates $
 \end{equation}
 where $\hat{\theta}^{*}_{(\frac{\alpha}{2} \cdot B)}$ is the $\frac{\alpha}{2}$-quantile of the bootstrap distribution. Other approaches to construct CI, including Student or normal-type approximations as well as bias-corrected CI, are discussed in particular in~\cite{Davison97} and~\cite{McKinnon06}.
 
-In \monolix, we implemented several approaches.
+In \saemix, we implemented several approaches.
 
 \paragraph{Case bootstrap (Case):} This method consists of resampling with replacement the entire subjects ($\xi_i$,$\textbf{y}_i$ where $\textbf{y}_i= (y_{i1},y_{i2},....,y_{in_i})'$) from the original data before modelling. It is also called the \emph{paired bootstrap}. It is the most straightforward way to do bootstrapping and is mostly assumption-free. Stratification may be applied when the data is non-homogeneous to preserve the distribution of a covariate or of a sampling schedule.
 
@@ -382,7 +382,7 @@ In the present study we performed the resampling of residuals in steps (b) and (
 
 \section{Estimation of the individual parameters} \label{section_indivparam}
 
-When the parameters of the model have been estimated, we can estimate the individual parameters $(\psigi)$. To do that, we will estimate the individual normally distributed parameters $(\phigi)$ and derive the estimates of $(\psigi)$ using the transformation $\psigi= h(\psigi)$.
+When the parameters of the model have been estimated, we can estimate the individual parameters $(\psigi)$. To do that, we will estimate the individual normally distributed parameters $(\phigi)$ and derive the estimates of $(\psigi)$ using the transformation $\psigi= h(\phigi)$.
 
 Let $\hat{\theta}$ be the estimated value of $\theta$ computed with the SAEM algorithm and let $p(\phigi|y_i;\hat{\theta})$ be the conditional distribution of $\phigi$ for $1\leq i \leq N$.
 
@@ -405,7 +405,7 @@ We use the MCMC procedure used in the SAEM algorithm to estimate these condition
        \esp{\psigi|y_i;\hat{\theta}} &=&  \esp{h(\phigi|y_i;\hat{\theta}} \\
        &\neq& h\left(\esp{\phigi|y_i;\hat{\theta}}  \right)
        \end{eqnarray*}
-       In \monolix, we estimate $\esp{\phigi|y_i;\hat{\theta}}$ and $\esp{\psigi|y_i;\hat{\theta}}$.
+       In \saemix, we estimate $\esp{\phigi|y_i;\hat{\theta}}$ and $\esp{\psigi|y_i;\hat{\theta}}$.
 \end{enumerate}
 
 The number of iterations of the MCMC algorithm used to estimate the conditional mean and standard deviation is adaptively chosen as follows:
@@ -427,11 +427,11 @@ where $0<\rho_{mcmc}<1$. That means that the sequence of empirical means and s.d
 \end{enumerate}
 
 \section{Estimation of the likelihood} \label{estilik}
-\subsection{Linearization of the model}
+\subsection{linearisation of the model}
 The likelihood of the non-linear mixed effects model defined in (1) cannot be computed in a closed-form.
 
 An alternative is  to approximate this likelihood  by the likelihood of the Gaussian model deduced from the non-linear mixed
-effects model after linearization of the function $f$ around
+effects model after linearisation of the function $f$ around
 the predictions of the individual parameters $(\phigi, 1\leq i \leq N) $.
 %the conditional expectation of the individual parameters $(\esp{\phig_{i}|y;\hat{\theta}}, 1\leq i \leq N) $.
 
@@ -468,9 +468,9 @@ $\ell(\yg;\thetag)$ strongly depend on the sampling distribution  $\tilde{\pi}$.
 \end{eqnarray*}
 Furthermore, if $\tilde{\pi}$ is the conditional distribution $p(\phi|\yg;\thetag)$, the variance of the estimator is null and $\hat{\ell}_M(\yg;\thetag) = \ell(\yg;\thetag)$ for any value of $M$. That means that an accurate estimation of $\ell(\yg;\thetag)$ can be obtained with a small value of $M$ if the sampling distribution is close to the conditional distribution $p(\phi|\yg;\thetag)$.
 
-In \monolix, for $i=1,2,\ldots, N$, we empirically estimate the conditional mean $\esp{\phigi|y_{i};\hthetag}$ and the conditional variance $\var{\phigi|y_{i};\hthetag}$ of $\phigi$ as described above. Then, the $\phigi^{(j)}$ are drawn with the sampling distribution $\tilde{\pi}$ as follows:
+In \saemix, for $i=1,2,\ldots, N$, we empirically estimate the conditional mean $\esp{\phigi|y_{i};\hthetag}$ and the conditional variance $\var{\phigi|y_{i};\hthetag}$ of $\phigi$ as described above. Then, the $\phigi^{(j)}$ are drawn with the sampling distribution $\tilde{\pi}$ as follows:
 $$\phigi^{(j)} = \esp{\phigi|y_{i};\hthetag} + \var{\phigi|y_{i};\hthetag}^{\frac{1}{2}} \times T_{ij}$$
-where $(T_{ij})$ is a sequence of {\it i.i.d.} random variables distributed with a $t-$distribution with $\nu$ degrees of freedom. In the current version of \monolix, the default value is $\nu=5$. 
+where $(T_{ij})$ is a sequence of {\it i.i.d.} random variables distributed with a $t-$distribution with $\nu$ degrees of freedom. In the current version of \saemix, the default value is $\nu=5$. 
 
 %It is also possible to automatically test different d.f in $\{2, 5, 10, 20\}$ and to select the one that provides the smallest empirical variance for $\ell_M(\yg;\thetag)$.
 % ECO TODO: à faire dans une version utltérieure
@@ -494,7 +494,7 @@ As for importance sampling, the quality of the approximation depends on the esti
 
 Population predictions represent the predictions from the model in the absence of data, and they only take into account individual design variables (eg dose regimen) and covariates.
 
-Two types of population predictions are available in \monolix:
+Two types of population predictions are available in \saemix:
 \begin{enumerate}
   \item the predictions using the population parameters: $f\left(x_{ij} ; h\left( \mathbb{E}_{\hat{\theta}}(\phigi) \right) \right)= f(x_{ij} ; h(C_i \hat{\fixed_effect}))$. These are provided in the output under the name \texttt{ppred}
   \item the population mean predictions:  $\mathbb{E}_{\hat{\theta}}(f(x_{ij} ; \psigi) ))=\mathbb{E}_{\hat{\theta}}(f(x_{ij} ; h(\phigi) ))$. These are provided in the output under the name \texttt{ypred}
@@ -504,12 +504,12 @@ Two types of population predictions are available in \monolix:
 
 Individual predictions take into account not only covariates and individual design variables such as dose regimen, but also use the observations in that individual to obtain the parameters providing the best fit for that particular subject, given the population parameters.
 
-In section~\ref{section_indivparam}, we described how the conditional distribution of the parameters for each individual is obtained in \monolix. Two types of individual parameters are reported in the output:
+In section~\ref{section_indivparam}, we described how the conditional distribution of the parameters for each individual is obtained in \saemix. Two types of individual parameters are reported in the output:
 \begin{enumerate}
 \item the conditional mode (or Maximum A Posteriori): $ m(\phigi|y_i;\hat{\theta})={\rm Arg}\max_\phigi p(\phigi|y_i;\hat{\theta})$. These are reported in the output as \texttt{map.psi}
 \item the conditional mean: $ E(\phigi|y_i;\hat{\theta})$. These are reported in the output as \texttt{cond.mean.psi}
 \end{enumerate}
-Correspondingly, two types of individual predictions can be obtained in \monolix:
+Correspondingly, two types of individual predictions can be obtained in \saemix:
 \begin{enumerate}
 \item the predictions obtained using the conditional mode are reported in the output as \texttt{ipred}
 \item the predictions obtained using the conditional mean are reported in the output as \texttt{icpred}
@@ -522,9 +522,9 @@ The vector of Population Weighted Residuals are evaluated as:
 $$PWRES_{i} = Var_{\hat{\theta}}(y_{i})^{-1/2} \left( y_{i} - \hat{y}^{pop}_{i} \right)$$
 where $\hat{y}^{pop}_{ij}$ is the population prediction of $y_{ij}$ and $Var_{\hat{\theta}}(y_{ij})$ is the variance-covariance matrix of $y_{i}$.
 
-In \monolix, weighted residuals are computed using the population mean predictions \texttt{ypred} $\mathbb{E}_{\hat{\theta}}(f(x_{ij} ; \psigi) ))=\mathbb{E}_{\hat{\theta}}(f(x_{ij} ; h(\phigi) ))$ for $\hat{y}^{pop}_{ij}$. $\mathbb{E}_{\hat{\theta}}(f(x_{ij} ; h(\phigi)  )$ and $Var_{\hat{\theta}}(y_{ij})$ are estimated with a Monte-Carlo procedure.
+In \saemix, weighted residuals are computed using the population mean predictions \texttt{ypred} $\mathbb{E}_{\hat{\theta}}(f(x_{ij} ; \psigi) ))=\mathbb{E}_{\hat{\theta}}(f(x_{ij} ; h(\phigi) ))$ for $\hat{y}^{pop}_{ij}$. $\mathbb{E}_{\hat{\theta}}(f(x_{ij} ; h(\phigi)  )$ and $Var_{\hat{\theta}}(y_{ij})$ are estimated with a Monte-Carlo procedure.
 
-\noindent {\bf Remark:} This computation is performed during the computation of pd/npde, so that a basic \monolix~object does not include these elements.
+\noindent {\bf Remark:} This computation is performed during the computation of pd/npde, so that a basic \saemix~object does not include these elements.
 
 % ECO TODO: voir quelle version je calcule... idem pour IWRES bien préciser
 
@@ -534,7 +534,7 @@ The Individual Weighted Residuals are evaluated as
 $$IWRES_{ij} = \frac{y_{ij} - \hat{y}^{ind}_{ij}} {\hat{\sigma}^{ind}_{ij}}$$
 where  $\hat{y}^{ind}_{ij} = f(x_{ij} ; \hat{\psig}_i )$ is the individual prediction of $y_{ij}$ and $(\hat{\sigma}^{ind}_{ij})^2 = g(x_{ij} ; \hat{\phig}_i,\hat{\xi})^2$ is the residual variance of $y_{ij}$.
 
-The two types of individual parameters described in section~\ref{section_preds} yield two types of individual weighted residuals in the \monolix~output:
+The two types of individual parameters described in section~\ref{section_preds} yield two types of individual weighted residuals in the \saemix~output:
 \begin{enumerate}
 \item the individual weighted residuals obtained using the conditional mode are reported in the output as \texttt{iwres}
 \item the individual weighted residuals obtained using the conditional mean are reported in the output as \texttt{icwres}
@@ -577,6 +577,6 @@ Normalised prediction distribution errors ($\npde$) are then obtained as:
 \end{equation}
 
 \begin{description}
-\item[Remark:] the empirical mean and covariance-matrix computed here are also used for the decorrelation step in the computation of the population weighted residuals, $WRES$. The $WRES$ in \monolix ~are thus computed in conjunction with the more advanced metric $\npde$.
+\item[Remark:] the empirical mean and covariance-matrix computed here are also used for the decorrelation step in the computation of the population weighted residuals, $WRES$. The $WRES$ in \saemix ~are thus computed in conjunction with the more advanced metric $\npde$.
 \end{description}
 

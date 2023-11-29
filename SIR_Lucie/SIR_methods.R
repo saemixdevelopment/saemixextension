@@ -1,0 +1,184 @@
+#####################################################################
+####################### FUNCTIONS FOR SaemixSIR #####################
+#####################################################################
+
+
+###### SAMPLING ######
+
+sampling <- function(SaemixObject, M=5000, inflprop.distr, optionll, warnings){
+  if(warnings) cat('Sampling and computation of OFVs...\n')
+  if ("mvtnorm" %in% rownames(installed.packages())==F) {
+    install.packages("mvtnorm")
+  }
+  library('mvtnorm', character.only = T)
+  indx.fix <- SaemixObject['results']['indx.fix']
+  indx.cov <- SaemixObject['results']['indx.cov']
+  npar.est <- length(estpar.vector(SaemixObject))
+  indx.fixed <- sort(c(indx.fix, indx.cov)) # c(indx.fix, indx.cov)
+  nfix <- length(indx.fixed)
+
+  se.parfix<-inflprop.distr[1:nfix,1:nfix] # order: mu_1, cov sur mu_1, mu_2, cov  sur mu_2 etc
+  se.parvar<-inflprop.distr[(nfix+1):npar.est,(nfix+1):npar.est]
+  parfix <- t(SaemixObject['results']['fixed.effects'])
+  par <- estpar.vector(SaemixObject)
+  parvar <- par[-indx.fixed]
+  # parfix[indx.fix]=log(parfix[indx.fix])
+  
+  saemix.model <- SaemixObject@model
+  Mtp<-saemix.model@transform.par
+  
+  OFVi <- c()
+  samples <- matrix(ncol=npar.est, nrow=0)
+  i<-0 #keeping track of number of tries of sampling
+  while(nrow(samples)!=M){
+    i<- i+1
+    if (i==M*3) {
+      cat('Sampling is taking too long, inflation could be too high, or est.mu is not close to reality')
+      break}
+    samplefix <- rmvnorm(1,mean=parfix,sigma=se.parfix)
+    # samplefix[indx.fix] = exp(samplefix[indx.fix])
+    
+    samplevar <- rmvnorm(1, mean=parvar, sigma=se.parvar)
+    var_rep = 1
+    while(length(which(samplevar<0))>0 ){
+      samplevar <- rmvnorm(1, mean=parvar, sigma=se.parvar)
+      var_rep = var_rep+1
+    }
+
+    if( length(which(samplefix[indx.fix][which(Mtp==1)]<0))>0 ) next #negative log normal parameters
+    if( length(which(samplefix[indx.fix][which(Mtp==3)]<0))>0 ) next #logit normal parameters outside 0-1
+    if (length(which(samplevar<0))>0 ) next #negative variances
+    
+   
+    # sample_mu = array(0, dim = c (1, length(indx.fix)))
+    # sample_mu[1,] = samplefix[indx.fix]
+    # 
+    # sample_cov = array(0, dim = c (1, length(indx.cov)))
+    # sample_cov[1,] = samplefix[indx.cov]
+    # 
+    # sample <- cbind(sample_mu, sample_cov, samplevar)
+
+    sample <- cbind(samplefix, samplevar)
+    
+    ofvi <- OFVi_func(SaemixObject, sample, optionll)
+    if (ofvi==0) next #ofvi=0 : error while computing OFVi
+    samples <- rbind(samples, sample)
+    OFVi <- c(OFVi, ofvi)
+    l <- nrow(samples)
+    if(warnings){
+      if(l==M%/%5) cat(paste(l, '/', M, 'done...\n'))
+      if(l==2*M%/%5) cat(paste(l, '/', M, 'done...\n'))
+      if(l==3*M%/%5) cat(paste(l, '/', M, 'done...\n'))
+      if(l==4*M%/%5) cat(paste(l, '/', M, 'done...\n'))
+      if(l==M) cat(paste(l, 'samples and OFVs done.\n'))
+    }
+    
+
+  }
+  return(list(sampled.theta=samples, OFVi=OFVi, samptries=i))
+}
+
+
+
+###### IMPORTANCE RATIO ######
+
+OFVi_func <- function(SaemixObject, sampled.theta, optionll, warn=FALSE){
+  #vector for the final ofvi of each parameter vector
+  ofvi <- matrix(nrow = nrow(sampled.theta), ncol=1)
+  ll <- rep(0, nrow(sampled.theta))
+  
+  if(warn)cat('Starting OFV computation for resamples...\n')
+  length <- nrow(sampled.theta)
+  
+  if (optionll=='importance_sampling'){
+    for (i in 1:length){
+      sobj <- SaemixObject
+      sobj <- replacePopPar.saemixObject(sobj, sampled.theta[i,])
+      ll[i] <- try(llis.saemix(sobj)['results']['ll.is'],silent=T) #the result of llis.saemix is a saemixObject
+      if(!is.numeric(ll[i])){ll[i]<- 0}
+      ll <- as.numeric(ll)
+      if(warn){
+        if(i==length%/%5) cat(paste(i, '/', length, 'OFVs done...\n'))
+        if(i==2*length%/%5) cat(paste(i, '/', length, 'OFVs done...\n'))
+        if(i==3*length%/%5) cat(paste(i, '/', length, 'OFVs done...\n'))
+        if(i==4*length%/%5) cat(paste(i, '/', length, 'OFVs done...\n'))
+        if(i==length) cat(paste(i, 'OFVs done.\n'))
+      }
+    }
+  }
+  if (optionll=='gaussian_quadrature'){
+    for (i in 1:nrow(sampled.theta)){
+      sobj <- SaemixObject
+      sobj <- replacePopPar.saemixObject(sobj, sampled.theta[i,])
+      ll[i] <- try(llgq.saemix(sobj)['results']['ll.gq'], silent=T)
+      if(!is.numeric(ll[i])){ll[i]<- 0}
+      ll <- as.numeric(ll)
+      if(warn){
+        if(i==length%/%5) cat(paste(i, '/', length, 'OFVs done...\n'))
+        if(i==2*length%/%5) cat(paste(i, '/', length, 'OFVs done...\n'))
+        if(i==3*length%/%5) cat(paste(i, '/', length, 'OFVs done...\n'))
+        if(i==4*length%/%5) cat(paste(i, '/', length, 'OFVs done...\n'))
+        if(i==length) cat(paste(i, 'OFVs done.\n'))
+      }
+    }
+  }
+  ll <- as.numeric(ll)
+  ofvi <- -2*ll #vector of OFVi of the sampled.theta
+  return(ofvi)
+}
+
+
+importance.ratio <- function(SaemixSIR){
+  warnings <- SaemixSIR['warnings']
+  if(warnings)cat('IR computing...')
+  SaemixObject <- SaemixSIR['SaemixObject']
+  sampled.theta <- SaemixSIR['sampled.theta']
+  optionll <- SaemixSIR['optionll']
+  est.mu <- SaemixSIR['est.mu']
+  inflprop.distr <- SaemixSIR['inflprop.distr']
+  warnings <- SaemixSIR['warnings']
+  
+  if (optionll=='importance_sampling'){
+    ll <- SaemixObject["results"]["ll.is"]
+  }
+  if (optionll=='gaussian_quadrature'){
+    ll <- SaemixObject["results"]["ll.gq"]
+  } 
+
+  OFVml <- -2*ll
+  OFVi <- SaemixSIR['OFVi']
+  
+  num <- exp(-(1/2)*(OFVi-OFVml))
+  num[OFVi==0] <- 0
+  den <- c()
+  invinflprop.distr <- solve(inflprop.distr)
+  for (i in 1:nrow(sampled.theta)){
+    den <- c(den, exp(-(1/2)*(sampled.theta[i,]-est.mu)%*%invinflprop.distr%*%as.matrix(sampled.theta[i,]-est.mu)))
+  }
+  IR <- num/den
+  if(warnings)cat('done.\n')
+  return(IR)
+}
+
+
+###### RESAMPLING (without replacement) ######
+resample <- function(sampled.theta, IR, m, warnings){
+  if(warnings)cat('Resampling...')
+  resamptheta <- matrix(nrow = m, ncol=ncol(sampled.theta))
+  resamples.order <- c()
+  for (i in 1:m){
+    p.resample <- IR/sum(IR) #without replacement
+    p.resample[is.na(p.resample)] <- 0
+    indice <- sample.int(nrow(sampled.theta), size=1, replace=TRUE, prob=p.resample)
+    resamptheta[i,1:ncol(sampled.theta)] <- sampled.theta[indice,]
+    IR[indice] <- 0
+    resamples.order <- c(resamples.order, indice)
+  }
+  colnames(resamptheta) <- colnames(sampled.theta)
+  if(warnings)cat('done.\n')
+  return(list(resamptheta, resamples.order))
+}
+
+
+
+
