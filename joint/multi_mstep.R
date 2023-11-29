@@ -60,6 +60,11 @@ mstep.multi<-function(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, var
   coef = c(0,1)
   d = 0.000001
   
+  if (kiter < opt$nbiter.saemix[1]){
+    deltai_new = 0
+  }
+  else{
+  
   nchains = Uargs$nchains
   mphiM = apply(phi,c(1,2),mean)  # mean of phi over all chains  
   ly = array(data = NA, dim=c(Dargs$N,length(coef),length(varList$pres[varList$pres!=0 & is.na(varList$pres)==F])))
@@ -102,32 +107,40 @@ mstep.multi<-function(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, var
   mu = (Uargs$COV[,Uargs$ind.fix11]%*%mcov)
   delta_omega = (compute.LLtheta(mu,omegab+d,phiM2)-compute.LLtheta(mu,omegab,phiM2))/d
   
-  # parameters without iiv 
-  
-  mcov = t(t(Uargs$LCOV[sort(c(Uargs$ind.fix10,Uargs$ind.fix0)),Uargs$i0.omega2])%*%diag(c(betas[sort(c(Uargs$ind.fix10,Uargs$ind.fix0))]))) 
-  
-  # parameters to compute gradient, minus parameters fixed for estimation  --> not optimal... but ok for dummy variables 
-  LCOV2 = Uargs$LCOV
-  LCOV2[Uargs$ind.fix0,] = 0
-  ind = which(LCOV2[sort(c(Uargs$ind.fix10,Uargs$ind.fix0)),Uargs$i0.omega2]==1)
-  nmu = length(Uargs$i1.omega2)
-  
-  if (length(Uargs$ind.fix10)>0){
-    lT = array(data = NA, dim=c(length(unique(Dargs$IdM[1:length(Dargs$yobs)])),length(coef),length(c(Uargs$ind.fix10))))
-    for(l in 1:length(coef)){
-      w = 1
-      for(j in ind){
-        indcol = nmu+ceiling(j/nrow(mcov))
-        phiM3 = mphiM
-        phiM3[,Uargs$i0.omega2] = matrix(data=rep(betas[Uargs$indx.betaI[Uargs$i0.omega2],1],length(unique(Dargs$IdM[1:length(Dargs$yobs)]))),ncol = length(Uargs$i0.omega2),byrow = T)
-        mcov2 = mcov
-        mcov2[j] = mcov[j]+ d*coef[l]
-        fix = (Uargs$COV[,sort(c(Uargs$ind.fix10,Uargs$ind.fix0))]%*%mcov2)
-        phiM3[,indcol] = fix[,c(indcol-nmu)]
-        lT[,l,w] = compute.LLy.multi2(phiM3,Uargs,Dargs,DYF,pres)
-        w = w+1 
+  # Fixed effects without iiv: numerical gradient
+    mcovTot = t(t(Uargs$LCOV)%*%diag(c(betas)))
+    
+    LCOV2 = Uargs$LCOV
+    LCOV2[Uargs$ind.fix0,] = 0
+    LCOV2[Uargs$ind.fix11, Uargs$i1.omega2] = 0 #set to 0 param with iiv
+    ind = which(LCOV2==1) # index in LCOV2 of param without iiv
+
+    
+    if (length(Uargs$ind.fix10)>0){
+      lT = array(data = NA, dim=c(length(unique(Dargs$IdM[1:length(Dargs$yobs)])),length(coef),length(c(Uargs$ind.fix10))))
+      for(l in 1:length(coef)){
+        w = 1
+        for(j_ in 1:length(ind)){
+            j = ind[j_] # index in mcovTot
+            indcol = which(LCOV2[sort(c(Uargs$ind.fix10))[j_], ]==1) # column in phi 
+	    if (Dargs$transform.par[indcol]!=3){
+              phiM3 = mphiM
+              #phiM3[,Uargs$i0.omega2] = matrix(data=rep(betas[Uargs$indx.betaI[Uargs$i0.omega2],1],length(unique(Dargs$IdM[1:length(Dargs$yobs)]))),ncol = length(Uargs$i0.omega2),byrow = T)
+
+              mcov2 = mcovTot
+              mcov2[j] = mcov2[j]+ d*coef[l]
+              fix = (Uargs$COV%*%mcov2) #
+              phiM3[,indcol] = fix[,indcol] 
+              lT[,l,w] = compute.LLy.multi2(phiM3,Uargs,Dargs,DYF,pres)
+            }
+            else{
+              phiM3 = phiM
+              #phiM3[,Uargs$ind.fix10] = matrix(data=rep(betas[Uargs$ind.fix10,1],length(unique(Dargs$IdM))),ncol = length(Uargs$ind.fix10),byrow = T)
+              lT[,l,w] = compute.LLy.multi_selog(phiM3,Uargs,Dargs,DYF,pres,indcol,coef,l,d)
+            }
+          w = w+1
+        }
       }
-    }
     
     delta_fix  = -(lT[,2,]-lT[,1,])/(d)
     deltai_new = matrix(c(delta_mu,delta_fix,delta_omega,delta_sigma),ncol=Dargs$N,byrow = T)
@@ -135,9 +148,9 @@ mstep.multi<-function(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, var
   else{
     deltai_new = matrix(c(delta_mu,delta_omega,delta_sigma),ncol=Dargs$N,byrow = T)
   }
-  
-  
+  }  
   deltaik = (1-opt$stepsize[kiter])*deltai + opt$stepsize[kiter]*deltai_new
+  #print(deltaik)
   
   ############# Maximisation
   ##### fixed effects
