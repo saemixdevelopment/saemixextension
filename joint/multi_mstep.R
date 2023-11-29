@@ -62,7 +62,7 @@ mstep.multi<-function(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, var
   
   nchains = Uargs$nchains
   mphiM = apply(phi,c(1,2),mean)  # mean of phi over all chains  
-  ly = array(data = NA, dim=c(Dargs$N),length(coef),length(varList$pres[varList$pres!=0 & is.na(varList$pres)==F])))
+  ly = array(data = NA, dim=c(Dargs$N,length(coef),length(varList$pres[varList$pres!=0 & is.na(varList$pres)==F])))
   for(l in 1:length(coef)){
     for(j in 1:length(varList$pres[varList$pres!=0 & is.na(varList$pres)==F])){
       w = which(varList$pres!=0 & is.na(varList$pres)==F)[j]

@@ -212,9 +212,9 @@ gp</code></pre>
 ##   0   1 
 ## 196 292</code></pre>
 </div>
-<div id="joint-model-fit-using-saemix" class="section level2">
-<h2>Joint model fit using saemix</h2>
-<p>The extended code uses the same main functions as saemix package does. We therefore refer the user to the saemix documentation previously published for the detail of each function. Briefly, the main function is the saemix() function used to estimate the population parameters of the (joint) model. This function requires two mandatory arguments referring to (1) the model (saemixModel object) and the data (saemixData object). The third argument is optional and concerns the algorithm settings.</p>
+<div id="joint-model-fit-using-new-saemix.multi-function" class="section level2">
+<h2>Joint model fit using new saemix.multi() function</h2>
+<p>The extended code uses the same main functions as saemix package does. We therefore refer the user to the saemix documentation previously published for the detail of each function (see Comets et al. JSS, 2017). Briefly, the main function is the saemix.multi() function used to estimate the population parameters of the (joint) model. This function requires two mandatory arguments referring to (1) the model (saemixModel object) and the data (saemixData object). The third argument is optional and concerns the algorithm settings.</p>
 <div id="loading-functions-from-github" class="section level4">
 <h4>Loading functions from Github</h4>
 <pre class="r"><code>saemixDir &lt;- &quot;C:/Users/AlexandraLAVALLEY/Documents/GitHub/saemixextension&quot;
@@ -241,7 +241,7 @@ source(file.path(workDir,&quot;compute_LL_multi.R&quot;))</code></pre>
 </div>
 <div id="formatting-data" class="section level4">
 <h4>Formatting data</h4>
-<p>The function saemixData() requires a mandatory argument which is the name of the dataset. The dataset has to be formatted in order to obtain an id column corresponding to the patient id, a time column corresponding to the sampling times, an observation column corresponding to the response observations and a ytype column corresponding to the distinct response types. Optional columns can be added if user want to model covariates for example. In this example, prothrombin measurement correspond to reponse 1 (ytype = 1) and survival measurement correspond to response 2 (ytype = 2). For the survival reponse (ytype = 2), observation is 1 in case of event (death) and 0 otherwise.</p>
+<p>The function saemixData() requires a mandatory argument which is the name of the dataset. The dataset has to be formatted in order to obtain an id column corresponding to the patient id, a time column corresponding to the sampling times, an observation column corresponding to the response observations and a ytype column corresponding to the distinct response types. Optional columns can be added if user the wants to model covariates for example. See saemix documentation for more details. In this example, prothrombin measurements correspond to response 1 (ytype = 1) and survival measurements correspond to response 2 (ytype = 2). For the survival reponse (ytype = 2), observation is 1 in case of event (death) and 0 otherwise.</p>
 <pre class="r"><code>d1 = prothro[,c(1,2,3)]
 d1$ytype=1
 colnames(d1)[2] = &quot;obs&quot;
@@ -250,24 +250,14 @@ d2$ytype = 2
 colnames(d2)[2] = &quot;obs&quot;
 colnames(d2)[3] = &quot;time&quot;
 data_joint = rbind(d1,d2)
+# To see the data for patient 1 
 data_joint[data_joint$id==1,]</code></pre>
 <pre><code>##       id obs      time ytype
 ## 1      1  38 0.0000000     1
 ## 2      1  31 0.2436754     1
 ## 3      1  27 0.3805717     1
 ## 11000  1   1 0.4134268     2</code></pre>
-<pre class="r"><code>dataJM&lt;-saemixData(name.data=data_joint, name.group=c(&quot;id&quot;), name.predictors=c(&quot;time&quot;,&quot;obs&quot;),
-                   name.response=&quot;obs&quot;,name.ytype = &quot;ytype&quot;)</code></pre>
-<pre><code>## 
-## 
-## The following SaemixData object was successfully created:
-## 
-## Object of class SaemixData
-##     longitudinal data for use with the SAEM algorithm
-## Dataset data_joint 
-##     Structured data: obs ~ time + obs | id 
-##     X variable for graphs: time ()</code></pre>
-<p>The user is encouraged to specify optional arguments of the saemixData() function: the id variable (name.group option), the predictor variables (name.predictors option) with at least the sampling times, the observation variable (name.reponse option) and the response type variable (name.ytype option).</p>
+<p>The user is encouraged to specify optional arguments of the saemixData() function: the id variable (name.group argument), the predictor variables (name.predictors argument) with at least the sampling times, the observation variable (name.reponse argument) and the response type variable (name.ytype argument).</p>
 <pre class="r"><code>saemix.data&lt;-saemixData(name.data=data_joint, name.group=c(&quot;id&quot;), name.predictors=c(&quot;time&quot;,&quot;obs&quot;),
                    name.response=&quot;obs&quot;,name.ytype = &quot;ytype&quot;)</code></pre>
 <pre><code>## 
@@ -282,9 +272,10 @@ data_joint[data_joint$id==1,]</code></pre>
 </div>
 <div id="joint-model-with-a-linear-mixed-effects-model-and-a-survival-model-with-constant-baseline-hazard" class="section level4">
 <h4>Joint model with a linear mixed-effects model and a survival model with constant baseline hazard</h4>
-<p>The saemixModel() function requires two mandatory arguments. The first one is a R function describing the joint model involving the structural model for longitudinal observations and the likelihood contribution for the survival observations. The second one is a matrix with a number of columns equal to the number of parameters, and one (when no covariates) or several row (when covariates enter the model) giving the initial estimates of fixed-effects. The user is encouraged to specify optional arguments of the saemixModel() function: the response type with the modeltype argument (“structural” for longitudinal observations and “likelihood” for survival ones), the distribution of each parameter with the transform.par argument (0 = normal, 1 = log-normal, 2 = probit and 3 = logit), the fixed or estimated parameters with the fixed.estim argument (0 = to be fixed to the initial estimate, 1 = to be estimated), if a random effect is added on a given parameter with the covariance.model argument (square matrix of size equal to the number of parameters giving the variance-covariance matrix of the model), the initialization of random effect variances with the omega.init argument (square matrix of size equal to the number of parameters giving the initialization of the variance-covariance matrix of the model), the error model with the error.model argument (valid types are “constant”, “proportional”, “combined”). Futher arguments can be considered and found in the package description.</p>
+<p>The saemixModel() function requires two mandatory arguments. The first one is a R function describing the joint model involving the structural model for longitudinal observations and the likelihood contribution for the survival observations. The second one is a matrix with a number of columns equal to the number of parameters, and one (when no covariates) or several row (when covariates enter the model) giving the initial estimates of fixed-effects. The user is encouraged to specify optional arguments of the saemixModel() function: the response type with the modeltype argument (“structural” for longitudinal observations and “likelihood” for survival ones), the distribution of each parameter with the transform.par argument (0 = normal, 1 = log-normal, 2 = probit and 3 = logit), the fixed or estimated parameters with the fixed.estim argument (0 = to be fixed to the initial estimate, 1 = to be estimated), if random effects are added with the covariance.model argument (square matrix of size equal to the number of parameters giving the variance-covariance matrix of the model), the initialization of random effect variances with the omega.init argument (square matrix of size equal to the number of parameters giving the initialization of the variance-covariance matrix of the model), the error model with the error.model argument (valid types are “constant”, “proportional”, “combined”). Futher arguments can be considered and found in the package description (see documentation).</p>
 <p>In the following we start with a simple case: a joint model with a linear mixed-effects and a survival model involving constant baseline risk. The joint model writes:</p>
 <p><span class="math inline">\(\begin{align}  y_{ij} = &amp; m_l(t_{ij},\psi_{i}) + g[m_l(t_{ij},\psi_{i}), \sigma]\epsilon_{ij} \notag \\  = &amp; \psi_{i0} + \psi_{i1}\times t_{ij} + \sigma\epsilon_{ij} \notag \\  h_i(t, \psi_i) = &amp; h_0 \, \exp(\alpha \, m(t,\psi_i)) \end{align}\)</span></p>
+<p>We then define the model to be entered in the function. This function must have 3 arguments named psi (assumed to be a matrix with the number of columns equal to the number of parameters in the model (excluding error parameters), so here 4 for <span class="math inline">\(\mu_0\)</span>, <span class="math inline">\(\mu_1\)</span>, <span class="math inline">\(h_0\)</span> and <span class="math inline">\(\alpha\)</span>), id (assumed to be a vector of indices matching observation number with subject index) and xidep (assumed to be a matrix with as many columns as predictors + 1 for the type of response, so here 3 for time, observations and response type). The three arguments passed to the function will be generated automatically from the model and data object within the saemix code. The function must return a vector composed of predictions for longitudinal responses and likelihood contributions for the survival responses. The length of the vector is equal to the number of rows in the predictor xidep.</p>
 <pre class="r"><code>JMmodel&lt;-function(psi,id,xidep) {
   ytype&lt;-xidep$ytype  # type of response (1: continuous, 2: event)
   b0 &lt;- psi[id,1] 
@@ -292,13 +283,15 @@ data_joint[data_joint$id==1,]</code></pre>
   h0 &lt;- psi[id,3]
   alpha &lt;- psi[id,4] 
   
-  ypred &lt;- b0+b1*xidep$time # structural model
+  ypred &lt;- b0+b1*xidep$time # predictions for the longitudinal part
   
   T&lt;-xidep$time[ytype==2] # vector of times (survival response)
   Nj &lt;- length(T)
   ev = xidep$obs[ytype==2] # vector of observations (survival response)
   cens&lt;-which(ev==0)       # with censored ones
   ind &lt;- which(ev==1)      # and event ones 
+  
+  # Creating vectors of the same length of T to compute likelihood of the survival part (so removing duplicates)
   b0b = b0[ytype==2] # to have vectors of the same length as T 
   b1b = b1[ytype==2]
   h0b = h0[ytype==2]
@@ -308,15 +301,15 @@ data_joint[data_joint$id==1,]</code></pre>
   H &lt;- (h0b/(alphab*b1b))*exp((b0b+b1b*T)*alphab)-(h0b/(alphab*b1b))*exp(alphab*b0b) # cumulative hazard (explicit expression in that case)
   
   logpdf &lt;- rep(0,Nj)
-  logpdf[cens] &lt;- -H[cens] 
-  logpdf[ind] &lt;- -H[ind] + log(haz[ind]) 
+  logpdf[cens] &lt;- -H[cens] # likelihood contributions for censored observations
+  logpdf[ind] &lt;- -H[ind] + log(haz[ind]) # likelihood contributions for event observations 
   
   ypred[ytype==2] = logpdf
   return(ypred)
 }</code></pre>
 <pre class="r"><code>#### initializing parameters
 
-param&lt;-c(73,1.25,0.6,0.0001)
+param&lt;-c(73,1.25,0.6,0.0001) 
 omega.sim&lt;-c(18, 3, 0.05, 0.01)
 sigma.sim &lt;- 17
 
@@ -342,13 +335,15 @@ saemix.model&lt;-saemixModel(model=JMmodel,description=&quot;JM LMEM-TTE constan
 ##   h0 &lt;- psi[id,3]
 ##   alpha &lt;- psi[id,4] 
 ##   
-##   ypred &lt;- b0+b1*xidep$time # structural model
+##   ypred &lt;- b0+b1*xidep$time # predictions for the longitudinal part
 ##   
 ##   T&lt;-xidep$time[ytype==2] # vector of times (survival response)
 ##   Nj &lt;- length(T)
 ##   ev = xidep$obs[ytype==2] # vector of observations (survival response)
 ##   cens&lt;-which(ev==0)       # with censored ones
 ##   ind &lt;- which(ev==1)      # and event ones 
+##   
+##   # Creating vectors of the same length of T to compute likelihood of the survival part (so removing duplicates)
 ##   b0b = b0[ytype==2] # to have vectors of the same length as T 
 ##   b1b = b1[ytype==2]
 ##   h0b = h0[ytype==2]
@@ -358,8 +353,8 @@ saemix.model&lt;-saemixModel(model=JMmodel,description=&quot;JM LMEM-TTE constan
 ##   H &lt;- (h0b/(alphab*b1b))*exp((b0b+b1b*T)*alphab)-(h0b/(alphab*b1b))*exp(alphab*b0b) # cumulative hazard (explicit expression in that case)
 ##   
 ##   logpdf &lt;- rep(0,Nj)
-##   logpdf[cens] &lt;- -H[cens] 
-##   logpdf[ind] &lt;- -H[ind] + log(haz[ind]) 
+##   logpdf[cens] &lt;- -H[cens] # likelihood contributions for censored observations
+##   logpdf[ind] &lt;- -H[ind] + log(haz[ind]) # likelihood contributions for event observations 
 ##   
 ##   ypred[ytype==2] = logpdf
 ##   return(ypred)
@@ -383,7 +378,7 @@ saemix.model&lt;-saemixModel(model=JMmodel,description=&quot;JM LMEM-TTE constan
 ##     Initial values
 ##              b0   b1  h0 alpha
 ## Pop.CondInit 73 1.25 0.6 1e-04</code></pre>
-<p>In the following we specify some algorithm settings. The option fim = T is specified to obtain standard errors of parameter estimates. ll.is is specified to obtain the loglikelihood at the MLE, the AIC and BIC. Graphs are not currently adapted so please specify save.graphs = F.</p>
+<p>In the following we specify some algorithm settings. The option fim = T is specified to obtain standard errors of parameter estimates. ll.is is specified to obtain the loglikelihood at the MLE, the AIC and BIC. Graphs are not currently adapted so please specify save.graphs = F. We run the algorithm using the saemix.multi() function.</p>
 <pre class="r"><code>saemix.options&lt;-saemixControl(seed=12345, map=T, fim=T, ll.is=TRUE, save.graphs = F) # please, specify save.graphs=F (currently not extended)
 yfit &lt;- saemix.multi(saemix.model, saemix.data, saemix.options)</code></pre>
 <pre><code>## Nonlinear mixed-effects model fit by the SAEM algorithm
@@ -424,13 +419,15 @@ yfit &lt;- saemix.multi(saemix.model, saemix.data, saemix.options)</code></pre>
 ##   h0 &lt;- psi[id,3]
 ##   alpha &lt;- psi[id,4] 
 ##   
-##   ypred &lt;- b0+b1*xidep$time # structural model
+##   ypred &lt;- b0+b1*xidep$time # predictions for the longitudinal part
 ##   
 ##   T&lt;-xidep$time[ytype==2] # vector of times (survival response)
 ##   Nj &lt;- length(T)
 ##   ev = xidep$obs[ytype==2] # vector of observations (survival response)
 ##   cens&lt;-which(ev==0)       # with censored ones
 ##   ind &lt;- which(ev==1)      # and event ones 
+##   
+##   # Creating vectors of the same length of T to compute likelihood of the survival part (so removing duplicates)
 ##   b0b = b0[ytype==2] # to have vectors of the same length as T 
 ##   b1b = b1[ytype==2]
 ##   h0b = h0[ytype==2]
@@ -440,13 +437,13 @@ yfit &lt;- saemix.multi(saemix.model, saemix.data, saemix.options)</code></pre>
 ##   H &lt;- (h0b/(alphab*b1b))*exp((b0b+b1b*T)*alphab)-(h0b/(alphab*b1b))*exp(alphab*b0b) # cumulative hazard (explicit expression in that case)
 ##   
 ##   logpdf &lt;- rep(0,Nj)
-##   logpdf[cens] &lt;- -H[cens] 
-##   logpdf[ind] &lt;- -H[ind] + log(haz[ind]) 
+##   logpdf[cens] &lt;- -H[cens] # likelihood contributions for censored observations
+##   logpdf[ind] &lt;- -H[ind] + log(haz[ind]) # likelihood contributions for event observations 
 ##   
 ##   ypred[ytype==2] = logpdf
 ##   return(ypred)
 ## }
-## &lt;bytecode: 0x000000002666d810&gt;
+## &lt;bytecode: 0x0000000026e22ce0&gt;
 ##   Nb of parameters: 4 
 ##       parameter names:  b0 b1 h0 alpha 
 ##       distribution:
@@ -515,6 +512,38 @@ yfit &lt;- saemix.multi(saemix.model, saemix.data, saemix.options)</code></pre>
 ##       AIC = 28064.73 28064.73 
 ##       BIC = 28094.07 28094.07 
 ## ----------------------------------------------------</code></pre>
+<p>We obtain the summary of the fit with the parameter estimates, and likelihood value at MLE (with AIC and BIC). The standard error estimates are obtained using the following script.</p>
+<pre class="r"><code>yfit@results@fim  # variance covariance matrix (inverse of the FIM)</code></pre>
+<pre><code>##                 b0            b1            h0         alpha     omega2.b0
+## [1,]  1.0004032819 -5.975768e-02  0.0232522122 -3.188424e-04   2.569130851
+## [2,] -0.0597576780  1.087968e-01 -0.0035186342  7.009299e-05  -0.088465304
+## [3,]  0.0232522122 -3.518634e-03  0.0441352091 -6.058584e-04  -0.371007774
+## [4,] -0.0003188424  7.009299e-05 -0.0006058584  9.059682e-06   0.002326825
+## [5,]  2.5691308512 -8.846530e-02 -0.3710077744  2.326825e-03 988.446907983
+## [6,]  0.0110253172  1.692256e-01 -0.0105168727  4.847003e-05   2.419921193
+## [7,] -0.0280793906 -4.166982e-03  0.0005563514 -2.434968e-05  -0.147787916
+##          omega2.b1           a.1
+## [1,]  1.102532e-02 -2.807939e-02
+## [2,]  1.692256e-01 -4.166982e-03
+## [3,] -1.051687e-02  5.563514e-04
+## [4,]  4.847003e-05 -2.434968e-05
+## [5,]  2.419921e+00 -1.477879e-01
+## [6,]  3.970566e+00 -7.040594e-02
+## [7,] -7.040594e-02  2.981143e-02</code></pre>
+<pre class="r"><code>sqrt(diag(yfit@results@fim)) # standard errors of parameters estimates</code></pre>
+<pre><code>## [1]  1.00020162  0.32984363  0.21008381  0.00300993 31.43957551  1.99262797
+## [7]  0.17265985</code></pre>
+<pre class="r"><code># Formatting results in a data frame
+d = data.frame(par=c(yfit@results@name.fixed,yfit@results@name.random,&quot;sigma_a1&quot;),est = c(yfit@results@fixed.effects,diag(yfit@results@omega)[1:2],yfit@results@respar[c(1)]), se = sqrt(diag(yfit@results@fim)))
+print(d)</code></pre>
+<pre><code>##         par          est          se
+## 1        b0  73.33846825  1.00020162
+## 2        b1   0.57019224  0.32984363
+## 3        h0   3.09438337  0.21008381
+## 4     alpha  -0.03867724  0.00300993
+## 5 omega2.b0 369.32691471 31.43957551
+## 6 omega2.b1  15.75845002  1.99262797
+## 7  sigma_a1  17.23307846  0.17265985</code></pre>
 </div>
 </div>
 
