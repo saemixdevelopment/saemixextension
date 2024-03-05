@@ -71,3 +71,50 @@ simulateOrdinal<-function(psi,id,xidep) {
   x1<-table(knee.saemix$y[knee.saemix$time==0])
   x1[1]/sum(x1)
   
+  # Effect of simulated annealing
+saemixDir<-"/home/eco/work/saemix/saemixextension"
+source(file.path(saemixDir,"bootstrap","func_bootstrap_tweaks.R"))
+
+data("toenail.saemix")
+saemix.data<-saemixData(name.data=toenail.saemix,name.group=c("id"),name.predictors=c("time","y"), name.response="y",
+                        name.covariates=c("treatment"))
+# Model function
+binary.model<-function(psi,id,xidep) {
+  tim<-xidep[,1]
+  y<-xidep[,2]
+  inter<-psi[id,1]
+  slope<-psi[id,2]
+  logit<-inter+slope*tim
+  pevent<-exp(logit)/(1+exp(logit))
+  logpdf<-rep(0,length(tim))
+  P.obs = (y==0)*(1-pevent)+(y==1)*pevent
+  logpdf <- log(P.obs)
+  return(logpdf)
+}
+# Simulation function
+simulBinary<-function(psi,id,xidep) {
+  tim<-xidep[,1]
+  y<-xidep[,2]
+  inter<-psi[id,1]
+  slope<-psi[id,2]
+  logit<-inter+slope*tim
+  pevent<-1/(1+exp(-logit))
+  ysim<-rbinom(length(tim),size=1, prob=pevent)
+  return(ysim)
+}
+saemix.model<-saemixModel(model=binary.model, description="Binary model", simulate.function = simulBinary,
+                          modeltype="likelihood",
+                          psi0=matrix(c(-0.5,-.15,0,0),ncol=2,byrow=TRUE,dimnames=list(NULL,c("theta1","theta2"))),
+                          transform.par=c(0,0), covariate.model=c(0,1),covariance.model=matrix(c(1,0,0,0),ncol=2), omega.init=diag(c(0.5,0.3)))
+saemix.options<-list(seed=1234567,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, nb.chains=10, fim=FALSE)
+binary.fit<-saemix(saemix.model,saemix.data,saemix.options)
+case.bin.def <- saemix.bootstrap2(binary.fit, method="case", nboot=nboot) 
+cond.bin.def <- saemix.bootstrap2(binary.fit, method="conditional", nboot=nboot) 
+# without SA
+case.bin.noSA <- saemix.bootstrap2(binary.fit, method="case", nboot=nboot, simulated.annealing=FALSE) 
+cond.bin.noSA <- saemix.bootstrap2(binary.fit, method="conditional", nboot=nboot, simulated.annealing=FALSE) 
+
+# Comparing the bootstrap runs with and without SA
+case.bin.def
+case.bin.noSA
+

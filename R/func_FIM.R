@@ -263,7 +263,10 @@ fim.saemix<-function(saemixObject) {
     for(ipar.res in 1:(2*nytype)) {
       if(!is.na(match(ipar.res,saemix.res@indx.res))) {
         ipar<-ipar+1
-        if(ipar.res%%2 == 1) DV[[ipar]]<-mydiag(2*g0i, nrow=ni) else DV[[ipar]]<-mydiag(2*g0i*f0i, nrow=ni)
+        # With error model (g=a+bf)
+#        if(ipar.res%%2 == 1) DV[[ipar]]<-mydiag(2*g0i, nrow=ni) else DV[[ipar]]<-mydiag(2*g0i*f0i, nrow=ni)
+        # With error model (g=sqrt(a2 + b2.f2))
+        if(ipar.res%%2 == 1) DV[[ipar]]<-mydiag(2*saemix.res@respar[1], nrow=ni) else DV[[ipar]]<-mydiag(2*saemix.res@respar[2]*f0i*f0i, nrow=ni)
       }
     }
     }

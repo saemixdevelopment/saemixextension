@@ -187,7 +187,7 @@ saemix.bootstrap<-function(saemixObject, method="conditional", nboot=200, nsamp=
         model.boot2@psi0[model.boot2["betaest.model"]==1]<-saemixObject@results@fixed.effects*.2
         fit.boot<-try(saemix(model.boot2, data.boot, saemix.options))
         if(is(fit.boot,"try-error")) {
-          model.boot2@psi0[1,]<-saemixObject@model@psi0[,1]
+          model.boot2@psi0[1,]<-saemixObject@model@psi0[1,]
           fit.boot<-try(saemix(model.boot2, data.boot, saemix.options))
         }
       }

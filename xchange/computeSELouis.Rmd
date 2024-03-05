@@ -48,11 +48,11 @@ We need to compute $\ell ( y ,φ^{(k)} ;θ_k )$ at each iteration, as well as it
 - computation of log-likelihood for observation$y$, $l(y, \psi, \theta)$
   - for continuous models $\ell(y, \psi, \theta)$ is equal to:
   
-  $$\ell(y, \psi, \theta) = - 0.5\sum_j \frac{(f(x_{ij}, \psi_i)-y_{ij})^2}{g(x_{ij}, \psi_i)^2} - \sum_j \ln{(g(x_{ij}, \psi_i))} - n_j \ln{\sqrt{2\pi}}$$
+  $$\ell(y_i, \psi_i, \theta) = - \frac{1}{2} \sum_j \frac{(f(x_{ij}, \psi_i, \theta)-y_{ij})^2}{g(x_{ij}, \psi_i)^2} - \sum_j \ln{(g(x_{ij}, \psi_i, \theta))} - n_j \ln{\sqrt{2\pi}}$$
   
   - for discrete data models $l(y, \psi, \theta)$ would be given directly by the model function (returning -$\ell(y, \psi, \theta)$)
   
-   $$\ell(y, \psi, \theta) = \sum_j \ell (y_{ij}, \psi, \theta)$$
+   $$\ell(y_i, \psi, \theta) = \sum_j \ell (y_{ij}, \psi, \theta)$$
    
   - the sum over the observations for a subject $i$ are computed in function *compute.LLy*
 
@@ -78,9 +78,12 @@ Previous questions
   - not used currently in the code ?
   - same shape regardless of whether the outcome is Gaussian or not
 
-$$l_{\psi,i} = - 0.5\sum_q \frac{(\psi_i^{(q)}-\mu_{q})^2}{\omega_q^2} - \sum_q \ln{(\omega_q)} - n_\eta \ln{\sqrt{2\pi}}$$
+$$l_{\psi,i} = - \frac{1}{2} \left( \psi_i^{(q)}-\mu_{q} \right) \Omega^{-1} \left( \psi_i^{(q)}-\mu_{q} \right)^T - \ln{|\Omega|} - n_\eta \ln{\sqrt{2\pi}}$$
   - one question is whether the log-likelihood is on $\psi$ (then need to account for $H$ where $\psi=H(\phi)$) or on $\phi$ (then simple sum of Gaussian terms), ie do we consider the complete data to be $(y, \phi)$ or $(y, \eta)$ ?
-  - another question is how to account for covariate effects (ie $\mu$ and $\beta$)
+  - another question is how to account for covariate effects (ie $\mu$ and $\beta$) ? should we write the log-likelihood as:
+  
+$$l_{\psi,i} = - \frac{1}{2} \sum_q \frac{(\psi_i^{(q)}-\mu_{q} - C_i \beta)^2}{\omega_q^2} - \sum_q \ln{(\omega_q)} - n_\eta \ln{\sqrt{2\pi}}$$
+
   - what about parameters without IIV (they don't appear in $l_{\theta,i}$)
     - not a problem for the SA approach (similar to the stochastic approximation proposed by Delattre and Kuhn 2004) but not clear how it works for the MC approach
 

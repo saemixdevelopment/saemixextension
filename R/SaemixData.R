@@ -1531,7 +1531,18 @@ transformContCov<-function(object, covariate, transformation=function(x) x, cent
 #' @param verbose a boolean, prints messages during the execution of the function if TRUE. Defaults to FALSE.
 #' @return an object of class \code{"\linkS4class{SaemixData}"}
 #' @examples 
-#' # TODO
+#' data(cow.saemix)
+#' saemix.data<-saemixData(name.data=cow.saemix,header=TRUE,name.group=c("cow"),
+#'                    name.predictors=c("time"),name.response=c("weight"),
+#'                    name.covariates=c("birthyear","twin","birthrank"),
+#'                    units=list(x="days",y="kg",covariates=c("yr","-","-")))
+#' unique(saemix.data@data$birthrank) # 5 categories, 3 4 5 6 7
+#' # create 2 dummy variables regrouping 4 and 5, and 6 and 7
+#' cowt <- transformCatCov(saemix.data, covariate=birthrank, group=c(1,2,2,3,3), verbose=TRUE) 
+#' head(saemix.data@data) # the original covariate is birthrank
+#' head(cowt@data) 
+#' # the new covariates are birthrank.G2 (regrouping 4 and 5) and birthrank.G3 (6 and 7)
+#' 
 #' @keywords data
 #' @export 
  
