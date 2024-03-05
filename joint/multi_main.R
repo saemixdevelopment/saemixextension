@@ -237,25 +237,31 @@ saemix.multi<-function(model,data,control=list()) {
     } else { #end of loop on if(opt$stepsize[kiter]>0)
       allpar[(kiter+1),]<-allpar[kiter,]
     }
+    print(allpar[(kiter+1),])
     # End of loop on kiter
   }
   
   ## calcul Delattre & Kuhn 
-  d = array(data=NA,dim=c(Uargs$nb.parest[1],Uargs$nb.parest[1],Dargs$N))
-  for (i in 1:Dargs$N){
-    ddi = deltai[,i] %*% t(deltai[,i])
-    d[,,i] = ddi
-  }
-  
-  fim = 0
-  for (i in 1:Dargs$N){
-    fim = fim+d[,,i]
-  }
-  inv_fim=try(solve(fim))
-  if (is_empty(Uargs$ind.fix0)){
-    colnames(inv_fim) = try(c(saemix.model["name.fixed"],saemix.model["name.random"],saemix.model["name.sigma"][saemix.model@indx.res]))
-  } else{
-  colnames(inv_fim) = try(c(saemix.model["name.fixed"][-c(Uargs$ind.fix0)],saemix.model["name.random"],saemix.model["name.sigma"][saemix.model@indx.res]))
+  if (saemix.options$fim){
+    if (is_empty(Uargs$ind.fix0)){
+      names_fim = try(c(saemix.model["name.fixed"],saemix.model["name.random"],saemix.model["name.sigma"][saemix.model@indx.res]))
+    } else{
+      names_fim = try(c(saemix.model["name.fixed"][-c(Uargs$ind.fix0)],saemix.model["name.random"],saemix.model["name.sigma"][saemix.model@indx.res]))
+    }
+    
+    d = array(data=NA,dim=c(length(names_fim),length(names_fim),Dargs$N))
+    for (i in 1:Dargs$N){
+      ddi = deltai[,i] %*% t(deltai[,i])
+      d[,,i] = ddi
+    }
+    
+    fim = 0
+    for (i in 1:Dargs$N){
+      fim = fim+d[,,i]
+    }
+    print(fim)
+    inv_fim=try(solve(fim))
+    colnames(inv_fim) = names_fim 
   }
   
   etaM<-xmcmc$etaM # only need etaM here (re-created in estep otherwise)
