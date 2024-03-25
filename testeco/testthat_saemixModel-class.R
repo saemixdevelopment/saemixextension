@@ -104,3 +104,21 @@ test_that("Successful creation of a SaemixModel object with all arguments", {
   expect_identical(sum(x@fixed.estim),3)
 })
 
+
+test_that("Omega matrix initialisation", {
+  model1cpt<-function(psi,id,xidep) { 
+    dose<-xidep[,1]
+    tim<-xidep[,2]  
+    ka<-psi[id,1]
+    V<-psi[id,2]
+    CL<-psi[id,3]
+    k<-CL/V
+    ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
+    return(ypred)
+  }
+  x<-saemixModel(model=model1cpt,description="One-compartment model with first-order absorption", psi0=matrix(c(1.,20,0.5), ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))))
+  x2<-saemixModel(model=model1cpt,description="One-compartment model with first-order absorption", psi0=matrix(c(1.,20,0.5), ncol=3,byrow=TRUE, dimnames=list(NULL, c("ka","V","CL"))), transform.par=rep(1,3))
+  expect_identical(min(diag(x@omega.init),1))
+  expect_identical(min(diag(x2@omega.init),1))
+  expect_identical(max(diag(x@omega.init),400))
+})

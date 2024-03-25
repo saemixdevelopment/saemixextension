@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019/Debian) (preloaded format=pdflatex 2023.6.1)  26 JUN 2023 22:31
+This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019/Debian) (preloaded format=pdflatex 2023.6.1)  18 OCT 2023 17:37
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -497,117 +497,245 @@ LaTeX Font Info:    Trying to load font information for TS1+lmr on input line 1
 File: ts1lmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
 LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 1
-79.
+84.
 (/usr/share/texmf/tex/latex/lm/t1lmtt.fd
 File: t1lmtt.fd 2009/10/30 v1.6 Font defs for Latin Modern
 )
 LaTeX Font Info:    Font shape `T1/lmtt/bx/n' in size <10> not available
-(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 180.
-<saemix3_tteModel_files/figure-latex/lungTTEData-1.pdf, id=5, 457.71pt x 303.13
-25pt>
+(Font)              Font shape `T1/lmtt/b/n' tried instead on input line 185.
+[1
+
+{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}]
+<saemix3_tteModel_files/figure-latex/lungTTEData-1.pdf, id=30, 457.71pt x 303.1
+325pt>
 File: saemix3_tteModel_files/figure-latex/lungTTEData-1.pdf Graphic file (type 
 pdf)
 <use saemix3_tteModel_files/figure-latex/lungTTEData-1.pdf>
 Package pdftex.def Info: saemix3_tteModel_files/figure-latex/lungTTEData-1.pdf 
- used on input line 190.
+ used on input line 202.
 (pdftex.def)             Requested size: 457.71587pt x 303.13638pt.
-[1
-
-{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}]
-<saemix3_tteModel_files/figure-latex/lungTTEData-2.pdf, id=30, 434.62375pt x 28
-7.0725pt>
+<saemix3_tteModel_files/figure-latex/lungTTEData-2.pdf, id=31, 457.71pt x 303.1
+325pt>
 File: saemix3_tteModel_files/figure-latex/lungTTEData-2.pdf Graphic file (type 
 pdf)
 <use saemix3_tteModel_files/figure-latex/lungTTEData-2.pdf>
 Package pdftex.def Info: saemix3_tteModel_files/figure-latex/lungTTEData-2.pdf 
- used on input line 199.
+ used on input line 212.
+(pdftex.def)             Requested size: 457.71587pt x 303.13638pt.
+[2 <./saemix3_tteModel_files/figure-latex/lungTTEData-1.pdf>]
+<saemix3_tteModel_files/figure-latex/lungTTEData-3.pdf, id=43, 434.62375pt x 28
+7.0725pt>
+File: saemix3_tteModel_files/figure-latex/lungTTEData-3.pdf Graphic file (type 
+pdf)
+<use saemix3_tteModel_files/figure-latex/lungTTEData-3.pdf>
+Package pdftex.def Info: saemix3_tteModel_files/figure-latex/lungTTEData-3.pdf 
+ used on input line 221.
 (pdftex.def)             Requested size: 434.63594pt x 287.08055pt.
-[2 <./saemix3_tteModel_files/figure-latex/lungTTEData-1.pdf> <./saemix3_tteMode
-l_files/figure-latex/lungTTEData-2.pdf>]
-<saemix3_tteModel_files/figure-latex/lungKM-1.pdf, id=51, 407.5225pt x 219.8212
+[3 <./saemix3_tteModel_files/figure-latex/lungTTEData-2.pdf> <./saemix3_tteMode
+l_files/figure-latex/lungTTEData-3.pdf>]
+<saemix3_tteModel_files/figure-latex/lungKM-1.pdf, id=63, 407.5225pt x 219.8212
 4pt>
 File: saemix3_tteModel_files/figure-latex/lungKM-1.pdf Graphic file (type pdf)
 <use saemix3_tteModel_files/figure-latex/lungKM-1.pdf>
 Package pdftex.def Info: saemix3_tteModel_files/figure-latex/lungKM-1.pdf  used
- on input line 249.
+ on input line 281.
 (pdftex.def)             Requested size: 407.53394pt x 219.8274pt.
-[3 <./saemix3_tteModel_files/figure-latex/lungKM-1.pdf>]
-LaTeX Font Info:    Trying to load font information for TS1+lmtt on input line 
-273.
-(/usr/share/texmf/tex/latex/lm/ts1lmtt.fd
-File: ts1lmtt.fd 2009/10/30 v1.6 Font defs for Latin Modern
-)
-<saemix3_tteModel_files/figure-latex/tteWeibullFit-1.pdf, id=66, 419.5675pt x 2
+[4] [5 <./saemix3_tteModel_files/figure-latex/lungKM-1.pdf>]
+<saemix3_tteModel_files/figure-latex/tteWeibullFit-1.pdf, id=90, 419.5675pt x 2
 90.08376pt>
 File: saemix3_tteModel_files/figure-latex/tteWeibullFit-1.pdf Graphic file (typ
 e pdf)
 <use saemix3_tteModel_files/figure-latex/tteWeibullFit-1.pdf>
 Package pdftex.def Info: saemix3_tteModel_files/figure-latex/tteWeibullFit-1.pd
-f  used on input line 290.
+f  used on input line 339.
 (pdftex.def)             Requested size: 419.56647pt x 290.08304pt.
-[4] [5 <./saemix3_tteModel_files/figure-latex/tteWeibullFit-1.pdf>]
+[6 <./saemix3_tteModel_files/figure-latex/tteWeibullFit-1.pdf>]
+Overfull \hbox (7.99359pt too wide) in paragraph at lines 471--471
+[]\T1/lmtt/m/n/10 ##   logpdf[ind] <- -H[ind] + H[ind-1] + log(hazard[ind]) # l
+n(l(T=event time))=ln(S)+ln(h)[] 
+ []
 
-LaTeX Warning: Command \textendash invalid in math mode on input line 339.
+[7]
 
-[6]
-<saemix3_tteModel_files/figure-latex/simulWeibullTTE-1.pdf, id=99, 452.69125pt 
-x 298.11375pt>
+LaTeX Warning: Command \textendash invalid in math mode on input line 482.
+
+[8]
+<saemix3_tteModel_files/figure-latex/simulWeibullTTE-1.pdf, id=114, 436.63126pt
+ x 283.0575pt>
 File: saemix3_tteModel_files/figure-latex/simulWeibullTTE-1.pdf Graphic file (t
 ype pdf)
 <use saemix3_tteModel_files/figure-latex/simulWeibullTTE-1.pdf>
 Package pdftex.def Info: saemix3_tteModel_files/figure-latex/simulWeibullTTE-1.
-pdf  used on input line 409.
-(pdftex.def)             Requested size: 452.69014pt x 298.11302pt.
-<saemix3_tteModel_files/figure-latex/WeibullTTEVPC-1.pdf, id=100, 463.7325pt x 
+pdf  used on input line 532.
+(pdftex.def)             Requested size: 436.63019pt x 283.0568pt.
+[9]
+<saemix3_tteModel_files/figure-latex/WeibullTTEVPC-1.pdf, id=120, 463.7325pt x 
 316.18124pt>
 File: saemix3_tteModel_files/figure-latex/WeibullTTEVPC-1.pdf Graphic file (typ
 e pdf)
 <use saemix3_tteModel_files/figure-latex/WeibullTTEVPC-1.pdf>
 Package pdftex.def Info: saemix3_tteModel_files/figure-latex/WeibullTTEVPC-1.pd
-f  used on input line 427.
+f  used on input line 557.
 (pdftex.def)             Requested size: 463.73842pt x 316.18529pt.
-[7 <./saemix3_tteModel_files/figure-latex/simulWeibullTTE-1.pdf>] [8 <./saemix3
-_tteModel_files/figure-latex/WeibullTTEVPC-1.pdf>]
-<saemix3_tteModel_files/figure-latex/lungTTEDiagnosticKM-1.pdf, id=133, 440.646
+[10 <./saemix3_tteModel_files/figure-latex/simulWeibullTTE-1.pdf>]
+<saemix3_tteModel_files/figure-latex/simulWeibullTTEcens-1.pdf, id=135, 448.676
+25pt x 298.11375pt>
+File: saemix3_tteModel_files/figure-latex/simulWeibullTTEcens-1.pdf Graphic fil
+e (type pdf)
+<use saemix3_tteModel_files/figure-latex/simulWeibullTTEcens-1.pdf>
+Package pdftex.def Info: saemix3_tteModel_files/figure-latex/simulWeibullTTEcen
+s-1.pdf  used on input line 588.
+(pdftex.def)             Requested size: 448.68884pt x 298.12212pt.
+[11 <./saemix3_tteModel_files/figure-latex/WeibullTTEVPC-1.pdf>] [12 <./saemix3
+_tteModel_files/figure-latex/simulWeibullTTEcens-1.pdf>]
+<saemix3_tteModel_files/figure-latex/lungTTEDiagnosticKM-1.pdf, id=166, 440.646
 26pt x 250.9375pt>
 File: saemix3_tteModel_files/figure-latex/lungTTEDiagnosticKM-1.pdf Graphic fil
 e (type pdf)
 <use saemix3_tteModel_files/figure-latex/lungTTEDiagnosticKM-1.pdf>
 Package pdftex.def Info: saemix3_tteModel_files/figure-latex/lungTTEDiagnosticK
-M-1.pdf  used on input line 488.
+M-1.pdf  used on input line 646.
 (pdftex.def)             Requested size: 440.66533pt x 250.94835pt.
-[9 <./saemix3_tteModel_files/figure-latex/lungTTEDiagnosticKM-1.pdf>]
-Underfull \vbox (badness 10000) detected at line 594
+[13 <./saemix3_tteModel_files/figure-latex/lungTTEDiagnosticKM-1.pdf>]
+LaTeX Font Info:    Trying to load font information for TS1+lmtt on input line 
+677.
+(/usr/share/texmf/tex/latex/lm/ts1lmtt.fd
+File: ts1lmtt.fd 2009/10/30 v1.6 Font defs for Latin Modern
+)
+<saemix3_tteModel_files/figure-latex/tteCompareModel-1.pdf, id=182, 410.53375pt
+ x 282.05376pt>
+File: saemix3_tteModel_files/figure-latex/tteCompareModel-1.pdf Graphic file (t
+ype pdf)
+<use saemix3_tteModel_files/figure-latex/tteCompareModel-1.pdf>
+Package pdftex.def Info: saemix3_tteModel_files/figure-latex/tteCompareModel-1.
+pdf  used on input line 695.
+(pdftex.def)             Requested size: 410.53275pt x 282.05305pt.
+[14 <./saemix3_tteModel_files/figure-latex/tteCompareModel-1.pdf>] [15]
+Overfull \hbox (7.99359pt too wide) in paragraph at lines 824--824
+[]\T1/lmtt/m/n/10 ##   logpdf[ind] <- -H[ind] + H[ind-1] + log(hazard[ind]) # l
+n(l(T=event time))=ln(S)+ln(h)[] 
  []
 
-[10]
-<saemix3_tteModel_files/figure-latex/fitRTTE-1.pdf, id=151, 431.6125pt x 297.11
+[16]
+<saemix3_tteModel_files/figure-latex/tteCompareModel-2.pdf, id=205, 419.5675pt 
+x 290.08376pt>
+File: saemix3_tteModel_files/figure-latex/tteCompareModel-2.pdf Graphic file (t
+ype pdf)
+<use saemix3_tteModel_files/figure-latex/tteCompareModel-2.pdf>
+Package pdftex.def Info: saemix3_tteModel_files/figure-latex/tteCompareModel-2.
+pdf  used on input line 857.
+(pdftex.def)             Requested size: 419.56647pt x 290.08304pt.
+[17] [18 <./saemix3_tteModel_files/figure-latex/tteCompareModel-2.pdf>]
+Overfull \hbox (7.99359pt too wide) in paragraph at lines 990--990
+[]\T1/lmtt/m/n/10 ##   logpdf[ind] <- -H[ind] + H[ind-1] + log(hazard[ind]) # l
+n(l(T=event time))=ln(S)+ln(h)[] 
+ []
+
+[19]
+Underfull \vbox (badness 10000) detected at line 1024
+ []
+
+[20]
+<saemix3_tteModel_files/figure-latex/tteCompareModel-3.pdf, id=231, 419.5675pt 
+x 290.08376pt>
+File: saemix3_tteModel_files/figure-latex/tteCompareModel-3.pdf Graphic file (t
+ype pdf)
+<use saemix3_tteModel_files/figure-latex/tteCompareModel-3.pdf>
+Package pdftex.def Info: saemix3_tteModel_files/figure-latex/tteCompareModel-3.
+pdf  used on input line 1026.
+(pdftex.def)             Requested size: 419.56647pt x 290.08304pt.
+[21 <./saemix3_tteModel_files/figure-latex/tteCompareModel-3.pdf>]
+Overfull \hbox (244.2429pt too wide) in paragraph at lines 1161--1161
+[]\T1/lmtt/m/n/10 ## #  hazard <- (lambda/Te) * (lambda*T/Te)^(lambda-1) * exp(
+lambda*T/Te) / (gamma(lambda) - pgamma(lambda*T/Te,lambda, 1, lower=FALSE))[] 
+ []
+
+
+Overfull \hbox (207.49301pt too wide) in paragraph at lines 1161--1161
+[]\T1/lmtt/m/n/10 ##   H <- pgamma(T/Te, lambda) # incomplete gamma gammainc(x,
+a)=pgamma(x,a)*gamma(a) and H=gammainc(T/Te, lambda) / gamma(lambda)[] 
+ []
+
+[22] [23]
+<saemix3_tteModel_files/figure-latex/tteCompareModel-4.pdf, id=252, 419.5675pt 
+x 290.08376pt>
+File: saemix3_tteModel_files/figure-latex/tteCompareModel-4.pdf Graphic file (t
+ype pdf)
+<use saemix3_tteModel_files/figure-latex/tteCompareModel-4.pdf>
+Package pdftex.def Info: saemix3_tteModel_files/figure-latex/tteCompareModel-4.
+pdf  used on input line 1193.
+(pdftex.def)             Requested size: 419.56647pt x 290.08304pt.
+[24] [25 <./saemix3_tteModel_files/figure-latex/tteCompareModel-4.pdf>]
+Overfull \hbox (7.99359pt too wide) in paragraph at lines 1325--1325
+[]\T1/lmtt/m/n/10 ##   logpdf[ind] <- -H[ind] + H[ind-1] + log(hazard[ind]) # l
+n(l(T=event time))=ln(S)+ln(h)[] 
+ []
+
+[26] [27]
+<saemix3_tteModel_files/figure-latex/simuGompertzTTE-1.pdf, id=278, 436.63126pt
+ x 283.0575pt>
+File: saemix3_tteModel_files/figure-latex/simuGompertzTTE-1.pdf Graphic file (t
+ype pdf)
+<use saemix3_tteModel_files/figure-latex/simuGompertzTTE-1.pdf>
+Package pdftex.def Info: saemix3_tteModel_files/figure-latex/simuGompertzTTE-1.
+pdf  used on input line 1388.
+(pdftex.def)             Requested size: 436.63019pt x 283.0568pt.
+[28]
+<saemix3_tteModel_files/figure-latex/simuGompertzTTE-2.pdf, id=283, 463.7325pt 
+x 316.18124pt>
+File: saemix3_tteModel_files/figure-latex/simuGompertzTTE-2.pdf Graphic file (t
+ype pdf)
+<use saemix3_tteModel_files/figure-latex/simuGompertzTTE-2.pdf>
+Package pdftex.def Info: saemix3_tteModel_files/figure-latex/simuGompertzTTE-2.
+pdf  used on input line 1400.
+(pdftex.def)             Requested size: 463.73842pt x 316.18529pt.
+[29 <./saemix3_tteModel_files/figure-latex/simuGompertzTTE-1.pdf>]
+<saemix3_tteModel_files/figure-latex/simuGompertzTTE-3.pdf, id=296, 463.7325pt 
+x 316.18124pt>
+File: saemix3_tteModel_files/figure-latex/simuGompertzTTE-3.pdf Graphic file (t
+ype pdf)
+<use saemix3_tteModel_files/figure-latex/simuGompertzTTE-3.pdf>
+Package pdftex.def Info: saemix3_tteModel_files/figure-latex/simuGompertzTTE-3.
+pdf  used on input line 1408.
+(pdftex.def)             Requested size: 463.73842pt x 316.18529pt.
+
+Underfull \hbox (badness 10000) in paragraph at lines 1408--1410
+[][]
+ []
+
+[30 <./saemix3_tteModel_files/figure-latex/simuGompertzTTE-2.pdf>] [31 <./saemi
+x3_tteModel_files/figure-latex/simuGompertzTTE-3.pdf>]
+Underfull \vbox (badness 10000) detected at line 1545
+ []
+
+[32]
+<saemix3_tteModel_files/figure-latex/fitRTTE-1.pdf, id=337, 431.6125pt x 297.11
 pt>
 File: saemix3_tteModel_files/figure-latex/fitRTTE-1.pdf Graphic file (type pdf)
 
 <use saemix3_tteModel_files/figure-latex/fitRTTE-1.pdf>
 Package pdftex.def Info: saemix3_tteModel_files/figure-latex/fitRTTE-1.pdf  use
-d on input line 596.
+d on input line 1547.
 (pdftex.def)             Requested size: 431.6246pt x 297.11833pt.
-[11 <./saemix3_tteModel_files/figure-latex/fitRTTE-1.pdf>]
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 672.
-[12]
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 672.
+[33 <./saemix3_tteModel_files/figure-latex/fitRTTE-1.pdf>] [34]
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 1635.
+[35]
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 1635.
 (./saemix3_tteModel.aux)
-Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 672.
-Package atveryend Info: Empty hook `AtEndAfterFileList' on input line 672.
+Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 1635.
+Package atveryend Info: Empty hook `AtEndAfterFileList' on input line 1635.
  ) 
 Here is how much of TeX's memory you used:
- 13549 strings out of 481239
- 199695 string characters out of 5920378
- 491111 words of memory out of 5000000
- 28480 multiletter control sequences out of 15000+600000
- 581321 words of font info for 100 fonts, out of 8000000 for 9000
+ 13655 strings out of 481239
+ 203376 string characters out of 5920378
+ 495763 words of memory out of 5000000
+ 28529 multiletter control sequences out of 15000+600000
+ 582597 words of font info for 111 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  41i,9n,42p,815b,463s stack positions out of 5000i,500n,10000p,200000b,80000s
-{/usr/share/texmf/fonts/enc/dvips/lm/lm-rm.enc}{/usr/share/texmf/fonts/enc/dv
-ips/lm/lm-ts1.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathit.enc}{/usr/shar
-e/texmf/fonts/enc/dvips/lm/lm-mathsy.enc}{/usr/share/texmf/fonts/enc/dvips/lm/l
+{/usr/share/texmf/fonts/enc/dvips/lm/lm-ts1.enc}{/usr/share/texmf/fonts/enc/d
+vips/lm/lm-mathsy.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm-rm.enc}{/usr/shar
+e/texmf/fonts/enc/dvips/lm/lm-mathit.enc}{/usr/share/texmf/fonts/enc/dvips/lm/l
 m-mathex.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm-ec.enc}</usr/share/texmf/f
 onts/type1/public/lm/lmbx10.pfb></usr/share/texmf/fonts/type1/public/lm/lmbx12.
 pfb></usr/share/texmf/fonts/type1/public/lm/lmex10.pfb></usr/share/texmf/fonts/
@@ -617,13 +745,14 @@ ublic/lm/lmr10.pfb></usr/share/texmf/fonts/type1/public/lm/lmr12.pfb></usr/shar
 e/texmf/fonts/type1/public/lm/lmr17.pfb></usr/share/texmf/fonts/type1/public/lm
 /lmr5.pfb></usr/share/texmf/fonts/type1/public/lm/lmr7.pfb></usr/share/texmf/fo
 nts/type1/public/lm/lmri10.pfb></usr/share/texmf/fonts/type1/public/lm/lmsy10.p
-fb></usr/share/texmf/fonts/type1/public/lm/lmsy7.pfb></usr/share/texmf/fonts/ty
-pe1/public/lm/lmtk10.pfb></usr/share/texmf/fonts/type1/public/lm/lmtt10.pfb></u
-sr/share/texmf/fonts/type1/public/lm/lmtti10.pfb>
-Output written on saemix3_tteModel.pdf (12 pages, 392511 bytes).
+fb></usr/share/texmf/fonts/type1/public/lm/lmsy5.pfb></usr/share/texmf/fonts/ty
+pe1/public/lm/lmsy7.pfb></usr/share/texmf/fonts/type1/public/lm/lmtk10.pfb></us
+r/share/texmf/fonts/type1/public/lm/lmtt10.pfb></usr/share/texmf/fonts/type1/pu
+blic/lm/lmtti10.pfb>
+Output written on saemix3_tteModel.pdf (35 pages, 535620 bytes).
 PDF statistics:
- 267 PDF objects out of 1000 (max. 8388607)
- 209 compressed objects within 3 object streams
- 37 named destinations out of 1000 (max. 500000)
- 12369 words of extra memory for PDF output out of 14400 (max. 10000000)
+ 464 PDF objects out of 1000 (max. 8388607)
+ 354 compressed objects within 4 object streams
+ 64 named destinations out of 1000 (max. 500000)
+ 12414 words of extra memory for PDF output out of 14400 (max. 10000000)
 

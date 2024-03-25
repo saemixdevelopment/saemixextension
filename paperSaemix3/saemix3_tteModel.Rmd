@@ -74,10 +74,10 @@ saemix.data.contPH<-saemixData(name.data=lung1,header=TRUE,name.group=c("id"),
                         name.covariates=c( "sex", "ph.ecog", "ph.karno", "pat.karno", "age"),
                         units=list(x="days",y="",covariates=c("","-","%","%","yr")), verbose=FALSE)
 
-plotDiscreteData(saemix.data, outcome="tte", which.cov="sex")
+plotDiscreteData(saemix.data.contPH, outcome="tte", which.cov="sex")
 
-xplot1<-plotDiscreteData(saemix.data, outcome="tte", which.cov="sex")
-xplot2<-plotDiscreteData(saemix.data, outcome="tte", which.cov="ph.ecog")
+xplot1<-plotDiscreteData(saemix.data.contPH, outcome="tte", which.cov="sex")
+xplot2<-plotDiscreteData(saemix.data.contPH, outcome="tte", which.cov="ph.ecog")
 grid.arrange(grobs=list(xplot1, xplot2), nrow=1, ncol=2)
 
 # Histogram
@@ -113,7 +113,7 @@ plot(nonpar.fit)
 In **saemix**, we model survival using parametric models. Here we can first use a Weibull model for the hazard, parameterised as $T_e$ and $\gamma$. For individual $i$, the hazard function of this model is:
 $$ h(t) = \frac{\gamma}{T_e} \; \left(\frac{t}{T_e}  \right) ^{\gamma-1} $$
 And the parametric survival function is given by:
-$$ S(t) = e^{ - \left( \frac{t}{T_e} \right) ^{\gamma}} = e^{-H(t)$$ 
+$$ S(t) = e^{ - \left( \frac{t}{T_e} \right) ^{\gamma}} = e^{-H(t)}$$ 
 where $H$ denotes the cumulative hazard function.
 
 In the model function in **saemix**, we define the log-likelihood of each event in the dataset:
@@ -144,7 +144,7 @@ saemix.model<-saemixModel(model=weibulltte.model,description="Weibull TTE model"
   psi0=matrix(c(1,2),ncol=2,byrow=TRUE,dimnames=list(NULL,  c("Te","gamma"))),
   transform.par=c(1,1),covariance.model=matrix(c(1,0,0,0),ncol=2, byrow=TRUE), verbose=FALSE)
 saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, print=FALSE)
-tte.fit<-saemix(saemix.model,saemix.data,saemix.options)
+tte.fit<-saemix(saemix.model,saemix.data.contPH,saemix.options)
 plot(tte.fit, plot.type="convergence")
 print(tte.fit)
 
@@ -186,14 +186,14 @@ simulateWeibullTTE <- function(psi,id,xidep) {
 }
 
 # Checking the simulation function
-xidep1<-saemix.data@data[,saemix.data@name.predictors]
-nsuj<-saemix.data@N
+xidep1<-saemix.data.contPH@data[,saemix.data.contPH@name.predictors]
+nsuj<-saemix.data.contPH@N
 psiM<-data.frame(Te=rnorm(nsuj, mean=tte.fit@results@fixed.effects[1], sd=2), gamma=tte.fit@results@fixed.effects[2])
 id1<-rep(1:nsuj, each=2)
 simtime<-simulateWeibullTTE(psiM, id1, xidep1)
 
 par(mfrow=c(1,2))
-hist(saemix.data@data$time[saemix.data@data$time>0], breaks=30, xlim=c(0,1050),xlab="Time", main="Original data")
+hist(saemix.data.contPH@data$time[saemix.data.contPH@data$time>0], breaks=30, xlim=c(0,1050),xlab="Time", main="Original data")
 hist(simtime[simtime>0], breaks=30, xlim=c(0,1050), xlab="Time", main="Simulated data")
 ```
 
@@ -228,7 +228,7 @@ simulateWeibullTTE.maxcens <- function(psi,id,xidep) {
 simtime.maxcens<-simulateWeibullTTE.maxcens(psiM, id1, xidep1)
 
 par(mfrow=c(1,3))
-hist(saemix.data@data$time[saemix.data@data$time>0], breaks=30, xlim=c(0,1050), xlab="Time", main="Original data")
+hist(saemix.data.contPH@data$time[saemix.data.contPH@data$time>0], breaks=30, xlim=c(0,1050), xlab="Time", main="Original data")
 hist(simtime[simtime>0], breaks=30, xlim=c(0,1050), xlab="Time", main="Simulated data")
 hist(simtime.maxcens[simtime.maxcens>0], breaks=30, xlim=c(0,1050), xlab="Time", main="Simulated data")
 
@@ -281,10 +281,15 @@ lines(xtim,ypred-1.96*sesurv, col="red",lwd=1, lty=2)
 #### Selecting a parametric model
 
 We now consider alternative models to fit the same data. Given the shape of the survival functions, other classical models we can consider are the exponential (or constant hazard) model, the log-logistic model, the gamma model and the Gompertz model. The corresponding hazard functions are:
-- exponential model: $ h(t) = \frac{1}{T_e} $
-- Gompertz: $h(t) = \frac{\gamma}{T_e'} \; e^{\frac{t}{T_e'}}$ & $\gamma \; (e^{\frac{t}{T_e'}}-1)$ where $T_e'=\frac{T_e}{ln \left( 1+ \frac{ln(2)}{\gamma} \right)}$
-- gamma model: $h(t)= \frac{1}{T_e \Gamma(k)} \left( \frac{t}{T_e} \right)^{(k-1)} \, e^{-\frac{t}{T_e}}$
-- log-logistic model: $h(t) = TODO $
+- exponential model: 
+$$ h(t) = \frac{1}{T_e} $$
+- Gompertz: 
+$$h(t) = \frac{\gamma}{T_e'} \; e^{\frac{t}{T_e'}} \gamma \; (e^{\frac{t}{T_e'}}-1)$$ 
+where $$T_e'=\frac{T_e}{ln \left( 1+ \frac{ln(2)}{\gamma} \right) } $$
+- gamma model: 
+$$h(t)= \frac{1}{T_e \Gamma(k)} \left( \frac{t}{T_e} \right)^{(k-1)} \, e^{-\frac{t}{T_e}}$$
+- log-logistic model: 
+$$h(t) = TODO $$
 
 The code below fits all these models to the lung cancer data.
 
@@ -312,7 +317,7 @@ saemix.model.exp<-saemixModel(model=exptte.model,description="Exponential TTE mo
   psi0=matrix(c(1),ncol=1,byrow=TRUE,dimnames=list(NULL,  c("Te"))),
   transform.par=c(1),covariance.model=matrix(c(1),ncol=1, byrow=TRUE), verbose=FALSE)
 saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, print=FALSE)
-exptte.fit<-saemix(saemix.model.exp,saemix.data,saemix.options)
+exptte.fit<-saemix(saemix.model.exp,saemix.data.contPH,saemix.options)
 plot(exptte.fit, plot.type="convergence")
 print(exptte.fit)
 
@@ -340,7 +345,7 @@ saemix.model.gomp<-saemixModel(model=gomptte.model,description="Gompertz TTE mod
   psi0=matrix(c(300,2),ncol=2,byrow=TRUE,dimnames=list(NULL,  c("Te","gamma"))),
   transform.par=c(1,1),covariance.model=matrix(c(1,0,0,0),ncol=2, byrow=TRUE), verbose=FALSE)
 saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, print=FALSE)
-gomptte.fit<-saemix(saemix.model.gomp,saemix.data,saemix.options)
+gomptte.fit<-saemix(saemix.model.gomp,saemix.data.contPH,saemix.options)
 plot(gomptte.fit, plot.type="convergence")
 print(gomptte.fit)
 
@@ -371,7 +376,7 @@ saemix.model.gamma<-saemixModel(model=gammatte.model,description="Gamma TTE mode
   psi0=matrix(c(300,2),ncol=2,byrow=TRUE,dimnames=list(NULL,  c("Te","k"))),
   transform.par=c(1,1),covariance.model=matrix(c(1,0,0,0),ncol=2, byrow=TRUE), verbose=FALSE)
 saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, print=FALSE)
-gammatte.fit<-try(saemix(saemix.model.gamma,saemix.data,saemix.options))
+gammatte.fit<-try(saemix(saemix.model.gamma,saemix.data.contPH,saemix.options))
 plot(gammatte.fit, plot.type="convergence")
 print(gammatte.fit)
 
@@ -399,7 +404,7 @@ saemix.model.logis<-saemixModel(model=logis.model,description="Log-logistic TTE 
   psi0=matrix(c(300,2),ncol=2,byrow=TRUE,dimnames=list(NULL,  c("Te","gamma"))),
   transform.par=c(1,1),covariance.model=matrix(c(1,0,0,0),ncol=2, byrow=TRUE), verbose=FALSE)
 saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, print=FALSE)
-logistte.fit<-saemix(saemix.model.logis,saemix.data,saemix.options)
+logistte.fit<-saemix(saemix.model.logis,saemix.data.contPH,saemix.options)
 plot(logistte.fit, plot.type="convergence")
 print(logistte.fit)
 
@@ -441,14 +446,14 @@ simulateGompertzTTE <- function(psi,id,xidep) {
 }
 
 # Checking the simulation function
-xidep1<-saemix.data@data[,saemix.data@name.predictors]
-nsuj<-saemix.data@N
+xidep1<-saemix.data.contPH@data[,saemix.data.contPH@name.predictors]
+nsuj<-saemix.data.contPH@N
 psiM<-data.frame(Te=rnorm(nsuj, mean=gomptte.fit@results@fixed.effects[1], sd=2), gamma=gomptte.fit@results@fixed.effects[2])
 id1<-rep(1:nsuj, each=2)
 simtime<-simulateGompertzTTE(psiM, id1, xidep1)
 
 par(mfrow=c(1,2))
-hist(saemix.data@data$time[saemix.data@data$time>0], breaks=30, xlim=c(0,1050),xlab="Time", main="Original data")
+hist(saemix.data.contPH@data$time[saemix.data.contPH@data$time>0], breaks=30, xlim=c(0,1050),xlab="Time", main="Original data")
 hist(simtime[simtime>0], breaks=30, xlim=c(0,1050), xlab="Time", main="Simulated data")
 
 gomptte.fit@model@simulate.function<-simulateGompertzTTE

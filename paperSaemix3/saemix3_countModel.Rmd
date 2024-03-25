@@ -650,8 +650,10 @@ if(runBootstrap) {
   case.count <- saemix.bootstrap(zippoisson.fit.cov2, method="case", nboot=nboot) 
   cond.count <- saemix.bootstrap(zippoisson.fit.cov2, method="conditional", nboot=nboot) 
 } else {
- case.count <- read.table(file.path(saemixDir,"bootstrap","results","rapi_caseBootstrap.res"), header=T)
- cond.count <- read.table(file.path(saemixDir,"bootstrap","results","rapi_condBootstrap.res"), header=T)
+# case.count <- read.table(file.path(saemixDir,"bootstrap","results","rapi_caseBootstrap.res"), header=T)
+# cond.count <- read.table(file.path(saemixDir,"bootstrap","results","rapi_condBootstrap.res"), header=T)
+ case.count <- read.table(file.path(saemixDir,"paperSaemix3","bootstrapCase_rapiCov.res"), header=T)
+ cond.count <- read.table(file.path(saemixDir,"paperSaemix3","bootstrapCase_rapiCov.res"), header=T)
  nboot<-dim(case.count)[1]
 }
 case.count <- case.count[!is.na(case.count[,2]),]

@@ -1,0 +1,162 @@
+---
+title: "Use case for bootstrap methods in saemix"
+author: "Emmanuelle Comets"
+date: "01/02/2024"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+## Contents
+
+The present document is an R markdown notebook designed to showcase the different bootstrap methods in the paper **Full conditional non-parametric bootstrap - an evaluation with unbalanced designs and high residual variability** by S. Kaisaridi et al (submitted to **Journal of Computational and Graphical Statistics** in March 2024). This notebook uses the saemix available on CRAN (version 3.3 when the present document was created).
+
+In addition, several libraries need to be installed to run the present code:
+
+- ggplot2 and its dependencies
+- MASS
+- npde (version 3.2 or higher)
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+## If required, set your working directory, otherwise will run in the current directory
+## workDir<-"/my/path/to/saemixextension-master"
+workDir<-"."
+
+workDir<-"/home/eco/work/saemix/saemixextension"
+resDir <- file.path(workDir, "bootstrap","paperCondBoot")
+knitr::opts_chunk$set(root.dir = workDir)
+progDir<-file.path(workDir,"R")
+```
+
+### Loading functions
+
+This chunk loads the necessary libraries.
+
+```{r loadLibFct}
+# Libraries
+library(ggplot2)
+library(MASS)
+library(saemix)
+```
+
+## Running bootstrap methods on the PD Emax dataset
+
+### Fitting the data with saemix
+
+```{r PD1}
+data(PD1.saemix)
+
+saemix.data<-saemixData(name.data=PD1.saemix,header=TRUE,name.group=c("subject"),
+      name.predictors=c("dose"),name.response=c("response"),
+      name.covariates=c("gender"), units=list(x="mg",y="-",covariates=c("-")))
+
+modelemax<-function(psi,id,xidep) {
+# input:
+#   psi : matrix of parameters (3 columns, E0, Emax, EC50)
+#   id : vector of indices 
+#   xidep : dependent variables (same nb of rows as length of id)
+# returns:
+#   a vector of predictions of length equal to length of id
+  dose<-xidep[,1]
+  e0<-psi[id,1]
+  emax<-psi[id,2]
+  e50<-psi[id,3]
+  f<-e0+emax*dose/(e50+dose)
+  return(f)
+}
+
+pdmodel<-saemixModel(model=modelemax,description="Emax growth model", 
+       psi0=matrix(c(20,300,20,0,0,0),ncol=3,byrow=TRUE,dimnames=list(NULL, 
+       c("E0","Emax","EC50"))), transform.par=c(1,1,1),
+       covariate.model=matrix(c(0,0,1), ncol=3,byrow=TRUE),fixed.estim=c(1,1,1))
+
+# SE not computed as not needed for the test
+saemix.options<-list(algorithms=c(0,1,1),nb.chains=3,seed=765754, 
+       nbiter.saemix=c(500,300),save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
+
+fit.emax<-saemix(pdmodel,saemix.data,saemix.options)
+
+om.estim<-c(diag(fit.emax@results@omega),fit.emax@results@respar[1])
+par.estim<-c(fit.emax@results@fixed.effects,om.estim)
+sd.estim <- c(fit.emax@results@se.fixed, fit.emax@results@se.omega, fit.emax@results@se.respar[1])
+
+```
+
+## Computing bootstrap distributions
+
+In the following we estimate bootstrap distributions with 100 samples using the different bootstrap methods through the *saemix.bootstrap()* function. 
+
+**Warning:** this code may take some time to execute. My Rstudio tends to run out of memory and crash before rendering, so I generated the pdf using the command *rmarkdown::render("./comets_condBoostrapSaemix2024.Rmd")* in a plain R window.
+
+```{r runBoot}
+saemix.bootOpt<-list(fix.seed=F,directory="current",displayProgress=F, save.graphs=F, map=F, ll.is=F, print=FALSE)
+nboot<-200
+
+start_time <- Sys.time()
+boot.case<-saemix.bootstrap(fit.emax, nboot=nboot, method="case")
+boot.cNP<-saemix.bootstrap(fit.emax, nboot=nboot, method="conditional")
+boot.NP<-saemix.bootstrap(fit.emax, nboot=nboot, method="residual")
+boot.Par<-saemix.bootstrap(fit.emax, nboot=nboot, method="parametric")
+end_time <- Sys.time()
+
+write.table(boot.case,file.path(resDir,"condBootPaper_case.res"), quote=F, col.names = T)
+write.table(boot.cNP,file.path(resDir,"condBootPaper_cond.res"), quote=F, col.names = T)
+write.table(boot.NP,file.path(resDir,"condBootPaper_np.res"), quote=F, col.names = T)
+write.table(boot.Par,file.path(resDir,"condBootPaper_par.res"), quote=F, col.names = T)
+
+```
+The following table compares bootstrap and asymptotic estimates for this dataset. The graph shows the distributions obtained for the different bootstraps, overlaying the estimate from saemix for this dataset.
+
+
+```{r bootstrapRuns87.res, echo=FALSE, warning=FALSE}
+# Summarising the results
+res<-data.frame(Case=colMeans(boot.case[,2:dim(boot.case)[2]]), NP=colMeans(boot.NP[,2:dim(boot.case)[2]]),cNP=colMeans(boot.cNP[,2:dim(boot.case)[2]]), Par=colMeans(boot.Par[,2:dim(boot.case)[2]]))
+sdres<-data.frame(saemix=sd.estim,Case=apply(boot.case[,2:dim(boot.case)[2]],2,sd), NP=apply(boot.NP[,2:dim(boot.case)[2]],2,sd), cNP=apply(boot.cNP[,2:dim(boot.case)[2]],2,sd), Par=apply(boot.Par[,2:dim(boot.case)[2]],2,sd))
+
+boot.est<-cbind(saemix=par.estim,res)
+for(icol in 1:5) {
+  boot.est[,icol]<-format(boot.est[,icol],nsmall=2, digits=1, scientific=FALSE)
+  sdres[,(icol)]<-format(sdres[,(icol)],nsmall=1, digits=1, scientific=FALSE)
+  boot.est[,icol]<-paste(boot.est[,icol]," (",sdres[,icol],")",sep="")
+}
+cat("Bootstrap estimates (SD)\n")
+print(boot.est)
+cat("Run time:",end_time - start_time,"\n")
+
+# 
+nampar <- colnames(boot.case)[-c(1)]
+nampar[8]<-"sigma"
+ypd2<-NULL
+for(typeboot in c("Case","NP","NPc","Par")) {
+  if(typeboot=="Case") resboot1<-boot.case
+  if(typeboot=="NP") resboot1<-boot.NP
+  if(typeboot=="NPc") resboot1<-boot.cNP
+  if(typeboot=="Par") resboot1<-boot.Par
+  colnames(resboot1)[2:9]<-nampar
+  for(icol in 1:8) {
+    ypd2<-rbind(ypd2,data.frame(rep=resboot1[,1],Param=colnames(resboot1)[(icol+1)],value=resboot1[,(icol+1)], Bootstrap=typeboot, stringsAsFactors=FALSE))
+  }
+}
+ypd2$Param<-factor(ypd2$Param, levels = nampar)
+ypd2$Bootstrap<-factor(ypd2$Bootstrap, levels=unique(ypd2$Bootstrap))
+levels(ypd2$Bootstrap)[levels(ypd2$Bootstrap)=="NPc"]<-"cNP"
+ypd2.fix<-ypd2[ypd2$Param %in% unique(ypd2$Param)[1:4],]
+ypd2.iiv<-ypd2[ypd2$Param %in% unique(ypd2$Param)[5:9],]
+
+df1 <- data.frame("Param"=unique(ypd2$Param), value=par.estim)
+
+plot.density2<-ggplot(data=ypd2) + geom_density(aes(value,fill=Bootstrap), alpha=0.5) + 
+  geom_vline(data=df1,aes(xintercept=value),colour="red",size=1.2) +
+#  geom_vline(data=df,aes(xintercept=value2),colour="blue",size=1.2) +
+  theme_bw() + theme(axis.title.x = element_blank(),axis.text.x = element_text(size=9, angle=30, hjust=1), legend.position = "top") + 
+  scale_fill_manual(values = c("red4", "darkblue", "steelblue1","seagreen4","snow4")) +  facet_wrap(~Param, ncol=3, scales = 'free')
+
+print(plot.density2)
+
+# cairo_pdf(file.path(workDir,"bootstrap","fig1_interactive.pdf"),width = 11, height=8)
+# print(plot.density2)
+# dev.off()
+
+```

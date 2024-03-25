@@ -1,3 +1,9 @@
+Version 3.3 - March 2024
+
+o Bugfixes
+   * corrected a mistake in the computation of the Fisher Information Matrix for a combined error model
+   * fixed the computation of the SE on correlations
+
 Version 3.2 - June 2023
 
 o Changes
