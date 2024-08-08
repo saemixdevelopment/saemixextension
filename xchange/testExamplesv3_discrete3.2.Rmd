@@ -154,12 +154,15 @@ simulBinary<-function(psi,id,xidep) {
   ysim<-rbinom(length(tim),size=1, prob=pevent)
   return(ysim)
 }
-saemix.model<-saemixModel(model=binary.model,description="Binary model",simulate.function=simulBinary,
-                          modeltype="likelihood",
-                          psi0=matrix(c(0,-.5,0,0.5),ncol=2,byrow=TRUE,dimnames=list(NULL,c("theta1","theta2"))),
-                          transform.par=c(0,0), covariate.model=c(0,1),covariance.model=matrix(c(1,0,0,1),ncol=2))
+saemix.model<-saemixModel(model=binary.model,description="Binary model",
+           simulate.function=simulBinary, modeltype="likelihood",
+           psi0=matrix(c(0,-.5,0,0.5),ncol=2,byrow=TRUE,
+                       dimnames=list(NULL,c("theta1","theta2"))),
+           transform.par=c(0,0), covariate.model=c(0,1),
+           covariance.model=matrix(c(1,0,0,1),ncol=2))
 
-saemix.options<-list(seed=1234567,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, nb.chains=10, fim=FALSE)
+saemix.options<-list(seed=1234567,save=FALSE,save.graphs=FALSE,
+                     displayProgress=FALSE, nb.chains=10, fim=FALSE)
 
 # saemix fit
 binary.fit<-saemix(saemix.model,saemix.data,saemix.options)

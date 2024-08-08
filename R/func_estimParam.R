@@ -110,7 +110,7 @@ saemixPredictNewdata<-function(saemixObject, newdata, type=c("ipred", "ypred", "
   if(length(grep("ipred",type))==1) ctype<-c(ctype,"mode")
   if(length(grep("icpred",type))==1) ctype<-c(ctype,"mean")
   saemixObject<-estimateIndividualParametersNewdata(saemixObject,type=ctype,nsamp=nsamp) # updates cond.mean.psi, map.psi (normally...)
-  
+
   if(length(grep("icpred",type))==1) {
     psiM<-parameters$cond.mean.psi<-saemixObject["results"]["cond.mean.psi"]
     parameters$cond.var.phi<-saemixObject["results"]["cond.var.phi"]
@@ -123,6 +123,7 @@ saemixPredictNewdata<-function(saemixObject, newdata, type=c("ipred", "ypred", "
       samp.par<-array(dim=c(dim(psiM),nsamp))
       for(isamp in 1:nsamp) {
         phiM<-saemixObject["results"]["phi.samp"][,,isamp]
+        if(is.null(dim(phiM))) phiM<-matrix(phiM, nrow=1)
         psiM<-samp.par[,,isamp]<-transphi(phiM,saemixObject["model"]["transform.par"])
         fpred<-saemixObject["model"]["model"](psiM, IdM, XM)
         samp.pred[,isamp]<-fpred

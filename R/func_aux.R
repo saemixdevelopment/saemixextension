@@ -91,7 +91,7 @@ map.saemix<-function(saemixObject) {
     }
     phi.map[i,i1.omega2]<-phi1.opti$par
   }
-  if(saemixObject['options']$warnings)cat("\n")
+  if(saemixObject['options']$warnings) cat("\n")
   map.psi<-transphi(phi.map,saemixObject["model"]["transform.par"])
   map.psi<-data.frame(map.psi)
   map.phi<-data.frame(phi.map)

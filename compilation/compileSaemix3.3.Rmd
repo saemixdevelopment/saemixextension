@@ -233,6 +233,8 @@ saemix.fit<-saemix(model=saemix.model,
                    data=saemix.data,
                    control=list(seed=632545,directory="newtheo", save=FALSE,save.graphs=FALSE, warnings=FALSE))
 
+# saemix.fit2<-saemix(model=saemix.model, data=saemix.data, control=list(seed=632545,directory="newtheo", save=FALSE,save.graphs=FALSE, warnings=FALSE, nb.chains=1))
+
 # Prints a summary of the results
 print(saemix.fit)
 
