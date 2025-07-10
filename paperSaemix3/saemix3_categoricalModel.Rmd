@@ -160,9 +160,13 @@ simulBinary<-function(psi,id,xidep) {
   return(ysim)
 }
 
-saemix.model<-saemixModel(model=binary.model,description="Binary model",simulate.function=simulBinary, modeltype="likelihood",
-                          psi0=matrix(c(-0.5,-.15,0,0),ncol=2,byrow=TRUE,dimnames=list(NULL,c("theta1","theta2"))),
-                          transform.par=c(0,0), covariate.model=c(0,1),covariance.model=matrix(c(1,0,0,0),ncol=2), omega.init=diag(c(0.5,0.3)), verbose=FALSE)
+saemix.model<-saemixModel(model=binary.model,description="Binary model",
+                  simulate.function=simulBinary, modeltype="likelihood",
+                  psi0=matrix(c(-0.5,-.15,0,0),ncol=2,byrow=TRUE,
+                              dimnames=list(NULL,c("theta1","theta2"))),
+                  transform.par=c(0,0), covariate.model=c(0,1),
+                  covariance.model=matrix(c(1,0,0,0),ncol=2), 
+                  omega.init=diag(c(0.5,0.3)), verbose=FALSE)
 ```
 
 #### Fitting the model
@@ -175,7 +179,8 @@ saemix.model<-saemixModel(model=binary.model,description="Binary model",simulate
 
 ```{r binaryModelFit}
 # saemix fit
-saemix.options<-list(seed=1234567,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, nb.chains=10, fim=FALSE, print=FALSE)
+saemix.options<-list(seed=1234567,save=FALSE,save.graphs=FALSE, 
+                     displayProgress=FALSE, nb.chains=10, fim=FALSE, print=FALSE)
 binary.fit<-saemix(saemix.model,saemix.data,saemix.options)
 summary(binary.fit)
 plot(binary.fit, plot.type="convergence")

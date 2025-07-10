@@ -1,0 +1,45 @@
+Exact:
+----                  Results                   ----
+Fixed effects
+ Parameter Estimate
+ ka          0.8827
+ V          16.0404
+ CL          2.1102
+ Emax      105.9213
+ EC50        4.7921
+ b.y1        0.0874
+ a.y2        3.1582
+
+Variance of random effects
+ Parameter   Estimate
+ omega2.ka   0.2934  
+ omega2.V    0.2115  
+ omega2.CL   0.0734  
+ omega2.Emax 0.0255  
+ omega2.EC50 0.1034  
+ 
+ Approx
+ ----                  Results                   ----
+Fixed effects
+ Parameter Estimate
+ ka          0.8880
+ V          16.2122
+ CL          2.1342
+ Emax      106.6365
+ EC50        4.8653
+ b.y1        0.0895
+ a.y2        3.0743
+
+Variance of random effects
+ Parameter   Estimate
+ omega2.ka   0.2647  
+ omega2.V    0.1887  
+ omega2.CL   0.0721  
+ omega2.Emax 0.0252  
+ omega2.EC50 0.1041  
+
+ > time.fit1
+Time difference of 13.74083 mins
+> time.exact1
+Time difference of 5.629069 secs
+(150 fois plus lent...)

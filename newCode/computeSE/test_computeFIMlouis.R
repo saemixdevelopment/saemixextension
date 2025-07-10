@@ -2,8 +2,9 @@ library(saemix)
 library(numDeriv)
 
 saemixDir <- "/home/eco/work/saemix/saemixextension"
-# new linearised FIM
+# new linearised FIM by Jacobian and Hessian
 source(file.path(saemixDir,"newCode","compute_derivFIMlin.R")) 
+
 # Louis's method - sampling from the conditional distributions
 
 # Louis's method - sampling from the population distribution
@@ -81,13 +82,38 @@ emx.options<-list(nb.chains=3,seed=765754, nbiter.saemix=c(500,300),save=FALSE,s
 fit1<-saemix(model1,saemix.pd1,emx.options)
 fit2<-saemix(model2,saemix.pd1,emx.options)
 
-fit.emax1 <- computeFIMinv.lin(fit1)
+# Tps calcul
+start_time <- Sys.time()
+y1 <- fim.saemix(fit1)
+time_old <- Sys.time()
+hfim.emax1 <- computeFIMinv.lin(fit1)
+time_hess <- Sys.time()
+jfim.emax1 <- computeJacFIMinv.lin(fit1)
+time_jac <- Sys.time()
+cat("Package version;",time_old-start_time,"\nHessian version:",time_hess-time_old,"\nJacobian version:",time_jac-time_hess,"\n")
+
 fit.emax2 <- computeFIMinv.lin(fit2)
 cat("SE, saemix 3.1=",sqrt(diag(solve(fit1@results@fim))),"\n")
-cat("SE, new code=",sqrt(diag(fit.emax1)),"\n")
+cat("SE Hessian=",sqrt(diag(hfim.emax1)),"\n")
+cat("SE Jacobian=",sqrt(diag(jfim.emax1)),"\n")
 cat("SE, saemix 3.1=",sqrt(diag(solve(fit2@results@fim))),"\n")
 cat("SE, new code=",sqrt(diag(fit.emax2)),"\n")
 
+######################################################################################################
+# Attempt to use GQ
+## in fact can't work because mu and beta not used with GQ, only the conditional mean and variances and these don't directly change with mu and beta 
+## we could consider GQ on eta and reconstruct each conditional distribution but that would only slightly affect the support
+## and LL_gq is computed using f(t,phi) so not direct impact of mu and beta (which is strange, but...)
+
+source(file.path(saemixDir,"newCode","compute_derivFIMGQ.R")) 
+
+# Tps calcul LL
+start_time <- Sys.time()
+y1 <- fim.saemix(fit1)
+time_lin <- Sys.time()
+sum(llgq.saemix.ind(fit1))
+time_gq <- Sys.time()
+cat("Time for linearised FIM;",time_lin-start_time,"\nTime for FIM by GQ:",time_gq-time_lin,"\n") # factor 5
 
 ######################################################################################################
 ############################# Checking the code with various structures of IIV and covariates

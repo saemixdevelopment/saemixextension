@@ -1,3 +1,8 @@
+* 05/2025
+- securiser les fonctions de transformation de variables
+* cas des NA
+* noms si on renomme, discrepancy in ocov...
+
 * Check functions derviphi and dtransphi
     - completely unclear what these functions are supposed to do and whether they actually do it
     - especially for probit and logit models !
@@ -24,4 +29,8 @@ CHANGE fix.seed to be FALSE by default otherwise this can really mess up a simul
 * censored responses (12/05/21, Chris) bug
 2.       If the column in the data supplied for name.cens is not named “cens”, saemix() throws an error.
 
- 
+# 05/2024
+- calcul LL et SE sur la LL
+  - comment est calculée la SE sur LL par IS dans Monolix ? (doc + tutos YouTube) ?
+  - vérifier l'algorithme de calcul de LL par IS dans saemix
+  - tester calcul avant et après conddist (temps calcul, qualité de la LL)

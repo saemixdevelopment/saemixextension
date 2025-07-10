@@ -1,0 +1,225 @@
+---
+title: "TDM with only one measurement"
+author: "Emmanuelle Comets"
+date: "08/2024"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+# Setup
+
+- libraries
+  - need to install ggplot2 and its sister libraries
+  - need libraries saemix and npde for the actual estimation
+- folders
+  - set **workDir** to the working directory
+- files
+  - input: 
+    - by default, since the model doesn't use occasions, all the data for one individual is grouped in the same plot
+  - output: using knitr will generate a PDF with the results, as well as 
+    - graphs: individual profiles
+    - predicted parameters and derived parameters (AUC, Cres(24h)), with their SE
+- control the output
+  - set **showRes** to FALSE to remove some intermediate output (defaults to TRUE)
+  - set **saveFigs** to TRUE to save the graphs to a file
+    - **nameFig** is the name of the file (can be sent to another directory)
+    - the code outputs to a PDF file, but this can be changed (changing the call to *cairo_pdf*)
+
+```{r setup, include=FALSE}
+# Setting working directory
+require("knitr")
+knitr::opts_chunk$set(echo = TRUE)
+
+# Libraries
+library(ggplot2) 
+library(RColorBrewer) 
+library(gridExtra)
+library(dplyr)
+library(Cairo)
+# saemix 3.2
+library(saemix)
+
+# Working directory
+saemixDir<-"/home/eco/work/saemix/saemixextension/R"
+# workDir<-"/home/eco/work/rennes/florian/birider/tdmDolu"
+workDir <-getwd()
+setwd(workDir)
+knitr::opts_chunk$set(root.dir = workDir)
+
+#source(file.path(saemixDir, "SaemixObject.R"))
+# Patch for one subject with one observation
+source(file.path(saemixDir, "func_estimParam.R"))
+
+# Prints some intermediate results
+showRes<-TRUE
+saveFigs<-FALSE
+nameFig<-"output.pdf"
+```
+
+# Data
+
+```{r readData}
+occdat<-read.table("2408_dataLeoDTG.csv",na=".",sep=";", header=T)
+
+#  ggplot(dat, aes(x=time, y=Dolutegravir, group=id)) + geom_line()+ geom_point()
+  saemix.data2<-saemixData(name.data=occdat,header=TRUE,sep=" ",na=NA, 
+                          name.group=c("id"),name.predictors=c("time","AMT","II"), 
+                          name.response=c("Dolutegravir"),name.covariates=c("lwt","Tabagisme","darunavir"),
+                          units=list(x="hr",y="mg/L",covariates=c("log-kg/70","-","-")))
+  cat("Plotting the data, grouped by subject, N=",saemix.data2@N,"- please check\n")
+  plot(saemix.data2)
+
+```
+
+# Saemix
+
+- setting up the model (Parent et al. 2019)
+
+```{r saemixModel, results='hide', echo=FALSE, warnings=FALSE}
+# 1 cpt model with Tlag, at SS
+model1cptSS<-function(psi,id,xidep) {
+  tim<-xidep[,1]   # Time AFTER dose
+  dose<-xidep[,2]
+  tau<-xidep[,3]
+  ka<-psi[id,1]
+  tlag<-psi[id,2]
+  V<-psi[id,3]
+  CL<-psi[id,4]
+  k<-CL/V
+  ypred<-dose*ka/(V*(ka-k))*(exp(-k*(tim-tlag+tau))/(1-exp(-k*tau))-exp(-ka*(tim-tlag+tau))/(1-exp(-ka*tau)))
+  ypred2<-dose*ka/(V*(ka-k))*(exp(-k*(tim-tlag))/(1-exp(-k*tau))-exp(-ka*(tim-tlag))/(1-exp(-ka*tau)))
+  ypred[tim>=tlag]<-ypred2[tim>=tlag]
+  return(ypred)
+}
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE,nbiter.saemix=c(10,10), fim=FALSE, map=FALSE)
+
+# Parant 2019
+# Create model with covariate weight
+psi<-data.frame(ka=2.24,tlag=0.263,V=14.6,CL=0.748)
+psi.parant<-unlist(psi,use.names=FALSE)
+omega.parant<-diag(c(0,0,.163**2+.114**2,.252**2+.151**2)) # IOV added to IIV
+
+sig.parant<-0.277
+covmat<-diag(4)
+covmat[1,1]<-covmat[2,2]<-0
+covmodel<-psi.cov<-matrix(data=0, nrow=3, ncol=4)
+covmodel[1,3:4]<-1
+covmodel[2,4]<-covmodel[3,4]<-1
+
+beta.cov<-c(0.608, 0.431, 0.159, 0.208)
+psi.cov[covmodel==1]<-beta.cov
+psi0<-rbind(psi.parant,psi.cov)
+dimnames(psi0)<-list(NULL, c("ka","tlag","V","CL"))
+saemix.model<-saemixModel(model=model1cptSS,modeltype="structural",
+                          description="One-compartment model with first-order absorption",
+                          psi0=psi0,
+                          covariate.model = covmodel,
+                          transform.par=c(1,1,1,1), covariance.model =covmat, 
+                          omega.init=omega.parant,
+                          error.model="proportional", error.init = c(0,sig.parant)) # 
+
+```
+
+# Individual predictions
+
+## Running saemix, without taking occasion into account (all data for one subject assumed to be collected at the same occasion)
+
+- **warnings**  
+  - the code is covariate-model specific, adding covariates requires rewriting the code
+  - *saemixPredictNewdata()* returns with a non-convergence warning, indicating difficulties to identify the individual parameters (but the plots seem reasonable)
+
+
+```{r estimateAndReplace, results='hide', echo=FALSE, warnings=FALSE}
+parant.fit<-saemix(saemix.model,saemix.data2,saemix.options)
+
+saemix.fit<-parant.fit
+psi0.pop<-c(psi.parant[1:3],beta.cov[1],psi.parant[4],beta.cov[2:4])
+saemix.fit@results@fixed.effects<-saemix.fit@results@fixed.psi<-psi0.pop
+saemix.fit@results@omega<-omega.parant
+saemix.fit@results@respar[2]<-sig.parant
+saemix.fit@results@betas<-t(c(log(psi.parant[1:3]),beta.cov[1],log(psi.parant[4]),beta.cov[2:4]))
+# Initialise everyone to population parameters
+# Maybe need to add covariates here ?
+for (icol in 1:length(psi.parant)) saemix.fit@results@mean.phi[,icol]<-psi.parant[icol]
+
+```
+
+```{r estimateIndividualParametersCombined, results='hide', echo=FALSE, warnings=FALSE}
+# Estimation for all new data
+saemix.fit@options$warnings<-TRUE # slightly more info, in particular the nb of iterations
+xpred<-saemixPredictNewdata(saemix.fit, occdat, type=c("ipred", "ypred", "ppred", "icpred"),nsamp=200)
+#  xpred<-predict(saemix.fit, dat, type=c("ipred", "ypred", "ppred", "icpred"),nsamp=200) 
+#  plot(dat$Dolutegravir,xpred)
+#  abline(0,1)
+
+names(xpred) # liste renvoyee
+str(xpred$param) # liste de paramètres 
+head(xpred$param$cond.mean.psi) # mode des distributions conditionnelles individuelles
+head(xpred$predictions) # toutes les prédictions
+k<-1
+head(xpred$parSample[,,k]) # paramètres individuels échantillon k (k=1...200 ici)
+dim(xpred$parSample) # dataframe de taille nobs x nsamp=200 ici contenant les prédictions pour chaque observation pour les 200 échantillons de paramètres
+```
+
+# Debugging
+
+- minimal dataset
+  - 2 subjects with 1 observation each
+- single data
+  - 1 subject with 1 observation
+
+```{r debugOneObservation, results='hide', echo=FALSE, warnings=FALSE}
+ndat<-tapply(occdat$id, occdat$id, length)
+subdat <- occdat[occdat$id %in% as.numeric(names(ndat)[ndat==1]),]
+mindat <- subdat[1:2,]
+onedat <- subdat[1,,drop=FALSE]
+
+# Estimation for all new data
+saemix.fit@options$warnings<-TRUE # slightly more info, in particular the nb of iterations
+xpred.min<-saemixPredictNewdata(saemix.fit, mindat, type=c("ipred", "ypred", "ppred", "icpred"),nsamp=200)
+#  xpred<-predict(saemix.fit, dat, type=c("ipred", "ypred", "ppred", "icpred"),nsamp=200) 
+#  plot(dat$Dolutegravir,xpred)
+#  abline(0,1)
+
+xpred.min$param$cond.mean.psi
+cbind(xpred.min$predictions,mindat$Dolutegravir)
+
+# Only one subject...
+xpred.one<-saemixPredictNewdata(saemix.fit, onedat, type=c("ipred", "ypred", "ppred", "icpred"),nsamp=200)
+xpred.one$param$cond.mean.psi
+cbind(xpred.one$predictions,onedat$Dolutegravir)
+```
+
+```{r plotOneSubject, results='hide', echo=FALSE, warnings=FALSE}
+# Predicting individual profiles for a single subject
+tpar<-xpred.one$param
+xtim<-seq(0,48,0.5)
+xidep1<-data.frame(id=rep(1,length(xtim)),time=xtim,AMT=50,II=24)
+psi1<-NULL
+id1<-xidep1[,1]
+sm.icpred<-model1cptSS(tpar$cond.mean.psi,id1,xidep1[,-c(1)])
+sm.ipred<-model1cptSS(tpar$map.psi,id1,xidep1[,-c(1)])
+sm.ppred<-model1cptSS(tpar$population,id1,xidep1[,-c(1)])
+ypl<-data.frame(id=xidep1$id,time=xidep1$time,icpred=sm.icpred,ipred=sm.ipred, ppred=sm.ppred)
+
+# Predicting individual profile with variability using the enveloppe of the predictions
+parsamp<-xpred.one$parSample
+xp<-NULL
+for(i in 1:dim(parsamp)[3]) {
+  psi1 <- parsamp[,,i]
+  xp<-cbind(xp,model1cptSS(matrix(psi1, nrow=1),id1,xidep1[,-c(1)]))
+}
+predint<-apply(xp,1,quantile,c(0.025,0.5,0.975))
+
+ypl$y025<-predint[1,]
+ypl$y50<-predint[2,]
+ypl$y975<-predint[3,]
+
+# Legend doesn't show, probably need to map it to a column in the dataset, but maybe possible to add a specific legend ?? TBD
+obj<-ggplot(data=ypl,aes(x=time, y=icpred)) + scale_x_continuous("Time (hr)") + scale_y_continuous("Predicted DTG concentration (mg/L)") + geom_line(aes(x=time, y=icpred), linetype=1,colour="blue") + # geom_line(aes(x=time, y=ipred,colour=as.factor(id)),linetype=3)  + 
+    geom_line(aes(x=time, y=ppred),linetype=3, colour="blue")  + geom_ribbon(data=ypl,aes(x=time, ymin=y025, ymax=y975),fill="lightblue",alpha=0.3)  + geom_point(data=onedat,aes(x=time, y=Dolutegravir), colour="blue") + ggtitle(paste("Predicted profiles for subject",onedat$id[1])) +  scale_linetype_manual(name = "Predictions", values = c(1,3), labels=c("Individual","Population")) + theme(plot.title = element_text(hjust = 0.5))
+  print(obj)
+
+```
+

@@ -36,10 +36,11 @@ test_that("Using saemixData with file on disk", {
 
 context("Environment issue")
 
-test_that("Environment problem with saemixData... looks for a dataframe in the global environment", {
+test_that("Environment problem with saemixData... looks for a dataframe in the global environment. Now seems fixed ?", {
   theo.saemix<-read.table(file.path(datDir,"theo.saemix.tab"),header=T,na=".")
 #  expect_error(x<-saemixData(name.data=theo.saemix,header=TRUE,sep=" ",na=NA, name.group=c("Id"),name.predictors=c("Dose","Time"),name.response=c("Concentration"),name.covariates=c("Weight","Sex"),units=list(x="hr",y="mg/L", covariates=c("kg","-")), name.X="Time"))
-  x<-saemixData(name.data=theo.saemix,header=TRUE,sep=" ",na=NA, name.group=c("Id"),name.predictors=c("Dose","Time"),name.response=c("Concentration"),name.covariates=c("Weight","Sex"),units=list(x="hr",y="mg/L", covariates=c("kg","-")), name.X="Time")
+  x<-try(saemixData(name.data=theo.saemix,header=TRUE,sep=" ",na=NA, name.group=c("Id"),name.predictors=c("Dose","Time"),name.response=c("Concentration"),name.covariates=c("Weight","Sex"),units=list(x="hr",y="mg/L", covariates=c("kg","-")), name.X="Time"))
+  expect_true(validObject(x))
 })
 
 context("Testing creating a new element of class")

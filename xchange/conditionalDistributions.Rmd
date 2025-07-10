@@ -1,0 +1,125 @@
+---
+title: "Conditional distributions"
+author: "Emmanuelle Comets"
+date: "10/06/2024"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+## Objective
+
+Compute conditional distributions
+
+# Setup
+
+- set up work directories
+- use saemix library
+- two versions toggled by testMode
+  - if testMode is FALSE, load the functions in R
+  - if testMode is TRUE, load the library in a dev_mode environment
+- aim: check the examples used in the online documentation
+  - all examples must run without error
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# Directories
+saemixDir<-"/home/eco/work/saemix/saemixextension"
+progDir<-file.path(saemixDir,"R")
+datDir<-file.path(saemixDir,"data")
+figDir<-file.path(saemixDir,"documentation","figs")
+
+# Libraries
+library(MASS)
+library(rlang)
+library(ggplot2)
+library(gridExtra)
+library(devtools)
+# library(tidyverse)
+
+# Whether to save the plots for the documentation
+saveForDocs<-TRUE
+
+library(saemix)
+```
+
+
+## Continuous response model
+
+### Theophylline
+
+```{r theo}
+data(theo.saemix)
+saemix.data<-saemixData(name.data=theo.saemix,header=TRUE,sep=" ",na=NA, 
+  name.group=c("Id"),name.predictors=c("Dose","Time"),
+  name.response=c("Concentration"),name.covariates=c("Weight","Sex"),
+  units=list(x="hr",y="mg/L",covariates=c("kg","-")), name.X="Time")
+
+model1cpt<-function(psi,id,xidep) { 
+    dose<-xidep[,1]
+    tim<-xidep[,2]  
+    ka<-psi[id,1]
+    V<-psi[id,2]
+    CL<-psi[id,3]
+    k<-CL/V
+    ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
+    return(ypred)
+}
+
+# Model with covariates
+saemix.model<-saemixModel(model=model1cpt,
+                          description="One-compartment model with first-order absorption",
+                          psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3,byrow=TRUE, 
+                                      dimnames=list(NULL, c("ka","V","CL"))),transform.par=c(1,1,1), 
+                          covariate.model=matrix(c(0,0,1,0,0,0),ncol=3,byrow=TRUE),fixed.estim=c(1,1,1),
+                          covariance.model=matrix(c(1,0,0,0,1,1,0,1,1),ncol=3,byrow=TRUE),
+                          omega.init=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE),error.model="combined")
+
+saemix.options<-list(seed=39546,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
+saemix.fit<-saemix(saemix.model,saemix.data,saemix.options)
+
+# Conditional distribution
+saemix.fit <- conddist.saemix(saemix.fit, nsamp=100, plot=TRUE)
+psi.samp <- saemix.fit@results@psi.samp
+yplot <- NULL
+for(isamp in 1:dim(psi.samp)[3]) {
+    yplot <- rbind(yplot, data.frame(id=1:3, irep=isamp,psi.samp[1:3,,isamp]))
+}
+ypd2 <- rbind(cbind(yplot[,c(1:2)],value=yplot[,3],param=saemix.fit@model@name.fixed[1]),
+              cbind(yplot[,c(1:2)],value=yplot[,4],param=saemix.fit@model@name.fixed[2]),
+              cbind(yplot[,c(1:2)],value=yplot[,5],param=saemix.fit@model@name.fixed[3]))
+df.lines <- NULL
+for(i in 1:3) {
+  df.lines <- rbind(df.lines,
+                    data.frame(id=1:3,mean=tapply(yplot[,i+2],yplot$id, mean), median=tapply(yplot[,i+2],yplot$id, median), param=saemix.fit@model@name.fixed[i]))
+}
+
+ypd2$param<-factor(ypd2$param, levels = c("ka","V","CL"))
+plot.density2<-ggplot(data=ypd2) + geom_density(aes(value,fill="red4"), alpha=0.5) +
+    geom_vline(data=df.lines,aes(xintercept=mean),colour="red",linewidth=1.2) + 
+    theme_bw() + theme(axis.title.x = element_blank(),axis.text.x = element_text(size=9, angle=30, hjust=1), legend.position = "none") + 
+    facet_grid(id~factor(param), scales = 'free')
+plot.density2
+
+```
+
+```{r diagTheo}
+# using npde
+ynpde<-npdeSaemix(saemix.fit)
+
+# individual npde plots
+plot(ynpde, plot.type="x.scatter", covsplit=TRUE, which.cov=c("Weight", "Sex"))
+plot(ynpde, plot.type="ecdf", covsplit=TRUE, which.cov=c("Weight", "Sex"))
+
+plot.tnpde<-plot(ynpde, plot.type="x.scatter", ref.prof=list(Id=2), main="tnpd with reference profile ID=2")
+plot.vpc<-plot(ynpde, plot.type="vpc", main="VPC")
+grid.arrange(grobs=list(plot.tnpde, plot.vpc), nrow=1, ncol=2)
+
+# VPC
+plot(saemix.fit, plot.type="vpc")
+plot(ynpde, plot.type="vpc")
+
+# Individual smoothed plots
+plot(saemix.fit, plot.type="individual", smooth=TRUE)
+
+```

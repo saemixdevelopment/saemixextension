@@ -198,79 +198,82 @@ oxboy.fit@results@conf.int
 ############################################################################ 
 # Supposedly equivalent expression using product of gradients... 
 ## not working, keeps giving a singular matrix that can't be inverted
+## because we need to sum the product of gradients and not the gradients before doing the product (silly me)
 
-source(file.path(saemixDir,"newCode","compute_jacobianFIM.R"))
-
-computeJacFIMinv.lin(theo.fit)
-
-############
-jacky<-computeJacFIMinv.lin(oxboy.fit)
-
-ifim<-MASS::ginv(hess2)
-sqrt(diag(ifim))
-pracma::inv(hess2)
-
-# Checking jacobian
-lis1 <- initialiseComputationLL(oxboy.fit)
-ll0 <- saemix.LLlin(theta=lis1$theta, modeltype=lis1$modeltype, etype=lis1$etype, f0=lis1$f0, DF0=lis1$DF0, z=lis1$z, Mcov=lis1$Mcov, nfix=lis1$nfix, 
-                         nomega=lis1$nomega, nind.obs=lis1$nind.obs, ndat.exp=0, idx.fix=lis1$idx.fix,idx.omega=lis1$idx.omega, idx.res=lis1$idx.res, 
-                         tr.fix=lis1$tr.fix) 
-# Very different results !!! ??? why ?
-pracma::jacobian(saemix.LLlin,lis1$theta, modeltype=lis1$modeltype, etype=lis1$etype, f0=lis1$f0, DF0=lis1$DF0, z=lis1$z, Mcov=lis1$Mcov, nfix=lis1$nfix,  nomega=lis1$nomega, nind.obs=lis1$nind.obs, ndat.exp=0, idx.fix=lis1$idx.fix,idx.omega=lis1$idx.omega, idx.res=lis1$idx.res,  tr.fix=lis1$tr.fix) 
-numDeriv::jacobian(saemix.LLlin,lis1$theta, modeltype=lis1$modeltype, etype=lis1$etype, f0=lis1$f0, DF0=lis1$DF0, z=lis1$z, Mcov=lis1$Mcov, nfix=lis1$nfix,  nomega=lis1$nomega, nind.obs=lis1$nind.obs, ndat.exp=0, idx.fix=lis1$idx.fix,idx.omega=lis1$idx.omega, idx.res=lis1$idx.res,  tr.fix=lis1$tr.fix, method.args=list(d=1e-6)) # decent
-numDeriv::jacobian(saemix.LLlin,lis1$theta, modeltype=lis1$modeltype, etype=lis1$etype, f0=lis1$f0, DF0=lis1$DF0, z=lis1$z, Mcov=lis1$Mcov, nfix=lis1$nfix,  nomega=lis1$nomega, nind.obs=lis1$nind.obs, ndat.exp=0, idx.fix=lis1$idx.fix,idx.omega=lis1$idx.omega, idx.res=lis1$idx.res,  tr.fix=lis1$tr.fix, method.args=list(d=.Machine$double.eps^(1/3))) # horrible, why ? .Machine$double.eps^(1/3)=6.e-6 so within the proper range
-jacprac <- pracma::jacobian(saemix.LLlin,lis1$theta, modeltype=lis1$modeltype, etype=lis1$etype, f0=lis1$f0, DF0=lis1$DF0, z=lis1$z, Mcov=lis1$Mcov, nfix=lis1$nfix,  nomega=lis1$nomega, nind.obs=lis1$nind.obs, ndat.exp=0, idx.fix=lis1$idx.fix,idx.omega=lis1$idx.omega, idx.res=lis1$idx.res,  tr.fix=lis1$tr.fix) 
-
-# By hand: not very stable... 1e-6, 1e-7, 1e-8 give similar results
-theta0<-lis1$theta
-for(deps in c(1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10)) {
-  dLL<-c()
-  for(i in 1:length(theta0)) {
-    theta1<-theta0
-    theta1[i]<-theta1[i]*(1+deps)
-    dLL<-c(dLL,saemix.LLlin(theta=theta1, modeltype=lis1$modeltype, etype=lis1$etype, f0=lis1$f0, DF0=lis1$DF0, z=lis1$z, Mcov=lis1$Mcov, nfix=lis1$nfix, 
-                            nomega=lis1$nomega, nind.obs=lis1$nind.obs, ndat.exp=0, idx.fix=lis1$idx.fix,idx.omega=lis1$idx.omega, idx.res=lis1$idx.res, 
-                            tr.fix=lis1$tr.fix))
+if(FALSE) {
+  source(file.path(saemixDir,"newCode","compute_jacobianFIM.R"))
+  
+  computeJacFIMinv.lin(theo.fit)
+  
+  ############
+  jacky<-computeJacFIMinv.lin(oxboy.fit)
+  
+  ifim<-MASS::ginv(hess2)
+  sqrt(diag(ifim))
+  pracma::inv(hess2)
+  
+  # Checking jacobian
+  lis1 <- initialiseComputationLL(oxboy.fit)
+  ll0 <- saemix.LLlin(theta=lis1$theta, modeltype=lis1$modeltype, etype=lis1$etype, f0=lis1$f0, DF0=lis1$DF0, z=lis1$z, Mcov=lis1$Mcov, nfix=lis1$nfix, 
+                      nomega=lis1$nomega, nind.obs=lis1$nind.obs, ndat.exp=0, idx.fix=lis1$idx.fix,idx.omega=lis1$idx.omega, idx.res=lis1$idx.res, 
+                      tr.fix=lis1$tr.fix) 
+  # Very different results !!! ??? why ? 
+  pracma::jacobian(saemix.LLlin,lis1$theta, modeltype=lis1$modeltype, etype=lis1$etype, f0=lis1$f0, DF0=lis1$DF0, z=lis1$z, Mcov=lis1$Mcov, nfix=lis1$nfix,  nomega=lis1$nomega, nind.obs=lis1$nind.obs, ndat.exp=0, idx.fix=lis1$idx.fix,idx.omega=lis1$idx.omega, idx.res=lis1$idx.res,  tr.fix=lis1$tr.fix) 
+  numDeriv::jacobian(saemix.LLlin,lis1$theta, modeltype=lis1$modeltype, etype=lis1$etype, f0=lis1$f0, DF0=lis1$DF0, z=lis1$z, Mcov=lis1$Mcov, nfix=lis1$nfix,  nomega=lis1$nomega, nind.obs=lis1$nind.obs, ndat.exp=0, idx.fix=lis1$idx.fix,idx.omega=lis1$idx.omega, idx.res=lis1$idx.res,  tr.fix=lis1$tr.fix, method.args=list(d=1e-6)) # decent
+  numDeriv::jacobian(saemix.LLlin,lis1$theta, modeltype=lis1$modeltype, etype=lis1$etype, f0=lis1$f0, DF0=lis1$DF0, z=lis1$z, Mcov=lis1$Mcov, nfix=lis1$nfix,  nomega=lis1$nomega, nind.obs=lis1$nind.obs, ndat.exp=0, idx.fix=lis1$idx.fix,idx.omega=lis1$idx.omega, idx.res=lis1$idx.res,  tr.fix=lis1$tr.fix, method.args=list(d=.Machine$double.eps^(1/3))) # horrible, why ? .Machine$double.eps^(1/3)=6.e-6 so within the proper range
+  jacprac <- pracma::jacobian(saemix.LLlin,lis1$theta, modeltype=lis1$modeltype, etype=lis1$etype, f0=lis1$f0, DF0=lis1$DF0, z=lis1$z, Mcov=lis1$Mcov, nfix=lis1$nfix,  nomega=lis1$nomega, nind.obs=lis1$nind.obs, ndat.exp=0, idx.fix=lis1$idx.fix,idx.omega=lis1$idx.omega, idx.res=lis1$idx.res,  tr.fix=lis1$tr.fix) 
+  
+  # By hand: not very stable... 1e-6, 1e-7, 1e-8 give similar results
+  theta0<-lis1$theta
+  for(deps in c(1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10)) {
+    dLL<-c()
+    for(i in 1:length(theta0)) {
+      theta1<-theta0
+      theta1[i]<-theta1[i]*(1+deps)
+      dLL<-c(dLL,saemix.LLlin(theta=theta1, modeltype=lis1$modeltype, etype=lis1$etype, f0=lis1$f0, DF0=lis1$DF0, z=lis1$z, Mcov=lis1$Mcov, nfix=lis1$nfix, 
+                              nomega=lis1$nomega, nind.obs=lis1$nind.obs, ndat.exp=0, idx.fix=lis1$idx.fix,idx.omega=lis1$idx.omega, idx.res=lis1$idx.res, 
+                              tr.fix=lis1$tr.fix))
+    }
+    jac1 <- (dLL-ll0)/(deps*theta0)
+    cat("delta=",deps,": grad=",jac1,"\n")
   }
-  jac1 <- (dLL-ll0)/(deps*theta0)
-  cat("delta=",deps,": grad=",jac1,"\n")
-}
-
-# Still singular...
-jacfim <- t(jacprac) %*% jacprac
-jacfim
-oxboy.fit@results@fim # completely different from FIM saemix 3.1
-oxboy.fim@results@fim # completely different from FIM from Hessian
-
-solve(jacfim)
-sqrt(1/diag(jacfim))
-
-############
-jacky<-computeJacFIMinv.lin(theo.fit)
-
-# Computing a couple of the Jacobian term
-lis1 <- initialiseComputationLL(theo.fit)
-ll0 <- saemix.LLlin(theta=lis1$theta, modeltype=lis1$modeltype, etype=lis1$etype, f0=lis1$f0, DF0=lis1$DF0, z=lis1$z, Mcov=lis1$Mcov, nfix=lis1$nfix, 
-                    nomega=lis1$nomega, nind.obs=lis1$nind.obs, ndat.exp=0, idx.fix=lis1$idx.fix,idx.omega=lis1$idx.omega, idx.res=lis1$idx.res, 
-                    tr.fix=lis1$tr.fix) 
-# Very different results !!! ??? why ?
-pracma::jacobian(saemix.LLlin,lis1$theta, modeltype=lis1$modeltype, etype=lis1$etype, f0=lis1$f0, DF0=lis1$DF0, z=lis1$z, Mcov=lis1$Mcov, nfix=lis1$nfix,  nomega=lis1$nomega, nind.obs=lis1$nind.obs, ndat.exp=0, idx.fix=lis1$idx.fix,idx.omega=lis1$idx.omega, idx.res=lis1$idx.res,  tr.fix=lis1$tr.fix) 
-numDeriv::jacobian(saemix.LLlin,lis1$theta, modeltype=lis1$modeltype, etype=lis1$etype, f0=lis1$f0, DF0=lis1$DF0, z=lis1$z, Mcov=lis1$Mcov, nfix=lis1$nfix,  nomega=lis1$nomega, nind.obs=lis1$nind.obs, ndat.exp=0, idx.fix=lis1$idx.fix,idx.omega=lis1$idx.omega, idx.res=lis1$idx.res,  tr.fix=lis1$tr.fix, method.args=list(d=1e-6)) 
-numDeriv::jacobian(saemix.LLlin,lis1$theta, modeltype=lis1$modeltype, etype=lis1$etype, f0=lis1$f0, DF0=lis1$DF0, z=lis1$z, Mcov=lis1$Mcov, nfix=lis1$nfix,  nomega=lis1$nomega, nind.obs=lis1$nind.obs, ndat.exp=0, idx.fix=lis1$idx.fix,idx.omega=lis1$idx.omega, idx.res=lis1$idx.res,  tr.fix=lis1$tr.fix, method.args=list(d=.Machine$double.eps^(1/3))) 
-
-# By hand: more consistent than with oxboy... 1e-6, 1e-7, 1e-8 give similar results
-theta0<-lis1$theta
-for(deps in c(1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10)) {
-  dLL<-c()
-  for(i in 1:length(theta0)) {
-    theta1<-theta0
-    theta1[i]<-theta1[i]*(1+deps)
-    dLL<-c(dLL,saemix.LLlin(theta=theta1, modeltype=lis1$modeltype, etype=lis1$etype, f0=lis1$f0, DF0=lis1$DF0, z=lis1$z, Mcov=lis1$Mcov, nfix=lis1$nfix, 
-                            nomega=lis1$nomega, nind.obs=lis1$nind.obs, ndat.exp=0, idx.fix=lis1$idx.fix,idx.omega=lis1$idx.omega, idx.res=lis1$idx.res, 
-                            tr.fix=lis1$tr.fix))
+  
+  # Still singular...
+  jacfim <- t(jacprac) %*% jacprac
+  jacfim
+  oxboy.fit@results@fim # completely different from FIM saemix 3.1
+  oxboy.fim@results@fim # completely different from FIM from Hessian
+  
+  solve(jacfim)
+  sqrt(1/diag(jacfim))
+  
+  ############
+  jacky<-computeJacFIMinv.lin(theo.fit)
+  
+  # Computing a couple of the Jacobian term
+  lis1 <- initialiseComputationLL(theo.fit)
+  ll0 <- saemix.LLlin(theta=lis1$theta, modeltype=lis1$modeltype, etype=lis1$etype, f0=lis1$f0, DF0=lis1$DF0, z=lis1$z, Mcov=lis1$Mcov, nfix=lis1$nfix, 
+                      nomega=lis1$nomega, nind.obs=lis1$nind.obs, ndat.exp=0, idx.fix=lis1$idx.fix,idx.omega=lis1$idx.omega, idx.res=lis1$idx.res, 
+                      tr.fix=lis1$tr.fix) 
+  # Very different results !!! ??? why ?
+  pracma::jacobian(saemix.LLlin,lis1$theta, modeltype=lis1$modeltype, etype=lis1$etype, f0=lis1$f0, DF0=lis1$DF0, z=lis1$z, Mcov=lis1$Mcov, nfix=lis1$nfix,  nomega=lis1$nomega, nind.obs=lis1$nind.obs, ndat.exp=0, idx.fix=lis1$idx.fix,idx.omega=lis1$idx.omega, idx.res=lis1$idx.res,  tr.fix=lis1$tr.fix) 
+  numDeriv::jacobian(saemix.LLlin,lis1$theta, modeltype=lis1$modeltype, etype=lis1$etype, f0=lis1$f0, DF0=lis1$DF0, z=lis1$z, Mcov=lis1$Mcov, nfix=lis1$nfix,  nomega=lis1$nomega, nind.obs=lis1$nind.obs, ndat.exp=0, idx.fix=lis1$idx.fix,idx.omega=lis1$idx.omega, idx.res=lis1$idx.res,  tr.fix=lis1$tr.fix, method.args=list(d=1e-6)) 
+  numDeriv::jacobian(saemix.LLlin,lis1$theta, modeltype=lis1$modeltype, etype=lis1$etype, f0=lis1$f0, DF0=lis1$DF0, z=lis1$z, Mcov=lis1$Mcov, nfix=lis1$nfix,  nomega=lis1$nomega, nind.obs=lis1$nind.obs, ndat.exp=0, idx.fix=lis1$idx.fix,idx.omega=lis1$idx.omega, idx.res=lis1$idx.res,  tr.fix=lis1$tr.fix, method.args=list(d=.Machine$double.eps^(1/3))) 
+  # By hand: more consistent than with oxboy... 1e-6, 1e-7, 1e-8 give similar results
+  theta0<-lis1$theta
+  for(deps in c(1e-4, 1e-5, 1e-6, 1e-7, 1e-8, 1e-9, 1e-10)) {
+    dLL<-c()
+    for(i in 1:length(theta0)) {
+      theta1<-theta0
+      theta1[i]<-theta1[i]*(1+deps)
+      dLL<-c(dLL,saemix.LLlin(theta=theta1, modeltype=lis1$modeltype, etype=lis1$etype, f0=lis1$f0, DF0=lis1$DF0, z=lis1$z, Mcov=lis1$Mcov, nfix=lis1$nfix, 
+                              nomega=lis1$nomega, nind.obs=lis1$nind.obs, ndat.exp=0, idx.fix=lis1$idx.fix,idx.omega=lis1$idx.omega, idx.res=lis1$idx.res, 
+                              tr.fix=lis1$tr.fix))
+    }
+    jac1 <- (dLL-ll0)/(deps*theta0)
+    cat("delta=",deps,": grad=",jac1,"\n")
   }
-  jac1 <- (dLL-ll0)/(deps*theta0)
-  cat("delta=",deps,": grad=",jac1,"\n")
+  
 }
 
 ############################################################################ 

@@ -147,6 +147,7 @@ conddist.saemix<-function(saemixObject, nsamp=1, max.iter=NULL, plot=FALSE, ...)
   N<-saemix.data["N"]
   nb.parameters<-saemixObject["model"]["nb.parameters"]
   if(is.null(max.iter)) kmax<-sum(saemixObject["options"]$nbiter.saemix)*2 else kmax<-max.iter
+  kmax <-max(50, kmax) # at least 50 iterations to be able to compute summary statistics
   # using several Markov chains
   chdat<-new(Class="SaemixRepData",data=saemixObject["data"], nb.chains=nsamp)
   NM<-chdat["NM"]

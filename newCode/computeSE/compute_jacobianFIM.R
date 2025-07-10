@@ -53,6 +53,12 @@ computeJacFIMinv.lin<-function(saemixObject) {
   omega <- saemix.res["omega"]
   idx.omega<-which(omega[lower.tri(omega, diag=T)]>0)
   
+# Parameters
+  ndat.exp<-0
+  for(ityp in etype.exp) ndat.exp<-ndat.exp+sum(yobs[saemix.data["data"][,saemix.data["name.ytype"]]==ityp])
+  theta<-c(saemix.res@fixed.effects, omega[lower.tri(omega,diag=T)][idx.omega])
+  if(saemix.model@modeltype=="structural") theta<-c(theta, saemix.res["respar"][saemix.res["indx.res"]])
+  
   # Design matrices
   Mcov <- vector(mode='list', length=saemix.data["N"])
   j2<-0
@@ -64,22 +70,22 @@ computeJacFIMinv.lin<-function(saemixObject) {
     Ai<-kronecker(diag(nphi),as.matrix(saemix.model["Mcovariates"][i,]))
     Mcov[[i]]<-Ai[,ind.covariates,drop=FALSE]
   }
-  ndat.exp<-0
-  for(ityp in etype.exp) ndat.exp<-ndat.exp+sum(yobs[saemix.data["data"][,saemix.data["name.ytype"]]==ityp])
+
+    jacobLL<-try(numDeriv::jacobian(saemix.LLlin.ind, theta, modeltype=saemix.model@modeltype, etype=saemix.data["data"][["ytype"]], f0=f0, DF0=DF, z=z, Mcov=Mcov, nfix=length(saemix.res@betas), nomega=dim(omega)[1], nind.obs=saemix.data["nind.obs"], idx.fix=saemix.res["indx.fix"], idx.omega=idx.omega, idx.res=saemix.res["indx.res"], tr.fix=saemix.model["transform.par"], method.args=list(d=1e-6)))
+    
+    if(inherits(jacobLL,"try-error")) {
+      if(saemixObject@options$warnings) cat("Error computing the gradient of the log-likelihood.\n")
+      invisible(saemixObject)
+    }
+    jacMF<-0
+    for (i in 1:saemix.data["N"]) {
+      jacMF <- jacMF +  (jacobLL[i,]) %*% t(jacobLL[i,])
+    }
   
-  theta<-c(saemix.res@fixed.effects, omega[lower.tri(omega,diag=T)][idx.omega])
-  if(saemix.model@modeltype=="structural") theta<-c(theta, saemix.res["respar"][saemix.res["indx.res"]])
   
   #  saemix.LLlin(theta, modeltype=saemix.model@modeltype, etype=saemix.data["data"][["ytype"]], f0=f0, DF0=DF, z=z, Mcov=Mcov, nfix=length(saemix.res@betas), nomega=dim(omega)[1], nind.obs=saemix.data["nind.obs"], ndat.exp=ndat.exp, idx.fix=saemix.res["indx.fix"],idx.omega=idx.omega, idx.res=saemix.res["indx.res"], tr.fix=saemix.model["transform.par"]) 
   
   # Gradient (needs numDeriv)
-  jacobLL<-try(numDeriv::jacobian(saemix.LLlin, theta, modeltype=saemix.model@modeltype, etype=saemix.data["data"][["ytype"]], f0=f0, DF0=DF, z=z, Mcov=Mcov, nfix=length(saemix.res@betas), nomega=dim(omega)[1], nind.obs=saemix.data["nind.obs"], ndat.exp=ndat.exp, idx.fix=saemix.res["indx.fix"], idx.omega=idx.omega, idx.res=saemix.res["indx.res"], tr.fix=saemix.model["transform.par"], method.args=list(d=1e-6)))
-  
-  if(inherits(jacobLL,"try-error")) {
-    if(saemixObject@options$warnings) cat("Error computing the gradient of the log-likelihood.\n")
-    invisible(saemixObject)
-  }
-  jacMF <- t(jacobLL) %*% jacobLL
   invMF <- try(solve(jacMF))
 #  print(invMF)
   
@@ -110,10 +116,11 @@ computeJacFIMinv.lin<-function(saemixObject) {
     }
   }
   # provisionally return inverse of MF
-  return((jacobLL))
+  return((invMF))
 }
 
 initialiseComputationLL <- function(saemixObject) {
+  # extract elements 
   saemix.model<-saemixObject["model"]
   saemix.data<-saemixObject["data"]
   saemix.res<-saemixObject["results"]

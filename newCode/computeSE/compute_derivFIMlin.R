@@ -505,3 +505,84 @@ saemix.LLlin <- function(theta, modeltype="structural", etype, f0, DF0, z, Mcov,
   LLlin<-LLlin-ndat.exp
   return(LLlin)
 }
+
+# Linearised individual log-likelihoods for a vector of parameters theta - on psi scale
+saemix.LLlin.ind <- function(theta, modeltype="structural", etype, f0, DF0, z, Mcov, nfix, nomega, nind.obs, idx.fix, idx.omega, idx.res, tr.fix) {
+  # Input
+  ## theta: population parameters as a vector, in the following order
+  ### fixed effects (mu and betas)
+  ### omega
+  ### residual error parameters (saemix.res@respar,saemix.data["data"][["ytype"]]) if modeltype is structural
+  ## etype: error model type
+  ## f0: f(ti, phi_i) where phi_i=conditional mean estimates of the individual parameters
+  ## DF0: df(ti, phi_i)
+  ## z: vector of values y_i-f(ti,phi_i)+df(ti,phi_i).phi_i
+  ## Mcov: Mcovariate matrices for each subject
+  ## nfix: number of mu+beta on phi scale (to multiply with design matrix for each subject)
+  ## nomega: number of random effects
+  ## nind.obs: vector with the number of observations for each subject
+  ## idx.fix: indices of which parameters are mu
+  ## idx.omega: indices of lower triangular elements to replace in matrix omega 
+  ## idx.res: indices of residual error parameters 
+  ## tr.fix: h transformation (from psi to phi)
+  # Output
+  ## linearised log-likelihood for each subject (vector), without the constant ndat.exp
+  ntheta<-length(theta)
+  betas <- theta[1:nfix]
+  betas[idx.fix] <- transpsi(t(betas[idx.fix]), tr.fix)
+  nsuj <- length(nind.obs)
+  omega <- matrix(0, nrow=nomega, ncol=nomega)
+  # g0<-cutoff(saemix.res["respar"][1]+saemix.res["respar"][2]*abs(f0))
+  if (modeltype=="structural"){
+    respar<-c(0,0)
+    respar[idx.res]<-theta[(ntheta-(length(idx.res))+1):ntheta]
+    g0<-error(f0, respar, etype) 
+    omega[lower.tri(omega, diag=T)][idx.omega] <- theta[(nfix+1):(ntheta-(length(idx.res)))]
+  }
+  else 
+    omega[lower.tri(omega, diag=T)][idx.omega] <- theta[(nfix+1):ntheta]
+  omega<-omega+t(omega)-diag(diag(omega)) # reconstructing symmetrical variance matrix
+  
+  invVi<-Gi<-list() # Individual variance matrices
+  j2<-0
+  LLlin <- c()
+  for (i in 1:nsuj) {
+    ni<-nind.obs[i]
+    j1<-j2+1
+    j2<-j2+ni
+    #    z[j1:j2]<-yobs[j1:j2] - f0[j1:j2] + DF0[j1:j2,,drop=FALSE]%*%hat.phi[i,] # computed before the call to the function and passed in z
+    if (modeltype=="structural"){
+      Vi<- DF0[j1:j2,,drop=FALSE] %*% omega %*% t(DF0[j1:j2,,drop=FALSE]) + mydiag((g0[j1:j2])^2, nrow=ni)
+    } else{
+      Vi<- DF0[j1:j2,,drop=FALSE] %*% t(DF0[j1:j2,,drop=FALSE])+ mydiag(1, nrow=ni) # ?? should be 0 ?? anyway shouldn't be computed for non-Gaussian models; and where is omega ?
+    }
+    #    invVi[[i]]<-solve(Vi[[i]])
+    # Invert avoiding numerical problems
+    Gi[[i]]<-round(Vi*1e12)/1e12
+    VD<-try(eigen(Gi[[i]]))
+    if(inherits(VD,"try-error") || det(Gi[[i]])==0) {
+      cat("Unable to compute the FIM by linearisation.\n") # si matrice de variance non inversible
+      stop()
+    }
+    D<-Re(VD$values)
+    V<-Re(VD$vectors)
+    invVi[[i]] <- V%*%mydiag(1/D,nrow=length(D))%*%t(V)
+  } 
+  LLlin<- -0.5*sum(nind.obs)*log(2*pi)
+  j2<-0
+  for (i in 1:nsuj) {
+    ni<-nind.obs[i]
+    j1<-j2+1
+    j2<-j2+ni
+    DFi<-DF0[j1:j2,,drop=FALSE]
+    zi<-z[j1:j2]
+    Ai <- Mcov[[i]]
+    DFAi<-DFi%*%Ai
+    Dzi<-zi-DFAi %*% betas
+    
+    LLlin <- c(LLlin, - 0.5*log(det(Gi[[i]])) - 0.5*t(Dzi)%*% invVi[[i]] %*%Dzi)
+  }
+# log-likelihood: sum(LLlin)-ndat.exp [where ndat.exp=nb of observations exponentially transformed]
+  return(LLlin)
+}
+

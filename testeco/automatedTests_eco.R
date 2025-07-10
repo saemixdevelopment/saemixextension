@@ -25,7 +25,7 @@ test_file(file.path(saemixDir,"testeco","testthat_saemixData-class.R"))
 
 test_file(file.path(saemixDir,"testeco","testthat_saemixData-read.R"))
 
-test_file(file.path(saemixDir,"testeco","testthat_saemixData.R"))
+test_file(file.path(saemixDir,"testeco","testthat_saemixData-covariates.R"))
 
 test_file(file.path(saemixDir,"testeco","testthat_saemixData-plot.R"))
 

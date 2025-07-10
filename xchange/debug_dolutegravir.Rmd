@@ -42,7 +42,7 @@ library(Cairo)
 showRes<-TRUE
 saveFigs<-TRUE
 plotByOcc <- FALSE
-nameFig<-"output_feb23.pdf"
+nameFig<-"output_sep23.pdf"
 
 testMode<-TRUE
 

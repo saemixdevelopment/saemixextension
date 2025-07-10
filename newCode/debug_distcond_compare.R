@@ -6,6 +6,7 @@ apply(xarr,c(1,3),mean)
 ##################################################### 09/2024
 library(testthat)
 library(ggplot2)
+library(rlang)
 saemixDir<-"/home/eco/work/saemix/saemixextension"
 setwd(saemixDir)
 library(saemix)
@@ -198,23 +199,6 @@ print(xtab)
 
 tlag200 <- saemixObject@results@psi.samp[1,2,c(1:200)]
 hist(tlag200, breaks=50)
-
-xpsi <- saemixObject@results@psi.samp
-
-ypl3<-NULL
-for(ipar in 1:length(saemix.fit@model@name.modpar)) {
-  ypl0<-data.frame(ysamp=xpsi[1,ipar,],param=saemix.fit@model@name.modpar[ipar])
-  ypl3<-rbind(ypl3, ypl0)
-}
-ypl3<-cbind(ypl3,method="Leo")
-
-ggplot(ypl3, aes(ysamp)) + geom_density(alpha=0.4)+ facet_wrap(.~param, scales="free") 
-# distributions tordues pour CL et Tlag...
-
-# Predict - default max.iter
-xpred<-saemixPredictNewdata(saemix.fit, newdata, type=c("ipred", "ypred", "ppred", "icpred"),nsamp=200)
-
-xpred2<-saemixPredictNewdata(saemix.fit, newdata, type=c("ipred", "ypred", "ppred", "icpred"),nsamp=200, max.iter=200)
 
 ##################################################### 03/2020
 library(testthat)

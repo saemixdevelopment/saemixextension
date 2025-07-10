@@ -99,11 +99,11 @@ setClass(
   Class="SaemixData",
   representation=representation(
     name.data="character",	# name of dataset
-    header="logical",		# for file, whether has header
-    messages="logical",		# whether to print messages when creating the object
-    automatic="logical",		# whether to use automatic name recognition when creating the object
-    sep="character",		# if file, separator
-    na="character",		# if file, NA symbol(s)
+    header="logical",		# for file, whether has header [ToDo: eventually remove from class itself]
+    messages="logical",		# whether to print messages when creating the object [ToDo: eventually remove from class itself]
+    automatic="logical",		# whether to use automatic name recognition when creating the object [ToDo: eventually remove from class itself]
+    sep="character",		# if file, separator [ToDo: eventually remove from class itself]
+    na="character",		# if file, NA symbol(s) [ToDo: eventually remove from class itself]
     name.group="character",	# name of column with ID
     name.predictors="character",# name of column(s) with predictors 
     name.response="character",	# name of column with response

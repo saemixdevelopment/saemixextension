@@ -4,6 +4,7 @@
 #' @param newdata a dataframe containing the new data. The dataframe must contain the same information as the original dataset (column names, etc...) 
 #' @param type one or several of "ipred" (individual predictions using the MAP estimates), "ppred" (population predictions obtained using the population parameters f(E(theta))), "ypred" (mean of the population predictions (E(f(theta)))), "icpred"  (individual predictions using the conditional mean estimates). Defaults to "ppred".
 #' @param nsamp an integer, ignored for other types than icpred; if icpred, returns both the mean of the conditional distribution and nsamp samples, with the corresponding predictions. Defaults to 1.
+#' @param  max.iter an integer, ignored for other types than icpred; for icpred, maximum number of iterations to run for the conditional distribution. Defaults to NULL, in which case the maximum number of iterations will be set to the total number of iterations in the population estimation algorithm. Note that a minimum of 50 iterations will be run by the algorithm if max.iter is set to a lower value than that.
 #' 
 #' @details This function is the workhorse behind the predict method for SaemixObject. It computes predictions for a new dataframe
 #' based on the results of an saemix fit. 
@@ -30,7 +31,7 @@
 #' # TODO
 #' @export
  
-saemixPredictNewdata<-function(saemixObject, newdata, type=c("ipred", "ypred", "ppred", "icpred"),nsamp=1) {
+saemixPredictNewdata<-function(saemixObject, newdata, type=c("ipred", "ypred", "ppred", "icpred"),nsamp=1, max.iter=NULL) {
   # Predictions corresponding to a model fit for newdata
   ## replace the data object in saemixObject with the newdata
   ## wipe out the individual parameter and likelihood estimates associated with the initial run
@@ -40,6 +41,7 @@ saemixPredictNewdata<-function(saemixObject, newdata, type=c("ipred", "ypred", "
   ## newdata: a dataframe containing the predictors needed by the model
   ## type: a vector of strings indicating which types of predictions should be obtained
   ## nsamp ignored for other types than icpred; for icpred, returns both the mean of the conditional distribution and samples, with the corresponding predictions
+  ## max.iter ignored for other types than icpred; for icpred, maximum number of iterations to run for the conditional distribution (a minimum of 50 will be run by the algorithm)
   # Returns a list with the following elements
   ## param: estimated parameters for the subjects in newdata
   ## predictions: dataframe containing the predictions
@@ -109,7 +111,7 @@ saemixPredictNewdata<-function(saemixObject, newdata, type=c("ipred", "ypred", "
   ctype<-c()
   if(length(grep("ipred",type))==1) ctype<-c(ctype,"mode")
   if(length(grep("icpred",type))==1) ctype<-c(ctype,"mean")
-  saemixObject<-estimateIndividualParametersNewdata(saemixObject,type=ctype,nsamp=nsamp) # updates cond.mean.psi, map.psi (normally...)
+  saemixObject<-estimateIndividualParametersNewdata(saemixObject,type=ctype,nsamp=nsamp, max.iter=max.iter) # updates cond.mean.psi, map.psi (normally...)
 
   if(length(grep("icpred",type))==1) {
     psiM<-parameters$cond.mean.psi<-saemixObject["results"]["cond.mean.psi"]
@@ -209,7 +211,7 @@ estimateMeanParametersNewdata<-function(saemixObject) {
   return(saemixObject)
   
 }
-estimateIndividualParametersNewdata<-function(saemixObject,type=c("mode","mean"),nsamp=1) {
+estimateIndividualParametersNewdata<-function(saemixObject,type=c("mode","mean"),nsamp=1, max.iter=NULL) {
   if(length(saemixObject["results"]["mean.phi"])==0) {
     if(saemixObject["options"]$warnings) cat("Population parameters (Ci*mu) will first be estimated to provide a starting point for the estimation of the individual parameters.\n")
     estimateMeanParametersNewdata(saemixObject)
@@ -259,7 +261,7 @@ estimateIndividualParametersNewdata<-function(saemixObject,type=c("mode","mean")
   if(length(grep(c("mean"),type))==1) {
     # Estimating the conditional distribution of individual parameters for the new subjects
     saemixObject["results"]["cond.mean.phi"]<-phiM
-    saemixObject<-conddist.saemix(saemixObject,nsamp=nsamp)
+    saemixObject<-conddist.saemix(saemixObject,nsamp=nsamp, max.iter=max.iter)
     saemixObject["results"]["cond.mean.psi"]<-transphi(saemixObject["results"]["cond.mean.phi"],saemixObject["model"]["transform.par"])
   }
   if(length(grep(c("mode"),type))==1) {
