@@ -64,7 +64,7 @@ setMethod(
   definition=function(.Object, name.outcome="y", type.outcome="continuous", distribution="normal", density=dnorm, density.param=c(mean=0, sd=1), simulate.function=rnorm){
     .Object@name.outcome <- name.outcome
     .Object@type.outcome <- type.outcome
-    .Object@distribution <- tolower(distribution)
+    .Object@distribution <- distribution
     .Object@density <- density
     .Object@density.param <- density.param
     .Object@simulate.function <- simulate.function
@@ -118,14 +118,18 @@ setClass(
   Class="SaemixDiscreteOutcome",
   contains = "SaemixOutcome",
   validity=function(object){
-    # Check type.outcome is one of discrete or event
-    if (!(object@type.outcome %in% c("discrete","event"))) {
-      message("[ SaemixDiscreteOutcome : validation ] Please specify the type of the outcome (one of discrete, for count or categorical data, or event, for event-type data).")
+    # Check type.outcome is one of discrete or count
+    if (!(object@type.outcome %in% c("discrete","count"))) {
+      message("[ SaemixDiscreteOutcome : validation ] Please specify the type of the outcome (one of discrete, for binary or categorical data, or count, for count data).")
       return("Outcome type not given")
     }
     return(TRUE)
   }
 )
+
+# TODO: add other count distributions
+# TODO: categorical distributions (cumulative odds ?)
+## need nb of categories and probabilities
 
 setMethod(
   f="initialize",
@@ -134,44 +138,22 @@ setMethod(
     #    cat ("--- initialising SaemixDiscrete Object --- \n")
     .Object@name.outcome<-name.outcome
     .Object@type.outcome<-type.outcome
-    distribution<-tolower(distribution)
     .Object@distribution<-distribution
-    if(type.outcome=="categorical" & distribution %in% c("binomial","Poisson")) {
-      if(verbose) message("Setting density and simulation function to",distribution," distribution\n")
+    if(type.outcome=="categorical" & distribution %in% c("binomial")) {
+      if(verbose) message("Setting density and simulation function to binomial distribution\n")
     }
-    if(type.outcome=="event" & distribution %in% c("exponential","weibull","logistic")) {
+    if(type.outcome=="count" & distribution %in% c("poisson","zip","negpoisson")) {
       if(verbose) message(paste("Setting density and simulation function to match the",distribution,"distribution\n"))
-    }
-    if(type.outcome=="categorical" & distribution %in% c("exponential","weibull","logistic")) {
-      if(verbose) message(paste("Warning: ",distribution,"distribution is of type event but type of outcome is set at categorical\n"))
-    }
-    if(type.outcome=="event" & distribution %in% c("binomial","poisson")) {
-      if(verbose) message(paste("Warning: ",distribution,"distribution is of type categorical but type of outcome is set at event\n"))
-    }
-    if(distribution=="poisson" & type.outcome=="categorical") {
-      density <- dpois
-      density.param <- c(lambda=1)
-      simulate.function <- rpois
     }
     if(distribution=="binomial" & type.outcome=="categorical") {
       density <- dbinom
       density.param <- c(size=1, prob=0.5)
       simulate.function <- rbinom
     }
-    if(distribution=="exponential" & type.outcome=="event") {
-      density <- dexp
-      density.param <- c(rate=1)
-      simulate.function <- rexp
-    }
-    if(distribution=="weibull" & type.outcome=="event") {
-      density <- dweibull
-      density.param <- c(shape=1, scale=1)
-      simulate.function <- rweibull
-    }
-    if(distribution=="logistic" & type.outcome=="event") {
-      density <- dlogis
-      density.param <- c(location=0, scale=1)
-      simulate.function <- rlogis
+    if(distribution=="poisson" & type.outcome=="count") {
+      density <- dpois
+      density.param <- c(lambda=1)
+      simulate.function <- rpois
     }
     .Object@density <- density
     .Object@density.param <- density.param
@@ -179,6 +161,11 @@ setMethod(
     return (.Object )
   }
 )
+
+########################################################################
+# Observation class - Event outcome
+#' @exportClass SaemixEventOutcome
+
 
 ########################################################################
 # Observation class - Continuous outcome
@@ -410,7 +397,7 @@ setMethod("show","SaemixDiscreteOutcome",
           function(object) {
             cat("Discrete outcome:",object@name.outcome,"\n")
             cat("    type:", object@type.outcome,"\n")
-#            cat("    distribution:", object@distribution,"\n")
+            #            cat("    distribution:", object@distribution,"\n")
           }
 )
 setMethod("showall","SaemixDiscreteOutcome",

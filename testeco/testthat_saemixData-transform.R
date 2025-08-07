@@ -66,6 +66,26 @@ test_that("Transforming variables - categorical covariates", {
   expect_equal(transform.numeric(1:10,centering=(-5),transformation=log),log(6:15))
 })
 
+test_that("Transforming datasets - remapping a categorical covariate", {
+  dummytab <- data.frame(id=rep(1:12, each=3), time=rep(c(0,1,6),12), PgP=rep(rep(c("CT","CC","TT"),4),each=3))
+  dummytab$y <- round(runif(length(dummytab$id),0,10),digits=1)
+  x<-saemixData(name.data=dummytab,name.group="id",name.predictors=c("time"), name.response="y",name.covariates=c("PgP"), units=list(x="hr",y="mg/L",covariates=c("-")),verbose=F)
+  expect_is(x, "SaemixData") # tests for particular class
+  x2<-transformCatCov(x, covariate=PgP, oldCat=c("CC","CT","TT"),newCat=c(1,2,3), newCatName=c("PgP.CC","PgP.CT","PgP.TT"), verbose=TRUE)
+  expect_equal(sum(x2@data$PgP.CC),sum(x@ocov$PgP=="CC"))
+  expect_equal(sum(x2@data$PgP.CT),sum(x@ocov$PgP=="CT"))
+  expect_equal(sum(x2@data$PgP.TT),sum(x@ocov$PgP=="TT"))
+})
+
+test_that("Transforming datasets - object unchanged if NA in the covariate (ToDo: change this to allow a NA category)", {
+  dummytab <- data.frame(id=rep(1:12, each=3), time=rep(c(0,1,6),12), PgP=rep(rep(c("CT","CC","TT"),4),each=3))
+  dummytab$y <- round(runif(length(dummytab$id),0,10),digits=1)
+  dummytab$PgP[dummytab$id==3]<-NA
+  x<-saemixData(name.data=dummytab,name.group="id",name.predictors=c("time"), name.response="y",name.covariates=c("PgP"), units=list(x="hr",y="mg/L",covariates=c("-")),verbose=F)
+  x2<-transformCatCov(x, covariate=PgP, oldCat=c("CC","CT","TT"),newCat=c(1,2,3), newCatName=c("PgP.CC","PgP.CT","PgP.TT"), verbose=TRUE)
+  expect_identical(x,x2)
+})
+
 
 test_that("Transforming datasets - categorical covariate", {
   cow.saemix<-read.table(file.path(datDir,"cow.saemix.tab"),header=T,na=".")

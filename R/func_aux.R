@@ -251,6 +251,7 @@ cutoff.max<-function(x) max(x,.Machine$double.xmin)
 cutoff.eps<-function(x) max(x,.Machine$double.eps)
 cutoff.res<-function(x,ares,bres) max(ares+bres*abs(x),.Machine$double.xmin)
 
+# Moved these functions to SaemixParameter.R (define error models) in Rext
 # Inverse of the normal cumulative distribution fct: using erfcinv from ?pnorm
 norminv<-function(x,mu=0,sigma=1)  mu-sigma*qnorm(x,lower.tail=FALSE)
 
@@ -258,6 +259,7 @@ norminv<-function(x,mu=0,sigma=1)  mu-sigma*qnorm(x,lower.tail=FALSE)
 normcdf<-function(x,mu=0,sigma=1)
   cutoff(pnorm(-(x-mu)/sigma,lower.tail=FALSE),1e-30)
 
+#############################
 error<-function(f,ab,etype) { # etype: error model
   g<-f
   for(ityp in sort(unique(etype))) {

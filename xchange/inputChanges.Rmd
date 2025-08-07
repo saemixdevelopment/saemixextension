@@ -1,0 +1,512 @@
+---
+title: "Changing classes in saemix"
+author: "Emmanuelle Comets"
+date: "2025-07-10"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+# Objective
+
+**Highlight changes in class structures and in entering the input between current version of saemix (3.x) and next version (4.0)**
+
+- SaemixData object
+  - main changes 
+    - added a slot to specify the type of the outcomes
+    - added a slot for grouping levels (varlevel) 
+    - added an associated covariate.varlevel to specify where the covariate model should enter
+    - added a log slot to track warning messages so the user can review what changes were made during the creation of the object
+  - additional changes
+    - log all warning messages to print out or keep track of in the object
+  - **ToDo Lillois**
+    - check recording of error messages to make sure as much as possible is captured/tracked
+    - program a function to extract the covariate matrices for the different levels in varlevel
+      - input: the object
+      - output: the object, with a slot holding the list of matrices with the first value of the covariate at each level
+        - eg: for id, first value of the covariate in each subject (size: Nxnb of covariates)
+        - for occ, first value of the covariate in each subject at each occasion (size )
+        - add (and record) warning messages if the covariate changes value within a grouping level
+- SaemixIndividualModel (**new**)
+  - split in two parts
+    - individual population model ($\phi_{pop,i}=\mu + \sum \beta.cov_i$)
+    - new class defining a variability model: structure of covariance-matrix $\Omega$
+  - functions associated with the variability model
+    - see notes
+  - functions associated with the individual population model
+- SaemixModel object
+  - main changes
+    - multiple responses through the ytype identifier
+    - distribution of outcome
+      - built-in error models
+      - user-defined error models
+    - definition of parameters through their distribution à la MLX-TRAN
+      - built-in distributions with automatically defined transformation h and inverse h-1
+      - in theory (untested), possible to write user-defined distributions
+      - from the list of parameters, derive the variability levels
+    - added a log slot to track warning messages so the user can review what changes were made during the creation of the object
+  - **ToDo Lillois**
+    - function to match varlevel 
+      - input: SaemixData and SaemixModel objects
+      - output: TBD (could be both objects updated, or could be an updated varlevel and covariate.varlevel list for two functions to make the changes in the SaemixData and SaemixModel objects)
+- input functions (**saemixData()** and **saemixModel()**)
+  - legacy options to enter the model as previously
+  - some new features 
+- Fisher Information Matrix by linearisation
+  - scope: **TBD**
+  - **ToDo Lillois**
+    1. equations for the FIM using h and gradient(h) (*thèse Sylvie Retout*)
+      - may require to add the function and inverse function derivatives to the SaemixPar object
+      - ToDo: write equations and implement them 
+    2. equations for the FIM in the presence of IOV  (*thèse Caroline Bazzoli TBC, ou Anne Dubois*, *Florence* , *Kristofferson et al. 2015*)
+      - biblio methods
+      - write equations 
+      - implementation
+    3. question: is the expression generalisable to more variability levels ??
+  - additionally
+    - FIM for multiple responses but already implemented by Lucas (?)
+- further developments needed (out of scope for Lillois)
+  - Eco
+    - add log slot in model and SaemixObject objects
+    - make sure all warning messages are captured in the log slots for both data and model objects
+  - Fisher Information Matrix by stochastic approximation (*Delattre et Kuhn Computo 2023*)
+    - will need the same transformation as for the linearisation approach
+    - extended to multiple responses by Alexandra
+    - who: most likely Lucas or could be an intern project
+  - testing user-defined error models
+  - user-defined distributions
+  - additional variability levels
+
+# Setup
+
+- folders
+  - set **workDir** to the working directory
+  - needs the saemix root folder (here **/home/eco/work/saemix/saemixextension**)
+  - data will be saved in folder **data40**
+- libraries
+  - need to install ggplot2 and its sister libraries
+  - need packages testthat (tests)
+  - saemix package functions are loaded, from two versions
+    - current version: folder **R**
+    - next version: folder **Rext**
+
+```{r setup, include=FALSE}
+# Setting working directory
+require("knitr")
+knitr::opts_chunk$set(echo = TRUE)
+
+# Libraries
+library(ggplot2) 
+library(RColorBrewer) 
+library(gridExtra)
+library(viridis)
+library(testthat)
+
+#library(dplyr)
+# library(Cairo)
+
+# Working directory
+saemixDir<-"/home/eco/work/saemix/saemixextension"
+workDir <-getwd()
+setwd(workDir)
+knitr::opts_chunk$set(root.dir = workDir)
+
+# Load function generics (same for both versions)
+progDir.current<-file.path(saemixDir,"R")
+progDir.next<-file.path(saemixDir,"Rext")
+source(file.path(progDir.current,"aaa_generics.R"))
+
+# directory
+datDir<-file.path(saemixDir,"data40")
+
+
+```
+
+# A dataset with a complex data structure
+
+- Dummy dataset with the following features
+  - three biomarker responses (2 longitudinal + 1 binary)
+  - varying number of occasions, with a variable number of occasions: 1 to 3
+  - covariates
+    - sex, age, weight changing with subject
+    - comedication, CRCL changing with occasion
+  - complex design
+    - N=100 subjects
+    - 1 to 3 occasions per subject (random), with escalating doses
+    - 4 to 8 samples for each biomarker (4 at occasion 1, varying at later occasions) with some times common to all occasions and some randomly sampled
+    - all biomarkers sampled at the same times
+    - time between two occasions: 52 weeks
+    - dose for biomarker 2: 4 doses c(20,50,100,200)
+- Model for simulations of responses
+  - response
+    - biomarker 1: linear evolution (intercept $\alpha$, slope $\delta$)
+
+    $$ y_1 = \alpha + \delta t$$
+
+    - biomarker 2: bi-exponential evolution according to the Bateman function 
+    
+    $$ y_2 = \frac{D}{V} \frac{k_a}{(k_a-CL/V)} \left( e^{- CL/V t} - e^{-k_a t} \right)$$
+    
+    - biomarker 3: Bernouilli with probability $p_3(y_1, y_2)$ affected by the two longitudinal biomarkers
+      - modelled as logit, with a linear effect for each biomarker
+      - biomarker 1 increases $p_3$ (as a linear model of the ratio of y1/100)
+      - biomarker 2 decreases $p_3$ (as a linear model of y2)
+
+    $$ logit(P(y_3=1)) = log(p_3/(1-p_3)) + \delta_{y1} \frac{y_1}{100} + \delta_{y2} y_2  $$
+      
+  - parameter distribution
+    - normal distribution for $\delta$, $\delta_{y1}$ and $\delta_{y2}$
+    - logistic distribution for $p_3$
+    - log-normal distribution for the other parameters
+  - variabilities
+    - IIV on all parameters except p3
+      - correlation between CL and $\delta$ (0.7)
+    - IOV
+      - IOV matrix on $\delta$ and CL with 10% IOV and the same correlation as in the IIV model
+    - residual error models
+      - biomarker 1: additive
+      - biomarker 2: proportional
+- Covariate models
+  - weight: allometry on V and CL for biomarker 2
+  - gender: decreased intercept for biomarker 1 (by 30%) and higher probability for biomarker 3 (30%)
+  - age: decrease of CL with age, increase of $p_3$
+  - CRCL: correlation with CL
+  - comedication: increase in CL by 30%, decrease $p_3$ by 50%
+- dataset with missing values
+  - LOQ data
+    - biomarker 3: data < LOQ censored
+  - missing data: randomly set for each biomarker independently
+    - 5% of the data for biomarker 1
+    - 10% of the data for biomarker 2
+    - 5% of the data for biomarker 3
+- Not included in the simulation
+  - NA values in the covariates
+
+# Reading simulated data
+
+- dataset without covariates, to test: 
+  - multiple responses
+  - IOV
+  - different number of occasions and samples
+- dataset with covariates, to test:
+  - covariates varying or not with occasion
+  - covariate models
+    - on individual parameters for covariates at baseline
+    - on intra-occasion parameters for covariates varying with time
+
+```{r readSimulatedData}
+# Dataset without covariates
+datanocov <- read.csv(file=file.path(datDir,"complexSimulation_nocov.csv"), header=T, sep=",")
+
+# Dataset with covariates
+datacov <- read.csv(file=file.path(datDir,"complexSimulation_covar.csv"), header=T, sep=",")
+
+```
+
+
+# Saemix 
+
+Changes in saemix from previous to new version of the package
+
+## Data object
+
+## Functions from the current saemix package
+
+- expected behaviour
+  - reading the dataframe should work
+  - appropriate columns should be recognised, including occ and ytype
+  - plot: seems correct
+  - no variability levels 
+  
+- ToDo:
+  - maybe, if: we continue with current version [currently not the plan]
+    - add automatic recognition for occ and ytype (currently not read unless explicitely set by user)
+    - add "|occ" in the formula
+    - check nesting order (check occasion is within id)
+    - dispatch individual plots
+  
+```{r currentFctsData, results='hide', echo=FALSE, warnings=FALSE}
+# Reading functions from current package (3.x)
+source(file.path(progDir.current,"SaemixData.R"))
+source(file.path(progDir.current,"SaemixData-methods.R"))
+source(file.path(progDir.current,"SaemixData-methods_covariates.R"))
+
+# Reading data into an saemixData object
+smxdata.current <- saemixData(name.data=file.path(datDir,"complexSimulation_nocov.csv"), header=T,na=".", sep=",", name.group=c("id"),name.predictors=c("time", "dose"),name.response=c("y"), name.occ = "occ", name.ytype = "ytype", verbose=TRUE)
+x<-smxdata.current
+xdata <- smxdata.current@data
+
+# testthat checks
+expect_equal(sort(unique(xdata$ytype)),c(1,2,3))
+expect_equal(sort(unique(xdata$occ)),c(1,2,3))
+expect_length(unique(xdata$time),10)
+expect_length(unique(xdata$dose),4)
+ 
+# Plot of the data (mixing all responses)
+plot(x)
+
+# Plot to check if the data looks all right (separating responses and occasions)
+
+resp.labs <- paste("Response", 1:3)
+names(resp.labs) <- c("1", "2", "3")
+occ.labs <-paste("Occ",1:3)
+names(occ.labs) <- c("1", "2", "3")
+
+ggplot(xdata, aes(x=time, y=y, group=id, colour=as.factor(occ))) + geom_point(aes(shape=as.factor(ytype))) + geom_line(data = subset(xdata, ytype<3)) + xlab("Time (weeks)") + ylab("Responses")  + scale_color_viridis("Occasion",discrete = TRUE) + scale_shape(name = "Response") + facet_wrap(occ~ytype, scales = "free_y", labeller = labeller(ytype = resp.labs, occ=occ.labs, .multi_line=FALSE))
+
+#  facet_grid(occ~ytype, scales = "free_y", labeller = labeller(ytype = resp.labs, occ = occ.labs)) # bug: scales doesn't work with facet_grid when it should
+```
+
+### Functions from the new saemix package
+
+- **legacy use**
+  - *method*: using the function **saemixData()** as previously
+    - objective: seamless transition in legacy mode
+  - expected behaviour
+    - no error message
+    - reading the dataframe should work
+    - appropriate columns should be recognised, including occ and ytype
+  - **new**: slot outcome
+    - outcome are automatically mapped
+    - here we expect the first two outcome to be recognised as continuous, and the third as binary will be mapped to categorical
+  - systematic check on unchanged slots in the object: **passed**
+- **new definition**
+  - *method*: same function but explicit definition of outcome (name and type)
+  - expected behaviour
+    - no error message
+    - reading the dataframe should work
+    - appropriate columns should be recognised, including occ and ytype
+  - slot outcome
+    - now we should have named responses with their prespecified type
+  - systematic check on unchanged slots in the object: **passed**
+- ToDo:
+  - units for each response
+    - add automatic recognition for occ and ytype (currently not read unless explicitely set by user)
+    - add "|occ" in the formula
+    - check nesting order (check occasion is within id)
+    - dispatch individual plots
+  - note: see tests for the updated class in corresponding testthat files
+
+```{r newFctsData, results='hide', echo=FALSE, warnings=FALSE}
+source(file.path(progDir.next,"SaemixData.R"))
+source(file.path(progDir.next,"SaemixData-methods.R"))
+
+############### Legacy 
+# Reading data into an saemixData object - same instruction as before
+smxdata.legacy <- saemixData(name.data=file.path(datDir,"complexSimulation_nocov.csv"), header=T,na=".", sep=",", name.group=c("id"),name.predictors=c("time", "dose"),name.response=c("y"), name.occ = "occ", name.ytype = "ytype", verbose=TRUE)
+x<-smxdata.legacy
+xdata <- smxdata.legacy@data
+
+############### New definition 
+# Reading data into an saemixData object - specifying outcome type
+
+smxdata.next <-  saemixData(name.data=file.path(datDir,"complexSimulation_nocov.csv"), header=T,na=".", sep=",", name.group=c("id"),name.predictors=c("time", "dose"),name.response=c("y"), name.occ = "occ", name.ytype = "ytype", verbose=TRUE, outcome=c(change="continuous", conc="continuous", response="categorical"), units=list(x="hr",y=c("%change","mg/L","-")))
+x<-smxdata.next
+
+expect_equal(smxdata.legacy@outcome,c(y1="continuous",y2="continuous",y3="categorical"))
+
+# Plot to check if the data looks all right (separating responses and occasions)
+xdata<-x@data
+resp.labs <- paste("Response", 1:3)
+names(resp.labs) <- c("1", "2", "3")
+occ.labs <-paste("Occ",1:3)
+names(occ.labs) <- c("1", "2", "3")
+
+ggplot(xdata, aes(x=time, y=y, group=id, colour=as.factor(occ))) + geom_point(aes(shape=as.factor(ytype))) + geom_line(data = subset(xdata, ytype<3)) + xlab("Time (weeks)") + ylab("Responses")  + scale_color_viridis("Occasion",discrete = TRUE) + scale_shape(name = "Response") + facet_wrap(occ~ytype, scales = "free_y", labeller = labeller(ytype = resp.labs, occ=occ.labs, .multi_line=FALSE))
+
+
+```
+
+### Detailed changes to Data object
+
+
+```{r compareDataObjects, results='hide', echo=FALSE, warnings=FALSE}
+#########################################################################
+# systematic checks between current and legacy version- identical objects
+x<-smxdata.legacy
+object.slots <- names(attributes(x))
+for(islot in object.slots) {
+  if(!(islot %in% c("outcome", "sep", "na", "header","class"))) {
+    expect_equal(smxdata.current[islot], smxdata.legacy[islot])
+  }
+}
+
+# testthat checks
+xdata <- smxdata.legacy@data
+expect_equal(sort(unique(xdata$ytype)),c(1,2,3))
+expect_equal(sort(unique(xdata$occ)),c(1,2,3))
+expect_length(unique(xdata$time),10)
+expect_length(unique(xdata$dose),4)
+
+#########################################################################
+# systematic checks between legacy and next version - identical objects
+x<-smxdata.next
+object.slots <- names(attributes(x))
+for(islot in object.slots) {
+  if(!(islot %in% c("outcome", "sep", "na", "header","class","units"))) {
+    expect_equal(smxdata.next[islot], smxdata.legacy[islot])
+  }
+}
+
+# testthat checks
+xdata <- smxdata.next@data
+expect_equal(sort(unique(xdata$ytype)),c(1,2,3))
+expect_equal(sort(unique(xdata$occ)),c(1,2,3))
+expect_length(unique(xdata$time),10)
+expect_length(unique(xdata$dose),4)
+expect_equal(smxdata.next@outcome,c(change="continuous",conc="continuous",response="categorical"))
+expect_equal(smxdata.next@units$x,c("hr"))
+expect_equal(smxdata.next@units$y,c("%change","mg/L","-"))
+
+```
+
+## Model object
+
+- model function used to estimate parameters
+  - same arguments psi, id, xidep
+  - ytype is a recognised column of xidep so can be used inside the code
+- ToDo
+  - add occ to xidep if not done yet
+- TBD
+  - here occ is also used (but need to make sure it is passed on in the code)
+  - do we need occ in the model or should it also be passed 'within' psi ? (need to think)
+
+
+```{r modelFunction, results='hide', echo=FALSE, warnings=FALSE}
+# model function
+model3biomarkers <- function(psi,id,xidep) {
+  tim<-xidep[,1]
+  dose<-xidep[,2]
+  y<-xidep[,3]  # needed for non-Gaussian models
+  ytype<-xidep$ytype
+  occ <- xidep$occ
+  alpha<-psi[id,1] # biomarker 1
+  delta<-psi[id,2]
+  ka<-psi[id,3] # biomarker 2
+  V<-psi[id,4]
+  CL<-psi[id,5]
+  p3<-psi[id,6] # biomarker 3
+  delta.y1<-psi[id,7]
+  delta.y2<-psi[id,8]
+  ypred <- alpha+delta*tim
+  y2 <- dose*ka/V/(ka-CL/V)*(exp(-CL/V*tim) - exp(-ka*tim))
+  logit<-p3+delta.y1*(y1/100)+delta.y2*y2
+  pevent<-1/(1+exp(-logit))
+  P.obs <- (y[ytype==3]==0)*(1-pevent[ytype==3])+(y[ytype==3]==1)*pevent[ytype==3]
+  ypred[ytype==2]<-y2[ytype==2]
+  ypred[ytype==3]<-log(P.obs)
+  return(ypred)
+}
+```
+
+## Functions from the current saemix package
+
+- expected behaviour
+  - only IIV taken into account
+  - distributions, correlations between parameters handled
+  - multiple responses can already be modelled through ytype
+- limits for the current package
+  - only IIV, no IOV
+    - also of course no covariate model for IOV parameters
+  - error model: only one taken into account
+- ToDo:
+  - vector of residual error models
+  - maybe, if: we continue with current version [currently not the plan]
+    - dispatch individual plots
+
+```{r currentFctsModel, results='hide', echo=FALSE, warnings=FALSE}
+# Reading functions from current package (3.x)
+source(file.path(progDir.current,"SaemixModel.R"))
+
+# Initial parameters & covariance matrix structure (IIV only)
+psi0.mat <- as.matrix(data.frame(alpha=100, delta=0.83, ka=1, V=12, CL=2.5, p3=0.3, delta.y1=0.84, delta.y2=-0.0675))
+varmat <- diag(1,nrow=dim(psi0.mat)[2])
+varmat[2,5]<-varmat[5,2]<-1
+
+smxmodel.current<-saemixModel(model=model3biomarkers, modeltype=c("structural","structural","likelihood"),
+  description="Model for 2 continuous biomarkers and one repeated binary outcome", 
+  psi0=psi0.mat,transform.par=c(1,0,rep(1,3),3,0,0),
+  covariance.model=varmat,error.model=c("constant","proportional","none"))
+
+```
+
+### Functions from the new saemix package
+
+- methods for model object now in a separate file
+- **legacy use**
+  - *method*: using the **saemixModel()** function as previously
+    - objective: seamless transition in legacy mode for models previously handled
+  - expected behaviour
+    - no error message
+  - **new**: 
+- **new definition**
+  - *method*: same function but explicit definition of parameter distributions
+  - expected behaviour
+    - no error message
+- ToDo:
+  - note: see tests for the updated class in corresponding testthat files
+
+```{r newFctsModel, results='hide', echo=FALSE, warnings=FALSE}
+source(file.path(progDir.next,"SaemixModel.R"))
+source(file.path(progDir.next,"SaemixModel-methods.R"))
+
+############### Legacy 
+# Reading data into an saemixModel object - same instruction as before
+smxmodel.legacy<-saemixModel(model=model3biomarkers, modeltype=c("structural","structural","likelihood"),
+  description="Model for 2 continuous biomarkers and one repeated binary outcome", 
+  psi0=psi0.mat,transform.par=c(1,0,rep(1,3),3,0,0),
+  covariance.model=varmat,error.model=c("constant","proportional","none"))
+
+############### New definition 
+# Reading data into an saemixModel object - specifying parameter distributions
+
+smxdata.next <-  saemixData(name.data=file.path(datDir,"complexSimulation_nocov.csv"), header=T,na=".", sep=",", name.group=c("id"),name.predictors=c("time", "dose"),name.response=c("y"), name.occ = "occ", name.ytype = "ytype", verbose=TRUE, outcome=c(change="continuous", conc="continuous", response="categorical"), units=list(x="hr",y=c("%change","mg/L","-")))
+x<-smxdata.next
+
+```
+
+### Detailed changes to Model object
+
+
+```{r compareModelObjects, results='hide', echo=FALSE, warnings=FALSE}
+#########################################################################
+# systematic checks between current and legacy version- identical objects
+object.slots <- names(attributes(x))
+for(islot in object.slots) {
+  if(!(islot %in% c("outcome", "sep", "na", "header","class"))) {
+    expect_equal(smxdata.current[islot], smxdata.legacy[islot])
+  }
+}
+
+# testthat checks
+xdata <- smxdata.legacy@data
+expect_equal(sort(unique(xdata$ytype)),c(1,2,3))
+expect_equal(sort(unique(xdata$occ)),c(1,2,3))
+expect_length(unique(xdata$time),10)
+expect_length(unique(xdata$dose),4)
+
+#########################################################################
+# systematic checks between legacy and next version - identical objects
+object.slots <- names(attributes(x))
+for(islot in object.slots) {
+  if(!(islot %in% c("outcome", "sep", "na", "header","class","units"))) {
+    expect_equal(smxdata.next[islot], smxdata.legacy[islot])
+  }
+}
+
+# testthat checks
+xdata <- smxdata.next@data
+expect_equal(sort(unique(xdata$ytype)),c(1,2,3))
+expect_equal(sort(unique(xdata$occ)),c(1,2,3))
+expect_length(unique(xdata$time),10)
+expect_length(unique(xdata$dose),4)
+expect_equal(smxdata.next@outcome,c(change="continuous",conc="continuous",response="categorical"))
+expect_equal(smxdata.next@units$x,c("hr"))
+expect_equal(smxdata.next@units$y,c("%change","mg/L","-"))
+
+```
+
+### Additional features
+
+- NA
+- LOQ

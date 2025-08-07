@@ -1,14 +1,50 @@
 context("Creating a SaemixData object through its class")
 
 test_that("Creating an object via its class", {
-  x<-new(Class="SaemixData",name.data=file.path(datDir,"theo.saemix.tab"), header=T,na=".", name.group="wrongid",name.predictors=c("Dose","Time"), name.response="Concentration", name.covariates=c("gender"),units=list(x="mg",y="-",covariates="-"),verbose=F)
+  x<-new(Class="SaemixData",name.data=file.path(datDir,"theo.saemix.tab"), header=T,na=".", varlevel="wrongid",name.predictors=c("Dose","Time"), name.response="Concentration", name.covariates=c("gender"),units=list(x="hr",y="mg/L",covariates="-"),verbose=F)
   x@outcome<-c(y1="continuous")
   names(x@outcome)<-x@name.response
   expect_equal(x@outcome,c(Concentration="continuous"))
 })
 
+test_that("Creating an object via its class, given as numbers", {
+  x<-new(Class="SaemixData",name.data=file.path(datDir,"theo.saemix.tab"), varlevel="1", name.predictors=c("Time","2"), name.response="4", header=T,na=".", units=list(x="hr",y="mg/L"),verbose=F)
+  x@name.X<-"Time"
+  x@name.cens<-x@name.mdv<-x@name.ytype<-""
+  x1<-readSaemix(x)
+  expect_equal(x1@name.response,"Concentration")
+  expect_equal(x1@name.group,"Id")
+  expect_equal(x1@name.predictors,c("Time","Dose"))
+})
+
+
+test_that("Creating an object via its class, automatic recognition", {
+  x<-new(Class="SaemixData",name.data=file.path(datDir,"theo.saemix.tab"), header=T,na=".", units=list(x="hr",y="mg/L"),verbose=F, automatic=FALSE)
+  x@name.X<-"Time"
+  x@name.cens<-x@name.mdv<-x@name.ytype<-""
+  x@automatic <- TRUE
+  x1<-readSaemix(x)
+  expect_equal(x1@name.response,"Concentration")
+  expect_equal(x1@name.group,"Id")
+  expect_equal(x1@name.predictors,c("Time","Dose"))
+})
+
+test_that("Creating an object via its class, automatic recognition", {
+  x<-new(Class="SaemixData",name.data=file.path(datDir,"PD1.saemix.tab"), header=T,na=".",name.predictors="", name.response="", units=list(x="mg",y="-"),verbose=F)
+  x@name.X<-""
+  x@name.cens<-x@name.mdv<-x@name.ytype<-""
+  x1<-readSaemix(x)
+  expect_equal(x1@name.response,"response")
+  expect_equal(x1@name.group,"subject")
+  expect_equal(x1@name.predictors,"dose")
+  expect_equal(x1@name.X,"dose")
+})
+
+
 test_that("Testing readSaemix", {
-  x<-new(Class="SaemixData",name.data=file.path(datDir,"theo.saemix.tab"), header=T,na=".", name.group="wrongid",name.predictors=c("Dose","Time"), name.response="Concentration", name.covariates=c("gender"),units=list(x="mg",y="-",covariates="-"),verbose=F)
+  x<-new(Class="SaemixData",name.data=file.path(datDir,"theo.saemix.tab"), header=T,na=".", varlevel="wrongid",name.predictors=c("Dose","Time"), name.response="Concentration", name.covariates=c("gender"),units=list(x="mg",y="-",covariates="-"),verbose=F)
+  x@name.X<-"Time"
+  x@name.cens<-x@name.mdv<-x@name.ytype<-""
   x1<-readSaemix(x)
   verbose<-TRUE
   x<-x1
@@ -36,8 +72,14 @@ test_that("Errors in creating saemixData - no data", {
   expect_equal(x,"Creation of SaemixData object failed")
 })
 
+test_that("Errors in creating saemixData - no names given and automatic=FALSE", {
+  x<-saemixData(name.data=file.path(datDir,"theo.saemix.tab"),header=T,na=".", automatic=FALSE); 
+  expect_is(x,"character")
+  expect_equal(x,"Creation of SaemixData object failed")
+})
+
 test_that("Errors in creating saemixData - Wrong group name", {
-  x<-saemixData(name.data=file.path(datDir,"theo.saemix.tab"),header=T,na=".", name.group="wrongid",name.predictors=c("Dose","Time"), name.response="Concentration", automatic=FALSE); 
+  x<-saemixData(name.data=file.path(datDir,"theo.saemix.tab"),header=T,na=".", varlevel="wrongid",name.predictors=c("Dose","Time"), name.response="Concentration", automatic=FALSE, verbose=TRUE); 
   expect_is(x,"character")
   expect_equal(x,"Creation of SaemixData object failed")
 })
@@ -61,25 +103,27 @@ test_that("Errors in creating saemixData - Wrong separator", {
 })
 
 test_that("Successful creation of a SaemixData object from data on disk, automatic recognition", {
-  x<-saemixData(name.data=file.path(datDir,"PD1.saemix.tab"),header=T,na=".", verbose=FALSE)
+  x<-saemixData(name.data=file.path(datDir,"PD1.saemix.tab"),header=T,na=".", verbose=TRUE)
   expect_is(x, "SaemixData") # tests for particular class
   expect_equal(x@name.predictors,c("dose"))
   expect_equal(x@name.group,c("subject"))
   expect_equal(x@name.response,"response")
+  expect_equal(x@outcome,c(response="continuous"))
   expect_equal(length(x@name.covariates),0)
   expect_equal(x@header,TRUE)
   expect_equal(x@sep,"")
   expect_equal(x@na,".")
   expect_equal(x@name.mdv,"mdv")
   expect_equal(x@name.cens,"cens")
-  expect_equal(x@name.occ,"occ")
+  expect_equal(x@name.occ,character(0))
+  expect_equal(x@varlevel,x@name.group)
   expect_equal(x@name.ytype,"ytype")
   expect_equal(x@name.X,"dose")
   expect_equal(x@N,100)
   expect_equal(x@ntot.obs,300)
 })
 
-test_that("Successful creation of a SaemixData object, column given as numbers", {
+test_that("Successful creation of a SaemixData object, column given as numbers (legacy)", {
   x<-saemixData(name.data=file.path(datDir,"PD1.saemix.tab"),header=T,na=".", name.group=1,name.predictors=2,name.response=3, name.covariates=4,units=list(x="mg",y="-",covariates="-"),verbose=F)
   expect_is(x, "SaemixData") # tests for particular class
   expect_equal(x@name.predictors,c("dose"))
@@ -91,7 +135,7 @@ test_that("Successful creation of a SaemixData object, column given as numbers",
   expect_equal(x@na,".")
   expect_equal(x@name.mdv,"mdv")
   expect_equal(x@name.cens,"cens")
-  expect_equal(x@name.occ,"occ")
+  expect_equal(x@name.occ,character(0))
   expect_equal(x@name.ytype,"ytype")
   expect_equal(x@name.X,"dose")
   expect_equal(x@N,100)
@@ -99,7 +143,7 @@ test_that("Successful creation of a SaemixData object, column given as numbers",
   expect_equal(sort(unique(x@data$gender)),c(0,1))
 })
 
-test_that("Successful creation of a SaemixData object, column given as names", {
+test_that("Successful creation of a SaemixData object, column given as names (legacy)", {
   x<-saemixData(name.data=file.path(datDir,"PD1.saemix.tab"),header=T,na=".", name.group=c("subject"),name.predictors=c("dose"),name.response=c("response"), name.covariates=c("gender"),units=list(x="mg",y="-",covariates="-"),verbose=F)
   expect_is(x, "SaemixData") # tests for particular class
   expect_equal(x@name.predictors,c("dose"))
@@ -111,7 +155,6 @@ test_that("Successful creation of a SaemixData object, column given as names", {
   expect_equal(x@na,".")
   expect_equal(x@name.mdv,"mdv")
   expect_equal(x@name.cens,"cens")
-  expect_equal(x@name.occ,"occ")
   expect_equal(x@name.ytype,"ytype")
   expect_equal(x@name.X,"dose")
   expect_equal(x@N,100)
@@ -119,7 +162,7 @@ test_that("Successful creation of a SaemixData object, column given as names", {
   expect_equal(sort(unique(x@data$gender)),c(0,1))
 })
 
-test_that("Successful creation of a SaemixData object, full specification, theophylline example", {
+test_that("Successful creation of a SaemixData object, full specification, theophylline example (legacy)", {
   x<-saemixData(name.data=file.path(datDir,"theo.saemix.tab"),header=T,na=".", name.group=c("Id"),name.predictors=c("Dose","Time"),name.response=c("Concentration"),units=list(x="hr",y="mg/L"), name.X="Time",verbose=F)
   expect_is(x, "SaemixData") # tests for particular class
   expect_equal(x@name.predictors,c("Dose","Time"))
@@ -129,17 +172,55 @@ test_that("Successful creation of a SaemixData object, full specification, theop
   expect_equal(x@na,".")
   expect_equal(x@name.mdv,"mdv")
   expect_equal(x@name.cens,"cens")
-  expect_equal(x@name.occ,"occ")
+  expect_equal(x@varlevel,x@name.group)
   expect_equal(x@name.ytype,"ytype")
   expect_equal(x@name.X,"Time")
   expect_equal(x@N,12)
   expect_equal(x@ntot.obs,120)
 })
 
-# From a data frame instead of a file on disk (doesn't work within test_that)
-theo.saemix<-read.table(file.path(datDir,"theo.saemix.tab"),header=T,na=".")
+test_that("Successful creation of a SaemixData object, full specification, theophylline example (4.0)", {
+  x<-saemixData(name.data=file.path(datDir,"theo.saemix.tab"),header=T,na=".", varlevel=c("Id"),name.predictors=c("Dose","Time"),name.response=c("Concentration"),units=list(x="hr",y="mg/L"), name.X="Time",verbose=F)
+  expect_is(x, "SaemixData") # tests for particular class
+  expect_equal(x@name.predictors,c("Dose","Time"))
+  expect_equal(x@name.group,c("Id"))
+  expect_equal(x@name.response,"Concentration")
+  expect_equal(x@header,TRUE)
+  expect_equal(x@na,".")
+  expect_equal(x@name.mdv,"mdv")
+  expect_equal(x@name.cens,"cens")
+  expect_equal(x@varlevel,x@name.group)
+  expect_equal(x@name.ytype,"ytype")
+  expect_equal(x@name.X,"Time")
+  expect_equal(x@N,12)
+  expect_equal(x@ntot.obs,120)
+})
+
+test_that("Successful creation of a SaemixData object, column given as numbers (4.0)", {
+  x<-saemixData(name.data=file.path(datDir,"PD1.saemix.tab"),header=T,na=".", varlevel=1,name.predictors=2,name.response=3, name.covariates=4,units=list(x="mg",y="-",covariates="-"),verbose=F)
+  expect_is(x, "SaemixData") # tests for particular class
+  expect_equal(x@name.predictors,c("dose"))
+  expect_equal(x@name.group,c("subject"))
+  expect_equal(x@name.response,"response")
+  expect_equal(x@name.covariates,"gender")
+  expect_equal(x@header,TRUE)
+  expect_equal(x@sep,"")
+  expect_equal(x@na,".")
+  expect_equal(x@name.mdv,"mdv")
+  expect_equal(x@name.cens,"cens")
+  expect_equal(x@name.occ,character(0))
+  expect_equal(x@name.ytype,"ytype")
+  expect_equal(x@name.X,"dose")
+  expect_equal(x@N,100)
+  expect_equal(x@ntot.obs,300)
+  expect_equal(sort(unique(x@data$gender)),c(0,1))
+})
+
+
+# From a data frame instead of a file on disk (doesn't work within test_that) => now works
 
 test_that("Successful creation of a SaemixData object from dataframe object, full specification", {
+  theo.saemix<-read.table(file.path(datDir,"theo.saemix.tab"),header=T,na=".")
   x<-saemixData(name.data=theo.saemix, name.group=c("Id"),name.predictors=c("Dose","Time"),name.response=c("Concentration"),units=list(x="hr",y="mg/L"), name.X="Time", verbose=FALSE)
   expect_is(x, "SaemixData") # tests for particular class
   expect_equal(x@name.predictors,c("Dose","Time"))
@@ -149,7 +230,6 @@ test_that("Successful creation of a SaemixData object from dataframe object, ful
   expect_equal(x@na,"NA")
   expect_equal(x@name.mdv,"mdv")
   expect_equal(x@name.cens,"cens")
-  expect_equal(x@name.occ,"occ")
   expect_equal(x@name.ytype,"ytype")
   expect_equal(x@name.X,"Time")
   expect_equal(x@N,12)
@@ -167,7 +247,7 @@ test_that("Errors in creating saemixData - Wrong group name, but automatic recog
   expect_equal(x@na,"NA")
   expect_equal(x@name.mdv,"mdv")
   expect_equal(x@name.cens,"cens")
-  expect_equal(x@name.occ,"occ")
+  expect_equal(x@varlevel,x@name.group)
   expect_equal(x@name.ytype,"ytype")
   expect_equal(x@name.X,"Dose")
   expect_equal(x@N,12)
@@ -176,14 +256,11 @@ test_that("Errors in creating saemixData - Wrong group name, but automatic recog
 
 # Multiple responses
 # From a data frame instead of a file on disk (doesn't work within test_that)
-pkpd.saemix<-read.table(file.path(datDir,"../","data40","warfarinPKPD.tab"),header=T,na=".")
-pkrtte.saemix<-read.table(file.path(datDir,"../","data40","pkRTTE.tab"),header=T,na=".")
-pkcount.saemix<-read.table(file.path(datDir,"../","data40","jointCount.tab"),header=T,na=".")
-pkcat.saemix<-read.table(file.path(datDir,"../","data40","warfarinCatPD.tab"),header=T,na=".")
 
 context("Multiple responses")
 
 test_that("Deriving outcomes automatically, no outcome given or types only", {
+  pkpd.saemix<-read.table(file.path(datDir,"../","data40","warfarinPKPD.tab"),header=T,na=".")
   x1<-saemixData(name.data=pkpd.saemix, header=T,na=".", name.group=c("id"), name.predictors=c("time","amt"), name.response=c("dv"), name.ytype = "dvid", name.covariates=c("sex", "wt", "age"), units=list(x="hr",y="mg/L"), verbose=TRUE)
   expect_equal(x1@outcome,c(y1="continuous", y2="continuous"))
   x2<-saemixData(name.data=pkpd.saemix, header=T,na=".", name.group=c("id"), name.predictors=c("time","amt"), name.response=c("dv"), name.ytype = "dvid", name.covariates=c("sex", "wt", "age"), units=list(x="hr",y="mg/L"), verbose=TRUE, outcome=c("continuous", "categorical"))
@@ -191,6 +268,7 @@ test_that("Deriving outcomes automatically, no outcome given or types only", {
 })
 
 test_that("Using explicit outcomes, possibly incomplete or oversized", {
+  pkpd.saemix<-read.table(file.path(datDir,"../","data40","warfarinPKPD.tab"),header=T,na=".")
   x1<-saemixData(name.data=pkpd.saemix, header=T,na=".", name.group=c("id"), name.predictors=c("time","amt"), name.response=c("dv"), name.ytype = "dvid", name.covariates=c("sex", "wt", "age"), units=list(x="hr",y="mg/L"), verbose=TRUE, outcome=c(conc="continuous", PCA="continuous"))
   expect_equal(x1@outcome,c(conc="continuous", PCA="continuous"))
   x2<-saemixData(name.data=pkpd.saemix, header=T,na=".", name.group=c("id"), name.predictors=c("time","amt"), name.response=c("dv"), name.ytype = "dvid", name.covariates=c("sex", "wt", "age"), units=list(x="hr",y="mg/L"), verbose=TRUE, outcome=c(conc="continuous", "categorical"))
@@ -204,6 +282,9 @@ test_that("Using explicit outcomes, possibly incomplete or oversized", {
 context("Multiple responses, categorical and event")
 
 test_that("Using explicit outcomes", {
+  pkrtte.saemix<-read.table(file.path(datDir,"../","data40","pkRTTE.tab"),header=T,na=".")
+  pkcount.saemix<-read.table(file.path(datDir,"../","data40","jointCount.tab"),header=T,na=".")
+  pkcat.saemix<-read.table(file.path(datDir,"../","data40","warfarinCatPD.tab"),header=T,na=".")
   x1<-saemixData(name.data=pkrtte.saemix, header=T,na=".", name.group=c("id"), name.predictors=c("time","dose","ii"), name.response=c("y"), name.ytype = "ytype", units=list(x="hr",y="mg/L"), verbose=TRUE , outcome=c(conc="continuous", event="event"))
   expect_equal(x1@outcome,c(conc="continuous", event="event"))
   expect_equal(length(unique(x1@data$ytype)), 2)
@@ -217,4 +298,22 @@ test_that("Using explicit outcomes", {
   expect_equal(length(unique(x3@data$ytype)), 2)
 })
 
+context("Multiple levels of variability")
 
+# ToDo:
+## add more tests for the class with IOV
+## add tests with covariates read and associated to different varlevels
+
+test_that("IIV + IOV given in class constructor through varlevel", {
+  x<-new(Class="SaemixData",name.data=file.path(datDir,"../","data40","complexSimulation_nocov.csv"), header=T,na=".",sep=",",varlevel=c("id","occ"),name.predictors=c("time","dose"), name.response="y", units=list(x="hr",y="mg/L"),verbose=TRUE)
+  expect_is(x, "SaemixData") # tests for particular class
+  expect_equal(x@varlevel,c("id","occ"))
+  
+})
+
+
+test_that("IIV + IOV", {
+  datanocov<-read.csv(file.path(datDir,"../","data40","complexSimulation_nocov.csv"),header=T,na=".")
+  x<-saemixData(name.data=datanocov, name.predictors=c("time","dose"), name.response="y", name.ytype="ytype",varlevel=c("id","occ")) 
+  expect_equal(x@varlevel,c("id","occ"))
+})

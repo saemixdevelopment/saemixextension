@@ -10,17 +10,17 @@
 #' @param nsim the number of simulations used to compute npde (1000 by default, we suggest increasing
 #' it for large datasets)
 #' 
-#' @return An object of class \code{\link{NpdeObject}}
+#' @return An object of class \code{\link[npde]{NpdeObject}}
 #'
 #' @details Since version 3.0, the saemix package depends on the npde package, which computes the npd/npde and
-#' produces graphs. See the documentation for \code{\link{npde}} for details on the computation methods
+#' produces graphs. See the documentation for \code{\link[npde]{npde}} for details on the computation methods
 #' See the PDF documentation and the bookdown \url{https://iame-researchcenter.github.io/npde_bookdown/}
 #' for details on the different plots available.
 #' 
 #' @author Emmanuelle Comets <emmanuelle.comets@@bichat.inserm.fr>
-#' @seealso \code{\link{npde.graphs}}, \code{\link{gof.test}}
-#' @seealso \code{\link{NpdeObject}} \code{\link{npde.plot.select}}  \code{\link{autonpde}}
-#' @seealso \code{\link{npde.plot.scatterplot}} \code{\link{npde.plot.dist}}
+#' @seealso \code{\link[npde]{npde.graphs}}, \code{\link[npde]{gof.test}}
+#' @seealso \code{\link[npde]{NpdeObject}} \code{\link[npde]{npde.plot.select}}  \code{\link[npde]{autonpde}}
+#' @seealso \code{\link[npde]{npde.plot.scatterplot}} \code{\link[npde]{npde.plot.dist}}
 #' 
 #' @references E Comets, K Brendel, F Mentre (2008). Computing normalised prediction distribution errors
 #' to evaluate nonlinear mixed-effect models: the npde add-on package for R. 

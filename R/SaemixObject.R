@@ -1,3 +1,10 @@
+
+#' @include aaa_generics.R
+#' @include SaemixData.R
+#' @include SaemixModel.R
+#' @include SaemixRes.R
+#' NULL
+
 ####################################################################################
 ####		Defining class containing data, model and options		####
 ####################################################################################

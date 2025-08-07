@@ -1,3 +1,14 @@
+Version 3.4 - July 2025
+
+o Changes
+   * added functions to transform covariates in an SaemixData object
+   * continuous covariates may be centered and/or transformed (eg: log-transformed and centered to the median or a given value)
+   * categorical covariates can be regrouped and transformed to dummy variables to use in the analysis
+   * the transformed covariates can be given new names
+
+o Compiler change
+   * added static link to functions related to the npde package to satisfy the new compiler requirements on CRAN
+
 Version 3.3 - March 2024
 
 o Bugfixes

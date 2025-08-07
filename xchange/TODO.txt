@@ -1,7 +1,9 @@
 * 05/2025
-- securiser les fonctions de transformation de variables
-* cas des NA
-* noms si on renomme, discrepancy in ocov...
+- fonctions de transformation de variables
+  * fait: securiser les fonctions
+  * fait: noms si on renomme, discrepancy in ocov...
+  * ToDo: cas des NA pour les covariables catégorielles
+  * ToDo: fonction pour discrétiser des covariables continues
 
 * Check functions derviphi and dtransphi
     - completely unclear what these functions are supposed to do and whether they actually do it

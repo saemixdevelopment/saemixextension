@@ -513,7 +513,7 @@ plotDiscreteData.aux <- function(object, max.cat=10, breaks=NULL, catlabel=NULL,
 #' 
 ## #' @aliases
 #' @author Emmanuelle Comets <emmanuelle.comets@@bichat.inserm.fr>
-#' @seealso \code{\link{npde}}, \code{\link{autonpde}}
+#' @seealso \code{\link[npde]{npde}}, \code{\link[npde]{autonpde}}
 #' @references K. Brendel, E. Comets, C. Laffont, C. Laveille, and F.
 #' Mentre. Metrics for external model evaluation with an application to the
 #' population pharmacokinetics of gliclazide. \emph{Pharmaceutical Research},

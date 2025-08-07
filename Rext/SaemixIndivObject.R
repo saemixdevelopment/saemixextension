@@ -1,33 +1,17 @@
-# More structured definition of an individual model matching covariate model and data for a given variability level
-# defining design variables and setting indices to access items
-# in the end, should be created by a function associating a variability model, a covariate model (par-cov relationship and cov transformation) and data (find cov, find level of variability)
-# Contains most of what used to be Uargs
-
-# SaemixVarLevel
-# name.level = "character", # name of variability level
-# variable = "character", # which variable (in the dataset) is the variability associated to
-# omega = "matrix", # variance-covariance matrix (values)
-# omega.model = "matrix", # structure of the variance-covariance matrix (1=present in the model, 0=absent)
-# omega.model.fix = "matrix", # fixed elements of the variance-covariance matrix (1=fixed, 0=estimated)
-# omega.tri = "numeric", # lower triangular matrix of omega, in vector form
-# omega.names = "character", # names of the variance-covariance parameters in omega.tri
-# idxmat.triomega = "numeric", # index of estimated elements in omega.tri (=1 in omega.model)
-# idxmat.triomega.fix = "numeric", # index of fixed elements in omega.tri (=1 in omega.model.fix)
-# idxmat.triomega.var = "numeric", # index of variances in omega.tri
-# idxmat.triomega.covar = "numeric", # index of covariances in omega.tri
-# index.eta = "numeric" #  index of parameters with estimated variances
+## TBD if needed
+## another option is to update the SaemixIndivModel object when associating data
+## and create a child class with the indices
 
 
 # Variability level class - generic
-setClass(Class = "SaemixIndivModel",
-         contains = "SaemixVarLevel",
+setClass(Class = "SaemixIndivObject",
          representation=representation(
            # --- names
            name.modpar = "character", # name of parameters in the model (psi, ex: ka, cl)
            name.fixedpar = "character", # name of fixed parameters (mu+beta) for the current level of variability
            name.covariates = "character", # name of covariates in the model for this level of variability
+           log="character",		# A record of the warnings and messages during the creation of the object
            # --- number of parameters, covariates,...
-           N="integer", # number of 'subjects' associated to this variability level (eg: N=nb of subjects for IIV, N=sum(n_{occ,i}) for IOV,...)
            nb.modpar="integer", # number of model parameters (eg ka, cl) = number of mu ## nb.parameters
            nb.etas = "integer", # number of parameters with random effects (non-null elements in diag(omega))
            nb.fixedpar = "integer", # number of parameters mu+beta (mu: at highest level, eg IIV=population parameter, then eg systematic(fixed) occasion effect) ## was nb.betas
@@ -42,10 +26,8 @@ setClass(Class = "SaemixIndivModel",
            betaest.model="matrix",	# design matrix (row for mu then covariate.model)
            # for IIV: rbind(rep(1, nb.modpar), covariate.model); for other levels, covariate.model or rbind(rep(0, nb.modpar), covariate.model) ?
            # --- design matrices
-           Mcovariates="matrix", # Mcovariate: matrix with N rows and columns corresponding to the (transformed) covariate values for each parameter x covariate relationship (including mu for IIV, a column of 1's)
            LCOV="matrix", # LCOV: (nb.fixedpar x nb.modpar) design matrix to pass from the vector of fixed parameters (mu+beta) to the model parameters; used in M-step to compute d1.omega
            MCOV="matrix", # MCOV: values of fixed parameters in matrix form (same structure as LCOV); used to compute mean.phi (population value of phi accounting for individual covariates)
-           COV="matrix", # N x nb(mu+beta) containing 1's for mu and covariate values for each subject;  used in M-step to compute mean.phi as MCOV %*% COV (phi = MCOV %*% COV + eta)
            # --- helper matrices
            #    COV1="matrix", # initialised as Uargs$COV[,Uargs$ind.fix1] = Uargs$COV[,index.fixedpar.fix] # maybe remove
            # modified in main to Uargs$COV[,Uargs$ind.fix11] = Uargs$COV[,index.fixedpariiv.estim] when flag.fmin is TRUE and kiter=saemix.options$nbiter.sa (ie end of simulated annealing and minimisation) => removed, make the change in M-step
@@ -69,7 +51,7 @@ setClass(Class = "SaemixIndivModel",
            index.fixedpariiv.estim= "integer",  # Index of beta effects on parameters with IIV ## ind.fix11
            index.fixedparnoiiv.estim= "integer",  # Index of beta effects on parameters without IIV ## ind.fix10
            # --- indices in matrices
-            # indices in betaest.model
+           # indices in betaest.model
            idxmat.fixedpar = "integer", # index of fixedpar in betaest.model ## ind.covariates
            idxmat.mu = "integer", # index of mu's in betaest.model 
            idxmat.beta = "integer", # index of beta's in betaest.model 
@@ -110,6 +92,7 @@ setMethod(
             "idxmat.triomega.covar"={return(x@idxmat.triomega.covar)},
             "index.eta"={return(x@index.eta)},
             # Elements added in the child class
+            "log"={return(x@log)},
             "name.modpar"={return(x@name.modpar)},
             "name.fixedpar"={return(x@name.fixedpar)},
             "name.covariates"={return(x@name.covariates)},
@@ -170,6 +153,7 @@ setReplaceMethod(
             "idxmat.triomega.covar"={x@idxmat.triomega.covar<-value},
             "index.eta"={x@index.eta<-value},
             # Elements added in the child class
+            "log"={x@log<-value},
             "nb.modpar"={x@nb.modpar<-value},
             "ncov"={x@ncov<-value},
             "N"={x@N<-value},
@@ -259,7 +243,7 @@ setMethod(
       if(ncol(covariate.model)!=.Object@nb.modpar) {
         message("Mismatch between covariate.model and var.model, ignoring covariate.model\n")
         ncov<-0
-        } else {
+      } else {
         .Object@covariate.model <- covariate.model
         if(!is.null(rownames(covariate.model))) .Object@name.covariates <- rownames(covariate.model)
         ncov<-nrow(covariate.model)
@@ -269,7 +253,7 @@ setMethod(
           covariate.model.fix <- covariate.model*0
         } 
         .Object@covariate.model.fix <- covariate.model.fix
-        }
+      }
     } else ncov<-0
     .Object@nb.cov <- as.integer(ncov)
     

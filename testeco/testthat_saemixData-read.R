@@ -1,3 +1,33 @@
+context("Automatic name recognition")
+
+test_that("Automatic recognition of ID column, given as Id or 1, or id with automatic recognition set to TRUE", {
+  theo.saemix <-read.table(file.path(datDir,"theo.saemix.tab"), header=T)
+  expect_equal(validate.names("Id", colnames(theo.saemix),recognisednames = c("id","subject","sujet","group","groupe"), verbose=TRUE, automatic=FALSE),"Id")
+  expect_null(validate.names("id", colnames(theo.saemix),recognisednames = c("id","subject","sujet","group","groupe"), verbose=TRUE, automatic=FALSE))
+  expect_equal(validate.names("Id", colnames(theo.saemix),recognisednames = c("id","subject","sujet","group","groupe"), verbose=TRUE, automatic=TRUE),"Id")
+  expect_equal(validate.names(1, colnames(theo.saemix),recognisednames = c("id","subject","sujet","group","groupe"), verbose=TRUE, automatic=TRUE),"Id")
+  expect_equal(validate.names(1, colnames(theo.saemix),recognisednames = c("id","subject","sujet","group","groupe"), verbose=TRUE, automatic=FALSE),"Id")
+  expect_equal(validate.names("id", colnames(theo.saemix),recognisednames = c("id","subject","sujet","group","groupe"), verbose=TRUE, automatic=TRUE),"Id")
+  expect_equal(validate.names("group", colnames(theo.saemix),recognisednames = c("id","subject","sujet","group","groupe"), verbose=TRUE, automatic=TRUE),"Id")
+})
+
+test_that("Automatic recognition of response column, given as response or 4, or y with automatic recognition set to TRUE", {
+  theo.saemix <-read.table(file.path(datDir,"theo.saemix.tab"), header=T)
+  expect_equal(validate.names("Concentration", colnames(theo.saemix),recognisednames = c("response","resp","conc","concentration","y","dv"), verbose=FALSE, automatic=FALSE),"Concentration")
+  expect_equal(validate.names("Concentration", colnames(theo.saemix),recognisednames = c("response","resp","conc","concentration","y","dv"), verbose=TRUE, automatic=FALSE),"Concentration")
+  expect_equal(validate.names(4, colnames(theo.saemix),recognisednames = c("response","resp","conc","concentration","y","dv"), verbose=TRUE, automatic=FALSE),"Concentration")
+  expect_equal(validate.names("y", colnames(theo.saemix),recognisednames = c("response","resp","conc","concentration","y","dv"), verbose=TRUE, automatic=TRUE),"Concentration")
+})
+
+test_that("Automatic recognition of predictor column, given as response or 4, or y with automatic recognition set to TRUE", {
+  theo.saemix <-read.table(file.path(datDir,"theo.saemix.tab"), header=T)
+  expect_equal(validate.names("Time", colnames(theo.saemix),recognisednames = c("time","temps","tps","tim","x","dose"), verbose=FALSE, automatic=FALSE),"Time")
+  expect_equal(validate.names("Dose", colnames(theo.saemix),recognisednames = c("time","temps","tps","tim","x","dose"), verbose=FALSE, automatic=FALSE),"Dose")
+  expect_equal(validate.names(c("Time","Dose"), colnames(theo.saemix),recognisednames = c("time","temps","tps","tim","x","dose"), verbose=FALSE, automatic=FALSE),c("Time","Dose"))
+  expect_equal(validate.names(c(3,2), colnames(theo.saemix),recognisednames = c("time","temps","tps","tim","x","dose"), verbose=FALSE, automatic=FALSE),c("Time","Dose"))
+  expect_equal(validate.names(c("amt","xtim"), colnames(theo.saemix),recognisednames = c("time","temps","tps","tim","x","dose"), verbose=TRUE, automatic=TRUE),c("Time","Dose"))
+})
+
 context("Creating a SaemixData object through saemixData")
 
 test_that("Errors in creating saemixData - no data", {

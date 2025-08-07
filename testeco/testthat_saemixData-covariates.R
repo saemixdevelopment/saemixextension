@@ -27,6 +27,7 @@ context("Testing creation of SaemixData with covariates\n")
 #theo.saemix$Sex<<-ifelse(theo.saemix$Sex==1,"M","F")
 
 test_that("Successful creation of a SaemixData object with covariates", {
+  theo.saemix<-read.table(file.path(datDir,"theo.saemix.tab"),header=T,na=".")
   x<-saemixData(name.data=theo.saemix,header=TRUE,sep=" ",na=NA, name.group=c("Id"),name.predictors=c("Dose","Time"),name.response=c("Concentration"),name.covariates=c("Weight","Sex"),units=list(x="hr",y="mg/L", covariates=c("kg","-")), name.X="Time")
   expect_is(x, "SaemixData") # tests for particular class
   expect_equal(x@name.predictors,c("Dose","Time"))
