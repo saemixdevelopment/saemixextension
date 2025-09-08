@@ -45,8 +45,10 @@ NULL
 # Observation class - generic
 setClass(Class = "SaemixOutcome",
          representation=representation(
+           log = "character", # warning messages
            name.outcome = "character", # outcome name
            type.outcome = "character", # Type: continuous, discrete or event
+           unit = "character", # unity of the outcome
            distribution = "character", # Distribution name
            density = "function", # density function for the outcome
            density.param = "numeric", # named vector of parameters for the density distribution
@@ -61,9 +63,11 @@ setClass(Class = "SaemixOutcome",
 setMethod( 
   f="initialize",
   signature="SaemixOutcome",
-  definition=function(.Object, name.outcome="y", type.outcome="continuous", distribution="normal", density=dnorm, density.param=c(mean=0, sd=1), simulate.function=rnorm){
+  definition=function(.Object, name.outcome="y", type.outcome="continuous", distribution="normal", density=dnorm, density.param=c(mean=0, sd=1), simulate.function=rnorm, unit="", verbose=FALSE){
+    .Object@log <- ""
     .Object@name.outcome <- name.outcome
     .Object@type.outcome <- type.outcome
+    .Object@unit <- unit
     .Object@distribution <- tolower(distribution)
     .Object@density <- density
     .Object@density.param <- density.param
@@ -80,8 +84,10 @@ setMethod(
   signature = "SaemixOutcome" ,
   definition = function (x,i,j,drop ){
     switch (EXPR=i,
+            "log"={return(x@log)},
             "name.outcome"={return(x@name.outcome)},
             "type.outcome"={return(x@type.outcome)},
+            "unit"={return(x@unit)},
             "distribution"={return(x@distribution)},
             "density"={return(x@density)},
             "density.param"={return(x@density.param)},
@@ -97,8 +103,10 @@ setReplaceMethod(
   signature = "SaemixOutcome" ,
   definition = function (x,i,j,value){
     switch (EXPR=i,
+            "log"={x@log<-value},
             "name.outcome"={x@name.outcome<-value},
             "type.outcome"={x@type.outcome<-value},
+            "unit"={x@unit<-value},
             "distribution"={x@distribution<-value},
             "density"={x@density<-value},
             "density.param"={x@density.param<-value},
@@ -130,23 +138,33 @@ setClass(
 setMethod(
   f="initialize",
   signature="SaemixDiscreteOutcome",
-  definition= function (.Object, name.outcome="y", type.outcome="categorical", distribution="binomial", density=dbinom, density.param=c(size=1, prob=0.5), simulate.function=rbinom, verbose=FALSE) {
+  definition= function (.Object, name.outcome="y", type.outcome="categorical", distribution="binomial", density=dbinom, density.param=c(size=1, prob=0.5), simulate.function=rbinom, unit="", verbose=FALSE) {
     #    cat ("--- initialising SaemixDiscrete Object --- \n")
     .Object@name.outcome<-name.outcome
     .Object@type.outcome<-type.outcome
     distribution<-tolower(distribution)
     .Object@distribution<-distribution
+    .Object@unit<-unit
+    logmsg<-""
     if(type.outcome=="categorical" & distribution %in% c("binomial","Poisson")) {
-      if(verbose) message("Setting density and simulation function to",distribution," distribution\n")
+      msg<-paste("Setting density and simulation function to",distribution," distribution\n")
+      if(verbose) message(msg)
+      logmsg<-paste0(logmsg,msg)
     }
     if(type.outcome=="event" & distribution %in% c("exponential","weibull","logistic")) {
-      if(verbose) message(paste("Setting density and simulation function to match the",distribution,"distribution\n"))
+      msg<-paste("Setting density and simulation function to match the",distribution,"distribution\n")
+      if(verbose) message(msg)
+      logmsg<-paste0(logmsg,msg)
     }
     if(type.outcome=="categorical" & distribution %in% c("exponential","weibull","logistic")) {
-      if(verbose) message(paste("Warning: ",distribution,"distribution is of type event but type of outcome is set at categorical\n"))
+      msg<-paste("Warning: ",distribution,"distribution is for event variables but type of outcome is set at categorical\n")
+      if(verbose) message(msg)
+      logmsg<-paste0(logmsg,msg)
     }
     if(type.outcome=="event" & distribution %in% c("binomial","poisson")) {
-      if(verbose) message(paste("Warning: ",distribution,"distribution is of type categorical but type of outcome is set at event\n"))
+      msg<-paste("Warning: ",distribution,"distribution is for categorical variables but type of outcome is set at event\n")
+      if(verbose) message(msg)
+      logmsg<-paste0(logmsg,msg)
     }
     if(distribution=="poisson" & type.outcome=="categorical") {
       density <- dpois
@@ -176,7 +194,48 @@ setMethod(
     .Object@density <- density
     .Object@density.param <- density.param
     .Object@simulate.function <- simulate.function
+    .Object@log <- logmsg
     return (.Object )
+  }
+)
+
+# Getteur
+setMethod(
+  f ="[",
+  signature = "SaemixDiscreteOutcome" ,
+  definition = function (x,i,j,drop ){
+    switch (EXPR=i,
+            "log"={return(x@log)},
+            "name.outcome"={return(x@name.outcome)},
+            "type.outcome"={return(x@type.outcome)},
+            "unit"={return(x@unit)},
+            "distribution"={return(x@distribution)},
+            "density"={return(x@density)},
+            "density.param"={return(x@density.param)},
+            "simulate.function"={return(x@simulate.function)},
+            stop("No such attribute\n")
+    )
+  }
+)
+
+# Setteur
+setReplaceMethod(
+  f ="[",
+  signature = "SaemixDiscreteOutcome" ,
+  definition = function (x,i,j,value){
+    switch (EXPR=i,
+            "log"={x@log<-value},
+            "name.outcome"={x@name.outcome<-value},
+            "type.outcome"={x@type.outcome<-value},
+            "unit"={x@unit<-value},
+            "distribution"={x@distribution<-value},
+            "density"={x@density<-value},
+            "density.param"={x@density.param<-value},
+            "simulate.function"={x@simulate.function<-value},
+            stop("No such attribute\n")
+    )
+    validObject(x)
+    return(x)
   }
 )
 
@@ -188,11 +247,7 @@ setClass(
   Class="SaemixContinuousOutcome",
   contains = "SaemixOutcome",
   representation=representation(
-    error.model = "character", # name of the error model associated
-    error.npar = "numeric", # number of parameters in the error model
-    error.parameters = "numeric", # value of parameters in the error model
-    error.nameparameters = "character", # names of parameters in the error model
-    error.function = "function"  # error model function
+    error.model = "SaemixErrorModel" # an SaemixErrorModel
   ),
   validity=function(object){
     # Check error.model is one of constant, proportional, combined1, combined2, power or user
@@ -205,166 +260,72 @@ setClass(
 setMethod(
   f="initialize",
   signature="SaemixContinuousOutcome",
-  definition= function (.Object, name.outcome="y", type.outcome="continuous", distribution="normal", density=dnorm, density.param=c(mean=0, sd=1), simulate.function=rnorm, error.model="constant", error.npar=NULL, error.function=NULL, error.parameters=NULL, error.nameparameters=NULL) {
+  definition= function (.Object, name.outcome="y", type.outcome="continuous", distribution="normal", density=dnorm, density.param=c(mean=0, sd=1), simulate.function=rnorm, error.model="constant", unit="", verbose=FALSE) {
     #    cat ("--- initialising SaemixDiscrete Object --- \n")
+    logmsg<-""
     .Object@name.outcome<-name.outcome
     .Object@type.outcome<-type.outcome
     .Object@distribution<-distribution
     .Object@density <- density
     .Object@density.param <- density.param # distribution of epsilon, SD for Y is actually given by the error model
     .Object@simulate.function <- simulate.function 
-    if(!(error.model %in% c("constant","proportional", "combined1","combined2","power", "user"))) {
-      message("[ SaemixContinuousOutcome : validation ] Please specify a valid error model for the continuous outcome (one of constant, proportional, combined1, combined2, power or user.")
-      return("Error model not given")
+    .Object@unit <- unit
+    if(is(error.model,"character")) { # only name of error model is given
+      if(!(error.model %in% c("constant","proportional", "combined1","combined2","power"))) {
+        if(verbose) message("[ SaemixContinuousOutcome : validation ] Please specify a valid error model name for the continuous outcome (one of constant, proportional, combined1, combined2, power) or an SaemixErrorModel object.")
+        return("Error model not recognised")
+      }
+      if(error.model=="user") {
+        if(verbose) message("[ SaemixContinuousOutcome : validation ] For user-defined error models, please provide an SaemixErroModel object.")
+        return("Error model incomplete")
+      }
+      error.model <- new(Class="SaemixErrorModel", name=error.model)
     }
+    if(!is(error.model,"SaemixErrorModel")) {
+        if(verbose) message("[ SaemixContinuousOutcome : validation ] An error model must be provided either through its name or through an SaemixErrorModel.")
+        return("Invalid error model")
+      }
+    error.model@param.names <- paste0(error.model@param.names,".",.Object@name.outcome)
     .Object@error.model<-error.model
-    if(error.model=="constant") {
-      .Object@error.npar<-1
-      .Object@error.function<-constantErrorModel
-      if(is.null(error.parameters)) .Object@error.parameters<-c(1) else .Object@error.parameters<-error.parameters[1]
-      if(is.null(error.nameparameters)) .Object@error.nameparameters<-paste("a",.Object@name.outcome,sep=".") else .Object@error.nameparameters<-error.nameparameters[1]
-    }
-    if(error.model=="proportional") {
-      .Object@error.npar<-1
-      .Object@error.function<-proportionalErrorModel
-      if(is.null(error.parameters)) .Object@error.parameters<-c(1) else .Object@error.parameters<-error.parameters[1]
-      if(is.null(error.nameparameters)) .Object@error.nameparameters<-paste("b",.Object@name.outcome,sep=".") else .Object@error.nameparameters<-error.nameparameters[1]
-    }
-    if(error.model=="combined1") {
-      .Object@error.npar<-2
-      .Object@error.function<-combined1ErrorModel
-      if(is.null(error.parameters)) .Object@error.parameters<-c(1,1) else .Object@error.parameters<-error.parameters[1:2]
-      if(is.null(error.nameparameters)) .Object@error.nameparameters<-paste(c("a","b"),.Object@name.outcome,sep=".") else .Object@error.nameparameters<-error.nameparameters[2]
-    }
-    if(error.model=="combined2") {
-      .Object@error.npar<-2
-      .Object@error.function<-combined2ErrorModel
-      if(is.null(error.parameters)) .Object@error.parameters<-c(1,1) else .Object@error.parameters<-error.parameters[1:2]
-      if(is.null(error.nameparameters)) .Object@error.nameparameters<-paste(c("a","b"),.Object@name.outcome,sep=".") else .Object@error.nameparameters<-error.nameparameters[2]
-    }
-    if(error.model=="power") {
-      .Object@error.npar<-3
-      .Object@error.function<-powerErrorModel
-      if(is.null(error.parameters)) .Object@error.parameters<-c(1,1,2) else .Object@error.parameters<-error.parameters[1:3]
-      if(is.null(error.nameparameters)) .Object@error.nameparameters<-paste(c("a","b","c"),.Object@name.outcome,sep=".") else .Object@error.nameparameters<-error.nameparameters[3]
-    }
-    if(error.model=="user") {
-      if(is.null(error.npar) | is.null(error.function) | !(is.function(error.function))) {
-        message("[ SaemixContinuousOutcome : validation ] When specifying a user-defined model, please give the number of parameters and a valid function with 2 arguments, f and ab, where the number of parameters is the size of the vector ab.")
-        return("Error function or number of parameters not given")
-      }
-      if(!identical(names(formals(error.function)),c("f","ab"))) {
-        message("[ SaemixContinuousOutcome : validation ] The error model should be a function with 2 arguments, f and ab, where the number of parameters is the size of the vector ab.")
-        return("Error function arguments mismatch")
-      }
-      .Object@error.npar<-error.npar
-      .Object@error.function<-error.function
-      if(is.null(error.nameparameters)) error.nameparameters<-letters[1:error.npar]
-      .Object@error.nameparameters<-paste(error.nameparameters,.Object@name.outcome,sep=".")
-      if(is.null(error.parameters)) .Object@error.parameters<-rep(1,error.npar) else .Object@error.parameters<-error.parameters[1:error.npar]
-    }
     return (.Object )
   }
 )
 
 
-# power model
-
-user.error1<-function(f,ab) {
-  g<-cutoff(sqrt((ab[1]+ab[2]*f)^ab[3]))
-  return(g)
-}
-
-constantErrorModel<-function(f,ab) {
-  g<-cutoff(ab[1])
-  return(g)
-}
-
-proportionalErrorModel<-function(f,ab) {
-  g<-cutoff(ab[1]*abs(f))
-  return(g)
-}
-
-combined1ErrorModel<-function(f,ab) {
-  g<-cutoff(ab[1]+ab[2]*abs(f))
-  return(g)
-}
-
-# Johannes 02/21
-combined2ErrorModel<-function(f,ab) {
-  g<-cutoff(sqrt(ab[1]^2+ab[2]^2*f^2))  
-  return(g)
-}
-
-powerErrorModel<-function(f,ab) {
-  g<-cutoff(sqrt(ab[1]^2+ab[2]^2*f^ab[3]))
-  return(g)
-}
-
-
-# Getteur
-# setMethod(
-#   f ="[",
-#   signature = "SaemixDiscreteOutcome" ,
-#   definition = function (x,i,j,drop ){
-#     switch (EXPR=i,
-#             "name.outcome"={return(x@name.outcome)},
-#             "type.outcome"={return(x@type.outcome)},
-#             "distribution"={return(x@distribution)},
-#             stop("No such attribute\n")
-#     )
-#   }
-# )
 
 setMethod(
   f ="[",
   signature = "SaemixContinuousOutcome" ,
   definition = function (x,i,j,drop ){
     switch (EXPR=i,
-            # "name.outcome"={return(x@name.outcome)},
-            # "type.outcome"={return(x@type.outcome)},
-            # "distribution"={return(x@distribution)},
+            "log"={return(x@log)},
+            "name.outcome"={return(x@name.outcome)},
+            "type.outcome"={return(x@type.outcome)},
+            "unit"={return(x@unit)},
+            "distribution"={return(x@distribution)},
+            "density"={return(x@density)},
+            "density.param"={return(x@density.param)},
+            "simulate.function"={return(x@simulate.function)},
             "error.model"={return(x@error.model)},
-            "error.npar"={return(x@error.npar)},
-            "error.nameparameters"={return(x@error.nameparameters)},
-            "error.parameters"={return(x@error.parameters)},
-            "error.function"={return(x@error.function)},
             stop("No such attribute\n")
     )
   }
 )
-
-
-# Setteur
-# setReplaceMethod(
-#   f ="[",
-#   signature = "SaemixDiscreteOutcome" ,
-#   definition = function (x,i,j,value){
-#     switch (EXPR=i,
-#             "name.outcome"={x@name.outcome<-value},
-#             "type.outcome"={x@type.outcome<-value},
-#             "distribution"={x@distribution<-value},
-#             stop("No such attribute\n")
-#     )
-#     validObject(x)
-#     return(x)
-#   }
-# )
-
 
 setReplaceMethod(
   f ="[",
   signature = "SaemixContinuousOutcome" ,
   definition = function (x,i,j,value){
     switch (EXPR=i,
-            # "name.outcome"={x@name.outcome<-value},
-            # "type.outcome"={x@type.outcome<-value},
-            # "distribution"={x@distribution<-value},
+            "log"={x@log<-value},
+            "name.outcome"={x@name.outcome<-value},
+            "type.outcome"={x@type.outcome<-value},
+            "unit"={x@unit<-value},
+            "distribution"={x@distribution<-value},
+            "density"={x@density<-value},
+            "density.param"={x@density.param<-value},
+            "simulate.function"={x@simulate.function<-value},
             "error.model"={x@error.model<-value},
-            "error.npar"={x@error.npar<-value},
-            "error.nameparameters"={x@error.nameparameters<-value},
-            "error.parameters"={x@error.parameters<-value},
-            "error.function"={x@error.function<-value},
             stop("No such attribute\n")
     )
     validObject(x)
@@ -373,34 +334,31 @@ setReplaceMethod(
 )
 
 ########################################################################
-# Show
+# Show/print
+
+## Continuous Outcome
+setMethod("print","SaemixContinuousOutcome",
+          function(x,nlines=10,...) {
+            show(x)
+          }
+)
 
 setMethod("show","SaemixContinuousOutcome",
           function(object) {
-            cat("Continuous outcome:",object@name.outcome,"\n")
-            cat("   ",object@distribution,"distribution with ")
-            if(object@error.model!="user") 
-              cat(paste0(object@error.model," residual error model involving ",object@error.npar," parameter",ifelse(object@error.npar>1,"s",""),"\n")) else {
-                cat(paste0("user-defined error model involving ",object@error.npar," parameter",ifelse(object@error.npar>1,"s",""),":\n"))
-                print(object@error.function)
-              }
+            cat("Continuous outcome:",object@name.outcome,",",object@distribution,"distribution with",object@error.model@name,"error\n")
           }
 )
 
 setMethod("showall","SaemixContinuousOutcome",
           function(object) {
             cat("Continuous outcome:",object@name.outcome,"\n")
-            cat("   ",object@distribution,"distribution with ")
-            if(object@error.model!="user") 
-              cat(paste0(object@error.model," residual error model involving ",object@error.npar," parameter",ifelse(object@error.npar>1,"s",":")),"\n") else
-                cat(paste0("user-defined error model involving ",object@error.npar," parameter",ifelse(object@error.npar>1,"s",""),":\n"))
-            cat(object@error.nameparameters,"\n")
-            print(object@error.function)
-            cat("Initial parameter values:", paste(object@error.nameparameters,object@error.parameters,sep="="),"\n")
+            cat("   ",object@distribution,"distribution with",object@error.model@name,"error\n")
+            showall(object@error.model)
           }
 )
 
-setMethod("print","SaemixContinuousOutcome",
+## Discrete Outcome
+setMethod("print","SaemixDiscreteOutcome",
           function(x,nlines=10,...) {
             show(x)
           }
@@ -408,9 +366,7 @@ setMethod("print","SaemixContinuousOutcome",
 
 setMethod("show","SaemixDiscreteOutcome",
           function(object) {
-            cat("Discrete outcome:",object@name.outcome,"\n")
-            cat("    type:", object@type.outcome,"\n")
-#            cat("    distribution:", object@distribution,"\n")
+            cat("Discrete outcome:",object@name.outcome," of type", object@type.outcome,"with",object@distribution,"distribution\n")
           }
 )
 setMethod("showall","SaemixDiscreteOutcome",
@@ -418,11 +374,92 @@ setMethod("showall","SaemixDiscreteOutcome",
             cat("Discrete outcome:",object@name.outcome,"\n")
             cat("    type:", object@type.outcome,"\n")
             cat("    distribution:", object@distribution,"\n")
+            cat("    density, with parameters",object@density.param,":")
+            print(object@density)
+            cat("    function to simulate from the distribution:")
+            print(object@simulate.function)
           }
 )
 
-setMethod("print","SaemixDiscreteOutcome",
-          function(x,nlines=10,...) {
-            show(x)
-          }
-)
+########################################################################
+# Creator function
+
+saemixOutcome <- function(name.outcome="y", type.outcome="continuous", distribution="normal", unit="",
+                    density=dnorm, density.param=c(mean=0, sd=1), simulate.function=rnorm, 
+                    error.model="constant", verbose=FALSE) {
+  if(!(type.outcome %in% c("continuous","binary","categorical","count","event"))) {
+    return("Creation of outcome failed: the type.outcome must be of one of continuous, categorical, count, event\n")
+  }
+  logmsg<-""
+  if(type.outcome=="continuous") {
+    if(distribution!="normal") {
+      msg<-paste("Warning: ",distribution,"distribution not valid for continuous outcome, setting it to normal\n")
+      if(verbose) message(msg)
+      logmsg<-paste0(logmsg,msg)
+      distribution<-"normal"
+    }
+    density <- dnorm
+    density.param <- c(mean=0, sd=1)
+    simulate.function <- rnorm
+    y<- new(Class="SaemixContinuousOutcome", name.outcome=name.outcome, type.outcome="continuous", distribution=distribution, 
+            unit=unit, density=density, density.param=density.param, simulate.function=simulate.function, 
+            error.model=error.model, verbose=verbose)
+  }
+  
+  if(type.outcome=="binary")  {
+    if(distribution!="binomial") {
+      msg<-paste("With binary outcome, the distribution should be binomial. Setting density and simulation function to match outcome type\n")
+      if(verbose) message(msg)
+      logmsg<-paste0(logmsg,msg)
+      distribution<-"binomial"
+    }
+    density <- dbinom
+    density.param <- c(size=1, prob=0.5)
+    simulate.function <- rbinom
+    y<- new(Class="SaemixDiscreteOutcome", name.outcome=name.outcome, type.outcome="categorical", unit=unit,
+            distribution=distribution, density=density, density.param=density.param, simulate.function=simulate.function, verbose=verbose)
+  }
+  if(type.outcome %in% c("categorical","count","event")) {
+    if(distribution=="normal" & type.outcome=="categorical") {
+      distribution <- "binomial"
+      msg<-paste("Distribution for type",type.outcome,"not given, assuming the outcome has a binomial distribution\n")
+      if(verbose) message(msg)
+      logmsg<-paste0(logmsg,msg)
+    }
+    if(distribution=="normal" & type.outcome=="event") {
+      distribution <- "exponential"
+      msg<-paste("Distribution for type",type.outcome,"not given, assuming an exponential hazard model\n")
+      if(verbose) message(msg)
+      logmsg<-paste0(logmsg,msg)
+    }
+    if(distribution=="normal" & type.outcome=="count") {
+      distribution <- "poisson"
+      msg<-paste("Distribution for type",type.outcome,"not given, assuming the outcome has a binomial distribution\n")
+      if(verbose) message(msg)
+      logmsg<-paste0(logmsg,msg)
+    }
+    if(distribution=="binomial") {
+      density <- dbinom
+      density.param <- c(size=1, prob=0.5)
+      simulate.function <- rbinom
+    }
+    if(distribution=="exponential") {
+      density <- dexp
+      density.param <- c(rate=1)
+      simulate.function <- rexp
+    }
+    if(distribution=="poisson") {
+      density <- dpois
+      density.param <- c(lambda=1)
+      simulate.function <- rpois
+    }
+    y<- new(Class="SaemixDiscreteOutcome", name.outcome=name.outcome, type.outcome=type.outcome, 
+            distribution=distribution, density=density, density.param=density.param, simulate.function=simulate.function, verbose=verbose)
+  }
+  y@log<-paste0(y@log, logmsg)
+  return(y)
+}
+
+
+  
+

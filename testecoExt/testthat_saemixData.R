@@ -238,6 +238,7 @@ test_that("Successful creation of a SaemixData object from dataframe object, ful
 
 # Automatic recognition on
 test_that("Errors in creating saemixData - Wrong group name, but automatic recognition on", {
+  theo.saemix<-read.table(file.path(datDir,"theo.saemix.tab"),header=T,na=".")
   x<-saemixData(name.data=theo.saemix, name.group="wrongid",name.predictors=c("Dose","Time"), name.response="Concentration"); 
   expect_is(x, "SaemixData") # tests for particular class
   expect_equal(x@name.predictors,c("Dose","Time"))

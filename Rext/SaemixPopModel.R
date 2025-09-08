@@ -228,7 +228,7 @@ setMethod(
     for(i in slotNames(saemix.popmodel))
       slot(.Object,i)<-slot(saemix.popmodel,i)
     if(length(.Object@param.names)>0) {
-      tabhat <- data.frame(Parameter=.Object@param.names)
+      tabhat <- data.frame(FixedPhi=.Object@param.names)
       if(length(.Object@param.hat)>0) {
         tabhat$Estimate <- .Object@param.hat
       } else  {
@@ -254,7 +254,7 @@ setMethod(
 setMethod("print","SaemixPopModel",
           function(x,nlines=10,...) {
             cat("Model of fixed effects for level",x@name.level,"\n")
-            # if variable moves to SaemixVarLevelHat
+            # if variable moves to SaemixVarModelHat
             #            cat("Variability level:",x@name.level,":\n")
             print(x@phi.model)
           }
@@ -277,8 +277,8 @@ setMethod("showall","SaemixPopModel",
 
 setMethod("print","SaemixPopModelHat",
           function(x,nlines=10,...) {
-            cat("Estimated fixed effects for level",x@name.level,"\n")
-            # if variable moves to SaemixVarLevelHat
+            cat("Estimated fixed effects for level",x@name.level,"for parameters on the random effect scale (phi=h-1(psi))\n")
+            # if variable moves to SaemixVarModelHat
             #            cat("Variability level:",x@name.level,":\n")
             print(x@conf.int, row.names=FALSE)
           }
@@ -368,7 +368,8 @@ extractFixedEffectModel <- function(parameters, varlevel=c()) {
     vlev <-  new(Class="SaemixPopModel", phi.model=covmodel, name.level=varlevel[ilev])
     vlev@phi.estim <- covmodel.estim
     vlev@phi <- covmodel.init
-    vlev <- addSaemixIndices(vlev)
+    print(vlev@phi)
+    if(dim(vlev@phi.model)[1]>0) vlev <- addSaemixIndices(vlev)
     list.indmodel[[ilev]] <- vlev
     
   }
@@ -388,7 +389,7 @@ setMethod("addSaemixIndices",
           function(object, verbose=FALSE) {
             matname<-matrix(data="",nrow=dim(object@phi.model)[1], ncol=dim(object@phi.model)[2])
             for(i in 1:dim(object@phi.model)[1]) {
-              if(rownames(object@phi.model)[i]=="pop") matname[i,]<-paste0("mu.",colnames(object@phi.model)) else matname[i,]<-paste0("beta.",rownames(object@phi.model)[i],".",colnames(object@phi.model))
+              if(rownames(object@phi.model)[i]=="pop") matname[i,]<-paste0("muPhi.",colnames(object@phi.model)) else matname[i,]<-paste0("beta.",rownames(object@phi.model)[i],".",colnames(object@phi.model))
             }
             idmat.par<-which(object@phi.model==1)
             object@param.names<-matname[idmat.par]

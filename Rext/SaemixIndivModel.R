@@ -3,8 +3,67 @@
 #' @include SaemixData-methods.R
 #' @include SaemixData-methods_covariates.R
 #' @include SaemixParameter.R
-#' @include SaemixVarLevel.R
+#' @include SaemixVarModel.R
+#' @include SaemixPopModel.R
 NULL
+
+
+####################################################################################
+####			SaemixIndivModel class - definition				####
+####################################################################################
+#' Class "SaemixIndivModel"
+#' 
+#' An object of the SaemixIndivModel class, representing the statistical model in a 
+#' nonlinear mixed-effect model structure, used by the SAEM algorithm.
+#' 
+#' @name SaemixIndivModel-class
+#' 
+#' @docType class
+#' 
+#' @aliases SaemixIndivModel-class SaemixIndivModel [<-,SaemixIndivModel-method
+#' @aliases print,SaemixIndivModel showall,SaemixIndivModel show,SaemixIndivModel summary,SaemixIndivModel 
+#' 
+#' @section Objects from the Class: 
+#' An object of the SaemixIndivModel class can be created by using the function \code{\link{saemixModel}} and contain the following slots:
+#'   \describe{
+#'     \item{\code{log}:}{Character string containing the warning messages triggered during the contruction of the object}
+#'     \item{\code{nphi}:}{Number of parameters in the structural model}
+#'     \item{\code{param.names}:}{Name of the model parameters}
+#'     \item{\code{distribution}:}{Name of the distribution associated with each parameter (currently one of normal, lognormal, logit, probit)}
+#'     \item{\code{transform}:}{Object of class \code{"function"}: h.}
+#'     \item{\code{invtransform}:}{Object of class \code{"function"}: h-1.}
+#'     \item{\code{dtransform}:}{Object of class \code{"function"}: deriv(h).}
+#'     \item{\code{varlevel}:}{Name of the variability levels in the model (eg: iiv, iov,...)}
+#'     \item{\code{covariate}:}{Name of the covariates}
+#'     \item{\code{popmodel}:}{List of objects of class \code{"SaemixPopModel"} }
+#'     \item{\code{varmodel}:}{List of objects of class \code{"SaemixVarModel"} }
+#'   }
+#'   Additional elements are added to the model object after a call to \code{saemix} and are used in the algorithm.
+#' @section Methods:
+#'   \describe{
+#'     \item{[<-}{\code{signature(x = "SaemixIndivModel")}: replace elements of object}
+#'     \item{[}{\code{signature(x = "SaemixIndivModel")}: access elements of object}
+#'     \item{initialize}{\code{signature(.Object = "SaemixIndivModel")}: internal function to initialise object, not to be used}
+#'     \item{plot}{\code{signature(x = "SaemixIndivModel")}: plot predictions from the model}
+#'     \item{print}{\code{signature(x = "SaemixIndivModel")}: prints details about the object (more extensive than show)}
+#'     \item{showall}{\code{signature(object = "SaemixIndivModel")}: shows all the elements in the object}
+#'     \item{show}{\code{signature(object = "SaemixIndivModel")}: prints details about the object}
+#' 	 }
+#' @references E Comets, A Lavenu, M Lavielle M (2017). Parameter estimation in nonlinear mixed effect models using saemix,
+#' an R implementation of the SAEM algorithm. Journal of Statistical Software, 80(3):1-41.
+#' 
+#' 
+#' @author Emmanuelle Comets \email{emmanuelle.comets@@inserm.fr}
+#' @seealso \code{\link{SaemixData}} \code{\link{SaemixObject}} \code{\link{saemixControl}} \code{\link{saemix}}
+#' \code{\link{plot.saemix}}
+
+#' @keywords classes
+#' @exportClass SaemixIndivModel
+#' @examples
+#' 
+#' showClass("SaemixIndivModel")
+#' 
+
 
 setClass(Class = "SaemixIndivModel",
          representation=representation(
@@ -63,7 +122,7 @@ setMethod(
     covariate<-c()
     for(ipar in 1:nphi) 
       if(length(parameters[[ipar]]@covariate)>0) covariate<-c(covariate, parameters[[ipar]]@covariate)
-    if(length(covariate)>0) covariate<-unique(covariate) else covariate<-c()
+    if(length(covariate)>0) covariate<-unique(covariate) else covariate<-character(0)
     .Object@covariate <- covariate
     .Object@distribution <- distribution
     .Object@transform <- transform

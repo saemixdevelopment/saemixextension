@@ -16,8 +16,8 @@ table(prothros$death)
 ######### estimation with saemix 
 
 # saemixDir <- "C:/Users/AlexandraLAVALLEY/Documents/GitHub/saemixextension" # ALM
-# saemixDir <- "/home/eco/work/saemix/saemixextension" # EC
- saemixDir <- getwd() # assuming we are in the saemixextension folder
+ saemixDir <- "/home/eco/work/saemix/saemixextension" # EC
+# saemixDir <- getwd() # assuming we are in the saemixextension folder
 workDir <- file.path(saemixDir, "joint")
 setwd(workDir)
 

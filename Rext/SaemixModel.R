@@ -1,3 +1,19 @@
+#' @include aaa_generics.R
+#' @include SaemixData.R
+#' @include SaemixData-methods.R
+#' @include SaemixData-methods_covariates.R
+#' @include SaemixOutcome.R
+#' @include SaemixParameter.R
+#' @include SaemixVarModel.R
+#' @include SaemixPopModel.R
+#' @include SaemixIndivModel.R
+NULL
+
+# ToDo:
+## finish description of SaemixIndivModel and copy the slots here
+## check description for the slots of the child class
+# showall class (currently defaults to print)
+
 ####################################################################################
 ####			SaemixModel class - definition				####
 ####################################################################################
@@ -7,23 +23,20 @@
 #' model structure, used by the SAEM algorithm.
 #' 
 #' @name SaemixModel-class
+#' 
 #' @docType class
+#' 
 #' @aliases SaemixModel-class SaemixModel [<-,SaemixModel-method
 #' @aliases print,SaemixModel showall,SaemixModel show,SaemixModel summary,SaemixModel 
+#' 
 #' @section Objects from the Class: 
 #' An object of the SaemixModel class can be created by using the function \code{\link{saemixModel}} and contain the following slots:
 #'   \describe{
-#'     \item{\code{model}:}{Object of class \code{"function"}: name of the function used to get predictions from the model (see the User Guide and the online examples for the format and what this function should return).}
 #'     \item{\code{description}:}{Object of class \code{"character"}: an optional text description of the model}
-#'     \item{\code{psi0}:}{Object of class \code{"matrix"}: a matrix with named columns containing the initial estimates for the parameters in the model (first line) and for the covariate effects (second and subsequent lines, optional). The number of columns should be equal to the number of parameters in the model.}
-#'     \item{\code{simulate.function}:}{Object of class \code{"function"}: for non-Gaussian data models, name of the function used to simulate from the model.}
-#'     \item{\code{transform.par}:}{Object of class \code{"numeric"}: vector giving the distribution for each model parameter (0: normal, 1: log-normal, 2: logit, 3: probit). Its length should be equal to the number of parameters in the model.}
-#'     \item{\code{fixed.estim}:}{Object of class \code{"numeric"}: for each parameter, 0 if the parameter is fixed and 1 if it should be estimated. Defaults to a vector of 1 (all parameters are estimated). Its length should be equal to the number of parameters in the model.}
-#'     \item{\code{error.model}:}{Object of class \code{"character"}: name of the error model. Valid choices are "constant" (default), "proportional" and "combined" (see equations in User Guide, except for combined which was changed to y = f + sqrt(a^2+b^2*f^2)*e )}
-#'     \item{\code{covariate.model}:}{Object of class \code{"matrix"}: a matrix of 0's and 1's, with a 1 indicating that a parameter-covariate relationship is included in the model (and an associated fixed effect will be estimated). The nmuber of columns should be equal to the number of parameters in the model and the number of rows to the number of covariates.}
-#'     \item{\code{covariance.model}:}{Object of class \code{"matrix"}: a matrix f 0's and 1's giving the structure of the variance-covariance matrix. Defaults to the Identity matrix (diagonal IIV, no correlations between parameters)}
-#'     \item{\code{omega.init}:}{Object of class \code{"matrix"}: a matrix giving the initial estimate for the variance-covariance matrix}
-#'     \item{\code{error.init}:}{Object of class \code{"numeric"}: a vector giving the initial estimate for the parameters of the residual error}
+#'     \item{\code{model}:}{Object of class \code{"function"}: name of the function used to get predictions from the model (see the User Guide and the online examples for the format and what this function should return).}
+#'     \item{\code{sim.model}:}{Object of class \code{"function"}: for non-Gaussian data models, name of the function used to simulate from the model.}
+#'     \item{\code{outcome}:}{List of objects of class \code{"SaemixOutcome"} giving the outcomes in the model}
+#'     \item{\code{noutcome}:}{Number of outcomes}
 #'   }
 #'   Additional elements are added to the model object after a call to \code{saemix} and are used in the algorithm.
 #' @section Methods:
@@ -39,57 +52,17 @@
 #' @references E Comets, A Lavenu, M Lavielle M (2017). Parameter estimation in nonlinear mixed effect models using saemix,
 #' an R implementation of the SAEM algorithm. Journal of Statistical Software, 80(3):1-41.
 #' 
-#' E Kuhn, M Lavielle (2005). Maximum likelihood estimation in nonlinear mixed effects models. 
-#' Computational Statistics and Data Analysis, 49(4):1020-1038.
-#' 
-#' E Comets, A Lavenu, M Lavielle (2011). SAEMIX, an R version of the SAEM algorithm. 20th meeting of the 
-#' Population Approach Group in Europe, Athens, Greece, Abstr 2173.
 #' 
 #' @author Emmanuelle Comets \email{emmanuelle.comets@@inserm.fr}
-#' @author Audrey Lavenu
-#' @author Marc Lavielle.
 #' @seealso \code{\link{SaemixData}} \code{\link{SaemixObject}} \code{\link{saemixControl}} \code{\link{saemix}}
 #' \code{\link{plot.saemix}}
+
 #' @keywords classes
 #' @exportClass SaemixModel
 #' @examples
 #' 
 #' showClass("SaemixModel")
 #' 
-
-# Added:
-## outcome
-## nb.responses
-## omega.fixed: fixed variance parameters (a matrix)
-
-# Add (maybe)
-## IOV and associated CI
-## iov.fixed: fixed IOV variance parameters (a matrix)
-## fixed => set, not estimated (notestim)
-
-### Semantics
-## fixed (mu,beta)/random (eta => omega, iov)
-## parameters (=psi)/mu (=mu, beta)
-
-# name change
-## covariance.model: changed to omega.model
-## fixed.estim changed to mu.fixed =1-mu.fixed
-## name.fixed changed to name.mu
-## name.random changed to name.omega
-## name.fixed changed to name.mu
-
-## name.response ? needed ? should it be the name of the outcomes or the name of the response column in data ?
-
-# Restructure/change
-## modeltype: maybe just keep to indicate whether multiple responses ?
-## variability
-## covariate model through formulas
-## maybe (TBC) covariance model through formulas (would allow for nested IIV-IOV structure)
-
-# Remove (TBC)
-## error.model: now associated with outcome
-## error.init: given in outcome
-## betaest ? redundant with covariate.model ?
 
 setClass(
   Class="SaemixModel",
@@ -126,18 +99,22 @@ setClass(
 setMethod(
   f="initialize",
   signature="SaemixModel",
-  definition=function(.Object, parameters, model, description, outcome, verbose=TRUE){
+  definition=function(.Object, model, parameters, outcome, description="", verbose=TRUE){
 #    cat ("--- initialising SaemixModel Object --- \n")
     if(missing(model)) {
       if(verbose) cat("Error initialising SaemixModel object:\n   The model must be a function, accepting 3 arguments: psi (a vector of parameters), id (a vector of indices) and xidep (a matrix of predictors). Please see the documentation for examples.\n")
-      return(.Object)
+      return("Creation of object SaemixModel failed\n")
     }
-    if(missing(description)) description<-""
+    if(missing(parameters)) {
+      if(verbose) cat("Error initialising SaemixModel object:\n    Please provide a list of parameters.\n")
+      return("Creation of object SaemixModel failed\n")
+    }
     if(missing(outcome)) outcome<-list(y=new(Class="SaemixContinuousOutcome")) else {
       if(inherits(outcome,"character")) { # if only name is given assume continuous default outcome
+        if(outcome=="") outcome<-"y"
         y1<-vector(mode="list", length=length(outcome))
-        name(y1)<-outcome
-        for(i in 1:length(outcome)) y1[[i]]<-list(new(Class="SaemixContinuousOutcome"))
+        names(y1)<-outcome
+        for(i in 1:length(outcome)) y1[[i]]<-new(Class="SaemixContinuousOutcome")
         outcome<-y1
       }
       if(inherits(outcome,"SaemixOutcome")) {
@@ -146,11 +123,13 @@ setMethod(
       }
       if(is(outcome,"list")) { # check type
         is.ok<-0
-        for(i in outcome) {
-          if(!is(i,"SaemixOutcome")) is.ok<-1
+        for(i in 1:length(outcome)) {
+          if(!inherits(outcome[[i]],"SaemixOutcome")) is.ok<-1 else {
+            if(!is.null(names(outcome))) outcome[[i]]@name.outcome <- names(outcome)[i]
+          }
         }
         if(is.ok==1) {
-          if(verbose) cat("Error initialising SaemixModel object:\n   Valid outcome values are eithera list of SaemixOutcome objects or a vector of names. Please see the documentation for examples.\n")
+          if(verbose) cat("Error initialising SaemixModel object:\n   Valid outcome values are either a list of SaemixOutcome objects or a vector of names. Please see the documentation for examples.\n")
           return(.Object)
         }
       }
@@ -217,9 +196,9 @@ setMethod(
             "covariate"={return(x@covariate)},
             "popmodel"={return(x@popmodel)},
             "varmodel"={return(x@varmodel)},
+            "description"={return(x@description)},
             "model"={return(x@model)},
             "sim.model"={return(x@sim.model)},
-            "description"={return(x@description)},
             "outcome"={return(x@outcome)},
             "noutcome"={return(x@noutcome)},
             stop("No such attribute\n")
@@ -233,6 +212,7 @@ setReplaceMethod(
   signature = "SaemixIndivModel" ,
   definition = function (x,i,j,value){
     switch (EXPR=i,
+            "description"={x@description<-value},
             "log"={x@log<-value},
             "nphi"={x@nphi<-value},
             "param.names"={x@param.names<-value},
@@ -243,7 +223,6 @@ setReplaceMethod(
             "covariate"={x@covariate<-value},
             "popmodel"={x@popmodel<-value},
             "varmodel"={x@varmodel<-value},
-            "description"={x@description<-value},
             "model"={x@model<-value},
             "sim.model"={x@sim.model<-value},
             "outcome"={x@outcome<-value},
@@ -254,5 +233,247 @@ setReplaceMethod(
     return(x)
   }
 )
+
+####################################################################################
+####			SaemixModel class - method to print/show data		####
+####################################################################################
+
+#' @rdname print-methods
+#' @exportMethod print
+
+setMethod("print","SaemixModel",
+          function(x,...) {
+            cat("Nonlinear mixed-effects model\n")
+            xout <- data.frame(Outcome=names(x@outcome), type= unlist(lapply(x@outcome, function(x) x@type.outcome)), distribution= unlist(lapply(x@outcome, function(x) x@distribution)), unit=unlist(lapply(x@outcome, function(x) x@unit)))
+            cat("Outcomes\n")
+            print(xout, row.names=FALSE)
+            xpar <- data.frame(Parameters=x@param.names, distribution=x@distribution)
+            cat("Model parameters\n")
+            print(xpar, row.names=FALSE)
+            if(length(x@covariate)>0) cat("Covariates",paste(x@covariate,collapse=", "),"\n") else cat("No covariates\n")
+            cat("Variability levels:", x@varlevel,"\n")
+            if( is.null(body(x@model))) {
+              cat("No model function set yet\n")
+              return()
+            }
+            cat("Model function:\n")
+            print(x@model)
+            if(!is.null(body(x@sim.model))) {
+              print(x@sim.model)
+            }
+          }
+)
+
+#' @rdname show-methods
+#' @exportMethod show
+
+setMethod("show","SaemixModel",
+          function(object) {
+            cat("Nonlinear mixed-effects model\n")
+            cat("     outcomes:",paste(names(object@outcome),collapse=", "),"\n")
+            cat("     parameters:",paste(object@param.names,collapse=", "),"\n")
+            if(length(object@covariate)>0) cat("     covariates:",paste(object@covariate,collapse=", "),"\n")
+          }
+)
+
+#' @rdname showall-methods
+#' @exportMethod showall
+
+setMethod("showall","SaemixModel",
+          function(object) {
+            print(object)
+          }
+)
+
+## ToDo: Move saemixModel to -methods
+
+####################################################################################
+####			SaemixModel class - User-level function			####
+####################################################################################
+
+#' Function to create an SaemixModel object
+#' 
+#' This function creates an SaemixModel object. The two mandatory arguments are
+#' the name of a R function computing the model in the SAEMIX format (see
+#' details and examples) and a matrix psi0 giving the initial estimates of the
+#' fixed parameters in the model, with one row for the population mean
+#' parameters and one row for the covariate effects (see documentation).
+#' 
+#' This function is the user-friendly constructor for the SaemixModel object
+#' class.
+#' 
+#' @param model name of the function used to compute the structural model. The
+#' function should return a vector of predicted values given a matrix of
+#' individual parameters, a vector of indices specifying which records belong
+#' to a given individual, and a matrix of dependent variables (see example
+#' below).
+#' @param parameters the list of parameters in the model. The preferred format is to use
+#' the saemixParam() constructor, as in ka=saemixParam() with arguments describing
+#' the distribution of the parameter, constraints and starting values (see \code{\link{saemixParam}} for examples).
+#' Alternative forms with less flexibility are to use either a vector of names (eg c("ka","Vd"))
+#' which will create parameters with corresponding names, or a named vector of numerical values
+#' (eg c(ka=1, Vd=20)) which will create the same parameters and ascribe them starting values.
+#' @param outcome the outcome in the model. The preferred format is to use
+#' the saemixOutcome() constructors to specify outcomes through their distribution.
+#' An alternative form in simple cases is to pass a vector of outcome names (eg c("parent","metabolite")) 
+#' which will generate continuous outcomes with the default residual error model (constant variance). 
+#' (see \code{\link{saemixOutcome}}, \code{\link{saemixContinuousOutcome}} 
+#' and \code{\link{saemixDiscreteOutcome}} for details)
+#' @param description a character string, giving a brief description of the
+#' model or the analysis
+#' @param simulate.function for non-Gaussian data models,
+#' the name of the function used to simulate from the structural model. The
+#' function should have the same header as the model function, and should return 
+#' a vector of simulated values given a matrix of individual parameters, 
+#' a vector of indices specifying which records belong to a given individual, 
+#' and a matrix of dependent variables (see example in the documentation, section
+#' discrete data examples)
+#' @param verbose a boolean, controlling whether information about the created should be printed out. Defaults to TRUE
+#' @return An SaemixModel object (see \code{\link{saemixModel}}).
+#' @author Emmanuelle Comets <emmanuelle.comets@@inserm.fr>, Audrey Lavenu,
+#' Marc Lavielle.
+#' @seealso \code{\link{SaemixData}},\code{\link{SaemixModel}},
+#' \code{\link{saemixControl}},\code{\link{saemix}}
+#' @references E Comets, A Lavenu, M Lavielle M (2017). Parameter estimation in nonlinear mixed effect models using saemix,
+#' an R implementation of the SAEM algorithm. Journal of Statistical Software, 80(3):1-41.
+#' 
+#' E Kuhn, M Lavielle (2005). Maximum likelihood estimation in nonlinear mixed effects models. 
+#' Computational Statistics and Data Analysis, 49(4):1020-1038.
+#' 
+#' E Comets, A Lavenu, M Lavielle (2011). SAEMIX, an R version of the SAEM algorithm. 20th meeting of the 
+#' Population Approach Group in Europe, Athens, Greece, Abstr 2173.
+#' 
+#' @keywords models
+#' @examples
+#' 
+#' model1cpt<-function(psi,id,xidep) { 
+#' 	  dose<-xidep[,1]
+#' 	  tim<-xidep[,2]  
+#' 	  ka<-psi[id,1]
+#' 	  V<-psi[id,2]
+#' 	  CL<-psi[id,3]
+#' 	  k<-CL/V
+#' 	  ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
+#' 	  return(ypred)
+#' }
+#' 
+#' saemix.model<-saemixModel(model=model1cpt,
+#'   description="One-compartment model with first-order absorption", 
+#'   psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3, byrow=TRUE,
+#'   dimnames=list(NULL, c("ka","V","CL"))),transform.par=c(1,1,1),
+#'   covariate.model=matrix(c(0,1,0,0,0,0),ncol=3,byrow=TRUE),fixed.estim=c(1,1,1),
+#'   covariance.model=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE),
+#'   omega.init=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE),error.model="constant")
+#' 
+#' @export saemixModel
+
+saemixModel<-function(model, parameters, outcome="", description="", simulate.function=NULL, verbose=FALSE) {
+  # Creating model from class
+  if(missing(model)) {
+    if(verbose) cat("Error in saemixModel:\n   The model must be a function, accepting 3 arguments: psi (a vector of parameters), id (a vector of indices) and xidep (a matrix of predictors). Please see the documentation for examples.\n")
+    return("Creation of SaemixModel failed")  
+  }
+  xcal<-try(typeof(model))
+  if(inherits(xcal,"try-error")) {
+    if(verbose) cat("Error in saemixModel:\n   the model function does not exist.\n")
+    return("Creation of SaemixModel failed")  
+  }
+  is.valid.model <- TRUE
+  if(is(model,"character")) {
+    if(exists(model)) model<-get(model) else is.valid.model<-FALSE
+  }
+  if(!is.function(model)) is.valid.model<-FALSE
+  if(!is.valid.model) {
+      if(verbose) cat("Error in saemixModel:\n   The argument model to saemixModel must be a valid function.\n")
+      return("Creation of SaemixModel failed")
+  }
+  logmsg<-""
+  is.valid.args <- TRUE
+  if(length(formals(model))!=3) is.valid.args<-FALSE
+  if(!identical(names(formals(model)),c("psi","id","xidep"))) is.valid.args<-FALSE
+  if(!is.valid.args) {
+    if(verbose) cat("Error in saemixModel:\n   The model must be a function, accepting 3 arguments: psi (a vector of parameters), id (a vector of indices) and xidep (a matrix of predictors). Please see the documentation for examples.\n")
+    return("Creation of SaemixModel failed")
+  }
+  has.sim<-FALSE
+  if(!is.null(simulate.function)) {
+    xcal<-try(typeof(simulate.function))
+    if(inherits(xcal,"try-error")) {
+        msg <- "The simulate.function does not exist, ignoring.\n"
+        logmsg <- paste0(logmsg, msg)
+        if(verbose) message(msg)
+    } else {
+      if(is(simulate.function,"character")) {
+        if(exists(simulate.function)) {
+          simulate.function<-get(simulate.function)
+          if(inherits(simulate.function,"function")) has.sim <- TRUE else {
+            msg <- "The simulate.function is not a valid function, ignoring.\n"
+            logmsg <- paste0(logmsg, msg)
+            if(verbose) message(msg)
+            }
+        }
+      }
+      if(!is.function(simulate.function) || length(formals(simulate.function))!=3) {
+        msg<-"The simulate.function should have the same format as the model function, ignoring.\n"
+        logmsg <- paste0(logmsg, msg)
+        if(verbose) message(msg)
+        has.sim <- FALSE
+      } else has.sim <- TRUE
+    }
+  }
+
+  if(missing(parameters)) {
+    if(verbose) cat("Error in saemixModel:\n   please provide the parameters in the model as a list of saemixParameter objects.\n")
+    return("Creation of SaemixModel failed")  
+  }
+  # test that parameters are valid
+  if(inherits(parameters,"character")) { # only parameter names are given as a vector
+    msg<-"Parameter given as names only\n"
+    logmsg <- paste0(logmsg, msg)
+    if(verbose) message(msg)
+    xpar<-vector(mode='list',length=length(parameters))
+    names(xpar)<-parameters
+    for(i in 1:length(parameters)) xpar[[i]]<-saemixParam(name=parameters[i])
+    parameters<-xpar
+  }
+  if(inherits(parameters,"numeric")) { # parameters given as c(ka=1, V=20, etc...)
+    msg<-"Parameter given as name=starting value\n"
+    logmsg <- paste0(logmsg, msg)
+    if(verbose) message(msg)
+    xpar<-vector(mode='list',length=length(parameters))
+    names(xpar)<-parameters
+    for(i in 1:length(parameters)) xpar[[i]]<-saemixParam(name=names(xpar)[i],mu.init=parameters[i])
+    parameters<-xpar
+  }
+  if(inherits(parameters,"list")) { # parameters given as a list
+    for(i in 1:length(parameters)) {
+      if(inherits(parameters[[i]],"character")) {
+        msg<-paste0("Parameter ",parameters[[i]]," given as name only, assuming log-normal distribution\n")
+        logmsg <- paste0(logmsg, msg)
+        if(verbose) message(msg)
+        parameters[[i]]<-saemixParam(name=parameters[[i]]) # given as "CL"
+      }
+      if(inherits(parameters[[i]],"numeric")) {
+        msg<-paste0("Parameter ",parameters[[i]]," given with its starting value, assuming log-normal distribution\n")
+        logmsg <- paste0(logmsg, msg)
+        if(verbose) message(msg)
+        parameters[[i]]<-saemixParam(name=names(parameters)[i],mu.init=parameters[[i]]) # given as CL=0.5
+      }
+      if(!inherits(parameters[[i]],"SaemixParameter")) {
+        if(verbose) cat("Error in saemixModel:\n   please provide the parameters in the model as a list of saemixParameter objects.\n")
+        return("Creation of SaemixModel failed")
+      }
+    }
+  }
+  xmod <- try(new(Class="SaemixModel", model=model, parameters=parameters, outcome=outcome))
+  if(is(xmod,"SaemixModel")) x1<-try(validObject(xmod),silent=FALSE) else x1<-xmod
+  if(!inherits(x1,"try-error")) {
+    if(verbose) cat("\n\nThe following SaemixModel object was successfully created:\n\n")
+  } else xmod<-"Creation of SaemixModel failed"
+  if(has.sim) xmod@sim.model <- simulate.function
+  xmod@log <- logmsg
+  if(verbose) print(xmod)
+  return(xmod)
+}
 
 

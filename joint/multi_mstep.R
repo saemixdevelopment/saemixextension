@@ -197,9 +197,9 @@ mstep.multi<-function(kiter, Uargs, Dargs, opt, structural.model, DYF, phiM, var
   
   # Residual error
   ytype = Dargs[["XM"]][["ytype"]][1:length(Dargs$yobs)]
-  if(length(grep("structural",saemix.model["modeltype"]))>0) {
+  if(length(grep("structural",Dargs$modeltype))>0) {
     i1<-0
-    for(itype in 1:length(saemix.model["modeltype"])) {
+    for(itype in 1:length(Dargs$modeltype)) {
       if(Dargs$modeltype[itype]=="structural") {
         i1<-i1+1
         if (Dargs$error.model[itype] %in% c("constant","exponential")) {

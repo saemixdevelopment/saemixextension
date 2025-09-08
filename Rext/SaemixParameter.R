@@ -298,7 +298,7 @@ setMethod("show","SaemixParameter",
             # print(x1$object)
 #            nampar <- deparse(substitute(object)) # works
             nampar<-object@name
-            cat("Saemix parameter with",object@distribution," distribution ")
+            cat("Saemix parameter with",object@distribution,"distribution ")
             if(length(object@varlevel)>0) cat("associated with variability on variable(s)",object@varlevel) else cat("without variability")
             if(object@ncovariate>0) cat(", associated with covariates:",object@covariate)
             cat("\n")
@@ -343,4 +343,6 @@ setMethod("showall","SaemixParameter",
           }
 )
 
+################################################################################
+#
 

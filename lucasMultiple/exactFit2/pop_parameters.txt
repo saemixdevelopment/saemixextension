@@ -1,0 +1,159 @@
+Nonlinear mixed-effects model fit by the SAEM algorithm
+-----------------------------------
+----          Data             ----
+-----------------------------------
+Object of class SaemixData
+    longitudinal data for use with the SAEM algorithm
+Dataset data_sim2 
+    Structured data: y ~ dose + tim | id 
+    X variable for graphs: tim (mg/L) 
+Dataset characteristics:
+    number of subjects:     50 
+    number of observations: 1000 
+    average/min/max nb obs: 20.00  /  20  /  20 
+First 10 lines of data:
+   id dose  tim         y mdv cens occ ytype
+3   1  300 0.25  2.621201   0    0   1     1
+4   1  300 0.25 29.960895   0    0   1     2
+5   1  300 0.50  4.316090   0    0   1     1
+6   1  300 0.50 48.528349   0    0   1     2
+7   1  300 1.00  7.016347   0    0   1     1
+8   1  300 1.00 60.186765   0    0   1     2
+9   1  300 2.00  9.949327   0    0   1     1
+10  1  300 2.00 63.195464   0    0   1     2
+11  1  300 3.00 11.492971   0    0   1     1
+12  1  300 3.00 68.394530   0    0   1     2
+-----------------------------------
+----          Model            ----
+-----------------------------------
+Nonlinear mixed-effects model
+  Model function
+  Model type:  structural structural
+function(psi, id, xidep) {
+   # psi =  psiM
+   # id = IdM
+   # xidep = XM
+    
+    #start = Sys.time()
+
+    rgrid <- get('rgrid',.GlobalEnv)
+    model.interpolate <- get('model.interpolate',.GlobalEnv)
+    output <- get('output',.GlobalEnv)
+    
+    if (model.interpolate){
+      if (!exists("compute_simulation_env", envir = .GlobalEnv)) {
+        compute_simulation_env <- new.env()
+        compute_simulation_env$d <- length(rgrid$x[[1]])
+        compute_simulation_env$xidep <- xidep
+        compute_simulation_env$Liste_result_to_cpp <- vector("list", length(rgrid$x))
+        
+        assign("compute_simulation_env", compute_simulation_env, envir = .GlobalEnv)
+      }
+      
+     # start_1 = Sys.time()
+      
+      sim_result = main_function(rgrid$b,rgrid$x,rgrid$f,psi,id,compute_simulation,trans.parj)
+      
+      #end_1 = Sys.time()
+      #print(paste("temps C++ : " , end_1-start_1))
+      
+      rgrid$x = sim_result[[1]]
+      rgrid$b = sim_result[[2]]
+      rgrid$f = sim_result[[3]]
+      
+      assign("rgrid",rgrid, .GlobalEnv)
+      
+      #end = Sys.time()
+      
+      #print(paste("temps global : " , end - start))
+      
+      return(sim_result[[4]])
+    } else {
+      return(model(psi, id, xidep))
+    }
+  }
+<bytecode: 0x5a870e033680>
+<environment: 0x5a87152b6420>
+  Nb of parameters: 5 
+      parameter names:  ka V CL Emax EC50 
+      distribution:
+     Parameter Distribution Estimated
+[1,] ka        log-normal   Estimated
+[2,] V         log-normal   Estimated
+[3,] CL        log-normal   Estimated
+[4,] Emax      log-normal   Estimated
+[5,] EC50      log-normal   Estimated
+  Variance-covariance matrix:
+     ka V CL Emax EC50
+ka    1 0  0    0    0
+V     0 1  0    0    0
+CL    0 0  1    0    0
+Emax  0 0  0    1    0
+EC50  0 0  0    0    1
+  Error model: proportional , initial values: b.y1=1 a.y2=1 
+  Error model: proportional , initial values: b.y1=1 a.y2=1 
+    No covariate in the model.
+    Initial values
+             ka  V CL Emax EC50
+Pop.CondInit  1 20  2  100    5
+-----------------------------------
+----    Key algorithm options  ----
+-----------------------------------
+    Estimation of individual parameters (MAP)
+    Estimation of standard errors and linearised log-likelihood
+    Estimation of log-likelihood by importance sampling
+    Number of iterations:  K1=300, K2=200 
+    Number of chains:  1 
+    Seed:  54333 
+    Number of MCMC iterations for IS:  5000 
+    Simulations:
+        nb of simulated datasets used for npde:  1000 
+        nb of simulated datasets used for VPC:  100 
+    Input/output
+        save the results to a file:  TRUE 
+        save the graphs to files:  FALSE 
+        directory where results should be saved:  exactFit2 
+----------------------------------------------------
+----                  Results                   ----
+----------------------------------------------------
+-----------------  Fixed effects  ------------------
+----------------------------------------------------
+     Parameter Estimate SE      CV(%)  
+[1,] ka          0.908  4.6e-02 5.1e+00
+[2,] V          19.457  1.2e+00 6.1e+00
+[3,] CL          1.962  8.8e-02 4.5e+00
+[4,] Emax      100.629  3.9e+00 3.9e+00
+[5,] EC50        4.707  2.5e-01 5.4e+00
+[6,] b.y1        0.098  6.0e-04 6.1e-01
+[7,] a.y2        2.919  1.3e-06 4.5e-05
+----------------------------------------------------
+-----------  Variance of random effects  -----------
+----------------------------------------------------
+     Parameter   Estimate SE    CV(%)
+ka   omega2.ka   0.120    0.026 21   
+V    omega2.V    0.182    0.037 20   
+CL   omega2.CL   0.098    0.020 20   
+Emax omega2.Emax 0.070    0.015 21   
+EC50 omega2.EC50 0.102    0.028 27   
+----------------------------------------------------
+------  Correlation matrix of random effects  ------
+----------------------------------------------------
+            omega2.ka omega2.V omega2.CL omega2.Emax omega2.EC50
+omega2.ka   1         0        0         0           0          
+omega2.V    0         1        0         0           0          
+omega2.CL   0         0        1         0           0          
+omega2.Emax 0         0        0         1           0          
+omega2.EC50 0         0        0         0           1          
+----------------------------------------------------
+---------------  Statistical criteria  -------------
+----------------------------------------------------
+Likelihood computed by linearisation
+      -2LL= 4319.247 
+      AIC = 4341.247 4341.247 
+      BIC = 4362.279 4362.279 
+
+Likelihood computed by importance sampling
+      -2LL= 4319.4 
+      AIC = 4341.4 4341.4 
+      BIC = 4362.432 4362.432 
+----------------------------------------------------

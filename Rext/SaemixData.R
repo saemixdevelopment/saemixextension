@@ -38,7 +38,7 @@ setMethod("showall","list",
 #' @slot log A string recording the warnings and messages during the creation of the object
 #' @slot automatic Object of class \code{"logical"}: if TRUE, automatic name recognition is on (used at the creation of the object)
 #' @slot varlevel vector with the names of the variables used as grouping levels (defaults to name.group or to c(name.group, name.occ) in the legacy version). Successive levels must be nested (eg name.occ must be nested within name.group for a dataset containing both interindividual and interoccasion variability)
-#' @slot name.group Object of class \code{"character"}: name of the column containing the first level of variability (usually IIV)
+#' @slot name.group Object of class \code{"character"}: name of the column containing the first level of variability (usually id) # the different levels of variability (eg id, occ)
 #' @slot name.occ Object of class \code{"character"}: name of the column containing the value of the occasion (deprecated, now use varlevel to keep track of grouping levels)
 #' @slot name.predictors Object of class \code{"character"}: name of the column(s) containing the predictors
 #' @slot name.response Object of class \code{"character"}: name of the column containing the response variable y modelled by predictor(s) x

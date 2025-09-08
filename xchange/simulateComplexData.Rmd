@@ -6,6 +6,7 @@ output:
   pdf_document: default
   html_document: default
 ---
+    
 # Setup
 
 - libraries
@@ -40,6 +41,217 @@ knitr::opts_chunk$set(root.dir = workDir)
 
 # directory to save simulated data
 datDir<-file.path(saemixDir,"data40")
+```
+
+# Simulation with IOV
+
+- Features
+  - theophylline PK
+  - occasions, with a variable number of occasions: 1 to 3
+  - covariates
+    - sex, weight changing with subject
+    - CRCL, comedication changing with occasion
+  - design
+    - N=100 subjects
+    - 1 to 3 occasion per subject (random)
+    - sampling times for each occasion: 0.25, 1.5, 3.35, 12 and 24 h (sparse design in Dubois et al.)
+    - dose: D=4mg
+    - time between two occasions: 4 weeks (assume washout)
+- Model
+  - PK response: 1 cpt model with absorption
+
+    $$ y_2 = \frac{D}{V} \frac{k_a}{(k_a-CL/V)} \left( e^{- CL/V t} - e^{-k_a t} \right)$$
+  - log-normal parameter distribution
+  - population parameter values
+    - ka=1.48 h-1
+    - CL=0.04 L/h
+    - V=0.48 L
+  - variabilities
+    - IIV 
+      - 30% on all parameters
+    - IOV
+      - IOV on CL only with 20% IOV
+    - note Dubois:
+      - low IIV: 0.2 on ka and CL, 0.1 on V; half of IIV for IOV
+      - regular BSV: 0.5 on ka, V, CL and 0.15 on IOV
+      - correlation between CL and V (0.7)
+    - combined residual error model with a=0.1 and b=0.1
+- Covariates
+  - baseline covariates
+    - equal number of each gender
+    - weight: normal distribution centering on different values for men (70) and women (60) with the same coefficient of variation (20%)
+  - covariate changing with occasion
+    - CRCL: log-normal distribution at baseline, decrease with time (on average 10% per month, ~N(0.1, 0.05))
+    - comedication: random allocation at each occasion, with probability 0.3
+  - covariate models
+    - weight: allometry on V and CL
+    - gender: V decreased by 30% in women
+    - CRCL: correlation with CL
+    - comedication: increase in CL by 30\%
+- Not included in the simulation
+  - NA values in the covariates
+  - LOQ values
+
+### Simulating individual parameters with and without covariates
+
+```{r simulateTheoIOVindivpar}
+#################### Design
+nsuj <- 100
+sampleTimes <- c(0.25, 1.5, 3.35, 12, 24)
+
+#################### Model
+# model function
+theo1cpt <- function(psi,id,xidep) {
+  tim<-xidep[,1]
+  dose<-xidep[,2]
+  ka<-psi[id,1]
+  V<-psi[id,2]
+  CL<-psi[id,3]
+  ypred <- dose*ka/V/(ka-CL/V)*(exp(-CL/V*tim) - exp(-ka*tim))
+  return(ypred)
+}
+
+# Parameters
+doses <- c(4)
+param <- data.frame(ka=1.48, V=0.48, CL=0.04, betaCRCL=0.5)
+## IIV
+omega.iiv <- rep(0.3,3)
+varcovmat<-diag(c(omega.iiv[2],omega.iiv[3])**2) # correlation between delta and CL
+varcovmat[1,2]<-varcovmat[2,1]<-0.7*omega.iiv[2]*omega.iiv[3]
+## IOV
+omega.iov <- c(0.15)
+## Residual variability
+par.sig <- c(0.1,0.1)
+
+#################### Covariates
+## Baseline covariates
+### equal number of male and female
+### weight ~ N(60,12) in female and N(70,14) in men
+male.id <- sort(sample(1:nsuj, nsuj/2, replace=FALSE))
+cov.base <- data.frame(id=1:nsuj, sex=1, wt = trunc(rnorm(nsuj, mean=60, sd=12)))
+cov.base$sex[male.id]<-0
+cov.base$wt[male.id]<-trunc(rnorm(nsuj/2, mean=70, sd=14))
+
+## Occasion specific covariates
+### number of occasions between 1 and 3
+### comedication ~ Bernoulli(p=0.3) at each occasion
+### CLCR at baseline ~ U(min-max)
+### normal values: 97 to 137 mL/min for men and 88 to 128 mL/min for women
+#### Decrease of 5% (~N(0.05, 0.01)) every month for the purpose of the exercise
+nocc <- sample(1:3, size=nsuj, replace=TRUE) # nb of occasions per subject
+cov.base$nb.occ <- nocc
+cov.occ<-data.frame()
+for(i in 1:nsuj) {
+  tabsuj<-do.call(rbind,rep(list(cov.base[i,]),nocc[i]))
+  tabsuj<-cbind(tabsuj, occ=1:nocc[i])
+  crcl<-trunc(runif(1,97,137))-ifelse(cov.base$sex[1]==1,9,0)
+  crcl<-c(crcl, round(crcl*rnorm(1,mean=0.95,sd=0.01), digits=2))
+  crcl<-c(crcl, round(crcl[2]*rnorm(1,mean=0.95,sd=0.01), digits=2))
+  tabsuj<-cbind(tabsuj,crcl=crcl[1:nocc[i]], comed=rbinom(nocc[i],1,0.3))
+  cov.occ<-rbind(cov.occ, tabsuj)
+}
+
+# Simulation of individual-specific parameters (dataframe psi1)
+## No covariates used in the model
+psi1 <-data.frame(id=1:nsuj)
+# Simulate first random effects for delta and CL, correlated, then all other etas
+tab1 <- rmvnorm(nsuj, sigma=varcovmat)
+etas <- matrix(rnorm(nsuj*3,mean=0,sd=1), ncol=3)
+psi1$ka <- param$ka*exp(etas[,1]*omega.iiv[1])  # log-normal distribution
+psi1$V <- param$V*exp(tab1[,1]) # log-normal distribution, omega.iiv already included
+psi1$CL<-param$CL*exp(tab1[,2]) # log-normal distribution
+
+psi1.nocov <- psi1
+
+# Adding subject-specific covariates
+psi1$V <- param$V*exp(tab1[,1])*(cov.base$wt/70)*(0.7*cov.base$sex+(1-cov.base$sex))
+psi1$CL<-param$CL*exp(tab1[,2])*(cov.base$wt/70)^0.75 # log-normal distribution
+psi1.cov <- psi1
+
+# Adding IOV
+## No covariate
+psi1.iov<-NULL
+for(isuj in 1:nsuj) {
+  psisuj <- do.call(rbind,rep(list(psi1.nocov[isuj,]),nocc[isuj]))
+  psisuj$occ<-1:nocc[isuj]
+#  eta.iov<-rmvnorm(nocc[isuj],sigma=iovmat)
+  eta.iov<-rnorm(1,mean=0,sd=omega.iov)
+#  psisuj$CL <-psisuj$CL*exp(eta.iov[,2])
+  psisuj$CL <-psisuj$CL*exp(eta.iov)
+  psi1.iov<-rbind(psi1.iov, psisuj)
+}
+psi1.iov$index <- paste0(psi1.iov$id,".",psi1.iov$occ)
+
+psi1.iov.nocov <- psi1.iov
+
+## Adding occasion-specific covariates
+psi1.iov<-NULL
+for(isuj in 1:nsuj) {
+  psisuj <- do.call(rbind,rep(list(psi1.cov[isuj,]),nocc[isuj]))
+  psisuj$occ<-1:nocc[isuj]
+  #  eta.iov<-rmvnorm(nocc[isuj],sigma=iovmat)
+  eta.iov<-rnorm(nocc[isuj],mean=0,sd=omega.iov)
+  #  psisuj$CL <-psisuj$CL*exp(eta.iov[,2])
+  psisuj$CL <-psisuj$CL*exp(eta.iov)
+  psi1.iov<-rbind(psi1.iov, psisuj)
+}
+psi1.iov$CL <- psi1.iov$CL*(cov.occ$comed*1.3+(1-cov.occ$comed))*(cov.occ$crcl/110)^(param$betaCRCL)
+psi1.iov$index <- paste0(psi1.iov$id,".",psi1.iov$occ)
+
+psi1.iov.cov <- psi1.iov
+```
+
+### Simulating responses
+
+```{r simulateTheoIOVresp}
+# Predicted data (same times for each occasion)
+xidep1 <- data.frame(tim=rep(sampleTimes,dim(psi1.iov.nocov)[1]), dose=doses[1], matchidx=rep(psi1.iov.nocov$index, each=length(sampleTimes)))
+id1<-match(xidep1$matchidx,psi1.iov.nocov$index)
+mat1 <- psi1.iov.nocov$index[match(xidep1$matchidx,psi1.iov.nocov$index)]
+mat1 <- matrix(unlist(strsplit(mat1,".",fixed=T)), ncol=2, byrow=T)
+
+
+# Simulated data (adding error)
+## No covariate
+psi1 <- as.matrix(psi1.iov.nocov[,2:4])
+ypred <- theo1cpt(psi1,id1,xidep1)
+gpred <- sqrt(par.sig[1]**2 + (ypred*par.sig[2])**2)
+ntot<-length(ypred)
+simdata<-data.frame(id=as.integer(mat1[,1]), tim=xidep1$tim, occ=as.integer(mat1[,2]), dose=doses[1], ypred=ypred, 
+                    ysim=ypred+gpred*rnorm(ntot,0,1))
+
+ggplot(simdata, aes(x=tim, y=ypred, colour=as.factor(occ))) + geom_point() + xlab("Time (weeks)") + ylab("Predicted concentrations")  + scale_color_viridis("Occasion",discrete = TRUE) + facet_wrap(.~occ)
+
+datsim.nocov <- simdata
+
+if(FALSE)
+  plot(xidep1$tim, ypred)
+
+# With covariates
+psi1 <- as.matrix(psi1.iov.cov[,2:4])
+ypred <- theo1cpt(psi1,id1,xidep1)
+gpred <- sqrt(par.sig[1]**2 + (ypred*par.sig[2])**2)
+ntot<-length(ypred)
+simdata<-data.frame(id=as.integer(mat1[,1]), tim=xidep1$tim, occ=as.integer(mat1[,2]), dose=doses[1], ypred=ypred, 
+                    ysim=ypred+gpred*rnorm(ntot,0,1))
+simdata <- cbind(simdata,
+                 cov.base[match(simdata$id,cov.base$id),2:3],
+                 cov.occ[id1,c(6,7)])
+
+ggplot(simdata, aes(x=tim, y=ypred, group=as.factor(sex), colour=as.factor(sex))) + geom_point() + xlab("Time (weeks)") + ylab("Predicted concentrations")  + scale_color_viridis("Sex",discrete = TRUE) + facet_wrap(.~occ)
+
+datsim.cov <- simdata
+
+```
+
+### Saving to file
+
+```{r saveTheoSimul}
+
+write.csv(datsim.nocov, file=file.path(datDir,"theoSimul_nocov.csv"), quote=F, row.names = FALSE)
+
+write.csv(datsim.cov, file=file.path(datDir,"theoSimul_cov.csv"), quote=F, row.names = FALSE)
+
 ```
 
 # Complex data structure simulation
