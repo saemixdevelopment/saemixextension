@@ -34,20 +34,20 @@ output:
     - added a log slot to track warning messages so the user can review what changes were made during the creation of the object
   - additional changes
     - log all warning messages to print out or keep track of in the object
-  - **ToDo Eco**
-    - update legacy tests from testthat_saemixData-read.R
-    - update legacy tests from testthat_saemixData-covariates.R
-  - **ToDo Lillois**
-    - check recording of error messages to make sure as much as possible is captured/tracked
-    - update legacy creator so it still works with the new class (error messages in legacy tests)
-    - add default behaviour to define name.group as varlevel[1] if given (potentially deprecate both name.group and name.occ)
-    - program a function to extract the covariate matrices for the different levels in varlevel
-      - input: the object
-      - output: the object, with a slot holding the list of matrices with the first value of the covariate at each level
-        - eg: for id, first value of the covariate in each subject (size: N x nb of covariates not varying across id)
-        - for occ, first value of the covariate in each subject at each occasion (size Sum_i nocc_i x nb of covariates varying with occasion)
-        - etc... if more levels of variability
-        - add (and record) warning messages if the covariate changes value within a grouping level
+- **ToDo SaemixData Eco**
+  - update legacy tests from testthat_saemixData-read.R
+  - update legacy tests from testthat_saemixData-covariates.R
+- **ToDo SaemixData Lillois**
+  - check recording of error messages to make sure as much as possible is captured/tracked
+  - update legacy creator so it still works with the new class (error messages in legacy tests)
+  - add default behaviour to define name.group as varlevel[1] if given (potentially deprecate both name.group and name.occ)
+  - program a function to extract the covariate matrices for the different levels in varlevel
+    - input: the object
+    - output: the object, with a slot holding the list of matrices with the first value of the covariate at each level
+      - eg: for id, first value of the covariate in each subject (size: N x nb of covariates not varying across id)
+      - for occ, first value of the covariate in each subject at each occasion (size Sum_i nocc_i x nb of covariates varying with occasion)
+      - etc... if more levels of variability
+      - add (and record) warning messages if the covariate changes value within a grouping level
 - SaemixIndivModel (**new**)
   - split in two parts, using lists of the two new classes defining:
     - the individual population model ($\phi_{pop,i}=\mu + \sum \beta.cov_i$)
@@ -60,30 +60,30 @@ output:
     - inherits the list of SaemixPopModel and SaemixVarModel objects
     - adds list of outcome in the model
     - adds the model function (and the sim.model function for non-Gaussian models)
-  - main changes
-    - multiple responses through the ytype identifier
-      - definition of outcome through their distribution
-        - continuous: normal
-        - non-Gaussian: different types
-      - error models for continuous responses
-        - built-in error models
-        - user-defined error models
-    - definition of parameters through their distribution à la MLX-TRAN
-      - built-in distributions with automatically defined transformation h and inverse h-1
-      - in theory (untested), possible to write user-defined distributions
-      - from the list of parameters, derive the variability levels
-  - **ToDo Lillois**
-    - function to match varlevel between a model and an object
-      - input: SaemixData and SaemixModel objects
-      - output: TBD (could be both objects updated, or could be an updated varlevel and covariate.varlevel list for two functions to make the changes in the SaemixData and SaemixModel objects)
-    - reprogram functions associated to the model class
-      - predict: priority high, easy once matching between data and model done
-      - summary: priority moderate, very easy
-      - checkInitialFixedEffects: priority high, moderate difficulty once matching between data and model done
-  - **ToDo Eco**
-    - reprogram plot functions associated to the model class
-      - difficulty: high (dispatch according to response type)
-      - code architecture involved
+  - **main changes**
+  - multiple responses through the ytype identifier
+    - definition of outcome through their distribution
+      - continuous: normal
+      - non-Gaussian: different types
+    - error models for continuous responses
+      - built-in error models
+      - user-defined error models
+  - definition of parameters through their distribution à la MLX-TRAN
+    - built-in distributions with automatically defined transformation h and inverse h-1
+    - in theory (untested), possible to write user-defined distributions
+    - from the list of parameters, derive the variability levels
+- **ToDo SaemixModel Lillois**
+  - function to match varlevel between a model and an object
+    - input: SaemixData and SaemixModel objects
+    - output: TBD (could be both objects updated, or could be an updated varlevel and covariate.varlevel list for two functions to make the changes in the SaemixData and SaemixModel objects)
+  - reprogram functions associated to the model class
+    - predict: priority high, easy once matching between data and model done
+    - summary: priority moderate, very easy
+    - checkInitialFixedEffects: priority high, moderate difficulty once matching between data and model done
+- **ToDo SaemixModel Eco**
+  - reprogram plot functions associated to the model class
+    - difficulty: high (dispatch according to response type)
+    - code architecture involved
 - input functions (**saemixData()** and **saemixModel()**)
   - legacy options to enter the model as previously
   - some new features 
@@ -213,19 +213,6 @@ theonocov <- read.csv(file=file.path(datDir,"theoSimul_nocov.csv"), header=T, se
 theocov <- read.csv(file=file.path(datDir,"theoSimul_cov.csv"), header=T, sep=",")
 ```
 
-### SaemixData object - CRAN version
-
-```{r createSaemixData}
-
-```
-
-### SaemixModel object - CRAN version without IOV
-
-```{r createLegacySaemixModel}
-
-```
-
-
 # Saemix 
 
 Changes in saemix from previous to new version of the package
@@ -350,7 +337,7 @@ ggplot(xdata, aes(x=tim, y=ysim, group=id, colour=as.factor(occ))) + geom_point(
 x<-smxdata.legacy
 object.slots <- names(attributes(x))
 for(islot in object.slots) {
-  if(!(islot %in% c("outcome", "sep", "na", "header","class","log","varlevel"))) {
+  if(!(islot %in% c("outcome", "sep", "na", "header","class","log","varlevel", "covariate.varlevel"))) {
     expect_equal(smxdata.current[islot], smxdata.legacy[islot])
   }
 }
@@ -474,10 +461,10 @@ source(file.path(progDir.next,"SaemixModel-methods.R"))
 
 ############### Legacy 
 # Reading data into an saemixModel object - same instruction as before
-smxmodel.legacy<-saemixModel.legacy(model=theo1cpt, modeltype=c("structural"),
+smxmodel.legacy<-try(saemixModel.legacy(model=theo1cpt, modeltype=c("structural"),
   description="Theophylline PK model without IOV", 
-  psi0=psi0.mat,transform.par=rep(1,3),covariance.model=varmat,error.model=c("combined"))
-if(smxmodel.legacy=="Creation of SaemixModel failed") cat("ToDo: code a legacy function to recognise the old instructions\n")
+  psi0=psi0.mat,transform.par=rep(1,3),covariance.model=varmat,error.model=c("combined")))
+if(is(smxmodel.legacy,"try-error")) cat("ToDo: code a legacy function to recognise the old instructions\n")
 
 ############### New definition 
 # Reading data into an saemixModel object - specifying parameter distributions
@@ -502,10 +489,10 @@ param.cov <- list(ka=saemixParam(mu.init=1.5),
 # Model without covariates
 smxmodel.next <- saemixModel(model=theo1cpt, parameters=param.base)
 cat("Variance structures:\n")
-print(smxmodel.next.cov@varmodel)
+print(smxmodel.next@varmodel)
 
 cat("Parameter structures:\n")
-print(smxmodel.next.cov@popmodel)
+print(smxmodel.next@popmodel)
 
 cat("Parameters mu & beta in the model\n")
 showall(smxmodel.next@popmodel)
@@ -530,16 +517,18 @@ showall(smxmodel.next.cov@popmodel)
 ```{r compareModelObjects, results='hide', echo=FALSE, warnings=FALSE}
 #########################################################################
 # systematic checks between next and legacy version- identical objects
-object.slots <- names(attributes(x))
-for(islot in object.slots) {
+if(!is(smxmodel.legacy,"try-error")) {
+  object.slots <- names(attributes(x))
+  for(islot in object.slots) {
     expect_equal(smxmodel.next[islot], smxdata.legacy[islot])
+  }
 }
 
 # testthat checks
 
 ```
 
-### Additional features
+### Additional features (at some point)
 
 - NA
 - LOQ
