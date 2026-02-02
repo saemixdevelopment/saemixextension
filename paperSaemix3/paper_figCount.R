@@ -1,19 +1,20 @@
 # Loading libraries
 library(xtable)
 library(ggplot2)
-library(tidyr)
 
 # Loading saemix
-#library(saemix)
+library(saemix)
 
 # Folders
-workDir<-"/home/eco/work/saemix/discreteEval"
+# workDir<-"/home/eco/work/saemix/saemixextension/paperSaemix3"
+workDir <- getwd() # working directory should be paperSaemix3
 # setwd(workDir)
 
-saemixDir<-"/home/eco/work/saemix/saemixextension"
 figDir <- file.path(workDir, "figs")
 nsim<-200 # Number of simulations
 saveFigures <- FALSE
+rsize.text <- 2
+rsize.ticks <- 1.5
 
 ###################################################### Data exploration
 
@@ -23,10 +24,23 @@ rapi.saemix$gender <- ifelse(rapi.saemix$gender=="Men",1,0)  # Female=reference 
 saemix.data<-saemixData(name.data=rapi.saemix, name.group=c("id"),
                         name.predictors=c("time","rapi"),name.response=c("rapi"),
                         name.covariates=c("gender"),
-                        units=list(x="months",y="",covariates=c(""), verbose=FALSE)
+                        units=list(x="months",y="",covariates=c("")), verbose=FALSE)
 
 xpl <- plotDiscreteData(saemix.data, outcome="count", which.cov="gender", breaks=c(0:9, 16, 25,80))
+
 print(xpl)
+
+plot1 <- plotDiscreteData(ordknee.data, outcome="categorical", which.cov="treatment")
+plot2 <- plot1 #+  theme(text = element_text(size=rel(rsize.text)), legend.text=element_text(size=rel(rsize.text)), strip.text.x = element_text(size=rel(rsize.ticks)), strip.text.y = element_text(size=rel(rsize.ticks)))
+
+if(saveFigs) {
+  plot2 <- xpl #+ theme(text = element_text(size=rel(rsize.text)), legend.text=element_text(size=rel(rsize.text)), strip.text.x = element_text(size=rel(rsize.ticks)), strip.text.y = element_text(size=rel(rsize.ticks)))
+  namfig<-"rapi_rawDataPropTime.eps"
+  cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
+  plot(plot2)
+  dev.off()
+}
+
 
 ###################################################### Fit Poisson model
 ## Poisson with a time effect
@@ -133,6 +147,7 @@ saemix.data0<-saemixData(name.data=rapi.saemix, name.group=c("id"),
                          name.covariates=c("gender"),
                          units=list(x="week",y="",covariates=c("")))
 
+##################### P(Y>0)
 # Fit Binomial model to saemix.data0
 binary.model<-function(psi,id,xidep) {
   tim<-xidep[,1]
@@ -166,14 +181,43 @@ saemix.options<-list(seed=1234567,save=FALSE,save.graphs=FALSE, displayProgress=
 
 hurdlefit0<-saemix(saemix.hurdle0,saemix.data0,saemix.options)
 
+##################### P(Y=l /Y>0)
 # Fit Poisson model to saemix.data1
-saemix.hurdle1.cov2<-saemixModel(model=count.poisson,description="Count model Poisson",modeltype="likelihood",   
-                                 simulate.function = countsimulate.poisson,
+
+truncated.poisson<-function(psi,id,xidep) { 
+  time<-xidep[,1]
+  y<-xidep[,2]
+  intercept<-psi[id,1]
+  slope<-psi[id,2]
+  lambda<- exp(intercept + slope*time)
+  logp <- y*log(lambda) - log(factorial(y)) - log(exp(lambda)-1)
+  return(logp)
+}
+# simulating from a truncated Poisson using the inverse function
+# Peter Dalgaard on R-help list: https://stat.ethz.ch/pipermail/r-help/2005-May/070680.html
+rtpois <- function(N, lambda) {
+  qpois(runif(N, dpois(0, lambda), 1), lambda)
+}
+
+# Simulation function
+countsimulate.truncatedpoisson<-function(psi, id, xidep) {
+  # left: truncate to 1
+  time<-xidep[,1]
+  y<-xidep[,2]
+  intercept<-psi[id,1]
+  slope<-psi[id,2]
+  lambda<- exp(intercept + slope*time)
+  y<-rtpois(length(time), lambda=lambda)
+  return(y)
+}
+
+saemix.hurdle1.cov2<-saemixModel(model=truncated.poisson,description="Count model Poisson",modeltype="likelihood",   
+                                 simulate.function = countsimulate.truncatedpoisson,
                                  psi0=matrix(c(log(5),0.01),ncol=2,byrow=TRUE,dimnames=list(NULL, c("intercept","slope"))), 
-                                 transform.par=c(0,0), omega.init=diag(c(0.5, 0.5)),
+                                 transform.par=c(0,0), omega.init=diag(c(0.5, 0.01)),
                                  covariance.model =matrix(data=1, ncol=2, nrow=2),
-                                 covariate.model=matrix(c(1,1), ncol=2, byrow=TRUE))
-saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE)
+                                 covariate.model=matrix(c(1,1), ncol=2, byrow=TRUE), verbose=FALSE)
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, print=FALSE)
 
 hurdlefit1<-saemix(saemix.hurdle1.cov2,saemix.data1,saemix.options)
 

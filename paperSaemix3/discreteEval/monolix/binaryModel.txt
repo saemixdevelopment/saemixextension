@@ -1,0 +1,15 @@
+DESCRIPTION: Binary model
+
+[LONGITUDINAL]
+input = {th1, th2}
+
+EQUATION:
+lgp0 = th1 + th2*t
+
+DEFINITION:
+level = {type = categorical,  categories = {0, 1},
+  logit(P(level<=0)) = lgp0
+}
+
+OUTPUT:
+output = level

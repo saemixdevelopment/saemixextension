@@ -1,0 +1,2 @@
+parameter,statistics(sa),p-value(sa)
+beta_th2_treatment_1,1.37129,0.17

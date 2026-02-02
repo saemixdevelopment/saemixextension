@@ -30,7 +30,7 @@ workDir<-getwd()
 # @Eco
 workDir<-"/home/eco/work/saemix/saemixextension/paperSaemix3"
 saemixDir <- "/home/eco/work/saemix/saemixextension"
-figDir<-file.path(saemixDir,"documentation","figs")
+#figDir<-file.path(saemixDir,"documentation","figs")
 setwd(workDir)
 
 # Libraries
@@ -44,7 +44,10 @@ library(tidyverse)
 
 # Whether to save the plots
 saveFigs<-FALSE
-figDir <- getwd()
+figDir <- file.path(workDir,"figs")
+rsize.text <- 2
+rsize.ticks <- 1.5
+theme_set(theme_bw(base_size = 15)) 
 
 # Number of bootstrap samples
 runBootstrap <- FALSE # to read the results from disk
@@ -80,9 +83,10 @@ xpl <- plotDiscreteData(saemix.data, outcome="count", which.cov="gender", breaks
 print(xpl)
 
 if(saveFigs) {
+  plot1 <- xpl + theme(text = element_text(size=rel(rsize.text)), legend.text=element_text(size=rel(rsize.text)), strip.text.x = element_text(size=rel(rsize.ticks)), strip.text.y = element_text(size=rel(rsize.ticks)))
   namfig<-"rapi_rawDataPropTime.eps"
   cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
-  plotDiscreteData(saemix.data, outcome="count", which.cov="gender", breaks=c(0:9, 16, 25,80))
+  plot(xpl)
   dev.off()
 }
 
@@ -105,9 +109,9 @@ table(rapi.saemix$gender, as.integer(rapi.saemix$rapi > 2))
 Several models can be fit to the data.
 
 The simplest one is a Poisson model which assumes that the probability to observe a count value equal to $n$ is given by:
-\begin{equation}
-P(Y=n) = \frac{\lambda^n \; e^{-\lambda}}{n!}
-\end{equation}
+
+$P(Y=n) = \frac{\lambda^n \; e^{-\lambda}}{n!}$
+
 where $\lambda>0$ is the parameter of the model. We assume a time effect $\lambda$, which is defined as a linear function of time.
 
 For the statistical model, we assume a normal distribution for intercept and slope, so that the distribution of $\lambda$ is log-normal.
@@ -220,13 +224,25 @@ Some diagnostics for this model can be obtained by simulating from the model. To
 ### Simulations
 nsim<-100
 yfit1<-simulateDiscreteSaemix(poisson.fit.cov2, nsim=nsim)
-discreteVPC(yfit1, outcome="count", which.cov="gender", breaks=c(0:9, 16, 25,80))
+plot1 <- discreteVPC(yfit1, outcome="count", which.cov="gender", breaks=c(0:9, 16, 25,80))
+plot(plot1)
+
+if(saveFigs) {
+  namfig<-"rapi_poissonVPC.eps"
+  cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
+  plot(plot1)
+  dev.off()
+}
+
 ```
 - we can also extract dataframe with the simulated data (*poisson.fit@sim.data@datasim*), adding a column *gender* to stratify the plots, in order to produce additional diagnostics
 
 ```{r countPoissonDiagnostics}
 # Proportion of zeroes
-hist(yfit1@data@data$rapi, xlim=c(0,50), freq=F, breaks=30, xlab="Observed counts", main="")
+#ggplot(yfit1@data@data, aes(x=rapi)) + geom_histogram()
+#ggplot(yfit1@data@data, aes(x=rapi)) + geom_density() + geom_density(data=yfit1@sim.data@datasim,aes(x=ysim), colour="red") + xlim(0,10)
+
+hist(yfit1@data@data$rapi, xlim=c(0,50), freq=F, breaks=50, xlab="Observed counts", main="")
 lines(density(yfit1@sim.data@datasim$ysim[yfit1@sim.data@datasim$ysim<50]), lwd = 2, col = 'red')
 
 cat("Observed proportion of 0's", length(yfit1@data@data$rapi[yfit1@data@data$rapi==0])/yfit1@data@ntot.obs,"\n")
@@ -259,18 +275,29 @@ gtab1<-cbind(gtab, model="Poisson")
 rapipl <- rapi.saemix %>%
     group_by(time, gender) %>%
   summarise(nev = sum(rapi==0), n=n()) %>%
-  mutate(freq = nev/n, sd=sqrt((1-nev/n)/nev)) %>%
-  mutate(lower=freq-1.96*sd, upper=freq+1.96*sd) 
+  mutate(freq = nev/n, sd=sqrt((1-nev/n)*(nev/n**2))) %>%
+  mutate(lower=freq-1.96*sd, upper=freq+1.96*sd) %>%
+  mutate(gender=ifelse(gender==0,"Men","Women"))
 rapipl$lower[rapipl$lower<0] <-0 # we should use a better approximation for CI
 
-plot2 <- ggplot(rapipl, aes(x=time, y=freq, group=gender)) + geom_line() + 
-  geom_point() + 
+plot2 <- ggplot(rapipl, aes(x=time, y=freq, group=gender)) + geom_line() + geom_point() + 
   geom_line(data=gtab, aes(x=time, y=median,  group=gender), linetype=2, colour='lightblue') + 
   geom_ribbon(data=gtab,aes(ymin=lower, ymax=upper,  group=gender), alpha=0.5, fill='lightblue') +
   ylim(c(0,0.5)) + theme_bw() + theme(legend.position = "none") + facet_wrap(.~gender) +
-  xlab("Time") + ylab("Proportion of drinking episodes")
+  xlab("Time") + ylab("Proportion of subjects reporting no drinking episodes")
 
 print(plot2)
+
+# observed proportions at time 0 of non-drinking episodes is 41/347=11.8% in women and 46/471=9.7% in men
+# clear underestimation in women especially
+
+if(saveFigs) {
+  namfig<-"rapi_poissonZeroesVPC.eps"
+  cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
+  plot(plot2)
+  dev.off()
+}
+
 ```
 
 ##### Dealing with overdispersion
@@ -287,7 +314,7 @@ Other potential models include:
 
 - the Hurdle model (next section)
 
-For the first two, we give expressions for the corresponding **saemix** models in the chunk code below, but not for the simulation functions which are more complicated (see package **RNGforGPD** for an implementation). The Hurdle model is given in the next section for comparison with the ZIP-Poisson model.
+For the first two, we give expressions for the corresponding **saemix** models in the chunk code below, but not for the simulation functions which are more complicated (see package **RNGforGPD** for an implementation). The Hurdle model is given in the next section for comparison with the ZIP-Poisson model. We use the inverse approach to simulate from the truncated Poisson distribution describing the non-zero counts, also truncating to the maximum number of counts observed to avoid simulating aberrant counts.
 
 ```{r countModelOverdispersion}
 ## Zero-inflated Poisson model
@@ -331,7 +358,7 @@ count.genpoisson<-function(psi,id,xidep) {
   logp <- log(lambda) + (y-1)*log(lambda+y*delta) - lambda - y*delta - log(factorial(y))
   return(logp)
 }
-# Simulation function - TBD, see RNGforGPD ?
+# Simulation function - not given, see RNGforGPD
 
 ## Negative binomial model with time effect
 # Model
@@ -345,7 +372,7 @@ count.NB<-function(psi,id,xidep) {
   logp <- log(factorial(y+k-1)) - log(factorial(y)) - log(factorial(k-1)) + y*log(lambda) - y*log(lambda+k) + k*log(k) - k*log(lambda+k)
   return(logp)
 }
-# Simulation function - TBD ? 
+# Simulation function - not given, see RNGforGPD
 
 ```
 
@@ -443,8 +470,9 @@ gtab<-rbind(gtab1, gtab2)
 rapipl <- rapi.saemix %>%
     group_by(time, gender) %>%
   summarise(nev = sum(rapi==0), n=n()) %>%
-  mutate(freq = nev/n, sd=sqrt((1-nev/n)/nev)) %>%
-  mutate(lower=freq-1.96*sd, upper=freq+1.96*sd) 
+  mutate(freq = nev/n, sd=sqrt((1-nev/n)*(nev/n**2))) %>%
+  mutate(lower=freq-1.96*sd, upper=freq+1.96*sd) %>%
+  mutate(gender=ifelse(gender==0,"Men","Women"))
 rapipl$lower[rapipl$lower<0] <-0 # we should use a better approximation for CI
 
 plot2 <- ggplot(rapipl, aes(x=time, y=freq, group=gender)) + geom_line() + 
@@ -503,7 +531,7 @@ saemix.hurdle0<-saemixModel(model=binary.model,description="Binary model",
 #                            psi0=matrix(c(-1.5,-.1,0,0),ncol=2,byrow=TRUE,dimnames=list(NULL,c("theta1","theta2"))),
                             psi0=matrix(c(0.5,-.1,0,0),ncol=2,byrow=TRUE,dimnames=list(NULL,c("theta1","theta2"))),
                             transform.par=c(0,0), covariate.model=c(1,1),
-                            covariance.model=matrix(c(1,0,0,1),ncol=2), omega.init=diag(c(1,0.3)), verbose=FALSE)
+                            covariance.model =matrix(data=1, ncol=2, nrow=2), omega.init=diag(c(1,0.3)), verbose=FALSE)
 
 saemix.options<-list(seed=1234567,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, nb.chains=10, fim=FALSE, displayProgress=FALSE, print=FALSE)
 
@@ -515,7 +543,7 @@ tab.women <- table(rapi.saemix$rapi[rapi.saemix$time==0 & rapi.saemix$gender==0]
 if(FALSE) {
  cat("Observed proportion of 0's at time 0:",tab1[2]/sum(tab1),"\n") # 10.6%
   # Not comparable because of the IIV on theta1 => see below for a comparison using data simulated under the model
-  cat("Expected proportion of 0's at time 0:",1/(1+exp(-hurdlefit0@results@fixed.effects[1])),"\n")
+  cat("Expected proportion of 0's at time 0:",1-1/(1+exp(-hurdlefit0@results@fixed.effects[1])),"\n")
   cat("Observed proportion of 0's at time 0 in women:",tab.women[2]/sum(tab.women),"\n") # 9.7%
 }
 
@@ -524,11 +552,52 @@ xcal<-rnorm(1000, mean=hurdlefit0@results@fixed.effects[1], sd=sqrt(hurdlefit0@r
 cat("Expected proportion of 0's at time 0 (in women):",mean(1-1/(1+exp(-xcal))),"\n")
 cat("Observed proportion of 0's at time 0 in women:",tab.women[2]/sum(tab.women),"\n") # 9.7%
 
-# Fit Poisson model to saemix.data1
-saemix.hurdle1.cov2<-saemixModel(model=count.poisson,description="Count model Poisson",modeltype="likelihood",   
-                                 simulate.function = countsimulate.poisson,
+# Fit truncated Poisson model to saemix.data1
+
+## Poisson with a time effect
+# Model
+truncated.poisson<-function(psi,id,xidep) { 
+  time<-xidep[,1]
+  y<-xidep[,2]
+  intercept<-psi[id,1]
+  slope<-psi[id,2]
+  lambda<- exp(intercept + slope*time)
+  logp <- y*log(lambda) - log(factorial(y)) - log(exp(lambda)-1)
+  return(logp)
+}
+# simulating from a truncated Poisson using the inverse function
+# using method outlined by Keith Goldfield in post https://www.r-bloggers.com/2020/08/generating-data-from-a-truncated-distribution/
+# Doesn't work, doesn't simulate any 1's
+# rtruncPois <- function(n, range, lambda) {
+#   F.a <- ppois(min(range), lambda=lambda)
+#   F.b <- ppois(max(range), lambda=lambda)
+#   u <- runif(n, min = F.a, max = F.b)
+#   qpois(u, lambda=lambda)
+# }
+
+# Peter Dalgaard on R-help list: https://stat.ethz.ch/pipermail/r-help/2005-May/070680.html
+rtpois <- function(N, lambda) {
+    qpois(runif(N, dpois(0, lambda), 1), lambda)
+}
+
+# Simulation function
+countsimulate.truncatedpoisson<-function(psi, id, xidep) {
+  # left: truncate to 0
+  # right: truncate to maximum observed value to avoid simulating aberrant values
+  time<-xidep[,1]
+  y<-xidep[,2]
+  intercept<-psi[id,1]
+  slope<-psi[id,2]
+  lambda<- exp(intercept + slope*time)
+#  y<-rtruncPois(length(time), y, lambda=lambda) 
+  y<-rtpois(length(time), lambda=lambda)
+  return(y)
+}
+
+saemix.hurdle1.cov2<-saemixModel(model=truncated.poisson,description="Count model Poisson",modeltype="likelihood",   
+                                 simulate.function = countsimulate.truncatedpoisson,
                                  psi0=matrix(c(log(5),0.01),ncol=2,byrow=TRUE,dimnames=list(NULL, c("intercept","slope"))), 
-                                 transform.par=c(0,0), omega.init=diag(c(0.5, 0.5)),
+                                 transform.par=c(0,0), omega.init=diag(c(0.5, 0.01)),
                                  covariance.model =matrix(data=1, ncol=2, nrow=2),
                                  covariate.model=matrix(c(1,1), ncol=2, byrow=TRUE), verbose=FALSE)
 saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, print=FALSE)
@@ -564,17 +633,17 @@ for(irep in 1:nsim) {
   suppressMessages(
   xtab1 <- xtab %>%
     group_by(time, gender) %>%
-    summarise(nev = sum(ysim), n=n()) %>%
+    summarise(nev = sum(1-ysim), n=n()) %>%  # Here we want the proportion of zeroes, not 1's !
     mutate(freq = nev/n)
   )
   ytab<-rbind(ytab,xtab1[,c("time","gender","freq")])
 }
-gtab <- ytab %>%
+gtab3 <- ytab %>%
     group_by(time, gender) %>%
   summarise(lower=quantile(freq, c(0.05)), median=quantile(freq, c(0.5)), upper=quantile(freq, c(0.95))) %>%
   mutate(gender=ifelse(gender==0,"Men","Women"))
-gtab$freq<-1
-gtab3<-cbind(gtab, model="Hurdle")
+gtab3$freq<-1
+gtab3<-cbind(gtab3, model="Hurdle")
 gtab<-rbind(gtab1, gtab2, gtab3)
 gtab <- gtab %>%
   mutate(model=factor(model, levels=c("Poisson", "ZIP", "Hurdle")))
@@ -582,8 +651,9 @@ gtab <- gtab %>%
 rapipl <- rapi.saemix %>%
     group_by(time, gender) %>%
   summarise(nev = sum(y0), n=n()) %>%
-  mutate(freq = nev/n, sd=sqrt((1-nev/n)/nev)) %>%
-  mutate(lower=freq-1.96*sd, upper=freq+1.96*sd) 
+  mutate(freq = nev/n, sd=sqrt((1-nev/n)*(nev/n**2))) %>%
+  mutate(lower=freq-1.96*sd, upper=freq+1.96*sd)  %>%
+  mutate(gender=ifelse(gender==0,"Men","Women"))
 rapipl$lower[rapipl$lower<0] <-0 # we should use a better approximation for CI
 
 # Table form - compare to column B in Table 2
@@ -602,22 +672,56 @@ print(rr.tab)
 We have already seen a clear model misfit for Poisson, on the other hand the other two models predict the proportion of subjects without drinking episodes much more accurately, with no clear difference between them.
 
 ```{r rapiComparep0}
+rapipl <- rapi.saemix %>%
+    group_by(time, gender) %>%
+  summarise(nev = sum(rapi==0), n=n()) %>%
+  mutate(freq = nev/n, sd=sqrt((1-nev/n)*(nev/n**2))) %>%
+  mutate(lower=freq-1.96*sd, upper=freq+1.96*sd) %>%
+  mutate(gender=ifelse(gender==0,"Men","Women"))
+rapipl$lower[rapipl$lower<0] <-0 # we should use a better approximation for CI
+
+
 plot.prop0 <- ggplot(rapipl, aes(x=time, y=freq, group=gender)) + geom_line() + 
   geom_point() + 
   geom_line(data=gtab, aes(x=time, y=median,  group=gender), linetype=2, colour='lightblue') + 
   geom_ribbon(data=gtab,aes(ymin=lower, ymax=upper,  group=gender), alpha=0.5, fill='lightblue') +
   ylim(c(0,0.5)) + theme_bw() + theme(legend.position = "none") + facet_wrap(model~gender, ncol=2) +
-  xlab("Time") + ylab("Proportion of subjects without drinking episodes")
+  xlab("Time (months)") + ylab("Proportion of subjects without drinking episodes")
 
 print(plot.prop0)
+plot2 <- plot.prop0
+
+if(saveFigs) {
+  namfig<-"rapi_comparePropZeroes.eps"
+  cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
+  print(plot2)
+  dev.off()
+}
+
 
 ```
-We can also produce VPC for the counts as previously for the ZIP model.
+We can also produce VPC for the counts as previously for the ZIP model. **TODO** bug for count 1 in hurdle model but unclear why, check.
 
 ```{r rapiVPCCountsHurdle}
 nsim<-100
+ysim.hurdle0 <- simulateDiscreteSaemix(hurdlefit0, nsim=nsim)
+plot1 <- discreteVPC(ysim.hurdle0, outcome="count", which.cov="gender")
+plot(plot1)
+
+# Error with the first category with rtruncPois: values of 1 never simulated
+# Done: different definition for the truncated Poisson distribution (rtpois)
 ysim.hurdle1 <- simulateDiscreteSaemix(hurdlefit1, nsim=nsim)
-discreteVPC(ysim.hurdle1, outcome="count", breaks=c(0:9, 16, 25, 80), which.cov="gender")
+plot1 <- discreteVPC(ysim.hurdle1, outcome="count", breaks=c(1:9, 16, 25, 80), which.cov="gender")
+
+plot(plot1)
+
+if(saveFigs) {
+  namfig<-"rapi_hurdleVPC_truncatedPoiss.eps"
+  cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
+  plot(plot1)
+  dev.off()
+}
+
 ```
 
 
@@ -653,7 +757,7 @@ if(runBootstrap) {
 # case.count <- read.table(file.path(saemixDir,"bootstrap","results","rapi_caseBootstrap.res"), header=T)
 # cond.count <- read.table(file.path(saemixDir,"bootstrap","results","rapi_condBootstrap.res"), header=T)
  case.count <- read.table(file.path(saemixDir,"paperSaemix3","bootstrapCase_rapiCov.res"), header=T)
- cond.count <- read.table(file.path(saemixDir,"paperSaemix3","bootstrapCase_rapiCov.res"), header=T)
+ cond.count <- read.table(file.path(saemixDir,"paperSaemix3","bootstrapCond_rapiCov.res"), header=T)
  nboot<-dim(case.count)[1]
 }
 case.count <- case.count[!is.na(case.count[,2]),]

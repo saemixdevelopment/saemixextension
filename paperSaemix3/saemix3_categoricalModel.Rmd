@@ -44,10 +44,16 @@ library(xtable)
 
 # Not really needed but just to show I can use tidyverse too
 library(tidyverse)
+# Weird font issues getting tiny when saving to pdf, correcting for that
+#library(showtext)
+#showtext_auto()
+rsize.text <- 2
+rsize.ticks <- 1.5
+theme_set(theme_bw(base_size = 15)) 
 
 # Whether to save the plots
-saveFigs<-FALSE
-figDir <- getwd()
+saveFigs<-TRUE
+figDir <- file.path(workDir,"figs")
 
 # Number of bootstrap samples
 runBootstrap <- FALSE # to read the results from disk
@@ -78,7 +84,7 @@ saemix.data<-saemixData(name.data=toenail.saemix,name.group=c("id"),name.predict
 
 #### Exploring data
 
-The usual plot of the data object is not very informative as it alternates between 0 and 1's. Instead we plot the evolution of the frequency of infection over time in the population, stratifying by treatment. We use the *plotDiscreteData()* function from the package, setting the *outcome* argument to *'binary'*.
+The usual plot of the data object is not very informative as it alternates between 0 and 1's. Instead we plot the evolution of the frequency of infection over time in the population, stratifying by treatment. We use the *plotDiscreteData()* function from the package, setting the *outcome* argument to *'binary'*, and stratifying on *'treatment'* through the *which.cov* argument.
 
 ```{r binaryExplore}
 # Distribution of times
@@ -86,17 +92,17 @@ if(FALSE) hist(toenail.saemix$time, breaks=c(-1,0.25,1.25,2.25, 3.25, 7,10,15,20
 table(cut(toenail.saemix$time, breaks=c(-1,0.25,1.25,2.25, 3.25, 7,10,15,20)))
 
 # Proportion of 0's and 1's across time
-plotDiscreteData(saemix.data, outcome='binary', which.cov="treatment")
+plotDiscreteData(saemix.data, outcome='binary', which.cov="treatment", bin.number=7)
 ```
 
-We can also present the results as a barplot of the proportion of events, using **ggplot2** and **tidyverse**.
+We can also present the results only for the proportion of events by visits directly on the *toenail.saemix* dataframe, using **ggplot2**, or as a barplot of the proportion of events.
 
 ```{r binaryExploreAdditional}
-# Barplots across time
+# Only showing the frequency of infections
 toe1 <- toenail.saemix %>%
   group_by(visit, treatment) %>%
   summarise(nev = sum(y), n=n()) %>%
-  mutate(freq = nev/n, sd=sqrt((1-nev/n)/nev)) %>%
+  mutate(freq = nev/n, sd=sqrt((1-nev/n)*(nev/n**2))) %>%
   mutate(lower=freq-1.96*sd, upper=freq+1.96*sd)
 toe1$lower[toe1$lower<0] <-0 # we should use a better approximation for CI
 toe1$treatment <- factor(toe1$treatment, labels=c("A","B"))
@@ -106,15 +112,19 @@ plot1<-ggplot(toe1, aes(x=visit, y=freq, group=treatment)) + geom_line(aes(colou
   geom_ribbon(aes(ymin=lower, ymax=upper, fill=treatment), alpha=0.2) +
   ylim(c(0,1)) + theme_bw() + theme(legend.position = "top") +
   xlab("Visit number") + ylab("Observed frequency of infection")
-
 print(plot1)
+plot2 <- plot1 + theme(text = element_text(size=rel(rsize.text)), legend.text=element_text(size=rel(rsize.text)), strip.text.x = element_text(size=rel(rsize.ticks)), strip.text.y = element_text(size=rel(rsize.ticks)))
 
+#showtext_opts(dpi = 300)
 if(saveFigs) {
   namfig<-"toenail_infectionFreq.eps"
   cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
-  plot(plot1)
+  plot(plot2)
   dev.off()
 }
+
+# Barplots across time - TODO
+
 ```
 
 #### Statistical model
@@ -212,12 +222,13 @@ plot(binary.fit, plot.type="convergence")
 nsim<-1000
 binary.fit <- simulateDiscreteSaemix(binary.fit, nsim=nsim)
 
-discreteVPC(binary.fit, outcome="binary", which.cov="treatment")
+plot1 <- discreteVPC(binary.fit, outcome="binary", which.cov="treatment")
 
+plot2 <- plot1 + theme(text = element_text(size=rel(rsize.text)), legend.text=element_text(size=rel(rsize.text)), strip.text.x = element_text(size=rel(rsize.ticks)), strip.text.y = element_text(size=rel(rsize.ticks)))
 if(saveFigs) {
   namfig<-"toenail_vpcByTreatment.eps"
   cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
-  discreteVPC(binary.fit, outcome="binary", which.cov="treatment")
+  plot(plot2)
   dev.off()
 }
 ```
@@ -251,13 +262,15 @@ plot2 <- ggplot(toe1, aes(x=visit, y=freq, group=treatment)) + geom_line(aes(col
   geom_line(data=gtab, aes(x=visit, y=median), linetype=2, colour='lightblue') + 
   geom_ribbon(data=gtab,aes(ymin=lower, ymax=upper), alpha=0.5, fill='lightblue') +
   ylim(c(0,0.5)) + theme_bw() + theme(legend.position = "none") + facet_wrap(.~treatment) +
-  xlab("Visit number") + ylab("Frequency of infection")
+  xlab("Visit number") + ylab("Frequency of infection") 
+
+plot3 <- plot2 +  theme(text = element_text(size=rel(rsize.text)), legend.text=element_text(size=rel(rsize.text)), strip.text.x = element_text(size=rel(rsize.ticks)), strip.text.y = element_text(size=rel(rsize.ticks)))
 
 print(plot2)
 if(saveFigs) {
   namfig<-"toenail_ggplot2VPCTreatment.eps"
   cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
-  plot(plot2)
+  plot(plot3)
   dev.off()
 }
 ```
@@ -311,7 +324,7 @@ if(nboot<200) cat("The number of bootstrap samples is too low to provide good es
   plot.density2<-ggplot(data=ypd2) + geom_density(aes(value,fill="red4"), alpha=0.5) + 
     geom_vline(data=df,aes(xintercept=est.saemix),colour="red",size=1.2) + 
     geom_vline(data=df,aes(xintercept=mean.boot),colour="blue",size=1.2) +
-    theme_bw() + theme(axis.title.x = element_blank(),axis.text.x = element_text(size=9, angle=30, hjust=1), legend.position = "none") + 
+    theme_bw() + theme(axis.title.x = element_blank(),axis.text.x = element_text(size=11, angle=30, hjust=1), legend.position = "none") + 
     facet_wrap(~Param, ncol=2, scales = 'free')
   
   print(plot.density2)
@@ -352,14 +365,14 @@ if(nboot<200) cat("The number of bootstrap samples is too low to provide good es
     plot.density2<-ggplot(data=ypd2) + geom_density(aes(value,fill="red4"), alpha=0.5) + 
     geom_vline(data=df2,aes(xintercept=est.saemix),colour="red",size=1.2) + 
     geom_vline(data=df2,aes(xintercept=mean.boot),colour="blue",size=1.2) +
-    theme_bw() + theme(axis.title.x = element_blank(),axis.text.x = element_text(size=9, angle=30, hjust=1), legend.position = "none") + 
+    theme_bw() + theme(axis.title.x = element_blank(),axis.text.x = element_text(size=11, angle=30, hjust=1), legend.position = "none") + 
     facet_wrap(~Param, ncol=2, scales = 'free')
   print(plot.density2)
   
   plot.density3<-ggplot(data=ypd) + geom_density(aes(value,fill="red4"), alpha=0.5) + 
     geom_vline(data=df,aes(xintercept=est.saemix),colour="red",size=1.2) + 
     geom_vline(data=df,aes(xintercept=mean.boot),colour="blue",size=1.2) +
-    theme_bw() + theme(axis.title.x = element_blank(),axis.text.x = element_text(size=9, angle=30, hjust=1), legend.position = "none") + 
+    theme_bw() + theme(axis.title.x = element_blank(),axis.text.x = element_text(size=11, angle=30, hjust=1), legend.position = "none") + 
     facet_grid(Bootstrap~Param, scales = 'free')
 #    facet_wrap(Bootstrap~Param, nrow=2, scales = 'free')
   
@@ -432,14 +445,16 @@ plotDiscreteData(ordknee.data, outcome="categorical", which.cov="treatment")
 plotDiscreteData(ordknee.data, outcome="categorical", which.cov="Sex")
 
 if(saveFigs) {
+  plot1 <- plotDiscreteData(ordknee.data, outcome="categorical", which.cov="treatment")
+  plot2 <- plot1 +  theme(text = element_text(size=rel(rsize.text)), legend.text=element_text(size=rel(rsize.text)), strip.text.x = element_text(size=rel(rsize.ticks)), strip.text.y = element_text(size=rel(rsize.ticks)))
   namfig<-"knee_rawDataPropTime.eps"
   cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
-  plotDiscreteData(saemix.data, outcome="categorical", which.cov="treatment")
+  plot(plot2)
   dev.off()
 }
 ```
 
-The following R code represents the data as barplots of the different pain scores as a function of time in study, also illustrating a recovery as the proportion of lower pain scores increases. Other graphs can be created to explore this data, such as the evolution of mean scores over time.
+The following R code represents the data as barplots of the different pain scores as a function of time in study, also illustrating recovery as the proportion of lower pain scores increases. Other graphs can be created to explore this data, such as the evolution of mean scores over time.
 
 ```{r kneeDataBarplot}
 gtab <- knee.saemix %>%
@@ -587,15 +602,21 @@ discreteVPC(yfit, outcome='categorical',covsplit=TRUE, which.cov="treatment")
 discreteVPC(yfit, outcome='categorical',covsplit=TRUE, which.cov="Sex")
 
 if(saveFigs) {
+  plot1 <- discreteVPC(yfit, outcome='categorical',covsplit=TRUE, which.cov="treatment")
+  plot2 <- plot1 +  theme(text = element_text(size=rel(rsize.text)), legend.text=element_text(size=rel(rsize.text)), strip.text.x = element_text(size=rel(rsize.ticks)), strip.text.y = element_text(size=rel(rsize.ticks)))
   namfig<-"knee_VPCbytreatment.eps"
   cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
-  discreteVPC(yfit, outcome='categorical',covsplit=TRUE, which.cov="treatment")
+  plot(plot2)
   dev.off()
+  
+  plot1 <-  discreteVPC(yfit, outcome='categorical',covsplit=TRUE, which.cov="Sex")
+  plot2 <- plot1 +  theme(text = element_text(size=rel(rsize.text)), legend.text=element_text(size=rel(rsize.text)), strip.text.x = element_text(size=rel(rsize.ticks)), strip.text.y = element_text(size=rel(rsize.ticks)))
   namfig<-"knee_VPCbySex.eps"
   cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
-  discreteVPC(yfit, outcome='categorical',covsplit=TRUE, which.cov="Sex")
+  plot(plot2)
   dev.off()
 }
+
 
 if(FALSE) {
   ### Simulations for VPC - model without covariates
@@ -633,15 +654,15 @@ gtab <- ytab %>%
 
 kneeMedvpc <- ggplot(data = knee3, aes(x = time, y=mean, group=treatment)) + 
   geom_ribbon(data=gtab, aes(x=time, ymin=lower, ymax=upper), alpha=0.5, fill="lightblue") +
-  geom_point(colour='blue') + theme_bw() + 
-  scale_fill_brewer(palette = "Blues") + theme(legend.position = "top") +
+  geom_point(colour='blue') + theme_bw() + scale_fill_brewer(palette = "Blues")  +
   labs(fill = "Score") + xlab("Time (d)") + ylab("Median value of score over time") + facet_wrap(.~treatment)
-
+plot1 <- kneeMedvpc +  theme(text = element_text(size=rel(rsize.text)), legend.text=element_text(size=rel(rsize.text)), strip.text.x = element_text(size=rel(rsize.ticks)), strip.text.y = element_text(size=rel(rsize.ticks)))
 print(kneeMedvpc)
+
 if(saveFigs) {
   namfig<-"knee_medianScoreVPC.eps"
   cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
-  plot(kneeMedvpc)
+  plot(plot1)
   dev.off()
 }
 ```

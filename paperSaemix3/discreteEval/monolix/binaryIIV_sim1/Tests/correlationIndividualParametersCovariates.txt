@@ -1,0 +1,2 @@
+parameter,covariate,statistics,p-value,test
+th2,beta_th2_treatment_1,-7.16523,7.30185e-12,t-Test

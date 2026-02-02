@@ -272,10 +272,10 @@ discreteVPCTTE <- function(object, ngrid=200, interpolation.method="step", verbo
     # coord_cartesian(xlim=x.limits, ylim=y.limits) +
     { if ( plot.opt$bands == TRUE )
       geom_ribbon(aes(ymin = .data$lower, ymax = .data$upper), fill = plot.opt$fillcol, alpha = plot.opt$alpha.bands) } +
-    geom_line(linetype = plot.opt$lty.lpi,colour = plot.opt$col.lpi, size = plot.opt$lwd.lpi)+
-    geom_line(aes(y=.data$lower), colour = plot.opt$col.lpi, size = plot.opt$lwd.lpi, alpha = plot.opt$alpha.bands)+
-    geom_line(aes(y=.data$upper), colour = plot.opt$col.lpi, size = plot.opt$lwd.lpi, alpha = plot.opt$alpha.bands)+
-    geom_line(data=tab.obs,aes(x=.data$tobs, y = .data$km),  linetype = plot.opt$lty.lobs,colour = plot.opt$col.lobs,size = plot.opt$lwd.lobs)+
+    geom_line(linetype = plot.opt$lty.lpi,colour = plot.opt$col.lpi, linewidth = plot.opt$lwd.lpi)+
+    geom_line(aes(y=.data$lower), colour = plot.opt$col.lpi, linewidth = plot.opt$lwd.lpi, alpha = plot.opt$alpha.bands)+
+    geom_line(aes(y=.data$upper), colour = plot.opt$col.lpi, linewidth = plot.opt$lwd.lpi, alpha = plot.opt$alpha.bands)+
+    geom_line(data=tab.obs,aes(x=.data$tobs, y = .data$km),  linetype = plot.opt$lty.lobs,colour = plot.opt$col.lobs, linewidth = plot.opt$lwd.lobs)+
     # Censored events
     {if(length(idx.cens)>0 & plot.opt$plot.censTTE)
       geom_point(data=tab.obs[idx.cens,],aes(x=.data$tobs, y=.data$km), colour=plot.opt$col.pcens)} +
@@ -554,7 +554,7 @@ discreteVPC.aux <- function(object, max.cat=10, breaks=NULL, catlabel=NULL, verb
     tab1<-tab1[,(ncol>0),drop=FALSE]
     freqtab <- tab1/nobs
     xtab <- rbind(xtab,
-                  data.frame(group=igroup, x.group=rep(xgroups,length(sgroups)), y.group=rep(sgroups, each=length(xgroups)), freq=c(freqtab), nobs=rep(nobs, length(sgroups))))
+                  data.frame(group=igroup, x.group=rep(xgroups,length(sgroups)), y.group=rep(sgroups, each=length(xgroups)), freq=c(freqtab), nobs=rep(nobs, length(sgroups)), nevent=c(tab1)))
     # array with 3 dimensions for the simulated data
     tab1<-table(simdat$x.group[simdat$covariate.group==igroup],simdat$score.group[simdat$covariate.group==igroup], simdat$irep[simdat$covariate.group==igroup])
     for(irep in unique(simdat$irep)) {

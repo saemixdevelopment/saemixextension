@@ -586,8 +586,8 @@ saemix.data.setoptions<-function(saemix.data) {
     cex.lab=1,
     cex.main=1)
   
-  if(is.null(plot.opt$name.X))
-    plot.opt$name.X<-saemix.data["name.predictors"][1]
+  if(is.null(saemix.data@name.X))
+    plot.opt$name.X<-saemix.data["name.predictors"][1] else plot.opt$name.X<-saemix.data@name.X
   plot.opt$xlab<-paste(plot.opt$name.X," (",ifelse(plot.opt$units$x=="","-",plot.opt$units$x),")", sep="")
   if(length(saemix.data["name.response"])>0)
     plot.opt$ylab<-paste(saemix.data["name.response"]," (",ifelse(plot.opt$units$y=="","-",plot.opt$units$y),")", sep="")

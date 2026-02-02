@@ -7,17 +7,22 @@ output:
   html_document: default
 ---
 
-## Version
-Use saemix version $\geq$ 3.2
+## Version and technical requirements
+Use *saemix* version $\geq$ 3.2
+
+The notebook requires additional R packages not included in the *saemix* package:
+
+- gridExtra for waffle plots
+- survival to plot Kaplan-Meier plots with confidence intervals
 
 ## Objective
 
 Run TTE and RTTE models in **saemix**
 
-This notebook uses additional result files from the **saemix** development github (https://github.com/saemixdevelopment/saemixextension), not integrated in the package to avoid bloating. The *workDir* folder in the next chunk of code points to the folder where the user stored this code, and is needed to run the notebook (*workDir* defaults to the current working directory). Specifically, the notebook loads the results for the bootstrap runs performed using different approaches (see Comets et al. Pharm Res 2021). Bootstraps can be run instead by switching the *runBootstrap* variable to TRUE in the first chunk of code:
+The *workDir* folder in the next chunk of code points to the folder where the user stored this code, and is needed to run the notebook (*workDir* defaults to the current working directory). Specifically, the notebook loads the results for the bootstrap runs performed using different approaches (see Comets et al. Pharm Res 2021). Bootstraps can be run instead by switching the *runBootstrap* variable to TRUE in the first chunk of code:
 
 - in the code, the number of bootstraps is set to 10 for speed but we recommend to use at least 200 for a 90\% CI.
-- this can be changed in the following change of code by uncommenting the line *nboot<-200* and setting the number of bootstrap samples (this may cause memory issues in **Rstudio** with older machines, if this is the case we recommend executing the code in a separate script)
+- this can be changed in the following change of code by uncommenting the line *nboot<-200* and setting the number of bootstrap samples (bootstrap takes a long time, and it may cause memory issues in **Rstudio** with older machines, if this is the case we recommend executing the code in a separate script as a batch file using for instance the **R CMD BATCH** command line)
 
 The current notebook can be executed to create an HMTL or PDF output with comments and explanations. A script version containing only the R code is also given as *saemix3_tteModel.R* in the same folder.
 
@@ -39,11 +44,11 @@ library(gridExtra) # waffle plot
 # Library survival for KM plot
 library(survival)
 
-library(tidyverse)
+# library(tidyverse)
 
 # Whether to save the plots
 saveFigs<-FALSE
-figDir <- getwd()
+figDir <- file.path(workDir,"figs")
 
 # Number of bootstrap samples
 runBootstrap <- FALSE # to read the results from disk
@@ -58,26 +63,32 @@ nboot <-10
 
 The example chosen to illustrate the analysis of time-to-event data in **saemix** is the NCCTG Lung Cancer Data, describing the survival in patients with advanced lung cancer from the North Central Cancer Treatment Group (Loprinzi et al. 1994). Covariates measured in the study include performance scores rating how well the patient can perform usual daily activities. We reformatted the *cancer* dataset (previously *lung*) provided in the **survival** package in R in SAEM format: patients with missing age, sex, institution or physician assessments were removed from the dataset (3 patients removed, leaving 225 in the database). Status was recoded as 1 for death and 0 for a censored event, and a censoring column was added to denote whether the patient was dead or alive at the time of the last observation. A line at time=0 was added for all subjects. 
 
-We can plot the distribution of times as a histogram. Note that this dataset contains many missing values in the meal calorie column, and a few in weight loss and patient-assessed Karnofsky score. Here we set the missing patient-assessed Karnofsky scores to the median, and we don't include the other two covariates in the dataset as they have more missing values.
+We can plot the distribution of times as a histogram. Note that this dataset contains many missing values in the meal calorie column, and a few in weight loss and patient-assessed Karnofsky score. Here we set the missing patient-assessed Karnofsky scores to the median, and we don't include the other two covariates in the dataset as they have more missing values. ECOG status is then regrouped in 3 categories as 0, 1 and ECOG $\geq 2$ (we keep the original covariate *ph.ecog* for the plot).
+
+*saemix* provides basic survival graphs to explore survival data through the *plotDiscreteData()* function when given *outcome="tte"* to specify the outcome type.
 
 ```{r lungTTEData}
 data(lung.saemix)
 # all covariates (but need to manage the missing covariates)
-# ECOG status treated as continuous
+# ECOG status treated as categorical, creating  dummy covariates for ECOG=1 and ECOG=2 or 3 
+### note: could do this with the transformation functions
 # missing patient Karnofsky scores set to median (in 3 patients)
 # other covariates still have missing values
-lung1<-lung.saemix
-lung1$pat.karno[is.na(lung1$pat.karno)]<-median(lung1$pat.karno, na.rm=TRUE)
-
-saemix.data.contPH<-saemixData(name.data=lung1,header=TRUE,name.group=c("id"),
+lung2<-lung.saemix
+lung2$ecog1<-ifelse(lung2$ph.ecog==1,1,0)
+lung2$ecog23<-ifelse(lung2$ph.ecog>1,1,0)
+lung2$pat.karno[is.na(lung2$pat.karno)]<-median(lung2$pat.karno, na.rm=TRUE)
+lung.data<-saemixData(name.data=lung2,header=TRUE,name.group=c("id"),
                         name.predictors=c("time","status","cens"),name.response=c("status"),
-                        name.covariates=c( "sex", "ph.ecog", "ph.karno", "pat.karno", "age"),
-                        units=list(x="days",y="",covariates=c("","-","%","%","yr")), verbose=FALSE)
+                        name.covariates=c("age", "sex", "ecog1","ecog23", "ph.karno", "pat.karno","ph.ecog"),
+                        units=list(x="days",y="",covariates=c("yr","","-","-","%","%")), verbose=FALSE)
 
-plotDiscreteData(saemix.data.contPH, outcome="tte", which.cov="sex")
+plotDiscreteData(lung.data, outcome="tte", which.cov="sex")
+xplot1<-plotDiscreteData(lung.data, outcome="tte", which.cov="sex")
 
-xplot1<-plotDiscreteData(saemix.data.contPH, outcome="tte", which.cov="sex")
-xplot2<-plotDiscreteData(saemix.data.contPH, outcome="tte", which.cov="ph.ecog")
+# Stratifying on ECOG status
+xplot2<-plotDiscreteData(lung.data, outcome="tte", which.cov="ph.ecog")
+
 grid.arrange(grobs=list(xplot1, xplot2), nrow=1, ncol=2)
 
 # Histogram
@@ -103,7 +114,8 @@ We can also plot the traditional Kaplan-Meier plot using the functions in the **
 ```{r lungKM}
 lung.surv<-lung.saemix[lung.saemix$time>0,]
 lung.surv$status<-lung.surv$status+1
-Surv(lung.surv$time, lung.surv$status) # 1=censored, 2=dead
+if(FALSE)
+  Surv(lung.surv$time, lung.surv$status) # 1=censored, 2=dead
 nonpar.fit <- survfit(Surv(time, status) ~ 1, data = lung.surv)
 plot(nonpar.fit)
 ```
@@ -144,7 +156,7 @@ saemix.model<-saemixModel(model=weibulltte.model,description="Weibull TTE model"
   psi0=matrix(c(1,2),ncol=2,byrow=TRUE,dimnames=list(NULL,  c("Te","gamma"))),
   transform.par=c(1,1),covariance.model=matrix(c(1,0,0,0),ncol=2, byrow=TRUE), verbose=FALSE)
 saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, print=FALSE)
-tte.fit<-saemix(saemix.model,saemix.data.contPH,saemix.options)
+tte.fit<-saemix(saemix.model,lung.data,saemix.options)
 plot(tte.fit, plot.type="convergence")
 print(tte.fit)
 
@@ -160,7 +172,7 @@ $$F=1-e^{-\int_0^{T} h(u) du} = 1-e^{-\left( \frac{T}{T_e} \right)^{\gamma}} \si
 
 Assuming we simulate $U=1-V$ from $\mathcal{U}(0,1)$, we can obtain a sample from the Weibull parametric model as:
 $$ T = T_e \left(-\ln(V) \right)^{1/\gamma}$$
-In the following we assume the first column of *xidep* contains the observed times, and we keep the censoring times recorded for each subject.
+In the following we assume the first column of *xidep* contains the observed times, and we keep the censoring times recorded for each subject. The function is then checked by simulating data and comparing the distribution of event times with that of the original data.
 
 ```{r simulWeibullTTE}
 # Simulate events based on the observed individual censoring time
@@ -185,21 +197,21 @@ simulateWeibullTTE <- function(psi,id,xidep) {
   return(tevent)
 }
 
-# Checking the simulation function
-xidep1<-saemix.data.contPH@data[,saemix.data.contPH@name.predictors]
-nsuj<-saemix.data.contPH@N
+# Checking the simulation function using the estimated parameters
+xidep1<-lung.data@data[,lung.data@name.predictors]
+nsuj<-lung.data@N
 psiM<-data.frame(Te=rnorm(nsuj, mean=tte.fit@results@fixed.effects[1], sd=2), gamma=tte.fit@results@fixed.effects[2])
 id1<-rep(1:nsuj, each=2)
 simtime<-simulateWeibullTTE(psiM, id1, xidep1)
 
 par(mfrow=c(1,2))
-hist(saemix.data.contPH@data$time[saemix.data.contPH@data$time>0], breaks=30, xlim=c(0,1050),xlab="Time", main="Original data")
+hist(lung.data@data$time[lung.data@data$time>0], breaks=30, xlim=c(0,1050),xlab="Time", main="Original data")
 hist(simtime[simtime>0], breaks=30, xlim=c(0,1050), xlab="Time", main="Simulated data")
 ```
 
 #### Diagnostics
 
-We add the simulation function to the model element of the fitted object (we can also include the simulation function when creating the model by adding the argument *simulate.function=simulateWeibullTTE* to saemixModel in the code above). We then simulate data using the fitted model and this function through the *simulateDiscreteSaemix()* function, and use the *discreteVPC()* function to obtain a Kaplan-Meier type VPC showing the prediction band for the survival function according to the model, overlaid with the actual observed survival function.
+We add the simulation function to the model element of the fitted object (we could also have included the simulation function when creating the model by adding the argument *simulate.function=simulateWeibullTTE* to saemixModel in the code above prior to running *saemix()*). We then simulate data using the fitted model and this function through the *simulateDiscreteSaemix()* function, and use the *discreteVPC()* function to obtain a Kaplan-Meier type VPC showing the prediction band for the survival function according to the model, overlaid with the actual observed survival function.
 
 ```{r WeibullTTEVPC}
 tte.fit@model@simulate.function <- simulateWeibullTTE
@@ -228,7 +240,7 @@ simulateWeibullTTE.maxcens <- function(psi,id,xidep) {
 simtime.maxcens<-simulateWeibullTTE.maxcens(psiM, id1, xidep1)
 
 par(mfrow=c(1,3))
-hist(saemix.data.contPH@data$time[saemix.data.contPH@data$time>0], breaks=30, xlim=c(0,1050), xlab="Time", main="Original data")
+hist(lung.data@data$time[lung.data@data$time>0], breaks=30, xlim=c(0,1050), xlab="Time", main="Original data")
 hist(simtime[simtime>0], breaks=30, xlim=c(0,1050), xlab="Time", main="Simulated data")
 hist(simtime.maxcens[simtime.maxcens>0], breaks=30, xlim=c(0,1050), xlab="Time", main="Simulated data")
 
@@ -289,7 +301,7 @@ where $$T_e'=\frac{T_e}{ln \left( 1+ \frac{ln(2)}{\gamma} \right) } $$
 - gamma model: 
 $$h(t)= \frac{1}{T_e \Gamma(k)} \left( \frac{t}{T_e} \right)^{(k-1)} \, e^{-\frac{t}{T_e}}$$
 - log-logistic model: 
-$$h(t) = TODO $$
+$$h(t) =\frac{\frac{k}{T_e} \; \left(\frac{t}{T_e} \right)^{k-1}}{1+ \left( \frac{t}{T_e}\right)^k} $$
 
 The code below fits all these models to the lung cancer data.
 
@@ -317,7 +329,7 @@ saemix.model.exp<-saemixModel(model=exptte.model,description="Exponential TTE mo
   psi0=matrix(c(1),ncol=1,byrow=TRUE,dimnames=list(NULL,  c("Te"))),
   transform.par=c(1),covariance.model=matrix(c(1),ncol=1, byrow=TRUE), verbose=FALSE)
 saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, print=FALSE)
-exptte.fit<-saemix(saemix.model.exp,saemix.data.contPH,saemix.options)
+exptte.fit<-saemix(saemix.model.exp,lung.data,saemix.options)
 plot(exptte.fit, plot.type="convergence")
 print(exptte.fit)
 
@@ -345,7 +357,7 @@ saemix.model.gomp<-saemixModel(model=gomptte.model,description="Gompertz TTE mod
   psi0=matrix(c(300,2),ncol=2,byrow=TRUE,dimnames=list(NULL,  c("Te","gamma"))),
   transform.par=c(1,1),covariance.model=matrix(c(1,0,0,0),ncol=2, byrow=TRUE), verbose=FALSE)
 saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, print=FALSE)
-gomptte.fit<-saemix(saemix.model.gomp,saemix.data.contPH,saemix.options)
+gomptte.fit<-saemix(saemix.model.gomp,lung.data,saemix.options)
 plot(gomptte.fit, plot.type="convergence")
 print(gomptte.fit)
 
@@ -376,7 +388,7 @@ saemix.model.gamma<-saemixModel(model=gammatte.model,description="Gamma TTE mode
   psi0=matrix(c(300,2),ncol=2,byrow=TRUE,dimnames=list(NULL,  c("Te","k"))),
   transform.par=c(1,1),covariance.model=matrix(c(1,0,0,0),ncol=2, byrow=TRUE), verbose=FALSE)
 saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, print=FALSE)
-gammatte.fit<-try(saemix(saemix.model.gamma,saemix.data.contPH,saemix.options))
+gammatte.fit<-try(saemix(saemix.model.gamma,lung.data,saemix.options))
 plot(gammatte.fit, plot.type="convergence")
 print(gammatte.fit)
 
@@ -404,7 +416,7 @@ saemix.model.logis<-saemixModel(model=logis.model,description="Log-logistic TTE 
   psi0=matrix(c(300,2),ncol=2,byrow=TRUE,dimnames=list(NULL,  c("Te","gamma"))),
   transform.par=c(1,1),covariance.model=matrix(c(1,0,0,0),ncol=2, byrow=TRUE), verbose=FALSE)
 saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, print=FALSE)
-logistte.fit<-saemix(saemix.model.logis,saemix.data.contPH,saemix.options)
+logistte.fit<-saemix(saemix.model.logis,lung.data,saemix.options)
 plot(logistte.fit, plot.type="convergence")
 print(logistte.fit)
 
@@ -446,14 +458,14 @@ simulateGompertzTTE <- function(psi,id,xidep) {
 }
 
 # Checking the simulation function
-xidep1<-saemix.data.contPH@data[,saemix.data.contPH@name.predictors]
-nsuj<-saemix.data.contPH@N
+xidep1<-lung.data@data[,lung.data@name.predictors]
+nsuj<-lung.data@N
 psiM<-data.frame(Te=rnorm(nsuj, mean=gomptte.fit@results@fixed.effects[1], sd=2), gamma=gomptte.fit@results@fixed.effects[2])
 id1<-rep(1:nsuj, each=2)
 simtime<-simulateGompertzTTE(psiM, id1, xidep1)
 
 par(mfrow=c(1,2))
-hist(saemix.data.contPH@data$time[saemix.data.contPH@data$time>0], breaks=30, xlim=c(0,1050),xlab="Time", main="Original data")
+hist(lung.data@data$time[lung.data@data$time>0], breaks=30, xlim=c(0,1050),xlab="Time", main="Original data")
 hist(simtime[simtime>0], breaks=30, xlim=c(0,1050), xlab="Time", main="Simulated data")
 
 gomptte.fit@model@simulate.function<-simulateGompertzTTE
@@ -466,25 +478,49 @@ grid.arrange(gpl,gpl2, nrow=1)
 ```
 #### Covariate model
 
-The following section applies a stepwise procedure to test covariates with the selected model (here the Weibull model), making use of the BIC criterion developed by Delattre et al (2014). The final model includes an effect of sex, ECOG assessement and patient Karnofsky score.
+The following section applies a stepwise procedure to test covariates with the selected model (here the Weibull model), making use of the BIC criterion developed by Delattre et al (2014). The final model includes an effect of sex, as well as ECOG assessement 2 or higher, on $T_e$.
 
-The algorithm also tests different covariance structures for the model. Here, this may not be pertinent given the population can only experience a single event, therefore variability cannot really be identified.
+The algorithm also tests different covariance structures for the model. Here, IIV transfers to the $\gamma$ parameter, but this may not be pertinent given the population can only experience a single event, therefore variability cannot really be identified.
 
 ```{r stepwiseCovariateBuilding}
 # Toggle to TRUE to run (takes a while)
 if(FALSE) 
   covtte.fit <- step.saemix(tte.fit, direction="both")
 
-# Covariate model
-
 # Covariate model with only sex and ECOG score
+covmodel <- cbind(c(0,1,0,1,0,0),rep(0,6))
+weibull.model.cov2<-saemixModel(model=weibulltte.model,description="Weibull TTE model",modeltype="likelihood",
+                               psi0=matrix(c(300,2),ncol=2,byrow=TRUE,dimnames=list(NULL,  c("Te","gamma"))),
+                               transform.par=c(1,1),covariance.model=matrix(c(0,0,0,1),ncol=2, byrow=TRUE), 
+                               covariate.model=covmodel, verbose=FALSE)
+saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, print=FALSE)
+weibcov.fit2<-saemix(weibull.model.cov2,lung.data,saemix.options)
 
+print(weibcov.fit2)
 
 ```
 
-#### SE via bootstrap
+#### SE via case bootstrap
+
+For TTE models, random effects cannot be reliably estimated with single events, therefore only case bootstrap is relevant.
 
 ```{r tteSEboot}
+# Run case bootstrap
+if(FALSE) {
+  nboot<-10
+  case.TTE <- saemix.bootstrap(weibcov.fit2, method = "case", nboot=nboot)
+# random effects can't be estimated with single events
+# also conditional bootstrap will require the simulation function to output both time and censoring status of events so not available yet 
+#  cond.TTE <- saemix.bootstrap(weibcov.fit2, nboot=nboot)
+}
+
+yfit<-weibcov.fit2
+case.TTE <- read.table(file.path(workDir,"covselect", "bootstrapCase_weibullTTEcov.res"), header=F, skip=1)
+colnames(case.TTE)<-c("irep",yfit@results@name.fixed,yfit@results@name.random)
+apply(case.TTE,2,sd)
+x1<-apply(case.TTE,2,quantile,c(0.025,0.975))
+df2<-data.frame(Parameter=c("Te","beta_sex","beta_e23","gamma"), Estimate=yfit@results@fixed.effects, SDboot=apply(case.TTE,2,sd)[2:5])
+df2<-cbind(df2, t(x1[,2:5]))
 
 ```
 

@@ -1,0 +1,23 @@
+R/aaa_generics.R:#' The \code{cow.saemix} data contains records of the weight of 560 cows on 9 or 10 occasions. 
+R/aaa_generics.R:#' After 3,7 and 10 days of treatment the pain occuring during knee movement was observed.
+R/func_exploreData.R:         covdata <- origdata[!duplicated(origdata$index), c(objectData@name.group, objectData@name.cens, objectData@name.occ,objectData@name.covariates)]
+R/func_plots.R:# creating an expanded dataframe (warning: will not work with different occasions)
+R/func_plots.R:# ECO TODO change this when several occasions
+R/func_plots.R:# ECO TODO change this when several occasions
+R/SaemixData-methods_covariates.R:#    labl<-paste(object@data[,object@name.group],object@data$occ,sep="-")
+R/SaemixData-methods.R:            if(nchar(object@name.occ)==0) occ<-rep(1,dim(dat)[1]) else occ<-dat[,object@name.occ]
+R/SaemixData-methods.R:            object@name.occ<-"occ"
+R/SaemixData-methods.R:            dat<-cbind(dat,mdv=mdv,cens=cens,occ=occ,ytype=ytype)
+R/SaemixData-methods.R:#' @param name.occ name of the column containing the occasion
+R/SaemixData-methods.R:saemixData<-function(name.data,header,sep,na,name.group,name.predictors, name.response,name.X, name.covariates=c(), name.genetic.covariates=c(), name.mdv="", name.cens="",name.occ="",name.ytype="", units=list(x="",y="",covariates=c()), verbose=TRUE, automatic=TRUE) {
+R/SaemixData-methods.R:  if(missing(name.occ)) name.occ<-"" else  name.occ<-as.character(name.occ)
+R/SaemixData-methods.R:  x<-new(Class="SaemixData",name.data=name.data,header=header,sep=sep,na=na, name.group=name.group,name.predictors=name.predictors,name.X=name.X, name.response=name.response,name.covariates=name.covariates,units=units, name.mdv=name.mdv, name.cens=name.cens, name.occ=name.occ, name.ytype=name.ytype, verbose=verbose, automatic=automatic)
+R/SaemixData.R:#' @slot name.occ Object of class \code{"character"}: name of the column containing the value of the occasion
+R/SaemixData.R:    name.occ="character", # name of column with the occasion
+R/SaemixData.R:    data="data.frame",		# the data (data frame with columns name.group (subject id), index (id renamed to 1:N), name.predictors (predictors), name.response (possibly transformed during fit), name.covariates), mdv (missing data), cens (censored data, 1=censored & value in column response is the LOQ, ytype (type of the response), occ (occasion)); binary covariates are modified to 0/1
+R/SaemixData.R:#' @param name.occ name of the column containing the occasion
+R/SaemixData.R:  definition= function (.Object,name.data,header,sep,na,name.group, name.predictors, name.response, name.covariates, name.X, units, name.mdv, name.cens, name.occ, name.ytype, verbose=TRUE, automatic=TRUE){
+R/SaemixData.R:		if(missing(name.occ)) name.occ<-character()
+R/SaemixData.R:		.Object@name.occ<-name.occ
+R/SaemixData.R:    "name.occ"={return(x@name.occ)},
+R/SaemixData.R:    "name.occ"={x@name.occ<-value},

@@ -1,0 +1,58 @@
+<DATAFILE>
+
+[FILEINFO]
+file='../../../binaryIIV/data/data_binaryIIV_sim1.txt'
+delimiter = space
+header = {id, time, y, treatment, visit}
+
+[CONTENT]
+id = {use=identifier}
+time = {use=regressor}
+y = {use=observation, name=y, type=discrete}
+treatment = {use=covariate, type=categorical}
+
+<MODEL>
+
+[COVARIATE]
+input = treatment
+
+treatment = {type=categorical, categories={0, 1}}
+
+[INDIVIDUAL]
+input = {th1_pop, omega_th1, th2_pop, omega_th2, treatment, beta_th2_treatment_1}
+
+treatment = {type=categorical, categories={0, 1}}
+
+DEFINITION:
+th1 = {distribution=normal, typical=th1_pop, sd=omega_th1}
+th2 = {distribution=normal, typical=th2_pop, covariate=treatment, coefficient={0, beta_th2_treatment_1}, sd=omega_th2}
+
+[LONGITUDINAL]
+file = '../../binaryModel_reg.txt'
+
+<FIT>
+data = y
+model = level
+
+<PARAMETER>
+beta_th2_treatment_1 = {value=0, method=MLE}
+omega_th1 = {value=1, method=MLE}
+omega_th2 = {value=1, method=MLE}
+th1_pop = {value=-0.5, method=MLE}
+th2_pop = {value=-0.19, method=MLE}
+
+<MONOLIX>
+
+[TASKS]
+populationParameters()
+individualParameters(method = {conditionalMean, conditionalMode })
+fim(method = StochasticApproximation)
+logLikelihood(method = ImportanceSampling)
+plotResult(method = {indfits, parameterdistribution, covariancemodeldiagnosis, covariatemodeldiagnosis, obspred, vpc, residualsscatter, residualsdistribution, randomeffects, saemresults })
+
+[SETTINGS]
+GLOBAL:
+exportpath = '../'
+nbchains = 10
+autochains = no
+

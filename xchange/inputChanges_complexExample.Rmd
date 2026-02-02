@@ -37,6 +37,7 @@ library(RColorBrewer)
 library(gridExtra)
 library(viridis)
 library(testthat)
+library(rlang)
 
 #library(dplyr)
 # library(Cairo)
@@ -72,42 +73,16 @@ datDir<-file.path(saemixDir,"data40")
     - all biomarkers sampled at the same times
     - time between two occasions: 52 weeks
     - dose for biomarker 2: 4 doses c(20,50,100,200)
-- Model for simulations of responses
-  - response
-    - biomarker 1: linear evolution (intercept $\alpha$, slope $\delta$)
-
-    $$ y_1 = \alpha + \delta t$$
-
-    - biomarker 2: bi-exponential evolution according to the Bateman function 
-    
-    $$ y_2 = \frac{D}{V} \frac{k_a}{(k_a-CL/V)} \left( e^{- CL/V t} - e^{-k_a t} \right)$$
-    
-    - biomarker 3: Bernouilli with probability $p_3(y_1, y_2)$ affected by the two longitudinal biomarkers
-      - modelled as logit, with a linear effect for each biomarker
-      - biomarker 1 increases $p_3$ (as a linear model of the ratio of y1/100)
-      - biomarker 2 decreases $p_3$ (as a linear model of y2)
-
-    $$ logit(P(y_3=1)) = log(p_3/(1-p_3)) + \delta_{y1} \frac{y_1}{100} + \delta_{y2} y_2  $$
-      
-  - parameter distribution
-    - normal distribution for $\delta$, $\delta_{y1}$ and $\delta_{y2}$
-    - logistic distribution for $p_3$
-    - log-normal distribution for the other parameters
-  - variabilities
-    - IIV on all parameters except p3
-      - correlation between CL and $\delta$ (0.7)
-    - IOV
-      - IOV matrix on $\delta$ and CL with 10% IOV and the same correlation as in the IIV model
-    - residual error models
-      - biomarker 1: additive
-      - biomarker 2: proportional
-- Covariate models
-  - weight: allometry on V and CL for biomarker 2
-  - gender: decreased intercept for biomarker 1 (by 30%) and higher probability for biomarker 3 (30%)
-  - age: decrease of CL with age, increase of $p_3$
-  - CRCL: correlation with CL
-  - comedication: increase in CL by 30%, decrease $p_3$ by 50%
-- dataset with missing values
+- Simulated covariates 
+  - baseline covariates 
+    - equal number of each gender
+    - weight: normal distribution at baseline, centering on different values for men (70) and women (60) with the same coefficient of variation (15%)
+    - uniform distribution of age from 30 to 70
+  - covariates changing with occasion
+    - Serum creatinine: normal distribution at baseline, assuming 10% change every year (% change ~ N(0.1, 0.01))
+    - CRCL computed with Cockroft-Gault formula
+    - comedication: random allocation at each occasion, with probability 0.3
+- Dataset with missing values
   - LOQ data
     - biomarker 3: data < LOQ censored
   - missing data: randomly set for each biomarker independently
@@ -135,7 +110,7 @@ datDir<-file.path(saemixDir,"data40")
 datanocov <- read.csv(file=file.path(datDir,"complexSimulation_nocov.csv"), header=T, sep=",")
 
 # Dataset with covariates
-# datacov <- read.csv(file=file.path(datDir,"complexSimulation_covar.csv"), header=T, sep=",")
+datacov <- read.csv(file=file.path(datDir,"complexSimulation_cov.csv"), header=T, sep=",")
 
 ```
 
@@ -192,6 +167,7 @@ ggplot(xdata, aes(x=time, y=y, group=id, colour=as.factor(occ))) + geom_point(ae
 
 #  facet_grid(occ~ytype, scales = "free_y", labeller = labeller(ytype = resp.labs, occ = occ.labs)) # bug: scales doesn't work with facet_grid when it should
 ```
+
 
 ### Functions from the new saemix package
 
@@ -253,6 +229,21 @@ ggplot(xdata, aes(x=time, y=y, group=id, colour=as.factor(occ))) + geom_point(ae
 
 ```
 
+
+### Complex data with covariates
+
+
+```{r readDataCov, results='hide', echo=FALSE, warnings=FALSE}
+# Reading data into an saemixData object
+smxdata.cov <- saemixData(name.data=file.path(datDir,"complexSimulation_cov.csv"), header=T,na=".", sep=",",
+      name.group=c("id"),name.predictors=c("time", "dose"),name.response=c("y"), name.occ = "occ", name.ytype = "ytype", 
+      name.covariates=c("sex","age","wt","comed","crcl"),
+      units=list(x="weeks",covariates=c("-","yr","kg","-","ml/min/1.73m2 BSA")),verbose=TRUE)
+xcov<-smxdata.cov
+xdatcov <- smxdata.cov@data
+summary(xdatcov)
+```
+
 ### Detailed changes to Data object
 
 
@@ -262,7 +253,7 @@ ggplot(xdata, aes(x=time, y=y, group=id, colour=as.factor(occ))) + geom_point(ae
 x<-smxdata.legacy
 object.slots <- names(attributes(x))
 for(islot in object.slots) {
-  if(!(islot %in% c("outcome", "sep", "na", "header","class"))) {
+  if(!(islot %in% c("outcome", "sep", "na", "header","class","units","log","varlevel","covariate.varlevel"))) {
     expect_equal(smxdata.current[islot], smxdata.legacy[islot])
   }
 }
@@ -279,7 +270,7 @@ expect_length(unique(xdata$dose),4)
 x<-smxdata.next
 object.slots <- names(attributes(x))
 for(islot in object.slots) {
-  if(!(islot %in% c("outcome", "sep", "na", "header","class","units"))) {
+  if(!(islot %in% c("outcome", "sep", "na", "header","class","units","log","varlevel","covariate.varlevel"))) {
     expect_equal(smxdata.next[islot], smxdata.legacy[islot])
   }
 }
@@ -297,6 +288,64 @@ expect_equal(smxdata.next@units$y,c("%change","mg/L","-"))
 ```
 
 ## Model object
+
+### Models used to simulate data
+
+- Model used to simulate responses
+  - response
+    - biomarker 1: linear evolution (intercept $\alpha$, slope $\delta$)
+
+    $$ y_1 = \alpha + \delta t$$
+
+    - biomarker 2: bi-exponential evolution according to the Bateman function 
+    
+    $$ y_2 = \frac{D}{V} \frac{k_a}{(k_a-CL/V)} \left( e^{- CL/V t} - e^{-k_a t} \right)$$
+    
+    - biomarker 3: Bernouilli with probability $p_3(y_1, y_2)$ affected by the two longitudinal biomarkers
+      - modelled as logit, with a linear effect for each biomarker
+      - biomarker 1 increases $p_3$ (as a linear model of the ratio of y1/100)
+      - biomarker 2 decreases $p_3$ (as a linear model of y2)
+
+    $$ logit(P(y_3=1)) = log(p_3/(1-p_3)) + \delta_{y1} \frac{y_1}{100} + \delta_{y2} y_2  $$
+      
+  - parameter distribution
+    - normal distribution for $\delta$, $\delta_{y1}$ and $\delta_{y2}$
+    - logistic distribution for $p_3$
+    - log-normal distribution for the other parameters
+  - variabilities
+    - IIV on all parameters except p3
+      - correlation between CL and $\delta$ (0.7)
+    - IOV
+      - IOV matrix on $\delta$ and CL with 10% IOV and the same correlation as in the IIV model
+    - residual error models
+      - biomarker 1: additive
+      - biomarker 2: proportional
+- Covariate models
+  - weight: allometry on V and CL for biomarker 2
+      - $CL = \mu_{CL} \; \left( \frac{WT}{WT_{ref}} \right)^{0.75}$
+      - $V = \mu_{V} \; \left( \frac{WT}{WT_{ref}} \right)$
+      - with WT_ref=70 kg
+  - gender: decreased intercept for biomarker 1 (by 30%) and higher probability for biomarker 3 (30%)
+      - model: $\alpha = \mu_{\alpha} + \beta_{sex,\alpha}*1_{sex=female}$
+        - $\beta_{sex,\alpha}$=-30
+      - model: $logit(p3) = logit(\mu_{p3}) + \beta_{sex,p3}*1_{sex=female}$
+        - $\beta_{sex,p3}$=0.4 corresponding to p3=39% in women and 30% in male
+  - age: decrease of CL with age, increase of $p_3$
+      - model for CL: $CL = \mu_{CL} \; \left( \frac{age}{age_{ref}} \right)^{\beta_{age,CL}}$
+        - age_ref=50, beta_age,CL=-0.2
+        - corresponds to CL varying from 2.76 for age=30 to 2.33 for age=70 (~16% decrease over the range)
+      - model for p3: $logit(p3) = logit(\mu_{p3}) + \beta_{age,p3}*(age-age_{ref})$
+        - age_ref=50, beta_age,p3=0.024
+        - corresponds to p3 varying from 0.21 for age=30 to 0.41 for age=70 (~100% increase over the range, but probability)
+  - CRCL: correlation with CL
+      - model: (CRCL/CRCL_ref)^beta_CRCL 
+      - CRCL_ref=85, beta_CRCL=0.3
+      - corresponds to CL varying from 1.95 for CRCL=37 to 2.93 for CRCL=144 (~50% increase over the range)
+    - comedication: increase in CL by 30%, decrease $p_3$ by 50%
+      - model: $logit(p3) = logit(\mu_{p3}) + \beta_{comed,p3}*1_{comed}$
+      - beta_{comed,p3}=-0.89 corresponding to p3=15% with comedication
+
+### Model function
 
 - model function used to estimate parameters
   - same arguments psi, id, xidep
@@ -383,6 +432,14 @@ smxmodel.current<-saemixModel(model=model3biomarkers, modeltype=c("structural","
   - note: see tests for the updated class in corresponding testthat files
 
 ```{r newFctsModel, results='hide', echo=FALSE, warnings=FALSE}
+source(file.path(progDir.next,"SaemixErrorModel.R"))
+source(file.path(progDir.next,"SaemixOutcome.R"))
+source(file.path(progDir.next,"SaemixParameter.R"))
+source(file.path(progDir.next,"SaemixParameter-methods.R"))
+source(file.path(progDir.next,"SaemixVarModel.R"))
+source(file.path(progDir.next,"SaemixVarModel-methods.R"))
+source(file.path(progDir.next,"SaemixPopModel.R"))
+source(file.path(progDir.next,"SaemixIndivModel.R"))
 source(file.path(progDir.next,"SaemixModel.R"))
 source(file.path(progDir.next,"SaemixModel-methods.R"))
 

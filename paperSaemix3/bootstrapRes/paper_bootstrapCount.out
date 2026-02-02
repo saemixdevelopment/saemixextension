@@ -1,0 +1,559 @@
+
+R version 4.3.3 (2024-02-29) -- "Angel Food Cake"
+Copyright (C) 2024 The R Foundation for Statistical Computing
+Platform: x86_64-pc-linux-gnu (64-bit)
+
+R est un logiciel libre livré sans AUCUNE GARANTIE.
+Vous pouvez le redistribuer sous certaines conditions.
+Tapez 'license()' ou 'licence()' pour plus de détails.
+
+  Natural language support but running in an English locale
+
+R is a collaborative project with many contributors.
+Type 'contributors()' for more information and
+'citation()' on how to cite R or R packages in publications.
+
+Tapez 'demo()' pour des démonstrations, 'help()' pour l'aide
+en ligne ou 'help.start()' pour obtenir l'aide au format HTML.
+Tapez 'q()' pour quitter R.
+
+[Sauvegarde de la session précédente restaurée]
+
+> library(saemix)
+Le chargement a nécessité le package : npde
+Package saemix, version 3.4, March 2024
+  please direct bugs, questions and feedback to emmanuelle.comets@inserm.fr
+
+
+Attachement du package : ‘saemix’
+
+Les objets suivants sont masqués _par_ ‘.GlobalEnv’:
+
+    center.eps, center.eta, centerDist.NPcond, dataGen.case,
+    dataGen.NP, dataGen.Par, normalise.eta, normalise.eta.svd,
+    rapi.saemix, saemix.bootstrap, sampDist.NP, sampDist.NPcond,
+    sampDist.Par
+
+Les objets suivants sont masqués depuis ‘package:npde’:
+
+    kurtosis, skewness
+
+> saemixDir<-"/home/eco/work/saemix/saemixextension"
+> workDir<-file.path(saemixDir,"paperSaemix3")
+> nboot <- 200
+> 
+> # source(file.path(saemixDir,"R","func_bootstrap.R"))
+> 
+> data(rapi.saemix)
+> rapi.saemix$gender <- ifelse(rapi.saemix$gender=="Men",1,0) # Female=reference class as in Atkins
+> 
+> ########################################################################################################
+> # Poisson model
+> 
+> saemix.data<-saemixData(name.data=rapi.saemix, name.group=c("id"),
++                         name.predictors=c("time","rapi"),name.response=c("rapi"),
++                         name.covariates=c("gender"),
++                         units=list(x="months",y="",covariates=c("")), verbose=FALSE)
+> 
+> ## Poisson with a time effect
+> # Model
+> count.poisson<-function(psi,id,xidep) { 
++   time<-xidep[,1]
++   y<-xidep[,2]
++   intercept<-psi[id,1]
++   slope<-psi[id,2]
++   lambda<- exp(intercept + slope*time)
++   logp <- -lambda + y*log(lambda) - log(factorial(y))
++   return(logp)
++ }
+> # Simulation function
+> countsimulate.poisson<-function(psi, id, xidep) {
++   time<-xidep[,1]
++   y<-xidep[,2]
++   ymax<-max(y)
++   intercept<-psi[id,1]
++   slope<-psi[id,2]
++   lambda<- exp(intercept + slope*time)
++   y<-rpois(length(time), lambda=lambda)
++   y[y>ymax]<-ymax+1 # truncate to maximum observed value to avoid simulating aberrant values
++   return(y)
++ }
+> 
+> saemix.model.poi.cov2<-saemixModel(model=count.poisson,description="Count model Poisson",simulate.function=countsimulate.poisson, 
++                                    modeltype="likelihood",   
++                                    psi0=matrix(c(log(5),0.01),ncol=2,byrow=TRUE,dimnames=list(NULL, c("intercept","slope"))), 
++                                    transform.par=c(0,0), omega.init=diag(c(0.5, 0.5)),
++                                    covariance.model =matrix(data=1, ncol=2, nrow=2),
++                                    covariate.model=matrix(c(1,1), ncol=2, byrow=TRUE), verbose=FALSE)
+> 
+> saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, fim=FALSE, print=FALSE)
+> 
+> ### Fit with saemix
+> poisson.fit.cov2<-saemix(saemix.model.poi.cov2,saemix.data,saemix.options)
+> summary(poisson.fit.cov2)
+----------------------------------------------------
+-----------------  Fixed effects  ------------------
+----------------------------------------------------
+               Parameter Estimate
+1              intercept    1.487
+2 beta_gender(intercept)    0.196
+3                  slope   -0.039
+4     beta_gender(slope)    0.017
+----------------------------------------------------
+-----------  Variance of random effects  -----------
+----------------------------------------------------
+                 Parameter Estimate
+intercept omega2.intercept   0.9179
+slope         omega2.slope   0.0039
+----------------------------------------------------
+------  Correlation matrix of random effects  ------
+----------------------------------------------------
+                 omega2.intercept omega2.slope
+omega2.intercept  1.00            -0.14       
+omega2.slope     -0.14             1.00       
+----------------------------------------------------
+---------------  Statistical criteria  -------------
+----------------------------------------------------
+
+Likelihood computed by importance sampling
+      -2LL= 21454.94 
+      AIC = 21470.94 
+      BIC = 21508.59 
+----------------------------------------------------
+> 
+> case.count <- saemix.bootstrap(poisson.fit.cov2, method="case", nboot=nboot) 
+> write.table(case.count,file.path(workDir, "bootstrapCase_rapiCov_Poisson.res"), row.names = FALSE, quote=F)
+> 
+> ########################################################################################################
+> # ZIP Poisson model
+> 
+> ## Zero-inflated Poisson model
+> # Model
+> count.poissonzip<-function(psi,id,xidep) {
++   time<-xidep[,1]
++   y<-xidep[,2]
++   intercept<-psi[id,1]
++   slope<-psi[id,2]
++   p0<-psi[id,3] # Probability of zero's
++   lambda<- exp(intercept + slope*time)
++   logp <- log(1-p0) -lambda + y*log(lambda) - log(factorial(y)) # Poisson
++   logp0 <- log(p0+(1-p0)*exp(-lambda)) # Zeroes
++   logp[y==0]<-logp0[y==0]
++   return(logp)
++ }
+> # Simulation function
+> countsimulate.poissonzip<-function(psi, id, xidep) {
++   time<-xidep[,1]
++   y<-xidep[,2]
++   ymax<-max(y)
++   intercept<-psi[id,1]
++   slope<-psi[id,2]
++   p0<-psi[id,3] # Probability of zero's
++   lambda<- exp(intercept + slope*time)
++   prob0<-rbinom(length(time), size=1, prob=p0)
++   y<-rpois(length(time), lambda=lambda)
++   y[prob0==1]<-0
++   y[y>ymax]<-ymax+1 # truncate to maximum observed value to avoid simulating aberrant values
++   return(y)
++ }
+> 
+> saemix.model.zip.cov2<-saemixModel(model=count.poissonzip,description="count model ZIP",modeltype="likelihood",   
++                                    simulate.function = countsimulate.poissonzip,
++                                    psi0=matrix(c(1.5, 0.01, 0.2),ncol=3,byrow=TRUE,dimnames=list(NULL, c("intercept", "slope","p0"))), 
++                                    transform.par=c(0,0,3), covariance.model=diag(c(1,1,0)), omega.init=diag(c(0.5,0.3,0)),
++                                    covariate.model = matrix(c(1,1,0),ncol=3, byrow=TRUE), verbose=FALSE)
+> 
+> zippoisson.fit.cov2<-saemix(saemix.model.zip.cov2,saemix.data,saemix.options)
+> summary(zippoisson.fit.cov2)
+----------------------------------------------------
+-----------------  Fixed effects  ------------------
+----------------------------------------------------
+               Parameter Estimate
+1              intercept    1.576
+2 beta_gender(intercept)    0.197
+3                  slope   -0.036
+4     beta_gender(slope)    0.016
+5                     p0    0.075
+----------------------------------------------------
+-----------  Variance of random effects  -----------
+----------------------------------------------------
+                 Parameter Estimate
+intercept omega2.intercept   0.7826
+slope         omega2.slope   0.0033
+----------------------------------------------------
+------  Correlation matrix of random effects  ------
+----------------------------------------------------
+                 omega2.intercept omega2.slope
+omega2.intercept 1.00             0.00        
+omega2.slope     0.00             1.00        
+----------------------------------------------------
+---------------  Statistical criteria  -------------
+----------------------------------------------------
+
+Likelihood computed by importance sampling
+      -2LL= 20459.27 
+      AIC = 20475.27 
+      BIC = 20512.93 
+----------------------------------------------------
+> 
+> case.count <- saemix.bootstrap(zippoisson.fit.cov2, method="case", nboot=nboot) 
+> write.table(case.count,file.path(workDir, "bootstrapCase_rapiCov_ZIP.res"), row.names = FALSE, quote=F)
+> 
+> # with correlation
+> mat1<-diag(c(1,1,0))
+> mat1[1,2]<-mat1[2,1]<-1
+> saemix.model.zip.cov2<-saemixModel(model=count.poissonzip,description="count model ZIP",modeltype="likelihood",   
++                                    simulate.function = countsimulate.poissonzip,
++                                    psi0=matrix(c(1.5, 0.01, 0.2),ncol=3,byrow=TRUE,dimnames=list(NULL, c("intercept", "slope","p0"))), 
++                                    transform.par=c(0,0,3), covariance.model=mat1, omega.init=diag(c(0.5,0.3,0)),
++                                    covariate.model = matrix(c(1,1,0),ncol=3, byrow=TRUE), verbose=FALSE)
+> 
+> zippoisson.fit.cov2<-saemix(saemix.model.zip.cov2,saemix.data,saemix.options)
+> summary(zippoisson.fit.cov2)
+----------------------------------------------------
+-----------------  Fixed effects  ------------------
+----------------------------------------------------
+               Parameter Estimate
+1              intercept    1.572
+2 beta_gender(intercept)    0.194
+3                  slope   -0.035
+4     beta_gender(slope)    0.016
+5                     p0    0.076
+----------------------------------------------------
+-----------  Variance of random effects  -----------
+----------------------------------------------------
+                 Parameter Estimate
+intercept omega2.intercept   0.8004
+slope         omega2.slope   0.0032
+----------------------------------------------------
+------  Correlation matrix of random effects  ------
+----------------------------------------------------
+                 omega2.intercept omega2.slope
+omega2.intercept  1.000           -0.085      
+omega2.slope     -0.085            1.000      
+----------------------------------------------------
+---------------  Statistical criteria  -------------
+----------------------------------------------------
+
+Likelihood computed by importance sampling
+      -2LL= 20455.31 
+      AIC = 20473.31 
+      BIC = 20515.67 
+----------------------------------------------------
+> 
+> case.count <- saemix.bootstrap(zippoisson.fit.cov2, method="case", nboot=nboot) 
+> write.table(case.count,file.path(workDir, "bootstrapCase_rapiCov_ZIP_corr.res"), row.names = FALSE, quote=F)
+> 
+> ########################################################################################################
+> # Hurdle model - without correlation
+> 
+> ## Hurdle - 2 models 
+> saemix.data1<-saemixData(name.data=rapi.saemix[rapi.saemix$rapi>0,], name.group=c("id"),
++                          name.predictors=c("time","rapi"),name.response=c("rapi"),
++                          name.covariates=c("gender"),
++                          units=list(x="week",y="",covariates=c("")), verbose=FALSE)
+> 
+> rapi.saemix$y0<-as.integer(rapi.saemix$rapi>0)
+> saemix.data0<-saemixData(name.data=rapi.saemix, name.group=c("id"),
++                          name.predictors=c("time","y0"),name.response=c("y0"),
++                          name.covariates=c("gender"),
++                          units=list(x="week",y="",covariates=c("")), verbose=FALSE)
+> 
+> # Fit Binomial model to saemix.data0
+> binary.model<-function(psi,id,xidep) {
++   tim<-xidep[,1]
++   y<-xidep[,2]
++   inter<-psi[id,1]
++   slope<-psi[id,2]
++   logit<-inter+slope*tim
++   pevent<-exp(logit)/(1+exp(logit))
++   pobs = (y==0)*(1-pevent)+(y==1)*pevent
++   logpdf <- log(pobs)
++   return(logpdf)
++ }
+> # Associated simulation function
+> simulBinary<-function(psi,id,xidep) {
++   tim<-xidep[,1]
++   #  y<-xidep[,2] # not used for simulation
++   inter<-psi[id,1]
++   slope<-psi[id,2]
++   logit<-inter+slope*tim
++   pevent<-exp(logit)/(1+exp(logit))
++   ysim<-rbinom(length(tim),size=1, prob=pevent)
++   return(ysim)
++ }
+> 
+> # Fit truncated Poisson model to saemix.data1
+> ## Poisson with a time effect
+> # Model
+> truncated.poisson<-function(psi,id,xidep) { 
++   time<-xidep[,1]
++   y<-xidep[,2]
++   intercept<-psi[id,1]
++   slope<-psi[id,2]
++   lambda<- exp(intercept + slope*time)
++   logp <- y*log(lambda) - log(factorial(y)) - log(exp(lambda)-1)
++   return(logp)
++ }
+> # simulating from a truncated Poisson using the inverse function
+> # Peter Dalgaard on R-help list: https://stat.ethz.ch/pipermail/r-help/2005-May/070680.html
+> rtpois <- function(N, lambda) {
++   qpois(runif(N, dpois(0, lambda), 1), lambda)
++ }
+> 
+> # Simulation function
+> countsimulate.truncatedpoisson<-function(psi, id, xidep) {
++   # left: truncate to 0
++   # right: truncate to maximum observed value to avoid simulating aberrant values
++   time<-xidep[,1]
++   y<-xidep[,2]
++   intercept<-psi[id,1]
++   slope<-psi[id,2]
++   lambda<- exp(intercept + slope*time)
++   #  y<-rtruncPois(length(time), y, lambda=lambda) 
++   y<-rtpois(length(time), lambda=lambda)
++   return(y)
++ }
+> 
+> ########################## No correlation between parameters
+> 
+> saemix.hurdle0<-saemixModel(model=binary.model,description="Binary model",
++                             modeltype="likelihood",simulate.function=simulBinary,
++                             psi0=matrix(c(0.5,-.1,0,0),ncol=2,byrow=TRUE,dimnames=list(NULL,c("theta1","theta2"))),
++                             transform.par=c(0,0), covariate.model=c(1,1),
++                             covariance.model =matrix(data=1, ncol=2, nrow=2), omega.init=diag(c(1,0.3)), verbose=FALSE)
+> 
+> saemix.options<-list(seed=1234567,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, nb.chains=10, fim=FALSE, displayProgress=FALSE, print=FALSE)
+> 
+> hurdlefit0<-saemix(saemix.hurdle0,saemix.data0,saemix.options)
+> summary(hurdlefit0)
+----------------------------------------------------
+-----------------  Fixed effects  ------------------
+----------------------------------------------------
+            Parameter Estimate
+1              theta1    2.486
+2 beta_gender(theta1)    0.011
+3              theta2   -0.054
+4 beta_gender(theta2)    0.038
+----------------------------------------------------
+-----------  Variance of random effects  -----------
+----------------------------------------------------
+           Parameter Estimate
+theta1 omega2.theta1   1.5426
+theta2 omega2.theta2   0.0065
+----------------------------------------------------
+------  Correlation matrix of random effects  ------
+----------------------------------------------------
+              omega2.theta1 omega2.theta2
+omega2.theta1 1.00          0.38         
+omega2.theta2 0.38          1.00         
+----------------------------------------------------
+---------------  Statistical criteria  -------------
+----------------------------------------------------
+
+Likelihood computed by importance sampling
+      -2LL= 3246.554 
+      AIC = 3262.554 
+      BIC = 3300.208 
+----------------------------------------------------
+> 
+> saemix.hurdle1.cov2<-saemixModel(model=truncated.poisson,description="Count model Poisson",modeltype="likelihood",   
++                                  simulate.function = countsimulate.truncatedpoisson,
++                                  psi0=matrix(c(log(5),0.01),ncol=2,byrow=TRUE,dimnames=list(NULL, c("intercept","slope"))), 
++                                  transform.par=c(0,0), omega.init=diag(c(0.5, 0.01)),
++                                  covariate.model=matrix(c(1,1), ncol=2, byrow=TRUE), verbose=FALSE)
+> saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, print=FALSE)
+> 
+> hurdlefit1<-saemix(saemix.hurdle1.cov2,saemix.data1,saemix.options)
+Error in solve.default(FO) : 
+  Routine Lapack dgesv : le système est exactement singulier : U[2,2] = 0
+> summary(hurdlefit1)
+----------------------------------------------------
+-----------------  Fixed effects  ------------------
+----------------------------------------------------
+               Parameter Estimate    SE  CV(%) p-value
+1              intercept    1.638 0.059   3.59       -
+2 beta_gender(intercept)    0.207 0.088  42.51   0.019
+3                  slope   -0.023 0.049 217.77       -
+4     beta_gender(slope)    0.011 0.075 677.60   0.883
+----------------------------------------------------
+-----------  Variance of random effects  -----------
+----------------------------------------------------
+                 Parameter Estimate SE CV(%)
+intercept omega2.intercept   0.6470 NA    NA
+slope         omega2.slope   0.0021 NA    NA
+----------------------------------------------------
+------  Correlation matrix of random effects  ------
+----------------------------------------------------
+                 omega2.intercept omega2.slope
+omega2.intercept 1.00             0.00        
+omega2.slope     0.00             1.00        
+----------------------------------------------------
+---------------  Statistical criteria  -------------
+----------------------------------------------------
+Likelihood computed by linearisation
+      -2LL= 442745.4 
+      AIC = 442759.4 
+      BIC = 442792.2 
+
+Likelihood computed by importance sampling
+      -2LL= 17327.9 
+      AIC = 17341.9 
+      BIC = 17374.71 
+----------------------------------------------------
+Message d'avis :
+Dans .local(object, ...) : NAs introduits lors de la conversion automatique
+> 
+> case.count <- saemix.bootstrap(hurdlefit0, method="case", nboot=nboot) 
+> write.table(case.count,file.path(workDir, "bootstrapCase_rapiCov_Hurdle0.res"), row.names = FALSE, quote=F)
+> 
+> case.count <- saemix.bootstrap(hurdlefit1, method="case", nboot=nboot) 
+Error in initialiseMainAlgo(saemix.data, saemix.model, saemix.options) : 
+  stats:fit.saemix:FailedInitialParameterGuess
+Failed to find a valid initial parameter guess
+
+Error in initialiseMainAlgo(saemix.data, saemix.model, saemix.options) : 
+  stats:fit.saemix:FailedInitialParameterGuess
+Failed to find a valid initial parameter guess
+
+Error in initialiseMainAlgo(saemix.data, saemix.model, saemix.options) : 
+  stats:fit.saemix:FailedInitialParameterGuess
+Failed to find a valid initial parameter guess
+
+Error in initialiseMainAlgo(saemix.data, saemix.model, saemix.options) : 
+  stats:fit.saemix:FailedInitialParameterGuess
+Failed to find a valid initial parameter guess
+
+Error in initialiseMainAlgo(saemix.data, saemix.model, saemix.options) : 
+  stats:fit.saemix:FailedInitialParameterGuess
+Failed to find a valid initial parameter guess
+
+Error in initialiseMainAlgo(saemix.data, saemix.model, saemix.options) : 
+  stats:fit.saemix:FailedInitialParameterGuess
+Failed to find a valid initial parameter guess
+
+Error in initialiseMainAlgo(saemix.data, saemix.model, saemix.options) : 
+  stats:fit.saemix:FailedInitialParameterGuess
+Failed to find a valid initial parameter guess
+
+> write.table(case.count,file.path(workDir, "bootstrapCase_rapiCov_Hurdle1.res"), row.names = FALSE, quote=F)
+> 
+> ########################## With correlation between parameters
+> 
+> saemix.hurdle0<-saemixModel(model=binary.model,description="Binary model",
++                             modeltype="likelihood",simulate.function=simulBinary,
++                             psi0=matrix(c(0.5,-.1,0,0),ncol=2,byrow=TRUE,dimnames=list(NULL,c("theta1","theta2"))),
++                             transform.par=c(0,0), covariate.model=c(1,1),
++                             omega.init=diag(c(1,0.3)), verbose=FALSE)
+> 
+> saemix.options<-list(seed=1234567,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, nb.chains=10, fim=FALSE, displayProgress=FALSE, print=FALSE)
+> 
+> hurdlefit0<-saemix(saemix.hurdle0,saemix.data0,saemix.options)
+> summary(hurdlefit0)
+----------------------------------------------------
+-----------------  Fixed effects  ------------------
+----------------------------------------------------
+            Parameter Estimate
+1              theta1    2.634
+2 beta_gender(theta1)    0.061
+3              theta2   -0.063
+4 beta_gender(theta2)    0.034
+----------------------------------------------------
+-----------  Variance of random effects  -----------
+----------------------------------------------------
+           Parameter Estimate
+theta1 omega2.theta1   2.3077
+theta2 omega2.theta2   0.0072
+----------------------------------------------------
+------  Correlation matrix of random effects  ------
+----------------------------------------------------
+              omega2.theta1 omega2.theta2
+omega2.theta1 1.00          0.00         
+omega2.theta2 0.00          1.00         
+----------------------------------------------------
+---------------  Statistical criteria  -------------
+----------------------------------------------------
+
+Likelihood computed by importance sampling
+      -2LL= 3248.697 
+      AIC = 3262.697 
+      BIC = 3295.645 
+----------------------------------------------------
+> 
+> saemix.hurdle1.cov2<-saemixModel(model=truncated.poisson,description="Count model Poisson",modeltype="likelihood",   
++                                  simulate.function = countsimulate.truncatedpoisson,
++                                  psi0=matrix(c(log(5),0.01),ncol=2,byrow=TRUE,dimnames=list(NULL, c("intercept","slope"))), 
++                                  transform.par=c(0,0), omega.init=diag(c(0.5, 0.01)),
++                                  covariance.model =matrix(data=1, ncol=2, nrow=2),
++                                  covariate.model=matrix(c(1,1), ncol=2, byrow=TRUE), verbose=FALSE)
+> saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, displayProgress=FALSE, print=FALSE)
+> 
+> hurdlefit1<-saemix(saemix.hurdle1.cov2,saemix.data1,saemix.options)
+Error in solve.default(FO) : 
+  Routine Lapack dgesv : le système est exactement singulier : U[2,2] = 0
+> summary(hurdlefit1)
+----------------------------------------------------
+-----------------  Fixed effects  ------------------
+----------------------------------------------------
+               Parameter Estimate    SE  CV(%) p-value
+1              intercept    1.608 0.060   3.70       -
+2 beta_gender(intercept)    0.214 0.089  41.55   0.016
+3                  slope   -0.018 0.049 270.17       -
+4     beta_gender(slope)    0.010 0.075 748.08   0.894
+----------------------------------------------------
+-----------  Variance of random effects  -----------
+----------------------------------------------------
+                 Parameter Estimate SE CV(%)
+intercept omega2.intercept   0.7168 NA    NA
+slope         omega2.slope   0.0022 NA    NA
+----------------------------------------------------
+------  Correlation matrix of random effects  ------
+----------------------------------------------------
+                 omega2.intercept omega2.slope
+omega2.intercept  1.00            -0.29       
+omega2.slope     -0.29             1.00       
+----------------------------------------------------
+---------------  Statistical criteria  -------------
+----------------------------------------------------
+Likelihood computed by linearisation
+      -2LL= 447971.3 
+      AIC = 447987.3 
+      BIC = 448024.8 
+
+Likelihood computed by importance sampling
+      -2LL= 17293.33 
+      AIC = 17309.33 
+      BIC = 17346.83 
+----------------------------------------------------
+> 
+> case.count <- saemix.bootstrap(hurdlefit0, method="case", nboot=nboot) 
+> write.table(case.count,file.path(workDir, "bootstrapCase_rapiCov_Hurdle0_corr.res"), row.names = FALSE, quote=F)
+> 
+> case.count <- saemix.bootstrap(hurdlefit1, method="case", nboot=nboot) 
+Error in initialiseMainAlgo(saemix.data, saemix.model, saemix.options) : 
+  stats:fit.saemix:FailedInitialParameterGuess
+Failed to find a valid initial parameter guess
+
+Error in initialiseMainAlgo(saemix.data, saemix.model, saemix.options) : 
+  stats:fit.saemix:FailedInitialParameterGuess
+Failed to find a valid initial parameter guess
+
+Error in initialiseMainAlgo(saemix.data, saemix.model, saemix.options) : 
+  stats:fit.saemix:FailedInitialParameterGuess
+Failed to find a valid initial parameter guess
+
+Error in initialiseMainAlgo(saemix.data, saemix.model, saemix.options) : 
+  stats:fit.saemix:FailedInitialParameterGuess
+Failed to find a valid initial parameter guess
+
+Error in initialiseMainAlgo(saemix.data, saemix.model, saemix.options) : 
+  stats:fit.saemix:FailedInitialParameterGuess
+Failed to find a valid initial parameter guess
+
+> write.table(case.count,file.path(workDir, "bootstrapCase_rapiCov_Hurdle1_corr.res"), row.names = FALSE, quote=F)
+> 
+> ########################################################################################################
+> 
+> proc.time()
+utilisateur     système      écoulé 
+  13076.048       8.077   13092.184 

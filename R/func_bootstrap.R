@@ -169,6 +169,8 @@ saemix.bootstrap<-function(saemixObject, method="conditional", nboot=200, nsamp=
   model.boot<-saemixObject["model"]
   model.boot@psi0 <- model.boot["betaest.model"]
   model.boot@psi0[model.boot["betaest.model"]==1]<-saemixObject@results@fixed.effects
+  if(dim(model.boot@covariate.model)[1]>0)
+    saemixObject@data@name.covariates <- rownames(model.boot@covariate.model)
   for(iboot in 1:nboot) {
     if(method=="case")  
       data.boot <- dataGen.case(saemixObject)

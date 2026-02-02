@@ -260,7 +260,7 @@ exploreDataTTE <- function(object, verbose=FALSE, ...) {
   ## TODO: add options
   ## TODO: add censored data (eg red dots to indicate censored events in the KM plot)
   xplot <- ggplot(data=tab.obs, aes(x=.data$tobs, y=.data$km, group=as.factor(.data$covariate.group), colour=as.factor(.data$covariate.group))) + 
-    geom_line(linetype = plot.opt$lty.lobs, size = plot.opt$lwd.lobs) +
+    geom_line(linetype = plot.opt$lty.lobs, linewidth = plot.opt$lwd.lobs) +
     # Censored events
     {if(has.cens & plot.opt$plot.censTTE)
       geom_point(data=tab.cens1, aes(x=.data$tobs, y=.data$km), colour=plot.opt$col.pcens)} +
@@ -358,6 +358,9 @@ exploreDataCat <- function(object, max.cat=10, breaks=NULL, catlabel=NULL, verbo
   # ...: to pass additional plot options (such as title, colours, etc...)
   x<-plotDiscreteData.aux(object, max.cat=max.cat, breaks=breaks, catlabel=catlabel, verbose=verbose, ...)
   xtab<-x$xtab
+  xtab$sd <- sqrt((1-xtab$nevent/xtab$nobs)*(xtab$nevent/xtab$nobs**2))
+  xtab$lower <- xtab$freq-1.96*xtab$sd
+  xtab$upper <- xtab$freq+1.96*xtab$sd
   plot.opt<-x$plot.opt
   if(length(plot.opt$mfrow)==2) {
     nrow1 <- plot.opt$mfrow[1]
@@ -366,7 +369,9 @@ exploreDataCat <- function(object, max.cat=10, breaks=NULL, catlabel=NULL, verbo
     nrow1<-ncol1<-NULL
   }
   cgroups<-unique(xtab$group)
-  plot.cat <- ggplot(data=xtab, aes(x=.data$x.group, y=.data$freq, group=as.factor(.data$group), colour=as.factor(.data$group))) + geom_line() + 
+  plot.cat <- ggplot(data=xtab, aes(x=.data$x.group, y=.data$freq, group=as.factor(.data$group), colour=as.factor(.data$group))) + 
+    geom_ribbon(aes(ymin=.data$lower, ymax=.data$upper, fill=as.factor(.data$group)), alpha=0.2) + 
+    geom_line(aes(colour=as.factor(.data$group))) + geom_point(aes(colour=as.factor(.data$group))) + 
     xlab(plot.opt$xlab) + ylab(plot.opt$ylab) + 
     {if(length(cgroups)==1) theme(legend.position="none")} +
     {if(length(cgroups)>1) guides(fill=guide_legend(title=plot.opt$which.cov), colour=guide_legend(title=plot.opt$which.cov))} +
@@ -374,30 +379,24 @@ exploreDataCat <- function(object, max.cat=10, breaks=NULL, catlabel=NULL, verbo
   return(plot.cat)
 
 }
-
 ###########################	Binning on X-axis and on scores		#############################
 
 plotDiscreteData.aux <- function(object, max.cat=10, breaks=NULL, catlabel=NULL, verbose=FALSE, ...) {
-  # object: a SaemixData object including simulated data
+  # object: a SaemixData object
   # max.cat, breaks: used to bin the categories of the response
+  # catlabel: name of the categories
   # verbose: whether to print messages
   # ...: to pass additional plot options (such as title, colours, etc...)
-  
-  # Creates:
-  # obsdat: dataframe with the observation data
-  ## id: subject id
-  ## time: event time
-  ## event: 0 for no event, 1 for event
-  ## cens: 0 for observed event/no event, 1 for censored (optional, if not present all 1 for events are assumed to be observed events and a 0 at the last observation time indicates a censored event)
-  
+
   # Returns
   ## xtab: a dataframe with columns
   ### group: covariate/stratification group
-  ### x.group: independent variable (usually time), grouped
+  ### x.group: independent variable (usually time), grouped by bin
   ### y.group: dependent variable (category, score), grouped
   ### freq: frequency of y.group at the corresponding combination of group and x.group
   ### nobs: number of observations at the corresponding combination of group and x.group
-  ## updated plot.opt
+  ### nevent: number of events at the corresponding combination of group and x.group
+  ## updated plot.opt (with labels)
   ydat <- object
   obsdat<-data.frame(id=ydat@data[,ydat@name.group], x=ydat@data[,ydat@name.X], y=ydat@data[,ydat@name.response])
 
@@ -425,6 +424,7 @@ plotDiscreteData.aux <- function(object, max.cat=10, breaks=NULL, catlabel=NULL,
     obsdat$x.group<-xbnd$xcent[xbnd$xgrp]
   } else {
     xgrp <- sort(unique(obsdat$x))
+    plot.opt$bin.number<-length(xgrp)
     #    obsdat$x.group<-match(obsdat$x, xgrp)
     obsdat$x.group <- obsdat$x
     #    xbreaks<-c(sort(unique(obsdat$x))-0.01, max(obsdat$x)+0.01)
@@ -465,11 +465,11 @@ plotDiscreteData.aux <- function(object, max.cat=10, breaks=NULL, catlabel=NULL,
   for(igroup in cgroups) {
     tab1<-table(obsdat$x.group[obsdat$covariate.group==igroup],obsdat$score.group[obsdat$covariate.group==igroup])
     ncol<-colSums(tab1)
-    tab1<-tab1[,(ncol>0),drop=FALSE]
-    nobs<-rowSums(tab1)
-    freqtab <- tab1/nobs
+    tab2<-tab1[,(ncol>0),drop=FALSE]
+    nobs<-rowSums(tab2)
+    freqtab <- tab2/nobs
     xtab <- rbind(xtab,
-                  data.frame(group=igroup, x.group=rep(xgroups,length(sgroups)), y.group=rep(sgroups, each=length(xgroups)), freq=c(freqtab), nobs=rep(nobs, length(sgroups))))
+                  data.frame(group=igroup, x.group=rep(xgroups,length(sgroups)), y.group=rep(sgroups, each=length(xgroups)), freq=c(freqtab), nobs=rep(nobs, length(sgroups)), nevent=c(tab2)))
   }
   # More pleasing labels
   if(!is.null(catlabel) && length(catlabel)==length(levels(xtab$y.group)))

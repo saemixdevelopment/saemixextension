@@ -11,6 +11,12 @@ setwd(workDir)
 library(saemix)
 # had fun with tidyverse at some point
 library(tidyverse)
+# Weird font issues getting tiny when saving to pdf, correcting for that
+#library(showtext)
+#showtext_auto()
+rsize.text <- 2
+rsize.ticks <- 1.5
+theme_set(theme_bw(base_size = 15)) 
 
 # Whether to save the plots
 saveFigs<-FALSE
@@ -41,7 +47,7 @@ table(cut(toenail.saemix$time, breaks=c(-1,0.25,1.25,2.25, 3.25, 7,10,15,20)))
 toe1 <- toenail.saemix %>%
   group_by(visit, treatment) %>%
   summarise(nev = sum(y), n=n()) %>%
-  mutate(freq = nev/n, sd=sqrt((1-nev/n)/nev)) %>%
+  mutate(freq = nev/n, sd=sqrt((1-nev/n)*(nev/n**2))) %>%
   mutate(lower=freq-1.96*sd, upper=freq+1.96*sd)
 toe1$lower[toe1$lower<0] <-0 # we should use a better approximation for CI
 toe1$treatment <- factor(toe1$treatment, labels=c("A","B"))
@@ -53,11 +59,12 @@ plot1<-ggplot(toe1, aes(x=visit, y=freq, group=treatment)) + geom_line(aes(colou
   xlab("Visit number") + ylab("Observed frequency of infection")
 
 print(plot1)
+plot2 <- plot1 + theme(text = element_text(size=rel(rsize.text)), legend.text=element_text(size=rel(rsize.text)), strip.text.x = element_text(size=rel(rsize.ticks)), strip.text.y = element_text(size=rel(rsize.ticks)))
 
 if(saveFigs) {
   namfig<-"toenail_infectionFreq.eps"
   cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
-  plot(plot1)
+  plot(plot2)
   dev.off()
 }
 
@@ -135,13 +142,15 @@ plot2 <- ggplot(toe1, aes(x=visit, y=freq, group=treatment)) + geom_line(aes(col
   geom_line(data=gtab, aes(x=visit, y=median), linetype=2, colour='lightblue') + 
   geom_ribbon(data=gtab,aes(ymin=lower, ymax=upper), alpha=0.5, fill='lightblue') +
   ylim(c(0,0.5)) + theme_bw() + theme(legend.position = "none") + facet_wrap(.~treatment) +
-  xlab("Visit number") + ylab("Frequency of infection")
+  xlab("Visit number") + ylab("Frequency of infection") 
+
+plot3 <- plot2 +  theme(text = element_text(size=rel(rsize.text)), legend.text=element_text(size=rel(rsize.text)), strip.text.x = element_text(size=rel(rsize.ticks)), strip.text.y = element_text(size=rel(rsize.ticks)))
 
 print(plot2)
 if(saveFigs) {
-  namfig<-"toenail_vpcByTreatment.eps"
+  namfig<-"toenail_ggplot2VPCTreatment.eps"
   cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
-  plot(plot2)
+  plot(plot3)
   dev.off()
 }
 
@@ -163,24 +172,24 @@ head(case.bin)
 resboot1<-case.bin
 ypd2<-NULL
 for(icol in 1:4) {
-  ypd2<-rbind(ypd2,data.frame(rep=resboot1[,1],Param=colnames(resboot1)[(icol+1)],value=resboot1[,(icol+1)], Bootstrap="Case", stringsAsFactors=FALSE))
+    ypd2<-rbind(ypd2,data.frame(rep=resboot1[,1],Param=colnames(resboot1)[(icol+1)],value=resboot1[,(icol+1)], Bootstrap="Case", stringsAsFactors=FALSE))
 }
-
+  
 ypd2$Param<-factor(ypd2$Param, levels = unique(ypd2$Param))
 ypd2.fix<-ypd2[ypd2$Param %in% unique(ypd2$Param)[1:3],]
 ypd2.iiv<-ypd2[ypd2$Param %in% unique(ypd2$Param)[4],]
 ypd <- ypd2
-
+  
 par.estim<-c(binary.fit@results@fixed.effects,diag(binary.fit@results@omega)[binary.fit@results@indx.omega])
 mean.bootDist<-apply(resboot1, 2, mean)[-c(1)]
 df<-data.frame(Param=unique(ypd2$Param), mean.boot=mean.bootDist, est.saemix=par.estim, Bootstrap="Case") 
-
+  
 plot.density2<-ggplot(data=ypd2) + geom_density(aes(value,fill="red4"), alpha=0.5) + 
-  geom_vline(data=df,aes(xintercept=est.saemix),colour="red",size=1.2) + 
-  geom_vline(data=df,aes(xintercept=mean.boot),colour="blue",size=1.2) +
-  theme_bw() + theme(axis.title.x = element_blank(),axis.text.x = element_text(size=9, angle=30, hjust=1), legend.position = "none") + 
-  facet_wrap(~Param, ncol=2, scales = 'free')
-
+    geom_vline(data=df,aes(xintercept=est.saemix),colour="red",size=1.2) + 
+    geom_vline(data=df,aes(xintercept=mean.boot),colour="blue",size=1.2) +
+    theme_bw() + theme(axis.title.x = element_blank(),axis.text.x = element_text(size=11, angle=30, hjust=1), legend.position = "none") + 
+    facet_wrap(~Param, ncol=2, scales = 'free')
+  
 print(plot.density2)
 #}
 
@@ -197,9 +206,9 @@ summary(cond.bin)
 resboot1<-cond.bin
 ypd2<-NULL
 for(icol in 1:4) {
-  ypd2<-rbind(ypd2,data.frame(rep=resboot1[,1],Param=colnames(resboot1)[(icol+1)],value=resboot1[,(icol+1)], Bootstrap="Conditional", stringsAsFactors=FALSE))
+    ypd2<-rbind(ypd2,data.frame(rep=resboot1[,1],Param=colnames(resboot1)[(icol+1)],value=resboot1[,(icol+1)], Bootstrap="Conditional", stringsAsFactors=FALSE))
 }
-
+  
 ypd2$Param<-factor(ypd2$Param, levels = unique(ypd2$Param))
 ypd2.fix<-ypd2[ypd2$Param %in% unique(ypd2$Param)[1:3],]
 ypd2.iiv<-ypd2[ypd2$Param %in% unique(ypd2$Param)[4],]
@@ -209,21 +218,21 @@ par.estim<-c(binary.fit@results@fixed.effects,diag(binary.fit@results@omega)[bin
 mean.bootDist<-apply(resboot1, 2, mean)[-c(1)]
 df2<-data.frame(Param=unique(ypd2$Param), mean.boot=mean.bootDist, est.saemix=par.estim, Bootstrap="Conditional")
 df<-rbind(df,df2)
-
+  
 plot.density2<-ggplot(data=ypd2) + geom_density(aes(value,fill="red4"), alpha=0.5) + 
-  geom_vline(data=df2,aes(xintercept=est.saemix),colour="red",size=1.2) + 
-  geom_vline(data=df2,aes(xintercept=mean.boot),colour="blue",size=1.2) +
-  theme_bw() + theme(axis.title.x = element_blank(),axis.text.x = element_text(size=9, angle=30, hjust=1), legend.position = "none") + 
-  facet_wrap(~Param, ncol=2, scales = 'free')
+    geom_vline(data=df2,aes(xintercept=est.saemix),colour="red",size=1.2) + 
+    geom_vline(data=df2,aes(xintercept=mean.boot),colour="blue",size=1.2) +
+    theme_bw() + theme(axis.title.x = element_blank(),axis.text.x = element_text(size=11, angle=30, hjust=1), legend.position = "none") + 
+    facet_wrap(~Param, ncol=2, scales = 'free')
 print(plot.density2)
-
+  
 plot.density3<-ggplot(data=ypd) + geom_density(aes(value,fill="red4"), alpha=0.5) + 
-  geom_vline(data=df,aes(xintercept=est.saemix),colour="red",size=1.2) + 
-  geom_vline(data=df,aes(xintercept=mean.boot),colour="blue",size=1.2) +
+    geom_vline(data=df,aes(xintercept=est.saemix),colour="red",size=1.2) + 
+    geom_vline(data=df,aes(xintercept=mean.boot),colour="blue",size=1.2) +
   theme_bw() + theme(axis.title.x = element_blank(),axis.text.x = element_text(size=9, angle=30, hjust=1), legend.position = "none") + 
-  facet_grid(Bootstrap~Param, scales = 'free')
+    facet_grid(Bootstrap~Param, scales = 'free')
 #    facet_wrap(Bootstrap~Param, nrow=2, scales = 'free')
-
+  
 print(plot.density3)
 #}
 
@@ -231,16 +240,17 @@ print(plot.density3)
 ##### Bootstrap results
 
 if(nboot<200) cat("The number of bootstrap samples is too low to provide good estimates of the confidence intervals\n") else {
-  par.estim<-c(binary.fit@results@fixed.effects,diag(binary.fit@results@omega)[binary.fit@results@indx.omega])
-  df2<-data.frame(parameter=colnames(case.bin)[-c(1)], saemix=par.estim)
+  par.estim<-c(binary.fit@results@fixed.effects,diag(binary.fit@results@omega)[binary.fit@results@indx.omega], sqrt(diag(binary.fit@results@omega)[binary.fit@results@indx.omega]))
+  namsd<-paste0("SD.",colnames(binary.fit@results@omega)[binary.fit@results@indx.omega])
+  df2<-data.frame(parameter=c(colnames(case.bin)[-c(1)],namsd), saemix=par.estim)
   for(i in 1:2) {
     if(i==1) {
       resboot1<-case.bin
       namboot<-"case"
-    } else {
+      } else {
       resboot1<-cond.bin
       namboot <-"cNP"
-    }
+      }
     mean.bootDist<-apply(resboot1, 2, mean)[-c(1)]
     sd.bootDist<-apply(resboot1, 2, sd)[-c(1)]
     quant.bootDist<-apply(resboot1[-c(1)], 2, quantile, c(0.025, 0.975))
@@ -346,9 +356,9 @@ plot(ord.fit, plot.type="convergence")
 covariate.model <- matrix(data=0, nrow=4, ncol=5)
 covariate.model[3,2]<-covariate.model[3,5]<-covariate.model[4,1]<-1
 ordmodel.cov<-saemixModel(model=ordinal.model,description="Ordinal categorical model",modeltype="likelihood",
-                          simulate.function=simulateOrdinal, psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5, byrow=TRUE, 
-                                      dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))), transform.par=c(0,1,1,1,1),
-                          omega.init=diag(c(100, 1, 1, 1, 1)), covariate.model=covariate.model, covariance.model = diag(c(1,1,1,1,0)), verbose=FALSE)
+                simulate.function=simulateOrdinal, psi0=matrix(c(0,0.2, 0.6, 3, 0.2),ncol=5, byrow=TRUE, 
+                dimnames=list(NULL,c("alp1","alp2","alp3","alp4","beta"))), transform.par=c(0,1,1,1,1),
+                omega.init=diag(c(100, 1, 1, 1, 1)), covariate.model=covariate.model, covariance.model = diag(c(1,1,1,1,0)), verbose=FALSE)
 
 # Fitting
 saemix.options<-list(seed=632545,save=FALSE,save.graphs=FALSE, fim=FALSE, nb.chains=10, nbiter.saemix=c(600,100), print=FALSE)
@@ -372,13 +382,18 @@ discreteVPC(yfit, outcome='categorical',covsplit=TRUE, which.cov="treatment")
 discreteVPC(yfit, outcome='categorical',covsplit=TRUE, which.cov="Sex")
 
 if(saveFigs) {
+  plot1 <- discreteVPC(yfit, outcome='categorical',covsplit=TRUE, which.cov="treatment")
+  plot2 <- plot1 +  theme(text = element_text(size=rel(rsize.text)), legend.text=element_text(size=rel(rsize.text)), strip.text.x = element_text(size=rel(rsize.ticks)), strip.text.y = element_text(size=rel(rsize.ticks)))
   namfig<-"knee_VPCbytreatment.eps"
   cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
-  discreteVPC(yfit, outcome='categorical',covsplit=TRUE, which.cov="treatment")
+  plot(plot2)
   dev.off()
+  
+  plot1 <-  discreteVPC(yfit, outcome='categorical',covsplit=TRUE, which.cov="Sex")
+  plot2 <- plot1 +  theme(text = element_text(size=rel(rsize.text)), legend.text=element_text(size=rel(rsize.text)), strip.text.x = element_text(size=rel(rsize.ticks)), strip.text.y = element_text(size=rel(rsize.ticks)))
   namfig<-"knee_VPCbySex.eps"
   cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
-  discreteVPC(yfit, outcome='categorical',covsplit=TRUE, which.cov="Sex")
+  plot(plot2)
   dev.off()
 }
 
@@ -387,13 +402,16 @@ knee3 <- knee.saemix %>%
   group_by(time, treatment) %>%
   summarise(mean=mean(y))
 
+simdat <-yfit@sim.data@datasim
+simdat$time<-rep(yfit@data@data$time,nsim)
+simdat$treatment<-rep(yfit@data@data$treatment,nsim)
 ytab<-NULL
 for(irep in 1:nsim) {
   xtab<-simdat[simdat$irep==irep,]
   suppressMessages(
-    xtab1 <- xtab %>%
-      group_by(time, treatment) %>%
-      summarise(mean=mean(ysim))
+  xtab1 <- xtab %>%
+    group_by(time, treatment) %>%
+    summarise(mean=mean(ysim))
   )
   ytab<-rbind(ytab,xtab1[,c("time","treatment","mean")])
 }
@@ -406,12 +424,14 @@ kneeMedvpc <- ggplot(data = knee3, aes(x = time, y=mean, group=treatment)) +
   geom_point(colour='blue') + theme_bw() + 
   scale_fill_brewer(palette = "Blues") + theme(legend.position = "top") +
   labs(fill = "Score") + xlab("Time (d)") + ylab("Median value of score over time") + facet_wrap(.~treatment)
+plot1 <- kneeMedvpc +  theme(text = element_text(size=rel(rsize.text)), legend.text=element_text(size=rel(rsize.text)), strip.text.x = element_text(size=rel(rsize.ticks)), strip.text.y = element_text(size=rel(rsize.ticks)))
+print(kneeMedvpc)
 
 print(kneeMedvpc)
 if(saveFigs) {
   namfig<-"knee_medianScoreVPC.eps"
   cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
-  plot(kneeMedvpc)
+  plot(plot1)
   dev.off()
 }
 
@@ -464,8 +484,13 @@ if(runBootstrap) {
 }
 case.ordinal <- case.ordinal[!is.na(case.ordinal[,2]),]
 cond.ordinal <- cond.ordinal[!is.na(cond.ordinal[,2]),]
+nboot<-dim(case.ordinal)[1]
+for(icol in 7:8) {
+  case.ordinal[,icol]<-sqrt(case.ordinal[,icol]) # compute SD (omega) from omega2
+  cond.ordinal[,icol]<-sqrt(cond.ordinal[,icol])
+}
 
-par.estim<-c(ord.fit@results@fixed.effects,diag(ord.fit@results@omega)[ord.fit@results@indx.omega])
+par.estim<-format(c(ord.fit@results@fixed.effects,sqrt(diag(ord.fit@results@omega)[ord.fit@results@indx.omega])), digits=2, nsmall=1)
 df2<-data.frame(parameter=colnames(case.ordinal)[-c(1)], saemix=par.estim)
 for(i in 1:2) {
   if(i==1) {
@@ -475,9 +500,9 @@ for(i in 1:2) {
     resboot1<-cond.ordinal
     namboot <-"cNP"
   }
-  mean.bootDist<-apply(resboot1, 2, mean)[-c(1)]
-  sd.bootDist<-apply(resboot1, 2, sd)[-c(1)]
-  quant.bootDist<-apply(resboot1[-c(1)], 2, quantile, c(0.025, 0.975))
+  mean.bootDist<-apply(resboot1, 2, mean, na.rm=T)[-c(1)]
+  sd.bootDist<-apply(resboot1, 2, sd, na.rm=T)[-c(1)]
+  quant.bootDist<-apply(resboot1[-c(1)], 2, quantile, c(0.025, 0.975), na.rm=T)
   l1<-paste0(format(mean.bootDist, digits=2)," (",format(sd.bootDist,digits=2, trim=T),")")
   l2<-paste0("[",format(quant.bootDist[1,], digits=2),", ",format(quant.bootDist[2,],digits=2, trim=T),"]")
   df2<-cbind(df2, l1, l2)

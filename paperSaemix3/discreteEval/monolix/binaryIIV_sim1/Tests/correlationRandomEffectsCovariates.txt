@@ -1,0 +1,3 @@
+eta,covariate,statistics,p-value,test
+eta_th1,treatment,0.0316004,0.85904,Anova
+eta_th2,treatment,0.078208,0.779953,Anova
