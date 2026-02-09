@@ -29,31 +29,62 @@ The current notebook can be executed to create an HMTL or PDF output with commen
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
-# Folders
-workDir<-getwd() 
-
-# @Eco
-workDir<-"/home/eco/work/saemix/saemixextension/paperSaemix3"
-saemixDir <- "/home/eco/work/saemix/saemixextension"
-setwd(workDir)
+# When in my directory - set to FALSE to run from getwd(), must be paperSaemix3 (all paths relative)
+EcoAtHome <- TRUE
 
 # Libraries
 library(saemix)
-library(gridExtra) # waffle plot
 
-# Library survival for KM plot
-library(survival)
+library(ggplot2)
+library(gridExtra)
+library(xtable)
+library(survival) # comparison with standard KM
 
-# library(tidyverse)
+# Folders
+if(EcoAtHome) {
+  # Load updated files
+# pending compilation and CRAN upload
+  workDir<-"/home/eco/work/saemix/saemixextension/paperSaemix3"
+  source("/home/eco/work/saemix/saemixextension/R/func_exploreData.R")
+} else {
+  workDir<-getwd() 
+}
+
+setwd(workDir)
+bootResDir <- file.path(workDir, "bootstrapRes")
+figDir <- file.path(workDir,"figs")
+
+# library(MASS)
+# library(rlang)
 
 # Whether to save the plots
 saveFigs<-FALSE
-figDir <- file.path(workDir,"figs")
+rsize.text <- 2
+rsize.ticks <- 1.5
+theme_set(theme_bw(base_size = 15)) 
 
 # Number of bootstrap samples
 runBootstrap <- FALSE # to read the results from disk
 nboot <-10
 # nboot <- 200
+
+# Avoiding the tidyverse...
+# regroupTable <- function(x, value=1, col=c(2,3), fun=list(mean=mean())) {
+#   tab<-NULL
+#   c1<-col[1]
+#   c2<-col[2]
+#   for(i1 in sort(unique(x[,c1]))) {
+#     for(i2 in sort(unique(x[,c2]))) {
+#       yvec <- x[x[,c1]==i1 & x[,c2]==i2,value]
+#       l1 <- c(i1, i2)
+#       for(ifun in 1:length(fun)) l1<-c(l1,fun[[ifun]](yvec))
+#       tab<-rbind(tab, l1)
+#     }
+#   }
+#   if(is.null(names(fun))) names(fun)<-1:length(fun)
+#   colnames(tab)<-c(col,names(fun))
+#   return(as.data.frame(tab))
+# }
 
 ```
 
@@ -104,6 +135,7 @@ if(saveFigs) {
   grid.arrange(grobs=list(xplot1, xplot2), nrow=1, ncol=2)
   dev.off()
 }
+lungpl.exploreSurv <- grid.arrange(grobs=list(xplot1, xplot2), nrow=1, ncol=2)
 ```
 
 
@@ -429,6 +461,7 @@ Comparing the models: Gompertz and Weibull have almost the same BIC. The diagnos
 restte<-data.frame(Model=c("Exponential","Weibull","Gompertz","Gamma","Log-logistic"), 
            BIC=c(BIC(exptte.fit),BIC(tte.fit), BIC(gomptte.fit), BIC(gammatte.fit), BIC(logistte.fit)))
 print(restte)
+lungtab.comparemodels <- restte
 ```
 
 
@@ -475,6 +508,15 @@ gpl2 <- discreteVPC(simgomptte.fit, outcome="TTE")
 plot(gpl2)
 
 grid.arrange(gpl,gpl2, nrow=1)
+
+if(saveFigs) {
+  namfig<-"lung_compareTTEfits.eps"
+  cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
+  grid.arrange(gpl,gpl2, nrow=1)
+  dev.off()
+}
+lungpl.compareTTEfits <- grid.arrange(gpl,gpl2, nrow=1)
+
 ```
 #### Covariate model
 
@@ -515,12 +557,15 @@ if(FALSE) {
 }
 
 yfit<-weibcov.fit2
-case.TTE <- read.table(file.path(workDir,"covselect", "bootstrapCase_weibullTTEcov.res"), header=F, skip=1)
+case.TTE <- read.table(file.path(workDir,"bootstrapRes", "bootstrapCase_weibullTTEcov.res"), header=F, skip=1)
+case.TTE[,6]<-sqrt(case.TTE[,6])
 colnames(case.TTE)<-c("irep",yfit@results@name.fixed,yfit@results@name.random)
 apply(case.TTE,2,sd)
 x1<-apply(case.TTE,2,quantile,c(0.025,0.975))
-df2<-data.frame(Parameter=c("Te","beta_sex","beta_e23","gamma"), Estimate=yfit@results@fixed.effects, SDboot=apply(case.TTE,2,sd)[2:5])
-df2<-cbind(df2, t(x1[,2:5]))
+df2<-data.frame(Parameter=c("Te","beta_sex","beta_e23","gamma","omegaGamma"), Estimate=c(yfit@results@fixed.effects,sqrt(yfit@results@omega[2,2])), SDboot=apply(case.TTE,2,sd)[2:6])
+df2<-cbind(df2, t(x1[,2:6]))
+
+lungtab.parestim <- df2
 
 ```
 

@@ -1,20 +1,20 @@
 ---
 title: "Saemix 3 - count data models"
 author: "Emmanuelle"
-date: "06/2023"
+date: "02/2026"
 output:
   pdf_document: default
   html_document: default
 ---
 
 ## Version
-Use saemix version $\geq$ 3.2
+Use saemix version $\geq$ 3.4
 
 ## Objective
 
-Run count data models in **saemix**
+Run count data models on the RAPI dataset (Atkins et al. 2013) in **saemix**
 
-This notebook uses additional result files from the **saemix** development github (https://github.com/saemixdevelopment/saemixextension), not integrated in the package to avoid bloating. The *workDir* folder in the next chunk of code points to the folder where the user stored this code, and is needed to run the notebook (*workDir* defaults to the current working directory). Specifically, the notebook loads the results for the bootstrap runs performed using different approaches (see Comets et al. Pharm Res 2021). Bootstraps can be run instead by switching the *runBootstrap* variable to TRUE in the first chunk of code:
+This notebook uses additional result files from the **saemix** development github (https://github.com/saemixdevelopment/saemixextension), not integrated in the package to avoid bloating. The *workDir* folder in the next chunk of code points to the work folder *paperSaemix3* (*workDir* defaults to the current working directory). All paths are then relative to this working directory. Specifically, the notebook loads the results for the bootstrap runs performed using different approaches (see Comets et al. Pharm Res 2021) which are stored in the subfolder *bootstrapRes* within the working directory. Bootstraps can be run instead by switching the *runBootstrap* variable to TRUE in the first chunk of code:
 
 - in the code, the number of bootstraps is set to 10 for speed but we recommend to use at least 200 for a 90\% CI.
 - this can be changed in the following change of code by uncommenting the line *nboot<-200* and setting the number of bootstrap samples (this may cause memory issues in **Rstudio** with older machines, if this is the case we recommend executing the code in a separate script)
@@ -24,27 +24,35 @@ The current notebook can be executed to create an HMTL or PDF output with commen
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
-# Folders
-workDir<-getwd() 
-
-# @Eco
-workDir<-"/home/eco/work/saemix/saemixextension/paperSaemix3"
-saemixDir <- "/home/eco/work/saemix/saemixextension"
-#figDir<-file.path(saemixDir,"documentation","figs")
-setwd(workDir)
+# When in my directory - set to FALSE to run from getwd(), must be paperSaemix3 (all paths relative)
+EcoAtHome <- TRUE
 
 # Libraries
 library(saemix)
 
-# library(ggplot2)
+library(ggplot2)
+library(gridExtra)
+library(xtable)
+
+# Folders
+if(EcoAtHome) {
+  # Load updated files
+# pending compilation and CRAN upload
+  workDir<-"/home/eco/work/saemix/saemixextension/paperSaemix3"
+  source("/home/eco/work/saemix/saemixextension/R/func_exploreData.R")
+} else {
+  workDir<-getwd() 
+}
+
+setwd(workDir)
+bootResDir <- file.path(workDir, "bootstrapRes")
+figDir <- file.path(workDir,"figs")
+
 # library(MASS)
 # library(rlang)
-# library(gridExtra)
-library(tidyverse)
 
 # Whether to save the plots
 saveFigs<-FALSE
-figDir <- file.path(workDir,"figs")
 rsize.text <- 2
 rsize.ticks <- 1.5
 theme_set(theme_bw(base_size = 15)) 
@@ -53,6 +61,24 @@ theme_set(theme_bw(base_size = 15))
 runBootstrap <- FALSE # to read the results from disk
 nboot <-10
 # nboot <- 200
+
+# Avoiding the tidyverse...
+regroupTable <- function(x, value=1, col=c(2,3), fun=list(mean=mean())) {
+  tab<-NULL
+  c1<-col[1]
+  c2<-col[2]
+  for(i1 in sort(unique(x[,c1]))) {
+    for(i2 in sort(unique(x[,c2]))) {
+      yvec <- x[x[,c1]==i1 & x[,c2]==i2,value]
+      l1 <- c(i1, i2)
+      for(ifun in 1:length(fun)) l1<-c(l1,fun[[ifun]](yvec))
+      tab<-rbind(tab, l1)
+    }
+  }
+  if(is.null(names(fun))) names(fun)<-1:length(fun)
+  colnames(tab)<-c(col,names(fun))
+  return(as.data.frame(tab))
+}
 
 ```
 
@@ -89,6 +115,7 @@ if(saveFigs) {
   plot(xpl)
   dev.off()
 }
+plotRapi.rawDataPropTime <- xpl
 
 ```
 
@@ -233,6 +260,7 @@ if(saveFigs) {
   plot(plot1)
   dev.off()
 }
+plotRapi.poissonVPC <-plot1
 
 ```
 - we can also extract dataframe with the simulated data (*poisson.fit@sim.data@datasim*), adding a column *gender* to stratify the plots, in order to produce additional diagnostics
@@ -254,31 +282,33 @@ simdat <-yfit@sim.data@datasim
 simdat$time<-rep(yfit@data@data$time,nsim)
 simdat$gender<-rep(yfit@data@data$gender,nsim)
 
+if(FALSE) { # debug
+ irep<-1
+xtab<-simdat[simdat$irep==irep,]
+regroupTable(xtab, value=3, c(4,5), fun=list(nev=function(x) sum(x==0), n=function(x) length(x)))
+xtab1 <- regroupTable(xtab, value="ysim", c("time","gender"), fun=list(nev=function(x) sum(x==0), n=function(x) length(x)))
+}
+
 ytab<-NULL
 for(irep in 1:nsim) {
   xtab<-simdat[simdat$irep==irep,]
-  suppressMessages(
-  xtab1 <- xtab %>%
-    group_by(time, gender) %>%
-    summarise(nev = sum(ysim==0), n=n()) %>%
-    mutate(freq = nev/n)
-  )
-  ytab<-rbind(ytab,xtab1[,c("time","gender","freq")])
+  xtab1 <- regroupTable(xtab, value="ysim", c("time","gender"), fun=list(nev=function(x) sum(x==0), n=function(x) length(x)))
+  xtab1<-cbind(xtab1, freq=xtab1[,3]/xtab1[,4])
+  ytab<-rbind(ytab,xtab1[,c(1,2,5)])
 }
-gtab <- ytab %>%
-    group_by(time, gender) %>%
-  summarise(lower=quantile(freq, c(0.05)), median=quantile(freq, c(0.5)), upper=quantile(freq, c(0.95))) %>%
-  mutate(gender=ifelse(gender==0,"Men","Women"))
+
+gtab <- regroupTable(ytab, value="freq", c("time","gender"), fun=list(lower=function(x) quantile(x, c(0.05)), median=function(x) quantile(x,0.5), upper=function(x) quantile(x,0.95)))
+gtab$gender <- ifelse(gtab$gender==0,"Men","Women")
 gtab$freq<-1
 gtab1<-cbind(gtab, model="Poisson")
 
-rapipl <- rapi.saemix %>%
-    group_by(time, gender) %>%
-  summarise(nev = sum(rapi==0), n=n()) %>%
-  mutate(freq = nev/n, sd=sqrt((1-nev/n)*(nev/n**2))) %>%
-  mutate(lower=freq-1.96*sd, upper=freq+1.96*sd) %>%
-  mutate(gender=ifelse(gender==0,"Men","Women"))
+rapipl <- regroupTable(rapi.saemix,  value="rapi", c("time","gender"),fun=list(nev=function(x) sum(x==0), n=function(x) length(x)))
+rapipl$freq<-rapipl$nev/rapipl$n
+rapipl$sd <- sqrt((1-rapipl$nev/rapipl$n)*(rapipl$nev/rapipl$n**2))
+rapipl$lower <- rapipl$freq-1.96*rapipl$sd
+rapipl$upper <- rapipl$freq+1.96*rapipl$sd
 rapipl$lower[rapipl$lower<0] <-0 # we should use a better approximation for CI
+rapipl$gender <- ifelse(rapipl$gender==0,"Men","Women")
 
 plot2 <- ggplot(rapipl, aes(x=time, y=freq, group=gender)) + geom_line() + geom_point() + 
   geom_line(data=gtab, aes(x=time, y=median,  group=gender), linetype=2, colour='lightblue') + 
@@ -297,6 +327,7 @@ if(saveFigs) {
   plot(plot2)
   dev.off()
 }
+plotRapi.poissonZeroesVPC <- plot2
 
 ```
 
@@ -397,21 +428,30 @@ saemix.model.zip.cov2<-saemixModel(model=count.poissonzip,description="count mod
                                    psi0=matrix(c(1.5, 0.01, 0.2),ncol=3,byrow=TRUE,dimnames=list(NULL, c("intercept", "slope","p0"))), 
                                    transform.par=c(0,0,3), covariance.model=diag(c(1,1,0)), omega.init=diag(c(0.5,0.3,0)),
                                    covariate.model = matrix(c(1,1,0),ncol=3, byrow=TRUE), verbose=FALSE)
+### ZIP Poisson with gender on both intercept and slope, correlation between intercept and slope
+covmat<-diag(c(1,1,0))
+covmat[1,2]<-covmat[2,1]<-1
+saemix.model.zip.cov3<-saemixModel(model=count.poissonzip,description="count model ZIP",modeltype="likelihood",   
+                              simulate.function = countsimulate.poissonzip,
+                                   psi0=matrix(c(1.5, 0.01, 0.2),ncol=3,byrow=TRUE,dimnames=list(NULL, c("intercept", "slope","p0"))), 
+                                   transform.par=c(0,0,3), covariance.model=covmat, omega.init=diag(c(0.5,0.3,0)),
+                                   covariate.model = matrix(c(1,1,0),ncol=3, byrow=TRUE), verbose=FALSE)
 
 zippoisson.fit<-saemix(saemix.model.zip,saemix.data,saemix.options)
 zippoisson.fit.cov1<-saemix(saemix.model.zip.cov1,saemix.data,saemix.options)
 zippoisson.fit.cov2<-saemix(saemix.model.zip.cov2,saemix.data,saemix.options)
+zippoisson.fit.cov3<-saemix(saemix.model.zip.cov3,saemix.data,saemix.options)
 print(zippoisson.fit.cov2@results)
-
 
 exp(zippoisson.fit@results@fixed.effects)
 exp(zippoisson.fit.cov1@results@fixed.effects)
 exp(zippoisson.fit.cov2@results@fixed.effects)
+exp(zippoisson.fit.cov3@results@fixed.effects)
 
 # saemix.model.gen<-saemixModel(model=count.genpoisson,description="count model Generalised Poisson",modeltype="likelihood",                                psi0=matrix(c(1.5, 0.01, 0.2),ncol=3,byrow=TRUE,dimnames=list(NULL, c("intercept", "slope","delta"))), transform.par=c(0,0,3), covariance.model=diag(c(1,1,0)), omega.init=diag(c(0.5,0.3,0)))
 ```
 
-The results from the covariate model are very close to the previous ones for the common parameters (intercept, slope and gender effects). The proportion of overinflated  `r format(zippoisson.fit.cov2@results@fixed.effects[5], digits=2)`.
+The results from the covariate model are very close to the previous ones for the common parameters (intercept, slope and gender effects). The proportion of overinflated zeroes is given by `r format(zippoisson.fit.cov2@results@fixed.effects[5], digits=2)`.
 
 #### Diagnostics 
 
@@ -420,15 +460,17 @@ We can look at VPC plots for the different values of the score. Here, we plot se
 We compare the previous fit from the Poisson model with the ZIP model using the same approach as before, and find a much better agreement between the predictions and the fit in both genders.
 ```{r countPoissonZIPVPC}
 ### Simulations
-ysim.zip2<-simulateDiscreteSaemix(zippoisson.fit.cov2,  100)
-discreteVPC(ysim.zip2, outcome="count", breaks=c(0:9,16,25,80), which.cov="gender")
+ysim.zip3<-simulateDiscreteSaemix(zippoisson.fit.cov3,  100)
+discreteVPC(ysim.zip3, outcome="count", breaks=c(0:9,16,25,80), which.cov="gender")
 
 if(saveFigs) {
   namfig<-"rapi_diagnosZIP.eps"
   cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
-  discreteVPC(ysim.zip2, outcome="count", breaks=c(0:9,16,25,80), which.cov="gender")
+  discreteVPC(ysim.zip3, outcome="count", breaks=c(0:9,16,25,80), which.cov="gender")
   dev.off()
 }
+plotRapi.diagnosZIP <- discreteVPC(ysim.zip2, outcome="count", breaks=c(0:9,16,25,80), which.cov="gender")
+
 ```
 
 ```{r countPoissonZIPDiagnostics}
@@ -448,32 +490,20 @@ simdat <-yfit@sim.data@datasim
 simdat$time<-rep(yfit@data@data$time,nsim)
 simdat$gender<-rep(yfit@data@data$gender,nsim)
 
+
 ytab<-NULL
 for(irep in 1:nsim) {
   xtab<-simdat[simdat$irep==irep,]
-  suppressMessages(
-  xtab1 <- xtab %>%
-    group_by(time, gender) %>%
-    summarise(nev = sum(ysim==0), n=n()) %>%
-    mutate(freq = nev/n)
-  )
-  ytab<-rbind(ytab,xtab1[,c("time","gender","freq")])
+  xtab1 <- regroupTable(xtab, value="ysim", c("time","gender"), fun=list(nev=function(x) sum(x==0), n=function(x) length(x)))
+  xtab1<-cbind(xtab1, freq=xtab1[,3]/xtab1[,4])
+  ytab<-rbind(ytab,xtab1[,c(1,2,5)])
 }
-gtab <- ytab %>%
-    group_by(time, gender) %>%
-  summarise(lower=quantile(freq, c(0.05)), median=quantile(freq, c(0.5)), upper=quantile(freq, c(0.95))) %>%
-  mutate(gender=ifelse(gender==0,"Men","Women"))
-gtab$freq<-1
-gtab2<-cbind(gtab, model="ZIP")
-gtab<-rbind(gtab1, gtab2)
 
-rapipl <- rapi.saemix %>%
-    group_by(time, gender) %>%
-  summarise(nev = sum(rapi==0), n=n()) %>%
-  mutate(freq = nev/n, sd=sqrt((1-nev/n)*(nev/n**2))) %>%
-  mutate(lower=freq-1.96*sd, upper=freq+1.96*sd) %>%
-  mutate(gender=ifelse(gender==0,"Men","Women"))
-rapipl$lower[rapipl$lower<0] <-0 # we should use a better approximation for CI
+gtab2 <- regroupTable(ytab, value="freq", c("time","gender"), fun=list(lower=function(x) quantile(x, c(0.05)), median=function(x) quantile(x,0.5), upper=function(x) quantile(x,0.95)))
+gtab2$gender <- ifelse(gtab2$gender==0,"Men","Women")
+gtab2$freq<-1
+gtab2<-cbind(gtab2, model="ZIP")
+gtab<-rbind(gtab1, gtab2)
 
 plot2 <- ggplot(rapipl, aes(x=time, y=freq, group=gender)) + geom_line() + 
   geom_point() + 
@@ -606,6 +636,17 @@ hurdlefit1<-saemix(saemix.hurdle1.cov2,saemix.data1,saemix.options)
 
 summary(hurdlefit0)
 summary(hurdlefit1)
+
+# Parameters for the two components in a table form
+# Compare to column B in Table 2 of Atkins
+yfit0<-hurdlefit0
+yfit1<-hurdlefit1
+
+rr.tab<-data.frame(param=c("intercept", "beta.Male.inter", "slope", "beta.Male.slope", "omega.inter","omega.slope"), 
+                   poissonNoZero=c(yfit1@results@fixed.effects, c(sqrt(diag(yfit1@results@omega)))),
+                   logistic=c(yfit0@results@fixed.effects, c(sqrt(diag(yfit0@results@omega)))))
+print(rr.tab)
+
 ```
 
 
@@ -629,42 +670,49 @@ simdat$gender<-rep(yfit@data@data$gender,nsim)
 
 ytab<-NULL
 for(irep in 1:nsim) {
-  xtab<-simdat[simdat$irep==irep,]
-  suppressMessages(
-  xtab1 <- xtab %>%
-    group_by(time, gender) %>%
-    summarise(nev = sum(1-ysim), n=n()) %>%  # Here we want the proportion of zeroes, not 1's !
-    mutate(freq = nev/n)
-  )
-  ytab<-rbind(ytab,xtab1[,c("time","gender","freq")])
+  xtab<-simdat[simdat$irep==irep,]   # Here we want the proportion of zeroes, not 1's !
+  xtab1 <- regroupTable(xtab, value="ysim", c("time","gender"), fun=list(nev=function(x) sum(1-x), n=function(x) length(x)))
+  xtab1<-cbind(xtab1, freq=xtab1[,3]/xtab1[,4]) 
+  ytab<-rbind(ytab,xtab1[,c(1,2,5)])
 }
-gtab3 <- ytab %>%
-    group_by(time, gender) %>%
-  summarise(lower=quantile(freq, c(0.05)), median=quantile(freq, c(0.5)), upper=quantile(freq, c(0.95))) %>%
-  mutate(gender=ifelse(gender==0,"Men","Women"))
+
+gtab3 <- regroupTable(ytab, value="freq", c("time","gender"), fun=list(lower=function(x) quantile(x, c(0.05)), median=function(x) quantile(x,0.5), upper=function(x) quantile(x,0.95)))
+gtab3$gender <- ifelse(gtab3$gender==0,"Men","Women")
 gtab3$freq<-1
 gtab3<-cbind(gtab3, model="Hurdle")
+gtab3$model <- factor(gtab3$model,levels=c("Poisson", "ZIP", "Hurdle"))
+
 gtab<-rbind(gtab1, gtab2, gtab3)
-gtab <- gtab %>%
-  mutate(model=factor(model, levels=c("Poisson", "ZIP", "Hurdle")))
 
-rapipl <- rapi.saemix %>%
-    group_by(time, gender) %>%
-  summarise(nev = sum(y0), n=n()) %>%
-  mutate(freq = nev/n, sd=sqrt((1-nev/n)*(nev/n**2))) %>%
-  mutate(lower=freq-1.96*sd, upper=freq+1.96*sd)  %>%
-  mutate(gender=ifelse(gender==0,"Men","Women"))
-rapipl$lower[rapipl$lower<0] <-0 # we should use a better approximation for CI
+```
 
-# Table form - compare to column B in Table 2
-yfit0<-hurdlefit0
-yfit1<-hurdlefit1
 
-rr.tab<-data.frame(param=c("intercept", "beta.Male.inter", "slope", "beta.Male.slope", "omega.inter","omega.slope"), 
-                   poissonNoZero=c(yfit1@results@fixed.effects, c(sqrt(diag(yfit1@results@omega)))),
-                   logistic=c(yfit0@results@fixed.effects, c(sqrt(diag(yfit0@results@omega)))))
+#### Comparing the parameter estimates of the Poisson portion of the three models
 
-print(rr.tab)
+```{r rapiCompareParEstim}
+# Models
+yfit1 <- poisson.fit.cov2
+l1 <- c(yfit1@results@fixed.effects,NA, sqrt(diag(yfit1@results@omega)))
+l1<-c(l1, yfit1@results@omega[1,2]/l1[6]/l1[7]) # rho
+
+yfit2 <- zippoisson.fit.cov3
+l2 <- c(yfit2@results@fixed.effects, sqrt(diag(yfit2@results@omega)[1:2]))
+l2<-c(l2, yfit2@results@omega[1,2]/l2[6]/l2[7])
+
+yfit3<-hurdlefit1
+l3 <- c(yfit3@results@fixed.effects, NA,sqrt(diag(yfit3@results@omega)[1:2]))
+l3<-c(l3, yfit3@results@omega[1,2]/l3[6]/l3[7])
+
+rr.tab<-data.frame(Poisson=l1, ZIPoisson=l2, Hurdle=l3)
+
+rownames(rr.tab)<-c("$\\alpha_0$ (-)","$\\beta_{male,\\alpha_0}$ (-)","$\\alpha_1$ (mo$^{(-1)}$)","$\\beta_{male,\\alpha_1}$ (-)","$p_0$ (-)", "$\\omega_{\\alpha_0}$ (-)","$\\omega_{\\alpha_1}$ (-)", "$\\rho(\\alpha_0,\\alpha_1)$ (-)")
+for(icol in 1:3)
+  rr.tab[,icol]<-format(rr.tab[,icol],digits=1, nsmall=0, trim=T, scientific=FALSE)
+rr.tab[is.na(rr.tab)]<-"-"
+
+print(xtable(rr.tab), only.contents=TRUE, include.rownames=T, 
+      include.colnames=T, floating=F, sanitize.rownames.function = identity)
+
 ```
 
 #### Comparing the proportion of 0's for the different models
@@ -672,15 +720,6 @@ print(rr.tab)
 We have already seen a clear model misfit for Poisson, on the other hand the other two models predict the proportion of subjects without drinking episodes much more accurately, with no clear difference between them.
 
 ```{r rapiComparep0}
-rapipl <- rapi.saemix %>%
-    group_by(time, gender) %>%
-  summarise(nev = sum(rapi==0), n=n()) %>%
-  mutate(freq = nev/n, sd=sqrt((1-nev/n)*(nev/n**2))) %>%
-  mutate(lower=freq-1.96*sd, upper=freq+1.96*sd) %>%
-  mutate(gender=ifelse(gender==0,"Men","Women"))
-rapipl$lower[rapipl$lower<0] <-0 # we should use a better approximation for CI
-
-
 plot.prop0 <- ggplot(rapipl, aes(x=time, y=freq, group=gender)) + geom_line() + 
   geom_point() + 
   geom_line(data=gtab, aes(x=time, y=median,  group=gender), linetype=2, colour='lightblue') + 
@@ -697,10 +736,11 @@ if(saveFigs) {
   print(plot2)
   dev.off()
 }
-
+# Save the plot 
+plotRapi.comparePropZeroes <- plot2
 
 ```
-We can also produce VPC for the counts as previously for the ZIP model. **TODO** bug for count 1 in hurdle model but unclear why, check.
+We can also produce VPC for the counts as previously for the ZIP model. 
 
 ```{r rapiVPCCountsHurdle}
 nsim<-100
@@ -721,11 +761,13 @@ if(saveFigs) {
   plot(plot1)
   dev.off()
 }
+# Save the plot 
+plotRapi.hurdleVPC.truncatedPoiss <- plot1
 
 ```
 
 
-#### Standard errors of estimation
+#### Standard errors of estimation by conditional bootstrap
 
 The computation of the FIM in **saemix** uses the so-called FOCE method, an approximation where the model function $f$ is linearised around the conditional expectation of the individual parameters. This approximation is particularly bad for discrete data models, which is why currently **saemix** doesn't provide estimation errors for count data models. For non-Gaussian models, the exact FIM should be computed and this is currently not implemented in **saemix** (work in progress).
 
@@ -741,30 +783,75 @@ print(table(time.pattern, rapi.saemix$gender[!duplicated(rapi.saemix$id)]))
 
 ```
 
-**Case bootstrap:** The first bootstrap approach we can use is case bootstrap, where we resample at the level of the individual. We plot the bootstrap distribution for the 4 parameters (intercept, slope, treatment effect on slope, and variability of intercept). The red vertical line represents the estimate obtained on the original data while the blue line shows the mean of the bootstrap distribution.
+**Case bootstrap:** The first bootstrap approach we can use is case bootstrap, where we resample at the level of the individual. 
 
 **Conditional bootstrap:** We can also use conditional bootstrap, a non-parametric residual bootstrap which bootstraps samples from the conditional distributions and preserves the exact structure of the original dataset.
 
 ##### Bootstrap CI
 
-Here we load the results from the two bootstrap files prepared beforehand by running the *saemix.bootstrap* code with 500 simulations for the ZIP model with covariates. We compute the bootstrap quantiles for the 95\% CI, as well as the SD of the bootstrap distribution, corresponding to a normal approximation of the SE. Both bootstrap methods give similar estimates for the CI's of the different parameters.
+Here we load the results from the two bootstrap files prepared beforehand by running the *saemix.bootstrap* code with 500 simulations for the 3 models with covariates and correlation between parameters (see other results in the boostrapRes folder for some of the other models tested). We compute the bootstrap quantiles for the 95\% CI, as well as the SD of the bootstrap distribution, corresponding to a normal approximation of the SE. Both bootstrap methods give similar estimates for the CI's of the different parameters.
 
-```{r kneeBootstrap}
+```{r rapiBootstrap}
+# Poisson with covariates
 if(runBootstrap) {
   case.count <- saemix.bootstrap(zippoisson.fit.cov2, method="case", nboot=nboot) 
   cond.count <- saemix.bootstrap(zippoisson.fit.cov2, method="conditional", nboot=nboot) 
 } else {
-# case.count <- read.table(file.path(saemixDir,"bootstrap","results","rapi_caseBootstrap.res"), header=T)
-# cond.count <- read.table(file.path(saemixDir,"bootstrap","results","rapi_condBootstrap.res"), header=T)
- case.count <- read.table(file.path(saemixDir,"paperSaemix3","bootstrapCase_rapiCov.res"), header=T)
- cond.count <- read.table(file.path(saemixDir,"paperSaemix3","bootstrapCond_rapiCov.res"), header=T)
- nboot<-dim(case.count)[1]
+  case.count <- read.table(file.path(bootResDir,"bootstrapCase_rapiCov_Poisson.res"), header=T)
+  cond.count <- read.table(file.path(bootResDir,"bootstrapCond_rapiCov_Poisson.res"), header=T)
+  nboot<-dim(case.count)[1]
 }
 case.count <- case.count[!is.na(case.count[,2]),]
 cond.count <- cond.count[!is.na(cond.count[,2]),]
 
-par.estim<-c(zippoisson.fit.cov2@results@fixed.effects,diag(zippoisson.fit.cov2@results@omega)[zippoisson.fit.cov2@results@indx.omega])
+corr<-poisson.fit.cov2@results@omega[1,2]/sqrt(poisson.fit.cov2@results@omega[1,1]*poisson.fit.cov2@results@omega[2,2])
+par.estim<-c(poisson.fit.cov2@results@fixed.effects,diag(poisson.fit.cov2@results@omega), corr)
 df2<-data.frame(parameter=colnames(case.count)[-c(1)], saemix=par.estim)
+df2[dim(df2)[1],1]<-"corr.intSlope"
+# compute correlation instead of covariance
+ncol<-dim(case.count)[2]
+case.count[ncol]<-case.count[ncol]/sqrt(case.count[ncol-1]*case.count[ncol-2])
+cond.count[ncol]<-cond.count[ncol]/sqrt(cond.count[ncol-1]*cond.count[ncol-2])
+for(i in 1:2) {
+  if(i==1) {
+    resboot1<-case.count
+    namboot<-"case"
+  } else {
+    resboot1<-cond.count
+    namboot <-"cNP"
+  }
+  mean.bootDist<-apply(resboot1, 2, mean)[-c(1)]
+  sd.bootDist<-apply(resboot1, 2, sd)[-c(1)]
+  quant.bootDist<-apply(resboot1[-c(1)], 2, quantile, c(0.025, 0.975))
+  l1<-paste0(format(mean.bootDist, digits=2)," (",format(sd.bootDist,digits=2, trim=T),")")
+  l2<-paste0("[",format(quant.bootDist[1,], digits=2),", ",format(quant.bootDist[2,],digits=2, trim=T),"]")
+  df2<-cbind(df2, l1, l2)
+  i1<-3+2*(i-1)
+  colnames(df2)[i1:(i1+1)]<-paste0(namboot,".",c("estimate","CI"))
+}
+print(df2)
+df.Poisson <- df2
+
+# ZIPoisson with covariates
+if(runBootstrap) {
+  case.count <- saemix.bootstrap(zippoisson.fit.cov2, method="case", nboot=nboot) 
+  cond.count <- saemix.bootstrap(zippoisson.fit.cov2, method="conditional", nboot=nboot) 
+} else {
+  # case.count <- read.table(file.path(saemixDir,"bootstrap","results","rapi_caseBootstrap.res"), header=T)
+  # cond.count <- read.table(file.path(saemixDir,"bootstrap","results","rapi_condBootstrap.res"), header=T)
+  case.count <- read.table(file.path(bootResDir,"bootstrapCase_rapiCov_ZIP_corr.res"), header=T)
+  cond.count <- read.table(file.path(bootResDir,"bootstrapCond_rapiCov_ZIP_corr.res"), header=T)
+  nboot<-dim(case.count)[1]
+}
+case.count <- case.count[!is.na(case.count[,2]),]
+cond.count <- cond.count[!is.na(cond.count[,2]),]
+
+corr<-zippoisson.fit.cov3@results@omega[1,2]/sqrt(zippoisson.fit.cov3@results@omega[1,1]*zippoisson.fit.cov3@results@omega[2,2])
+par.estim<-c(zippoisson.fit.cov3@results@fixed.effects,diag(zippoisson.fit.cov3@results@omega)[zippoisson.fit.cov3@results@indx.omega], corr)
+df2<-data.frame(parameter=colnames(case.count)[-c(1)], saemix=par.estim)
+df2[dim(df2)[1],1]<-"corr.intSlope"
+case.count[ncol]<-case.count[ncol]/sqrt(case.count[ncol-1]*case.count[ncol-2])
+cond.count[ncol]<-cond.count[ncol]/sqrt(cond.count[ncol-1]*cond.count[ncol-2])
 for(i in 1:2) {
   if(i==1) {
     resboot1<-case.count
@@ -784,13 +871,101 @@ for(i in 1:2) {
 }
 print(df2)
 
+df.Zip <- df2
+
+# Hurdle model
+## binary logistic component
+if(runBootstrap) {
+  case.count <- saemix.bootstrap(zippoisson.fit.cov2, method="case", nboot=nboot) 
+  cond.count <- saemix.bootstrap(zippoisson.fit.cov2, method="conditional", nboot=nboot) 
+} else {
+  # case.count <- read.table(file.path(saemixDir,"bootstrap","results","rapi_caseBootstrap.res"), header=T)
+  # cond.count <- read.table(file.path(saemixDir,"bootstrap","results","rapi_condBootstrap.res"), header=T)
+  case.count <- read.table(file.path(bootResDir,"bootstrapCase_rapiCov_Hurdle0_corr.res"), header=T)
+  cond.count <- read.table(file.path(bootResDir,"bootstrapCond_rapiCov_Hurdle0_corr.res"), header=T)
+  nboot<-dim(case.count)[1]
+}
+case.count <- case.count[!is.na(case.count[,2]),]
+cond.count <- cond.count[!is.na(cond.count[,2]),]
+
+
+corr<-hurdlefit0@results@omega[1,2]/sqrt(hurdlefit0@results@omega[1,1]*hurdlefit0@results@omega[2,2])
+par.estim<-c(hurdlefit0@results@fixed.effects,diag(hurdlefit0@results@omega)[hurdlefit0@results@indx.omega], corr)
+df2<-data.frame(parameter=colnames(case.count)[-c(1)], saemix=par.estim)
+df2[dim(df2)[1],1]<-"corr.intSlope"
+case.count[ncol]<-case.count[ncol]/sqrt(case.count[ncol-1]*case.count[ncol-2])
+cond.count[ncol]<-cond.count[ncol]/sqrt(cond.count[ncol-1]*cond.count[ncol-2])
+for(i in 1:2) {
+  if(i==1) {
+    resboot1<-case.count
+    namboot<-"case"
+  } else {
+    resboot1<-cond.count
+    namboot <-"cNP"
+  }
+  mean.bootDist<-apply(resboot1, 2, mean)[-c(1)]
+  sd.bootDist<-apply(resboot1, 2, sd)[-c(1)]
+  quant.bootDist<-apply(resboot1[-c(1)], 2, quantile, c(0.025, 0.975))
+  l1<-paste0(format(mean.bootDist, digits=2)," (",format(sd.bootDist,digits=2, trim=T),")")
+  l2<-paste0("[",format(quant.bootDist[1,], digits=2),", ",format(quant.bootDist[2,],digits=2, trim=T),"]")
+  df2<-cbind(df2, l1, l2)
+  i1<-3+2*(i-1)
+  colnames(df2)[i1:(i1+1)]<-paste0(namboot,".",c("estimate","CI"))
+}
+print(df2)
+
+df.Hurdle0 <- df2
+
+## truncated Poisson component
+
+if(runBootstrap) {
+  case.count <- saemix.bootstrap(zippoisson.fit.cov2, method="case", nboot=nboot) 
+  cond.count <- saemix.bootstrap(zippoisson.fit.cov2, method="conditional", nboot=nboot) 
+} else {
+  # case.count <- read.table(file.path(saemixDir,"bootstrap","results","rapi_caseBootstrap.res"), header=T)
+  # cond.count <- read.table(file.path(saemixDir,"bootstrap","results","rapi_condBootstrap.res"), header=T)
+  case.count <- read.table(file.path(bootResDir,"bootstrapCase_rapiCov_Hurdle1_corr.res"), header=T)
+  cond.count <- read.table(file.path(bootResDir,"bootstrapCond_rapiCov_Hurdle1_corr.res"), header=T)
+  nboot<-dim(case.count)[1]
+}
+case.count <- case.count[!is.na(case.count[,2]),]
+cond.count <- cond.count[!is.na(cond.count[,2]),]
+
+
+corr<-hurdlefit1@results@omega[1,2]/sqrt(hurdlefit1@results@omega[1,1]*hurdlefit1@results@omega[2,2])
+par.estim<-c(hurdlefit1@results@fixed.effects,diag(hurdlefit1@results@omega)[hurdlefit1@results@indx.omega], corr)
+df2<-data.frame(parameter=colnames(case.count)[-c(1)], saemix=par.estim)
+df2[dim(df2)[1],1]<-"corr.intSlope"
+case.count[ncol]<-case.count[ncol]/sqrt(case.count[ncol-1]*case.count[ncol-2])
+cond.count[ncol]<-cond.count[ncol]/sqrt(cond.count[ncol-1]*cond.count[ncol-2])
+for(i in 1:2) {
+  if(i==1) {
+    resboot1<-case.count
+    namboot<-"case"
+  } else {
+    resboot1<-cond.count
+    namboot <-"cNP"
+  }
+  mean.bootDist<-apply(resboot1, 2, mean)[-c(1)]
+  sd.bootDist<-apply(resboot1, 2, sd)[-c(1)]
+  quant.bootDist<-apply(resboot1[-c(1)], 2, quantile, c(0.025, 0.975))
+  l1<-paste0(format(mean.bootDist, digits=2)," (",format(sd.bootDist,digits=2, trim=T),")")
+  l2<-paste0("[",format(quant.bootDist[1,], digits=2),", ",format(quant.bootDist[2,],digits=2, trim=T),"]")
+  df2<-cbind(df2, l1, l2)
+  i1<-3+2*(i-1)
+  colnames(df2)[i1:(i1+1)]<-paste0(namboot,".",c("estimate","CI"))
+}
+print(df2)
+
+df.Hurdle1 <- df2
+
 ```
 
 ## References
 
 **Atkins D**, Baldwin S, Zheng C, Gallop R, Neighbors C (2013). A tutorial on count regression and zero-altered count models for longitudinal substance use data. *Psychology of Addictive Behaviors* 27:166–77.
 
-**Bates D**, Maechler M, Bolker B, Walker S (2015). Fitting Linear Mixed-Effects Models Using lme4. Journal of Statistical Software, 67(1), 1-48. doi:10.18637/jss.v067.i01.
+**Bates D**, Maechler M, Bolker B, Walker S (2015). Fitting Linear Mixed-Effects Models Using lme4. *Journal of Statistical Software*, 67(1), 1-48. doi:10.18637/jss.v067.i01.
   
 **Comets E**, Rodrigues C, Jullien V, Ursino M (2021). Conditional non-parametric bootstrap for non-linear mixed effect models. *Pharmaceutical Research*, 38: 1057-66.
 

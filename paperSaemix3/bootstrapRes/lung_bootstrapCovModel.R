@@ -1,17 +1,20 @@
-# Loading libraries
-library(xtable)
-library(ggplot2)
+EcoAtHome <- TRUE
 
-# Loading saemix
+# Libraries
 library(saemix)
-source("/home/eco/work/saemix/saemixextension/R/func_bootstrap.R")
 
 # Folders
-saemixDir<-"/home/eco/work/saemix/saemixextension"
-workDir<-file.path(saemixDir, "paperSaemix3")
-# setwd(workDir)
-figDir <- file.path(workDir, "figs")
-nsim<-200 # Number of simulations
+if(EcoAtHome) {
+  # Load updated files
+# pending compilation and CRAN upload
+  workDir<-"/home/eco/work/saemix/saemixextension/paperSaemix3"
+  source("/home/eco/work/saemix/saemixextension/R/func_exploreData.R")
+} else {
+  workDir<-getwd() 
+}
+
+bootResDir <- file.path(workDir, "bootstrapRes")
+setwd(bootResDir)
 
 ###################################################### Data
 data(lung.saemix)
@@ -65,8 +68,8 @@ weibcov.fit2<-saemix(weibull.model.cov2,saemix.data,saemix.options)
 nboot<-1000
 
 case.TTE <- saemix.bootstrap(weibcov.fit2, method = "case", nboot=nboot)
-write.table(case.TTE,file.path(workDir,"covselect", "bootstrapCase_weibullTTEcov.res"), row.names = FALSE, quote=F)
+write.table(case.TTE,file.path(workDir, "bootstrapCase_weibullTTEcov.res"), row.names = FALSE, quote=F)
 
 cond.TTE <- saemix.bootstrap(weibcov.fit2, nboot=nboot)
-write.table(cond.TTE,file.path(workDir, "covselect", "bootstrapCond_weibullTTEcov.res"), row.names = FALSE, quote=F)
+write.table(cond.TTE,file.path(workDir, "bootstrapCond_weibullTTEcov.res"), row.names = FALSE, quote=F)
 

@@ -14,7 +14,7 @@ Use saemix version $\geq$ 3.2
 
 Run binary and categorical models in **saemix**
 
-This notebook uses additional result files from the **saemix** development github (https://github.com/saemixdevelopment/saemixextension), not integrated in the package to avoid bloating. The *workDir* folder in the next chunk of code points to the folder where the user stored this code, and is needed to run the notebook (*workDir* defaults to the current working directory). Specifically, the notebook loads the results for the bootstrap runs performed using different approaches (see Comets et al. Pharm Res 2021). Bootstraps can be run instead by switching the *runBootstrap* variable to TRUE in the first chunk of code:
+This notebook uses additional result files from the **saemix** development github (https://github.com/saemixdevelopment/saemixextension), not integrated in the package to avoid bloating. The *workDir* folder in the next chunk of code points to the work folder *paperSaemix3* (*workDir* defaults to the current working directory). All paths are then relative to this working directory. Specifically, the notebook loads the results for the bootstrap runs performed using different approaches (see Comets et al. Pharm Res 2021) which are stored in the subfolder *bootstrapRes* within the working directory. Bootstraps can be run instead by switching the *runBootstrap* variable to TRUE in the first chunk of code:
 
 - in the code, the number of bootstraps is set to 10 for speed but we recommend to use at least 200 for a 90\% CI.
 - this can be changed in the following change of code by uncommenting the line *nboot<-200* and setting the number of bootstrap samples (this may cause memory issues in **Rstudio** with older machines, if this is the case we recommend executing the code in a separate script)
@@ -24,35 +24,47 @@ The current notebook can be executed to create an HMTL or PDF output with commen
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
-# Folders
-workDir<-getwd() 
-
-# @Eco
-workDir<-"/home/eco/work/saemix/saemixextension/paperSaemix3"
-saemixDir <- "/home/eco/work/saemix/saemixextension"
-setwd(workDir)
+# When in my directory - set to FALSE to run from getwd(), must be paperSaemix3 (all paths relative)
+EcoAtHome <- TRUE
 
 # Libraries
 library(saemix)
-library(xtable)
 
-# Automatically loaded when loading saemix
+library(ggplot2)
+library(gridExtra)
+library(xtable)
+# Automatically loaded when loading saemix (?)
 # library(ggplot2)
+# library(gridExtra)
 # library(MASS)
 # library(rlang)
-# library(gridExtra)
+
+# Folders
+if(EcoAtHome) {
+  # Load updated files
+# pending compilation and CRAN upload
+  workDir<-"/home/eco/work/saemix/saemixextension/paperSaemix3"
+  source("/home/eco/work/saemix/saemixextension/R/func_exploreData.R")
+} else {
+  workDir<-getwd() 
+}
+
+setwd(workDir)
+bootResDir <- file.path(workDir, "bootstrapRes")
+figDir <- file.path(workDir,"figs")
 
 # Not really needed but just to show I can use tidyverse too
-library(tidyverse)
+# library(tidyverse)
 # Weird font issues getting tiny when saving to pdf, correcting for that
 #library(showtext)
 #showtext_auto()
 rsize.text <- 2
 rsize.ticks <- 1.5
 theme_set(theme_bw(base_size = 15)) 
+# note: apparently corrected now  so no longer needed
 
 # Whether to save the plots
-saveFigs<-TRUE
+saveFigs<-FALSE
 figDir <- file.path(workDir,"figs")
 
 # Number of bootstrap samples
@@ -60,8 +72,27 @@ runBootstrap <- FALSE # to read the results from disk
 nboot <-10 # definitely not enough for bootstrap, please run more samples using the associated script (.R)
 # nboot <- 200 # too slow in Rstudio
 
-# Stepwise algorithm for covariates (do not run in Rstudio)
+# Stepwise algorithm for covariates (do not run in Rstudio unless you have a lot more memory than I do on my computer)
 runCovKnee<-FALSE
+
+# Avoiding the tidyverse...
+regroupTable <- function(x, value=1, col=c(2,3), fun=list(mean=mean())) {
+  tab<-NULL
+  c1<-col[1]
+  c2<-col[2]
+  for(i1 in sort(unique(x[,c1]))) {
+    for(i2 in sort(unique(x[,c2]))) {
+      yvec <- x[x[,c1]==i1 & x[,c2]==i2,value]
+      l1 <- c(i1, i2)
+      for(ifun in 1:length(fun)) l1<-c(l1,fun[[ifun]](yvec))
+      tab<-rbind(tab, l1)
+    }
+  }
+  if(is.null(names(fun))) names(fun)<-1:length(fun)
+  colnames(tab)<-c(col,names(fun))
+  return(as.data.frame(tab))
+}
+
 ```
 
 
@@ -79,7 +110,7 @@ To create the data object using saemixData, we need to specify the response colu
 data(toenail.saemix)
 
 saemix.data<-saemixData(name.data=toenail.saemix,name.group=c("id"),name.predictors=c("time","y"), name.response="y",
-                        name.covariates=c("treatment"), verbose=FALSE)
+                        name.covariates=c("treatment"), units=list(x="d",y="-"), verbose=FALSE)
 ```
 
 #### Exploring data
@@ -99,21 +130,21 @@ We can also present the results only for the proportion of events by visits dire
 
 ```{r binaryExploreAdditional}
 # Only showing the frequency of infections
-toe1 <- toenail.saemix %>%
-  group_by(visit, treatment) %>%
-  summarise(nev = sum(y), n=n()) %>%
-  mutate(freq = nev/n, sd=sqrt((1-nev/n)*(nev/n**2))) %>%
-  mutate(lower=freq-1.96*sd, upper=freq+1.96*sd)
+toe1 <- regroupTable(toenail.saemix, value="y", c("visit","treatment"), fun=list(nev=function(x) sum(x), n=function(x) length(x)))
+toe1$freq<-toe1$nev/toe1$n
+toe1$sd <- sqrt((1-toe1$nev/toe1$n)*(toe1$nev/toe1$n**2))
+toe1$lower <- toe1$freq-1.96*toe1$sd
+toe1$upper <- toe1$freq+1.96*toe1$sd
 toe1$lower[toe1$lower<0] <-0 # we should use a better approximation for CI
 toe1$treatment <- factor(toe1$treatment, labels=c("A","B"))
 
 plot1<-ggplot(toe1, aes(x=visit, y=freq, group=treatment)) + geom_line(aes(colour=treatment)) + 
   geom_point(aes(colour=treatment)) + 
   geom_ribbon(aes(ymin=lower, ymax=upper, fill=treatment), alpha=0.2) +
-  ylim(c(0,1)) + theme_bw() + theme(legend.position = "top") +
+  ylim(c(0,0.5)) + theme_bw() + theme(legend.position = "top") +
   xlab("Visit number") + ylab("Observed frequency of infection")
 print(plot1)
-plot2 <- plot1 + theme(text = element_text(size=rel(rsize.text)), legend.text=element_text(size=rel(rsize.text)), strip.text.x = element_text(size=rel(rsize.ticks)), strip.text.y = element_text(size=rel(rsize.ticks)))
+plot2 <- plot1 # + theme(text = element_text(size=rel(rsize.text)), legend.text=element_text(size=rel(rsize.text)), strip.text.x = element_text(size=rel(rsize.ticks)), strip.text.y = element_text(size=rel(rsize.ticks)))
 
 #showtext_opts(dpi = 300)
 if(saveFigs) {
@@ -122,6 +153,7 @@ if(saveFigs) {
   plot(plot2)
   dev.off()
 }
+plotToe.infectionFreq <- plot2
 
 # Barplots across time - TODO
 
@@ -224,16 +256,19 @@ binary.fit <- simulateDiscreteSaemix(binary.fit, nsim=nsim)
 
 plot1 <- discreteVPC(binary.fit, outcome="binary", which.cov="treatment")
 
-plot2 <- plot1 + theme(text = element_text(size=rel(rsize.text)), legend.text=element_text(size=rel(rsize.text)), strip.text.x = element_text(size=rel(rsize.ticks)), strip.text.y = element_text(size=rel(rsize.ticks)))
+plot2 <- plot1 # + theme(text = element_text(size=rel(rsize.text)), legend.text=element_text(size=rel(rsize.text)), strip.text.x = element_text(size=rel(rsize.ticks)), strip.text.y = element_text(size=rel(rsize.ticks)))
 if(saveFigs) {
   namfig<-"toenail_vpcByTreatment.eps"
   cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
   plot(plot2)
   dev.off()
 }
+
+plotToe.vpcByTreatment <- plot2
+
 ```
   
-We can also extract dataframe with the simulated data (*binary.fit@sim.data@datasim*) and produce diagnostics in R. Below, using **tidyverse**, we add columns *visit* and *treatment* to plot the frequency of infection over time for each treatment.
+We can also extract dataframe with the simulated data (*binary.fit@sim.data@datasim*) and produce diagnostics in R. Below, we add columns *visit* and *treatment* to plot the frequency of infection over time for each treatment.
 
 ```{r binaryDiagnostics, warning=FALSE, message=FALSE}
 simdat <-binary.fit@sim.data@datasim
@@ -243,18 +278,13 @@ simdat$treatment<-rep(toenail.saemix$treatment,nsim)
 ytab<-NULL
 for(irep in 1:nsim) {
   xtab<-simdat[simdat$irep==irep,]
-  suppressMessages(
-  xtab1 <- xtab %>%
-    group_by(visit, treatment) %>%
-    summarise(nev = sum(ysim), n=n()) %>%
-    mutate(freq = nev/n)
-  )
-  ytab<-rbind(ytab,xtab1[,c("visit","freq","treatment")])
+  xtab1 <- regroupTable(xtab, value="ysim", c("visit","treatment"), fun=list(nev=function(x) sum(x), n=function(x) length(x)))
+  xtab1<-cbind(xtab1, freq=xtab1[,3]/xtab1[,4])
+  ytab<-rbind(ytab,xtab1[,c(1,2,5)])
 }
-gtab <- ytab %>%
-  group_by(visit, treatment) %>%
-  summarise(lower=quantile(freq, c(0.05)), median=quantile(freq, c(0.5)), upper=quantile(freq, c(0.95))) %>%
-  mutate(treatment=ifelse(treatment==1,"B","A"))
+
+gtab <- regroupTable(ytab, value="freq", c("visit","treatment"), fun=list(lower=function(x) quantile(x, c(0.05)), median=function(x) quantile(x,0.5), upper=function(x) quantile(x,0.95)))
+gtab$treatment <- ifelse(gtab$treatment==1,"B","A")
 gtab$freq<-1
 
 plot2 <- ggplot(toe1, aes(x=visit, y=freq, group=treatment)) + geom_line(aes(colour=treatment)) + 
@@ -264,7 +294,7 @@ plot2 <- ggplot(toe1, aes(x=visit, y=freq, group=treatment)) + geom_line(aes(col
   ylim(c(0,0.5)) + theme_bw() + theme(legend.position = "none") + facet_wrap(.~treatment) +
   xlab("Visit number") + ylab("Frequency of infection") 
 
-plot3 <- plot2 +  theme(text = element_text(size=rel(rsize.text)), legend.text=element_text(size=rel(rsize.text)), strip.text.x = element_text(size=rel(rsize.ticks)), strip.text.y = element_text(size=rel(rsize.ticks)))
+plot3 <- plot2 # +  theme(text = element_text(size=rel(rsize.text)), legend.text=element_text(size=rel(rsize.text)), strip.text.x = element_text(size=rel(rsize.ticks)), strip.text.y = element_text(size=rel(rsize.ticks)))
 
 print(plot2)
 if(saveFigs) {
@@ -273,6 +303,8 @@ if(saveFigs) {
   plot(plot3)
   dev.off()
 }
+plot.ggplot2VPCTreatment <- plot2
+
 ```
 
 
@@ -298,7 +330,7 @@ The first bootstrap approach we can use is case bootstrap, where we resample at 
 
 ```{r binaryCaseBootstrapSE, warning=FALSE, message=FALSE}
 if(!runBootstrap)  {
-  case.bin <- read.table(file.path(saemixDir,"paperSaemix3","bootstrapCase_toenail.res"), header=T)
+  case.bin <- read.table(file.path(workDir,"bootstrapRes","bootstrapCase_toenail.res"), header=T)
 #  case.bin <- read.table(file.path(saemixDir,"bootstrap","results","toenail_caseBootstrap.res"), header=T)
   nboot<-dim(case.bin)[1]
 }  else case.bin <- saemix.bootstrap(binary.fit, method="case", nboot=nboot) 
@@ -329,6 +361,9 @@ if(nboot<200) cat("The number of bootstrap samples is too low to provide good es
   
   print(plot.density2)
 }
+
+plot.densityCaseToenail <- plot.density2
+
 ```
 
 ##### Conditional bootstrap
@@ -338,7 +373,7 @@ We can also use conditional bootstrap, a non-parametric residual bootstrap which
 ```{r binaryCondBootstrapSE}
 if(!runBootstrap) {
 #  cond.bin <- read.table(file.path(saemixDir,"bootstrap","results","toenail_condBootstrap.res"), header=T)
-  cond.bin <- read.table(file.path(saemixDir,"paperSaemix3","bootstrapCond_toenail.res"), header=T)
+  cond.bin <- read.table(file.path(workDir,"bootstrapRes","bootstrapCond_toenail.res"), header=T)
   nboot<-dim(cond.bin)[1]
   } else 
     cond.bin <- saemix.bootstrap(binary.fit, method="conditional", nboot=nboot) 
@@ -378,6 +413,8 @@ if(nboot<200) cat("The number of bootstrap samples is too low to provide good es
   
   print(plot.density3)
 }
+plot.densityBootToenail <- plot.density3
+
 ```
 
 ##### Bootstrap results
@@ -397,6 +434,7 @@ if(nboot<200) cat("The number of bootstrap samples is too low to provide good es
       resboot1<-cond.bin
       namboot <-"cNP"
       }
+    
     ncol<-dim(resboot1)[2]
     resboot1<-cbind(resboot1, sqrt(resboot1[,ncol]))
     mean.bootDist<-apply(resboot1, 2, mean)[-c(1)]
@@ -411,7 +449,11 @@ if(nboot<200) cat("The number of bootstrap samples is too low to provide good es
   print(df2)
 }
 
-print(xtable(df2),only.contents=TRUE, include.rownames=FALSE)
+rownames(df2)<-c("$\\theta_1$ (-)","$\\theta_2$ (mo$^{(-1)}$)","$\\beta_{trt,\\theta_2}$ (-)", "$\\omega^2_{\\theta_1}$ (-)","$\\omega_{\\theta_1}$ (-)")
+print(xtable(df2),only.contents=TRUE, include.rownames=TRUE)
+
+xtab.toenailBootSE <- df2
+# df2 <- df2[-c(4),-c(1)]
 
 # Bootstrap SE on omega instead of omega2
 # sd(sqrt(case.bin$omega2.theta1))
@@ -443,36 +485,37 @@ ordknee.data<-saemixData(name.data=knee.saemix,name.group=c("id"),
 plotDiscreteData(ordknee.data, outcome="categorical", which.cov="treatment")
 
 plotDiscreteData(ordknee.data, outcome="categorical", which.cov="Sex")
+  plot1 <- plotDiscreteData(ordknee.data, outcome="categorical", which.cov="treatment")
+  plot2 <- plot1 #+  theme(text = element_text(size=rel(rsize.text)), legend.text=element_text(size=rel(rsize.text)), strip.text.x = element_text(size=rel(rsize.ticks)), strip.text.y = element_text(size=rel(rsize.ticks)))
 
 if(saveFigs) {
-  plot1 <- plotDiscreteData(ordknee.data, outcome="categorical", which.cov="treatment")
-  plot2 <- plot1 +  theme(text = element_text(size=rel(rsize.text)), legend.text=element_text(size=rel(rsize.text)), strip.text.x = element_text(size=rel(rsize.ticks)), strip.text.y = element_text(size=rel(rsize.ticks)))
   namfig<-"knee_rawDataPropTime.eps"
   cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
   plot(plot2)
   dev.off()
 }
+
+kneepl.rawDataPropTime <-plot2
+
 ```
 
 The following R code represents the data as barplots of the different pain scores as a function of time in study, also illustrating recovery as the proportion of lower pain scores increases. Other graphs can be created to explore this data, such as the evolution of mean scores over time.
 
 ```{r kneeDataBarplot}
-gtab <- knee.saemix %>%
-  group_by(time, y) %>%
-  summarise(n=length(y)) %>%
-  mutate(y=as.factor(y))
-
-ggplot(data = gtab, aes(x = time, y=n, group=y, fill=y)) + 
+gtab <- regroupTable(knee.saemix, value="y", c("time","y"), fun=list(n=function(x) length(x)))
+gtab$y <- factor(gtab$y)
+                                                                     
+plot1 <- ggplot(data = gtab, aes(x = time, y=n, group=y, fill=y)) + 
   geom_bar(stat="identity", position = "dodge") + theme_bw() + 
   scale_fill_brewer(palette = "Reds") + theme(legend.position = "top") +
   labs(fill = "Score") + xlab("Time (d)") + ylab("Counts")
+print(plot1)
+kneepl.barplotScoreTime <-plot1
 
 # Gender effect ?
 if(FALSE) {
-  gtab2 <- knee.saemix %>%
-    group_by(time, Sex) %>%
-    summarise(meanscore=mean(y))
-  
+  gtab2 <- regroupTable(knee.saemix, value="y", c("time","Sex"), fun=list(meanscore=function(x) mean(x)))
+    
   ggplot(data = gtab2, aes(x = time, y=meanscore, group=Sex, fill=Sex)) + 
     geom_line() + theme_bw() + theme(legend.position = "top") +
     labs(fill = "Score") + xlab("Time (d)") + ylab("Mean score")
@@ -560,7 +603,7 @@ plot(ord.fit, plot.type="convergence")
 ## Note: comparable estimates obtained with Monolix (not same, but within CI)
 ## quite a lot of sensitivity to distributions (when using eg normal distributions in Monolix the parameters and most importantly the SE's fluctuated quite a bit)
 ```
-We then applied the stepwise algorithm proposed by Delattre et al. to simultaneously investigate the covariate model and variability structure. This was run outside Rstudio because of memory issues. The resulting model has variability on all the $\alpha$ parameters, and included treatment on $\alpha_2$ and $\beta$ and age squared on $\alpha_1$. Comparing the two models through the *compare.saemix()* function shows about 30 points improvement in the BIC.
+We then applied the stepwise algorithm proposed by Delattre et al. to simultaneously investigate the covariate model and variability structure. This was run outside Rstudio because of memory issues. The resulting model has variability on all the $\alpha$ parameters, and included treatment on $\alpha_2$ and $\beta$ and age squared on $\alpha_1$. Comparing the two models through the *compare.saemix()* function shows an improvement in the BIC of about 30 points.
 
 ```{r kneeStepwiseAlgorithm}
 # Do not run, Rstudio fails (ran in a script as "R CMD BATCH paper_kneeCovModel.R paper_kneeCovModel.out")
@@ -598,24 +641,27 @@ nsim<-100
 yfit<-ord.fit.cov
 yfit<-simulateDiscreteSaemix(yfit, nsim=nsim)
 discreteVPC(yfit, outcome="categorical")
-discreteVPC(yfit, outcome='categorical',covsplit=TRUE, which.cov="treatment")
-discreteVPC(yfit, outcome='categorical',covsplit=TRUE, which.cov="Sex")
+plot1 <- discreteVPC(yfit, outcome='categorical',covsplit=TRUE, which.cov="treatment")
+plot2 <-  discreteVPC(yfit, outcome='categorical',covsplit=TRUE, which.cov="Sex")
 
 if(saveFigs) {
-  plot1 <- discreteVPC(yfit, outcome='categorical',covsplit=TRUE, which.cov="treatment")
-  plot2 <- plot1 +  theme(text = element_text(size=rel(rsize.text)), legend.text=element_text(size=rel(rsize.text)), strip.text.x = element_text(size=rel(rsize.ticks)), strip.text.y = element_text(size=rel(rsize.ticks)))
+#  plot1 <- plot1 +  theme(text = element_text(size=rel(rsize.text)), legend.text=element_text(size=rel(rsize.text)), strip.text.x = element_text(size=rel(rsize.ticks)), strip.text.y = element_text(size=rel(rsize.ticks)))
   namfig<-"knee_VPCbytreatment.eps"
   cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
   plot(plot2)
   dev.off()
   
-  plot1 <-  discreteVPC(yfit, outcome='categorical',covsplit=TRUE, which.cov="Sex")
-  plot2 <- plot1 +  theme(text = element_text(size=rel(rsize.text)), legend.text=element_text(size=rel(rsize.text)), strip.text.x = element_text(size=rel(rsize.ticks)), strip.text.y = element_text(size=rel(rsize.ticks)))
+#  plot2 <- plot2 +  theme(text = element_text(size=rel(rsize.text)), legend.text=element_text(size=rel(rsize.text)), strip.text.x = element_text(size=rel(rsize.ticks)), strip.text.y = element_text(size=rel(rsize.ticks)))
   namfig<-"knee_VPCbySex.eps"
   cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
   plot(plot2)
   dev.off()
 }
+
+print(plot1)
+print(plot2)
+kneepl.VPCbytreatment <- plot1
+kneepl.VPCbySex <- plot2
 
 
 if(FALSE) {
@@ -627,44 +673,39 @@ if(FALSE) {
 }
 ```
 
-We can also look at the VPC for the median score in each treatment group to find that the model tends to underpredict the pain scores, especially in the group receiving therapy 1.
+We can also look at the VPC for the mean score in each treatment group to find that the model tends to underpredict the pain scores, especially in the group receiving therapy 1.
 
 ```{r kneeMedEval}
-# VPC for median score in each group
-knee3 <- knee.saemix %>%
-  group_by(time, treatment) %>%
-  summarise(mean=mean(y))
+# VPC for mean score in each group
+knee3 <- regroupTable(knee.saemix, value="y", c("time","treatment"), fun=list(mean=function(x) mean(x)))
 
 simdat <-yfit@sim.data@datasim
 simdat$time<-rep(yfit@data@data$time,nsim)
 simdat$treatment<-rep(yfit@data@data$treatment,nsim)
+# VPC-type diagnostic
 ytab<-NULL
 for(irep in 1:nsim) {
   xtab<-simdat[simdat$irep==irep,]
-  suppressMessages(
-  xtab1 <- xtab %>%
-    group_by(time, treatment) %>%
-    summarise(mean=mean(ysim))
-  )
-  ytab<-rbind(ytab,xtab1[,c("time","treatment","mean")])
+  xtab1 <- regroupTable(xtab, value="ysim", c("time","treatment"), fun=list(mean=function(x) mean(x)))
+  ytab<-rbind(ytab,xtab1)
 }
-gtab <- ytab %>%
-  group_by(time, treatment) %>%
-  summarise(lower=quantile(mean, c(0.05)), mean=median(mean), upper=quantile(mean, c(0.95)))
+
+gtab <- regroupTable(ytab, value="mean", c("time","treatment"), fun=list(lower=function(x) quantile(x, c(0.05)), mean=function(x) quantile(x,0.5), upper=function(x) quantile(x,0.95)))
 
 kneeMedvpc <- ggplot(data = knee3, aes(x = time, y=mean, group=treatment)) + 
   geom_ribbon(data=gtab, aes(x=time, ymin=lower, ymax=upper), alpha=0.5, fill="lightblue") +
   geom_point(colour='blue') + theme_bw() + scale_fill_brewer(palette = "Blues")  +
-  labs(fill = "Score") + xlab("Time (d)") + ylab("Median value of score over time") + facet_wrap(.~treatment)
-plot1 <- kneeMedvpc +  theme(text = element_text(size=rel(rsize.text)), legend.text=element_text(size=rel(rsize.text)), strip.text.x = element_text(size=rel(rsize.ticks)), strip.text.y = element_text(size=rel(rsize.ticks)))
+  xlab("Time (d)") + ylab("Mean value of score over time") + facet_wrap(.~treatment)
+plot1 <- kneeMedvpc # +  theme(text = element_text(size=rel(rsize.text)), legend.text=element_text(size=rel(rsize.text)), strip.text.x = element_text(size=rel(rsize.ticks)), strip.text.y = element_text(size=rel(rsize.ticks)))
 print(kneeMedvpc)
 
 if(saveFigs) {
-  namfig<-"knee_medianScoreVPC.eps"
+  namfig<-"knee_meanScoreVPC.eps"
   cairo_ps(file = file.path(figDir, namfig), onefile = TRUE, fallback_resolution = 600, height=8.27, width=11.69)
   plot(plot1)
   dev.off()
 }
+kneepl.VPCmeanScore <- kneeMedvpc
 ```
 
 Taken together, these results suggest that the proportional odds model may not be adequate to describe this data. We could investigate multinomial models to allow for different time trends within each value of score, or consider different types of models such as Markov models, but these are currently out of scope in **saemix**.
@@ -681,10 +722,8 @@ if(runBootstrap) {
   case.ordinal <- saemix.bootstrap(ord.fit, method="case", nboot=nboot) 
   cond.ordinal <- saemix.bootstrap(ord.fit, method="conditional", nboot=nboot) 
 } else {
-# case.ordinal <- read.table(file.path(saemixDir,"bootstrap","results","knee_caseBootstrap.res"), header=T)
-# cond.ordinal <- read.table(file.path(saemixDir,"bootstrap","results","knee_condBootstrap.res"), header=T)
- case.ordinal <- read.table(file.path(saemixDir,"paperSaemix3","bootstrapCase_knee.res"), header=T)
- cond.ordinal <- read.table(file.path(saemixDir,"paperSaemix3","bootstrapCond_knee.res"), header=T)
+ case.ordinal <- read.table(file.path(workDir,"bootstrapRes","bootstrapCase_knee.res"), header=T)
+ cond.ordinal <- read.table(file.path(workDir,"bootstrapRes","bootstrapCond_knee.res"), header=T)
 }
 case.ordinal <- case.ordinal[!is.na(case.ordinal[,2]),]
 cond.ordinal <- cond.ordinal[!is.na(cond.ordinal[,2]),]
@@ -714,13 +753,14 @@ for(i in 1:2) {
   colnames(df2)[i1:(i1+1)]<-paste0(namboot,".",c("estimate","CI"))
 }
 print(df2)
-df3<-df2[,c(2,4)] # case bootstrap
-rownames(df3)<-c("$\\alpha_1$","$\\alpha_2$","$\\alpha_3$","$\\alpha_4$","$\\beta$", "$\\omega_{\\alpha_1}$","$\\omega_{\\beta}$")
+df3<-df2[,c(2,3,4)] # case bootstrap
+rownames(df3)<-c("$\\theta_1$","$\\theta_2$","$\\theta_3$","$\\theta_4$","$\\alpha$", "$\\omega_{\\theta_1}$","$\\omega_{\\alpha}$")
 # print(xtable(df3), only.contents=TRUE, include.rownames=TRUE,  floating=F, sanitize.rownames.function = identity)
 
-df3<-df2[,c(2,5)] # conditional bootstrap
-rownames(df3)<-c("$\\alpha_1$","$\\alpha_2$","$\\alpha_3$","$\\alpha_4$","$\\beta$", "$\\omega_{\\alpha_1}$","$\\omega_{\\beta}$")
+df3<-df2[,c(2,5,6)] # conditional bootstrap
+rownames(df3)<-c("$\\theta_1$","$\\theta_2$","$\\theta_3$","$\\theta_4$","$\\alpha$", "$\\omega_{\\theta_1}$","$\\omega_{\\alpha}$")
 # print(xtable(df3), only.contents=TRUE, include.rownames=TRUE,  floating=F, sanitize.rownames.function = identity)
+xtab.kneeBase <- df3
 
 ```
 
@@ -731,8 +771,8 @@ if(runBootstrap) {
   case.ordinal <- saemix.bootstrap(ord.fit.cov, method="case", nboot=nboot) 
   cond.ordinal <- saemix.bootstrap(ord.fit.cov, method="conditional", nboot=nboot) 
 } else {
- case.ordinal <- read.table(file.path(saemixDir,"paperSaemix3","bootstrapCase_kneeCov.res"), header=T)
- cond.ordinal <- read.table(file.path(saemixDir,"paperSaemix3","bootstrapCond_kneeCov.res"), header=T)
+ case.ordinal <- read.table(file.path(workDir,"bootstrapRes","bootstrapCase_kneeCov.res"), header=T)
+ cond.ordinal <- read.table(file.path(workDir,"bootstrapRes","bootstrapCond_kneeCov.res"), header=T)
 }
 case.ordinal <- case.ordinal[!is.na(case.ordinal[,2]),]
 cond.ordinal <- cond.ordinal[!is.na(cond.ordinal[,2]),]
@@ -743,7 +783,7 @@ for(icol in 10:13) {
 }
 
 
-par.estim<-format(c(ord.fit.cov@results@fixed.effects,sqrt(diag(ord.fit.cov@results@omega)[ord.fit.cov@results@indx.omega])), digits=2, nsmall=1)
+par.estim<-format(c(ord.fit.cov@results@fixed.effects,sqrt(diag(ord.fit.cov@results@omega)[ord.fit.cov@results@indx.omega])), digits=1, nsmall=1)
 df2<-data.frame(parameter=colnames(case.ordinal)[-c(1)], saemix=par.estim)
 for(i in 1:2) {
   if(i==1) {
@@ -757,7 +797,7 @@ for(i in 1:2) {
   sd.bootDist<-apply(resboot1, 2, sd, na.rm=T)[-c(1)]
   quant.bootDist<-apply(resboot1[-c(1)], 2, quantile, c(0.025, 0.975), na.rm=T)
   l1<-paste0(format(mean.bootDist, digits=2)," (",format(sd.bootDist,digits=2, trim=T),")")
-  l2<-paste0("[",format(quant.bootDist[1,], digits=2),", ",format(quant.bootDist[2,],digits=2, trim=T),"]")
+  l2<-paste0("[",format(quant.bootDist[1,], digits=2),", ",format(quant.bootDist[2,],digits=1, trim=T),"]")
   df2<-cbind(df2, l1, l2)
   i1<-3+2*(i-1)
   colnames(df2)[i1:(i1+1)]<-paste0(namboot,".",c("estimate","CI"))
@@ -766,12 +806,13 @@ print(df2)
 
 # pretty print for paper
 df3<-df2[,c(2,4)] # case bootstrap
-rownames(df3)<-c("$\\alpha_1$","$\\beta_{Age2,\\alpha_1}$","$\\alpha_2$","$\\beta_{trt,\\alpha_2}$","$\\alpha_3$","$\\alpha_4$","$\\beta$","$\\beta_{trt,\\beta}$",  "$\\omega_{\\alpha_1}$", "$\\omega_{\\alpha_2}$",  "$\\omega_{\\alpha_3}$",  "$\\omega_{\\alpha_4}$")
+rownames(df3)<-c("$\\theta_1$","$\\beta_{Age2,\\theta_1}$","$\\theta_2$","$\\beta_{trt,\\theta_2}$","$\\theta_3$","$\\theta_4$","$\\alpha$","$\\beta_{trt,\\alpha}$",  "$\\omega_{\\theta_1}$", "$\\omega_{\\theta_2}$",  "$\\omega_{\\theta_3}$",  "$\\omega_{\\theta_4}$")
 print(xtable(df3), only.contents=TRUE, include.rownames=TRUE,  floating=F, sanitize.rownames.function = identity)
 
-df3<-df2[,c(2,6)] # conditional bootstrap
-rownames(df3)<-c("$\\alpha_1$","$\\beta_{Age2,\\alpha_1}$","$\\alpha_2$","$\\beta_{trt,\\alpha_2}$","$\\alpha_3$","$\\alpha_4$","$\\beta$","$\\beta_{trt,\\beta}$",  "$\\omega_{\\alpha_1}$", "$\\omega_{\\alpha_2}$",  "$\\omega_{\\alpha_3}$",  "$\\omega_{\\alpha_4}$")
+df3<-df2[,c(2,5,6)] # conditional bootstrap
+rownames(df3)<-c("$\\theta_1$","$\\beta_{Age2,\\theta_1}$","$\\theta_2$","$\\beta_{trt,\\theta_2}$","$\\theta_3$","$\\theta_4$","$\\alpha$","$\\beta_{trt,\\alpha}$",  "$\\omega_{\\theta_1}$", "$\\omega_{\\theta_2}$",  "$\\omega_{\\theta_3}$",  "$\\omega_{\\theta_4}$")
 print(xtable(df3), only.contents=TRUE, include.rownames=TRUE,  floating=F, sanitize.rownames.function = identity)
+xtab.kneeCov <-df3
 
 ```
 

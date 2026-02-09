@@ -41,6 +41,7 @@ knitr::opts_chunk$set(root.dir = workDir)
 
 # directory to save simulated data
 datDir<-file.path(saemixDir,"data40")
+saveSimData <- FALSE
 ```
 
 # Simulation with IOV
@@ -248,9 +249,9 @@ datsim.cov <- simdata
 
 ```{r saveTheoSimul}
 
-write.csv(datsim.nocov, file=file.path(datDir,"theoSimul_nocov.csv"), quote=F, row.names = FALSE)
+if(saveSimData) write.csv(datsim.nocov, file=file.path(datDir,"theoSimul_nocov.csv"), quote=F, row.names = FALSE)
 
-write.csv(datsim.cov, file=file.path(datDir,"theoSimul_cov.csv"), quote=F, row.names = FALSE)
+if(saveSimData) write.csv(datsim.cov, file=file.path(datDir,"theoSimul_cov.csv"), quote=F, row.names = FALSE)
 
 ```
 
@@ -315,31 +316,6 @@ write.csv(datsim.cov, file=file.path(datDir,"theoSimul_cov.csv"), quote=F, row.n
     - residual error models
       - biomarker 1: additive with $\sigma_1=10$ (around 10% at baseline)
       - biomarker 2: proportional with $\sigma_2=0.1$ (10%)
-- Covariates
-  - a **second dataset** is created with covariates
-  - baseline covariates
-    - equal number of each gender
-    - weight: normal distribution at baseline, centering on different values for men (70) and women (60) with the same coefficient of variation (20%)
-    - normal distribution of age, mean=60, sd=9 (15%)
-  - covariate changing with occasion
-    - CRCL: log-normal distribution at baseline, assuming 10% change every year (% change ~ N(0.1, 0.01))
-    - comedication: random allocation at each occasion, with probability 0.3
-  - covariate models
-    - weight: allometry on V and CL for biomarker 2
-    - gender: decreased intercept for biomarker 1 (by 30%) and higher probability for biomarker 3 (30%)
-    - age: decrease of CL with age, increase of $p_3$
-    - CRCL: correlation with CL
-    - comedication: increase in CL by 30%, decrease $p_3$ by 50%
-- Not included in the simulation
-  - NA values in the covariates
-- from the dataset with covariates, a **third dataset** is derived including:
-  - LOQ data
-    - biomarker 3: data < LOQ censored
-  - missing data: randomly set for each biomarker independently
-    - 5% of the data for biomarker 1
-    - 10% of the data for biomarker 2
-    - 5% of the data for biomarker 3
-
 
 # Simulation of data without covariates
 
@@ -498,12 +474,56 @@ ggplot(simdata, aes(x=time, y=y, group=id, colour=as.factor(occ))) + geom_point(
 Saving to file
 
 ```{r saveDataNoCov}
+if(saveSimData) write.csv(psi1.iov, file=file.path(datDir,"complexSimulation_simpsiNocov.csv"), quote=F, row.names = FALSE)
 
-write.csv(simdata, file=file.path(datDir,"complexSimulation_nocov.csv"), quote=F, row.names = FALSE)
+if(saveSimData) write.csv(simdata, file=file.path(datDir,"complexSimulation_nocov.csv"), quote=F, row.names = FALSE)
 
 ```
 
 # Simulation of data with covariates
+
+- a **second dataset** is created with covariates
+  - baseline covariates
+    - equal number of each gender
+    - weight: normal distribution at baseline, centering on different values for men (70) and women (60) with the same coefficient of variation (15%)
+    - uniform distribution of age from 30 to 70
+  - covariate changing with occasion
+    - Serum creatinine: normal distribution at baseline, assuming 10% change every year (% change ~ N(0.1, 0.01))
+    - CRCL computed with Cockroft-Gault formula
+    - comedication: random allocation at each occasion, with probability 0.3
+  - covariate models
+    - weight: allometry on V and CL for biomarker 2
+      - $CL = \mu_{CL} \; \left( \frac{WT}{WT_{ref}} \right)^{0.75}$
+      - $V = \mu_{V} \; \left( \frac{WT}{WT_{ref}} \right)$
+      - with WT_ref=70 kg
+    - gender: decreased intercept for biomarker 1 (by 30%) and higher probability for biomarker 3 (30%)
+      - model: $\alpha = \mu_{\alpha} + \beta_{sex,\alpha}*1_{sex=female}$
+        - $\beta_{sex,\alpha}$=-30
+      - model: $logit(p3) = logit(\mu_{p3}) + \beta_{sex,p3}*1_{sex=female}$
+        - $\beta_{sex,p3}$=0.4 corresponding to p3=39% in women and 30% in male
+    - age: decrease of CL with age, increase of $p_3$
+      - model for CL: $CL = \mu_{CL} \; \left( \frac{age}{age_{ref}} \right)^{\beta_{age,CL}}$
+        - age_ref=50, beta_age,CL=-0.2
+        - corresponds to CL varying from 2.76 for age=30 to 2.33 for age=70 (~16% decrease over the range)
+      - model for p3: $logit(p3) = logit(\mu_{p3}) + \beta_{age,p3}*(age-age_{ref})$
+        - age_ref=50, beta_age,p3=0.024
+        - corresponds to p3 varying from 0.21 for age=30 to 0.41 for age=70 (~100% increase over the range, but probability)
+    - CRCL: correlation with CL
+      - model: (CRCL/CRCL_ref)^beta_CRCL 
+      - CRCL_ref=85, beta_CRCL=0.3
+      - corresponds to CL varying from 1.95 for CRCL=37 to 2.93 for CRCL=144 (~50% increase over the range)
+    - comedication: increase in CL by 30%, decrease $p_3$ by 50%
+      - model: $logit(p3) = logit(\mu_{p3}) + \beta_{comed,p3}*1_{comed}$
+      - beta_{comed,p3}=-0.89 corresponding to p3=15% with comedication
+- Not included in the simulation
+  - NA values in the covariates
+- from the dataset with covariates, a **third dataset** is derived including:
+  - LOQ data
+    - biomarker 3: data < LOQ censored
+  - missing data: randomly set for each biomarker independently
+    - 5% of the data for biomarker 1
+    - 10% of the data for biomarker 2
+    - 5% of the data for biomarker 3
 
 
 ```{r simulateDataWithCov}
@@ -513,13 +533,19 @@ write.csv(simdata, file=file.path(datDir,"complexSimulation_nocov.csv"), quote=F
 ### weight ~ N(60,12) in female and N(70,14) in men
 ### age ~ N(60, 9)
 male.id <- sort(sample(1:nsuj, nsuj/2, replace=FALSE))
-cov.base <- data.frame(id=1:nsuj, sex=1, age=trunc(rnorm(nsuj,mean=60,sd=9)), wt = trunc(rnorm(nsuj, mean=60, sd=12)))
+cov.base <- data.frame(id=1:nsuj, sex=1, age=trunc(runif(nsuj,30,71)), wt = trunc(rnorm(nsuj, mean=60, sd=9)))
 cov.base$sex[male.id]<-0
-cov.base$wt[male.id]<-trunc(rnorm(nsuj/2, mean=70, sd=14))
+cov.base$wt[male.id]<-trunc(rnorm(nsuj/2, mean=70, sd=10.5))
+summary(cov.base)
 
 ## Occasion specific covariates
 ### number of occasions between 1 and 3
-### Scr at baseline ~ LN(1,0.1)
+### Normal serum creatinine ranges are:
+#   0.6–1.1 mg/dL in women and adolescents aged 16 and older
+#   0.8–1.3 mg/dL in men and adolescents aged 16 and older
+#    0.2 or more in infants, depending on muscle development
+## note: other sources would give males (0.7-1.2) and females (0.5-1.0) => used here
+#### Scr at baseline ~ N(0.75,0.08) + 0.2*(sex=0)
 #### Increase of 10% (~N(0.1, 0.01)) every year
 ### Compute CRCL as a function of Scr, age, wt and sex (ml/min)
 ### comedication ~ Bernoulli(p=0.3) at each occasion
@@ -529,7 +555,7 @@ for(i in 1:nsuj) {
   tabsuj<-do.call(rbind,rep(list(cov.base[i,]),nocc[i]))
   tabsuj<-cbind(tabsuj, occ=1:nocc[i])
 # Scr: mg/dL
-  scr<-round(exp(0.15*rnorm(1, mean=0, sd=1)), digits=2)*ifelse(cov.base$sex[1]==1,0.85,1.05)
+  scr<-rnorm(1, mean=0.75, sd=0.08) + 0.2*(1-cov.base$sex[i])
   scr<-c(scr, round(scr*rnorm(1,mean=1.1,sd=0.01), digits=2))
   scr<-c(scr,round(scr[2]*rnorm(1,mean=1.1,sd=0.01), digits=2))
   tabsuj<-cbind(tabsuj,scr=scr[1:nocc[i]], comed=rbinom(nocc[i],1,0.3))
@@ -537,29 +563,131 @@ for(i in 1:nsuj) {
 }
 colnames(cov.occ)[1:4]<-colnames(cov.base)[1:4]
 cov.occ$crcl<-(140-cov.occ$age)*cov.occ$wt/(72*cov.occ$scr)* (1*(1-cov.occ$sex)+0.85*cov.occ$sex)
+summary(cov.occ)
 
 # Cockroft-Gault equation (mL/min)
 # CrCl = [(140 – Age) × Mass (kg) × 0.85 if female] / 72 × [Serum Creatinine (mg/dL)]
 # Adult (< 40 years) reference ranges for creatinine clearance are as follows [1] :
 #    Male: 107-139 mL/min or 1.78-2.32 mL/s (SI units)
 #    Female: 87-107 mL/min or 1.45-1.78 mL/s (SI units)
-# Normal serum creatinine ranges are:
-#   0.6–1.1 mg/dL in women and adolescents aged 16 and older
-#   0.8–1.3 mg/dL in men and adolescents aged 16 and older
-#    0.2 or more in infants, depending on muscle development
-### Pb: the predicted CrCL values are much lower than the normal range even though all variables have been simulated and Scr within the normal ranges...
+### Pb: the predicted CrCL values are lower than the normal range even though all variables have been simulated and Scr within the normal ranges... Here: 37 to 144
+# Creatinine clearance, however, may over-estimate GFR by 10-20% and has largely been replaced clinically by equations to more directly estimate GFR.
 
-# CKD-EPI equation - 2021 (ml/min for 1.73m2 BSA)
-# cov.occ$gfr <- 141*min(cov.occ$scr/ifelse(cov.occ$sex==1,0.7,0.9), 1)^(ifelse(cov.occ$sex==1,-0.329,-0.411)) * max(cov.occ$scr/ifelse(cov.occ$sex==1,0.7,0.9), 1)^(-1.209)*0.993^cov.occ$age*(1*(1-cov.occ$sex)+1.018*cov.occ$sex)
-
-cov.occ$egfr <- 142*min(c(cov.occ$scr/ifelse(cov.occ$sex==1,0.7,0.9), 1))^(ifelse(cov.occ$sex==1,-0.241,-0.302)) * max(c(cov.occ$scr/ifelse(cov.occ$sex==1,0.7,0.9), 1))^(-1.2)*0.9938^(cov.occ$age)*(1*(1-cov.occ$sex)+1.012*cov.occ$sex)
-# another completely different value and even lower than the normal range :-/
+# CKD-EPI equation - 2021 (ml/min for 1.73m2 BSA) for eGFR
+vec1<-cov.occ$scr/ifelse(cov.occ$sex==1,0.7,0.9) # Scr/kap where kap=0.7 for females and 0.9 for males
+cov.occ$egfr <- 142* (sapply(vec1,function(x) min(x,1)))^(ifelse(cov.occ$sex==1,-0.241,-0.302)) *
+  (sapply(vec1,function(x) max(x,1)))^(-1.2) *0.9938^(cov.occ$age)*(1*(1-cov.occ$sex)+1.012*cov.occ$sex)
+# a completely different value but closer to the normal range
 # normal values: 116 (at 20) to 76 (at 70)
-# here: 43 to 56...
+# here: 62 to 110
+# GFR>= 90 classified as normal
 
+beta.cov <- data.frame(beta.sexalpha=-30, beta.sexp3=0.4, beta.ageCL=-0.2, beta.agep3=0.024, beta.CRCLCL=0.3, beta.comedCL=0.3, beta.comedp3=-0.89)
+
+# Generating parameters with covariates
+psi1.cov<-NULL
+for(isuj in 1:nsuj) {
+  psisuj<-as.numeric(psi1[isuj,])
+  covsuj <- cov.occ[cov.occ$id==isuj,,drop=FALSE]
+  niocc<-covsuj$nb.occ[1]
+  lp3 <- log(psisuj[7]/(1-psisuj[7]))
+  logitp3 <- rep(lp3,niocc) + beta.cov$beta.sexp3*covsuj$sex + beta.cov$beta.agep3*(covsuj$age-50) + beta.cov$beta.comedp3*covsuj$comed
+  psi2 <- data.frame(id=covsuj$id,alpha=psisuj[2]+beta.cov$beta.sexalpha*covsuj$sex, 
+             delta=rep(psisuj[3],niocc),ka=rep(psisuj[4],niocc),
+             V=psisuj[5]*(covsuj$wt/70),
+             CL=psisuj[6]*(covsuj$wt/70)^0.75 * (covsuj$age/50)^(beta.cov$beta.ageCL) * (covsuj$crcl/85)^(beta.cov$beta.CRCLCL) * exp(beta.cov$beta.comedCL*covsuj$comed),
+             p3=1/(1+exp(-logitp3)),
+             delta.y1=rep(psisuj[8],niocc),delta.y2=rep(psisuj[9],niocc),
+             occ=covsuj$occ
+             )
+  psi1.cov<-rbind(psi1.cov, psi2)
+}
+
+# Adding IOV
+psi1.iov.cov<-NULL
+for(isuj in 1:nsuj) {
+  psisuj <- psi1.cov[psi1.cov$id==isuj,]
+  eta.iov<-rmvnorm(nocc[isuj],sigma=iovmat)
+  psisuj$delta <-psisuj$delta*(1+eta.iov[,1])
+  psisuj$CL <-psisuj$CL*exp(eta.iov[,2])
+  # steady increase in biomarker with time across occasions
+  if(nocc[isuj]>1)
+    psisuj$alpha[2]<-psisuj$alpha[1]+psisuj$delta[1]*36
+  if(nocc[isuj]>2)
+    psisuj$alpha[3]<-psisuj$alpha[2]+psisuj$delta[2]*36
+  psi1.iov.cov<-rbind(psi1.iov.cov, psisuj)
+}
+psi1.iov.cov$index <- paste0(psi1.iov.cov$id,".",psi1.iov.cov$occ)
+
+# Simulated data
+simdata<-NULL
+isuj<-1
+for(isuj in 1:nsuj) {
+  xidep<-xidep1
+  idose1 <- sample(1:2,1) # starting dose
+  xidep$dose <- doses[idose1]
+  if(nocc[isuj]>1) {
+  for(iocc in 2:nocc[isuj]) {
+    ntim <- sample(0:4,1)
+    if(ntim>0) xtime <- sort(c(commonTimes,sample(sampleTimes, ntim)))
+    xidep2 <- data.frame(tim=rep(xtime, each=3), dose=doses[idose1+(iocc-1)], y=0, ytype=rep(c(1:3),length(xtime)), occ=iocc)
+    xidep<-rbind(xidep, xidep2)
+  }
+  }
+  id.occ<-paste0(rep(isuj,dim(xidep)[1]),".",xidep$occ)
+  xid <- match(id.occ, psi1.iov.cov$index)
+  ypred<-simul.biomarkers(psi1.iov.cov[,-c(1)], xid, xidep)
+  datsuj <- data.frame(id=isuj, time=xidep$tim, dose=xidep$dose, ytype=xidep$ytype, occ=xidep$occ,ypred=round(ypred,digits=2), y=ypred)
+  datsuj$y[datsuj$ytype==1] <- round(datsuj$y[datsuj$ytype==1] + par.sig[1]*rnorm(sum(datsuj$ytype==1)), digits=2)
+  datsuj$y[datsuj$ytype==2] <- round(datsuj$y[datsuj$ytype==2]*(1 + par.sig[2]*rnorm(sum(datsuj$ytype==2))), digits=2)
+  simdata <- rbind(simdata, datsuj)
+}
+
+if(FALSE) {
+  ggplot(datsuj, aes(x=time, y=ypred, group=ytype, colour=as.factor(ytype))) + geom_point() + xlab("Time (weeks)") + ylab("Responses")  + scale_color_viridis("Occasion",discrete = TRUE) + facet_wrap(.~occ)
+
+ggplot(datsuj, aes(x=time, y=ypred, group=occ, colour=as.factor(ytype))) + geom_point() + geom_line() + xlab("Time (weeks)") + ylab("Responses")  + scale_color_viridis("Response",discrete = TRUE) + facet_wrap(.~ytype, scales="free_y")
+
+ggplot(datsuj, aes(x=time, y=y, group=occ, colour=as.factor(ytype))) + geom_point(aes(shape=as.factor(occ))) + geom_line() + xlab("Time (weeks)") + ylab("Responses")  + scale_color_viridis("Response",discrete = TRUE) + scale_shape(name = "Occasion") + facet_wrap(.~ytype, scales="free_y")
+
+}
+
+# Plot for one subject with 3 occasions
+isuj <- unique(simdata$id[simdata$occ==3])[1]
+datsuj<-simdata[simdata$id==isuj,]
+ggplot(datsuj, aes(x=time, y=y, group=occ, colour=as.factor(occ))) + geom_point(aes(shape=as.factor(ytype))) + geom_line(data = subset(datsuj, ytype<3)) + xlab("Time (weeks)") + ylab("Responses")  + scale_color_viridis("Occasion",discrete = TRUE) + scale_shape(name = "Response") + facet_wrap(.~ytype, scales="free_y")
+
+# par(mfrow=c(1,3)); for(ity in 1:3) plot(datsuj$time[datsuj$ytype==ity], datsuj$y[datsuj$ytype==ity], type="b")
+
+# Plot for all subjects
+ggplot(simdata, aes(x=time, y=y, group=id, colour=as.factor(occ))) + geom_point(aes(shape=as.factor(ytype))) + geom_line(data = subset(simdata, ytype<3)) + xlab("Time (weeks)") + ylab("Responses")  + scale_color_viridis("Occasion",discrete = TRUE) + scale_shape(name = "Response") + facet_wrap(occ~ytype, scales="free_y")
+
+# Probably need to transform biomarker 3 into % of responses at each time to visualise response 3
+bio3 <- NULL
+for(iocc in 1:3) {
+  datocc <- simdata[simdata$ytype==3 & simdata$occ==iocc,]
+  xtim<-sort(unique(datocc$time))
+  for(itim in xtim) {
+    y3<-datocc$y[datocc$time==itim]
+    bio3<-rbind(bio3,c(iocc,itim,length(y3),sum(y3)/length(y3)))
+  }
+}
+bio3<-as.data.frame(bio3)
+colnames(bio3)<-c("occ","time","nobs","p")
+bio3$sd <- sqrt(bio3$p*(1-bio3$p)/bio3$nobs)
+bio3$lower <- bio3$p -1.96*bio3$sd
+bio3$upper <- bio3$p +1.96*bio3$sd
+ggplot(data=bio3, aes(x=time, y=p, group=as.factor(occ), colour=as.factor(occ),fill=as.factor(occ))) + geom_point() + geom_line() + geom_ribbon(data=bio3,aes(ymin=lower, ymax=upper), alpha=0.2) + xlab("Time (weeks)") + ylab("Proportion of events")  + scale_color_viridis("Occasion",discrete = TRUE) + scale_fill_viridis("Occasion",discrete = TRUE)
+
+# Generating responses
+## psi
+if(saveSimData) write.csv(psi1.iov.cov, file=file.path(datDir,"complexSimulation_simpsiCov.csv"), quote=F, row.names = FALSE)
+
+## simulated data, with covariates
+lab1 <- paste0(cov.occ$id,".", cov.occ$occ)
+lab2 <- paste0(simdata$id,".", simdata$occ)
+simdataCov <- cbind(simdata, cov.occ[match(lab2,lab1),c(5,2:4,7:9)])
+if(saveSimData) write.csv(simdataCov, file=file.path(datDir,"complexSimulation_cov.csv"), quote=F, row.names = FALSE)
 
 ```
-
-
-
 
