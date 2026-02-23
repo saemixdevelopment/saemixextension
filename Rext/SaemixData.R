@@ -43,7 +43,7 @@ setMethod("showall","list",
 #' @slot name.predictors Object of class \code{"character"}: name of the column(s) containing the predictors
 #' @slot name.response Object of class \code{"character"}: name of the column containing the response variable y modelled by predictor(s) x
 #' @slot name.covariates Object of class \code{"character"}: name of the column(s) containing the covariates, if present (otherwise empty)
-#' @slot covariate.varlevel Vector of strings of the same size as name.covariates giving the associated covariate level. If given, the names will be matched to the names given in varlevel. Will default to the first level of variability if not specified.
+#' @slotcovariate.varlevel Vector of strings of the same size as name.covariates giving the associated covariate level. If given, the names will be matched to the names given in varlevel. Will default to the first level of variability if not specified.
 #' @slot name.X Object of class \code{"character"}: name of the column containing the regression variable to be used on the X axis in the plots
 #' @slot name.mdv Object of class \code{"character"}: name of the column containing the indicator variable denoting missing data
 #' @slot name.cens Object of class \code{"character"}: name of the column containing the indicator variable denoting censored data (the value in the name.response column will be taken as the censoring value)
@@ -137,6 +137,9 @@ setClass(
     yorig="numeric",		# vector of responses in original dataset
     ind.gen="logical",	# vector of booleans (same size as name.covariates); TRUE=genetic covariate, FALSE=non-genetic covariates
     ntot.obs="numeric",		# total number of observations (=dim(tab)[1])
+    var.index = "list", # list of the indices at each varlevel (match phi_ik to data from ik)
+    var.nobs = "list", # list of the number of observations per unit at each varlevel (individual number of y_ik)
+    var.covmat = "list", # list of covariate matrices at each level of variability
     nind.obs="numeric"		# number of observations for each subject
   ),
   validity=function(object){
@@ -295,7 +298,7 @@ setMethod(
       name.response<-"3"
       } else name.response<-character()
     }
-    if(missing(covariate.varlevel)) covariate.varlevel<-character()
+    if(missing(covariate.varlevel)) covariate.varlevel<-character() # else check compatibility between covariate.varlevel and varlevel ### ToDo +++ (or do later in extractCovariates)
     if(missing(name.covariates)) name.covariates<-character()
     if(length(name.covariates)>0) {
       if(length(covariate.varlevel)!=length(name.covariates) & length(covariate.varlevel)>1) {
@@ -305,7 +308,7 @@ setMethod(
         covariate.varlevel<-character()
       }
       if(length(covariate.varlevel)==1) covariate.varlevel<-rep(covariate.varlevel,length(name.covariates))
-      if(length(covariate.varlevel)==0) covariate.varlevel<-rep(varlevel[1],length(name.covariates))
+      if(length(covariate.varlevel)==0) covariate.varlevel<-rep(varlevel[length(varlevel)],length(name.covariates))
     } else covariate.varlevel<-character()
 		if(missing(name.mdv)) name.mdv<-character()
 		if(missing(name.cens)) name.cens<-character()
@@ -470,6 +473,9 @@ setMethod(
     "yorig"={return(x@yorig)},
     "ind.gen"={return(x@ind.gen)},
     "ntot.obs"={return(x@ntot.obs)},
+    "var.index"={return(x@var.index)},
+    "var.nobs"={return(x@var.nobs)},
+    "var.covmat"={return(x@var.covmat)},
     "nind.obs"={return(x@nind.obs)},
     stop("No such attribute\n")
    )
@@ -509,6 +515,9 @@ setReplaceMethod(
     "ind.gen"={x@ind.gen<-value},
     "yorig"={x@yorig<-value},
     "ntot.obs"={x@ntot.obs<-value},
+    "var.index"={x@var.index<-value},
+    "var.nobs"={x@var.nobs<-value},
+    "var.covmat"={x@var.covmat<-value},
     "nind.obs"={x@nind.obs<-value},
     stop("No such attribute\n")
    )

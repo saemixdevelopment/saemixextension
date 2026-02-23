@@ -1,8 +1,65 @@
 
 #' @include aaa_generics.R
 #' @include SaemixData.R
-#' @include SaemixData-methods.R
+#' @include SaemixData-printmethods.R
 NULL
+
+
+####################################################################################
+####		Extract covariates for each level of variability												####
+####################################################################################
+
+# Program-level function 
+## check compatibility between varlevel and covariate.varlevel (ToDo)
+### if covariate.varlevel is c() then build it
+## extract covariates associated to each level of variability
+## check the covariate varies at this level otherwise move to higher level of variability (ToDo)
+
+extractVarlevelCovariates<-function(saemix.data,verbose=FALSE) {
+  if(length(saemix.data@name.covariates)==0) return(saemix.data)
+  nvar <- length(saemix.data@varlevel)
+  # if covariate.varlevel not in varlevel, change to highest level of variability
+  idx <- !(saemix.data@covariate.varlevel %in% saemix.data@varlevel)
+  if(sum(idx)>0) {
+    msg<-paste0("   Covariate varlevel(s) ",saemix.data@covariate.varlevel[idx]," not found, setting to ",saemix.data@varlevel[nvar],"\n")
+    if(verbose) cat(msg)
+    saemix.data@log <- paste0(saemix.data@log,msg)
+  }
+  saemix.data@covariate.varlevel[idx]<- saemix.data@varlevel[nvar]
+  if(length(saemix.data@covariate.varlevel)<length(saemix.data@varlevel)) {
+    length(saemix.data@covariate.varlevel)<-length(saemix.data@varlevel)
+    saemix.data@covariate.varlevel[is.na(saemix.data@covariate.varlevel)]<- saemix.data@varlevel[nvar]
+  }
+  covlist <- vector(length=nvar,mode = "list")
+  names(covlist)<-saemix.data@varlevel
+  for(ivar in nvar:1) {
+    icov <- saemix.data@name.covariates[saemix.data@covariate.varlevel==saemix.data@varlevel[ivar]]
+    idx <- saemix.data@var.index[[ivar]]
+    covmat<-saemix.data@data[which(!duplicated(idx)),icov]
+    covlist[[ivar]]<-as.matrix(covmat)
+  }
+  # ToDo
+  # check that covariates actually vary within their level of variability
+  # if covariate doesn't change on level of variability ivar, move it to level (ivar-1) (for ivar>1)
+  # if ivar=1, issue warning
+  if(nvar>1) {
+    for(ivar in nvar:1) {
+      
+    # if(ivar>1) {
+    # msg<-paste0("   Covariate ",icov," doesn't vary at variability level ",saemix.data@varlevel[ivar],", moving it to level:",saemix.data@varlevel[(ivar-1)],"\n")
+    # saemix.data@covariate.varlevel[icov]<-saemix.data@varlevel[(ivar-1)]
+    # if(verbose) cat(msg)
+    # saemix.data@log <- paste0(saemix.data@log,msg)
+    # } else {
+      # msg<-paste0("   Covariate ",icov," doesn't vary at variability level ",saemix.data@varlevel[ivar],"\n")
+      # if(verbose) cat(msg)
+      # saemix.data@log <- paste0(saemix.data@log,msg)
+    #}
+    }
+  }
+  saemix.data@var.covmat <- covlist
+  return(saemix.data)
+}
 
 ####################################################################################
 ####		Covariate transformation																								####

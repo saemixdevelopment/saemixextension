@@ -1,9 +1,11 @@
 #' @include aaa_generics.R
 #' @include SaemixData.R
+#' @include SaemixData-printmethods.R
+#' @include SaemixData-covariatemethods.R
 NULL
 
 ####################################################################################
-####			SaemixData class - method to read data			####
+####	      		SaemixData class - method to read data		                    	####
 ####################################################################################
 
 #' Name validation (## )Helper function not intended to be called by the user)
@@ -152,7 +154,7 @@ setMethod("readSaemix",
             }
             object@name.group<-vnames
             varlevel<-c(vnames)
-            
+
             if(length(object@name.predictors)>0) {
               for(i1 in 1:length(object@name.predictors)) {
               if(!is.na(as.numeric(object@name.predictors[i1]))) object@name.predictors[i1] <- colnames(dat)[as.numeric(object@name.predictors[i1])]
@@ -220,17 +222,21 @@ setMethod("readSaemix",
             object@name.mdv<-"mdv"
             if(nchar(object@name.cens)==0) cens<-rep(0,dim(dat)[1]) else cens<-dat[,object@name.cens]
             object@name.cens <-"cens"
-            if(length(object@name.occ)==0) occ<-rep(1,dim(dat)[1]) else {
+            if(length(object@name.occ)==0) {
+              occ<-rep(1,dim(dat)[1])
+              if(!("occ" %in% colnames(dat))) dat<-cbind(dat,occ=occ)
+              } else {
               occ<-dat[,object@name.occ]
               varlevel[2]<-object@name.occ
             }
+            object@varlevel <- varlevel
 #            object@name.occ<-"occ" # changed... now second level of variability may have another name
             if(nchar(object@name.ytype)==0) ytype<-rep(1,dim(dat)[1]) else ytype<-dat[,object@name.ytype]
             object@name.ytype<-"ytype"
-            all.names<-c(object@name.group,object@name.predictors, object@name.response,object@name.covariates)
+            all.names<-c(object@varlevel,object@name.predictors, object@name.response,object@name.covariates)
             
             dat<-dat[,all.names,drop=FALSE]
-            dat<-cbind(dat,mdv=mdv,cens=cens,occ=occ,ytype=ytype)
+            dat<-cbind(dat,mdv=mdv,cens=cens,ytype=ytype)
             
             if(!is(dat,"data.frame")) dat<-as.data.frame(dat)
             # Saving covariates in the original format in ocov, transforming binary covariates in dat to factors
@@ -265,544 +271,50 @@ setMethod("readSaemix",
               dat<-dat[-idx,]
               if(!is.null(dim(object@ocov)[1])) object@ocov<-object@ocov[-idx,,drop=FALSE]
             }
-            if(!is.null(dim(object@ocov)[1])) object@ocov <- object@ocov[order(dat[,object@name.group], dat[,object@name.X]),,drop=FALSE]
-            
             # ECO TODO: missing data in covariates kept for the moment, only excluded depending on the model
             #    for(i in object@name.covariates) dat<-dat[!is.na(dat[,i]),]
             object@ntot.obs<-dim(dat)[1] # total number of observations
-            dat <- dat[order(dat[,object@name.group], dat[,object@name.X]),]
+            # Sorting in the order of levels of variability then name.X (=usually time)
+            datord<-list(dat[,object@varlevel[[1]]])
+            if(length(varlevel)>1){
+              for(ilev in 2:length(varlevel)) datord[[ilev]]<-dat[,object@varlevel[[ilev]]]
+            }
+            datord[[(length(varlevel)+1)]]<-dat[,object@name.X]
+            dat <- dat[do.call("order",datord),]
+            if(!is.null(dim(object@ocov)[1])) object@ocov <- object@ocov[do.call("order",datord),,drop=FALSE]
             id<-dat[,object@name.group]
             object@N<-length(unique(id))
             nind.obs<-tapply(id,id,length) # individual numbers of observations (1xN)
             nind.obs<-nind.obs[match(unique(id),names(nind.obs))]
             object@nind.obs<-c(nind.obs)
             dat<-cbind(index=rep(1:object@N,times=nind.obs),dat)
-            object@data<-dat
             object@varlevel <- varlevel
-            
+            index<-list(dat$index)
+            nb.obs<-list(nind.obs)
+            if(length(varlevel)>1) {
+              ilab<-dat[,object@varlevel[1]]
+              for(ilev in 2:length(varlevel)) {
+                ilab<-cbind(ilab,dat[,object@varlevel[ilev]])
+                idx<-c(which(!duplicated(ilab)),dim(ilab)[1]+1)
+                x1<-diff(idx) # individual numbers of observations per unit at that varlevel
+                print(head(x1),20)
+                #  x1<-tapply(ilab,ilab,length) # weird sort issue !!
+                index[[ilev]]<-rep(1:length(x1),times=x1)
+                nb.obs[[ilev]]<-x1
+              }
+              ilab<-paste0(ilab,"-",dat[,object@name.X])
+              dat$index <- index[[ilev]] # if more than 1 level of variability, index needs to be reset to the last variability level
+            } 
+            object@data<-dat
+            names(index)<-varlevel
+            names(nb.obs)<-varlevel
+            object@var.index<-index
+            object@var.nobs<-nb.obs
             options(ow) # reset
             validObject(object)
             return(object)
           }
 )
-
-####################################################################################
-####			SaemixData class - method to print/show data		####
-####################################################################################
-
-#' @rdname print-methods
-#' 
-#' @param x an object of type SaemixData, SaemixModel, SaemixRes or SaemixObject
-#' @param nlines maximum number of lines of data to print (defaults to 10)
-#' @param ... additional arguments passed on the print function
-#' 
-#' @exportMethod print
-
-setMethod("print","SaemixData",
-          function(x,nlines=10,...) {
-            digits<-2;nsmall<-2
-            cat("Object of class SaemixData\n")
-            cat("    longitudinal data for use with the SAEM algorithm\n")
-            cat("Dataset",x@name.data,"\n")
-            st1<-paste(x@name.response," ~ ",paste(x@name.predictors,collapse=" + ")," | ", x@name.group,sep="")
-            if(length(x@varlevel)>1) {
-              for(i in 2:length(x@varlevel)) st1<-paste(st1," | ",x@varlevel[i])
-            }
-            cat("    Structured data:",st1,"\n")
-            if(length(x@name.predictors)>1) {            
-              cat("    X variable for graphs:",x@name.X,paste("(",x@units$x,")",sep=""),"\n")
-            } else  cat("    Predictor:",x@name.X,paste("(",x@units$x,")",sep=""),"\n")
-            ncov<-length(x@name.covariates)
-            if(ncov>0) {
-              cat("    covariates:",paste(paste(x@name.covariates," (",x@units$covariates,")",sep=""),collapse=", "),"\n")
-              # if(length(x@ocov)>0) {
-              #   for(icov in 1:ncov) {
-              #     if(is.factor(x@ocov[,icov]) | length(unique(x@ocov[,icov]))==2) cat("      reference class for covariate",x@name.covariates[icov],": ",levels(as.factor(x@ocov[,icov]))[1],"\n")
-              #   }
-              # }
-            }
-            if(FALSE) {
-              cat("    Group column:",x@name.group,"\n")
-              cat("    Predictors:",x@name.predictors,"\n")
-              cat("    X variable for graphs:",x@name.X,paste("(",x@units$x,")",sep=""),"\n")
-              cat("    Response column:",x@name.response, paste("(",x@units$y,")",sep=""),"\n")
-              cat("    Covariates:",x@name.covariates,"\n")
-            }
-            if(length(x@data)>0) {
-              if(nlines==0) return()
-              cat("Dataset characteristics:\n")
-              cat("    number of subjects:    ",x@N,"\n")
-              if(x@N>0) {
-                cat("    number of observations:",x@ntot.obs,"\n")
-                cat("    average/min/max nb obs:",format(mean(x@nind.obs),digits=digits, nsmall=nsmall), " / ", min(x@nind.obs)," / ",max(x@nind.obs),"\n")
-                #    if(length(x@data)>0) print(x@data)
-              }
-              xdat<-x@data
-#              if(length(x@ocov)>0) try(xdat[,x@name.covariates]<-x@ocov)
-              if(nlines==(-1)) {
-                cat("Data:\n")
-                print(xdat)
-              } else {
-                cat("First",nlines,"lines of data:\n")
-                nrowShow <- min (nlines , nrow(xdat ))
-                print(xdat[1:nrowShow,-c(1)])
-              }
-            } else cat("No data.\n")
-            if(x@messages) cat(x@log)
-          }
-)
-
-#' @rdname show-methods
-#' 
-#' @param object an object of type SaemixData, SaemixModel, SaemixRes or SaemixObject
-#' 
-#' @exportMethod show
-
-setMethod("show","SaemixData",
-          function(object) {
-            cat("Object of class SaemixData\n")
-            cat("    longitudinal data for use with the SAEM algorithm\n")
-            cat("Dataset",object@name.data,"\n")
-            st1<-paste(object@name.response," ~ ",paste(object@name.predictors,collapse=" + ")," | ", object@name.group,sep="")
-            if(length(object@varlevel)>1) {
-              for(i in 2:length(object@varlevel)) st1<-paste(st1," | ",object@varlevel[i])
-            }
-            cat("    Structured data:",st1,"\n")
-            if(length(object@name.predictors)>1) {
-              cat("    X variable for graphs:",object@name.X, paste("(",object@units$x,")",sep=""),"\n")
-            }
-            ncov<-length(object@name.covariates)
-            if(ncov>0) {
-              cat("    covariates:",paste(paste(object@name.covariates," (",object@units$covariates,")",sep=""),collapse=", "),"\n")
-              # if(length(object@ocov)>0) {
-              #   for(icov in 1:ncov) {
-              #     if(is.factor(object@ocov[,icov])) cat("      reference class for covariate",object@name.covariates[icov],": ",levels(object@ocov[,icov])[1],"\n")
-              #   }
-              #   if(length(object@data)>0) try(object@data[,object@name.covariates]<-object@ocov)
-              # }
-            }
-            if(length(object@data)>0) {
-              if(object@N>0) cat(object@ntot.obs,"    observations in",object@N,"subjects\n")
-              cat("First lines of data:\n")
-              nrowShow <- min (10 , nrow(object@data ))
-              print(object@data[1:nrowShow,-c(1)])
-            } else cat("No data.\n")
-            if(object@messages) cat(object@log)
-            
-          }
-)
-
-#' @rdname showall-methods
-#' @aliases showall
-#' @exportMethod showall
-
-# Could be print, with only head of data
-setMethod("showall",signature="SaemixData",
-          function(object) {
-            digits<-2;nsmall<-2
-            cat("Object of class SaemixData\n")
-            cat("    longitudinal data for use with the SAEM algorithm\n")
-            cat("Dataset",object@name.data,"\n")
-            cat("    header:",object@header,"\n")
-            cat("    sep:",object@sep,"\n")
-            cat("    na:",object@na,"\n")
-            st1<-paste(object@name.response," ~ ",paste(object@name.predictors,collapse=" + ")," | ", object@name.group,sep="")
-            if(length(object@varlevel)>1) {
-              for(i in 2:length(object@varlevel)) st1<-paste(st1," | ",object@varlevel[i])
-            }
-            cat("    Structured data:",st1,"\n")
-            cat("    subject identifier:    ",object@name.group,"\n")
-            cat("    predictors:       ",object@name.predictors,"\n")
-            cat("    response:         ",object@name.response,paste("(",object@units$y,")",sep=""),"\n")
-            cat("    X variable for graphs:",object@name.X,paste("(",object@units$x,")",sep=""),"\n")
-            ncov<-length(object@name.covariates)
-            if(ncov>0) {
-              cat("    covariates:",paste(paste(object@name.covariates," (",object@units$covariates,")",sep=""),collapse=", "),"\n")
-              # if(length(object@ocov)>0) {
-              #   for(icov in 1:ncov) {
-              #     if(is.factor(object@ocov[,icov])) cat("      reference class for covariate",object@name.covariates[icov],": ",levels(object@ocov[,icov])[1],"\n")
-              #   }
-              #   if(length(object@data)>0) try(object@data[,object@name.covariates]<-object@ocov)
-              # }
-            }
-            cat("Dataset characteristics:\n")
-            cat("    number of subjects:    ",object@N,"\n")
-            if(object@N>0) {
-              cat("    number of observations:",object@ntot.obs,"\n")
-              cat("    average/min/max nb obs:",format(mean(object@nind.obs),digits=digits, nsmall=nsmall), " / ", min(object@nind.obs)," / ",max(object@nind.obs),"\n")
-              #    if(length(object@data)>0) print(object@data)
-            }
-            if(length(object@data)>0) {
-              cat("First lines of data:\n")
-              nrowShow <- min (10 , nrow(object@data ))
-              ncolShow <- min (10 , ncol(object@data))
-              print(object@data[1:nrowShow,-c(1)])
-            } else cat("No data.\n")
-            cat("Warning messages tracked during the creation of the object:\n")
-            cat(object@log)
-          }
-)
-
-# SaemixRepData
-#' @rdname show-methods
-#' @exportMethod show
-
-setMethod("show","SaemixRepData",
-          function(object) {
-            cat("Object of class saemixRepData\n")
-            if(length(object@N)>0) {
-              cat("    replicated data used in the SAEM algorithm\n")
-              cat("    number of subjects in initial dataset",object@N,"\n")
-              cat("    number of replications",object@nrep,"\n")
-              cat("    number of subjects in replicated dataset",object@NM,"\n")
-            } else cat("Empty object \n")
-          } 
-)
-
-# SaemixSimData
-#' @rdname show-methods
-#' @exportMethod show
-
-setMethod("show","SaemixSimData",
-          function(object) {
-            cat("Object of class SaemixSimData\n")
-            cat("    data simulated according to a non-linear mixed effect model\n")
-            if(length(object@N)>0) {
-              cat("Characteristics of original data\n")
-              cat("    number of subjects:",object@N,"\n")
-              cat("    summary of response:\n")
-              print(summary(object@data[,object@name.response]))
-              cat("Characteristics of simulated data\n")
-              if(dim(object@datasim)[1]>0) {
-                cat("    number of simulated datasets:",object@nsim,"\n")
-                cat("    summary of simulated response\n")
-                print(summary(object@datasim$ysim))
-              } else cat("    no simulations performed yet\n")
-            }}
-)
-
-####################################################################################
-####				Summary method for SaemixData			####
-####################################################################################
-
-#' Summarising longitudinal data
-#' 
-#' summary method for class SaemixData
-#' @name summary-methods
-#' @aliases summary summary,SaemixData summary,SaemixData-method
-#' 
-#' @param object an object of class SaemixData
-#' @param print a boolean controlling whether to print the output or return it silently
-#' @param ... additional arguments (ignored)
-#'     
-#' @return a list with a number of elements extracted from the dataset
-#' \describe{
-#' \item{N}{ number of subjects}
-#' \item{nobs}{ the total number of observations} 
-#' \item{nind.obs}{a vector giving the number of observations for each subject}
-#' \item{id}{subject ID; x: predictors; y: response, and, if present in the data, covariates: the covariates (as many lines as observations) and ind.covariates: the individual covariates (one}
-#' }
-#' @exportMethod summary
-
-setMethod("summary","SaemixData",
-          function(object, print=TRUE, ...) {
-            digits<-2;nsmall<-2
-            if(print) {
-              cat("Object of class SaemixData\n")
-              cat("    longitudinal data for use with the SAEM algorithm\n")
-              cat("Dataset",object@name.data,"\n")
-              st1<-paste(object@name.response," ~ ",paste(object@name.predictors,collapse=" + ")," | ", object@name.group,sep="")
-              cat("    Structured data:",st1,"\n")
-              if(length(object@name.predictors)>1) cat("    X variable for graphs:",object@name.X,paste("(",object@units$x,")",sep=""),"\n")
-              if(length(object@name.covariates)>0) {
-                cat("    covariates:",paste(paste(object@name.covariates," (",object@units$covariates,")",sep=""),collapse=", "),"\n")
-              }
-              cat("Dataset characteristics:\n")
-              cat("    number of subjects:    ",object@N,"\n")
-              if(object@N>0) {
-                cat("    number of observations:",object@ntot.obs,"\n")
-                cat("    average/min/max nb obs:",format(mean(object@nind.obs),digits=digits, nsmall=nsmall), " / ", min(object@nind.obs)," / ",max(object@nind.obs),"\n")
-                #    if(length(object@data)>0) print(object@data)
-              }
-            }
-            res<-list(N=object@N,nobs=list(ntot=object@ntot.obs,nind=object@nind.obs), id=object@data[,object@name.group],x=object@data[,object@name.predictors,drop=FALSE], y=object@data[,object@name.response])
-            if(length(object@name.covariates)>0) {
-              res$covariates<-object@data[,object@name.covariates]
-              ucov<-object@data[,c(object@name.group,object@name.covariates)]
-              ucov<-ucov[match(unique(object@data$index),object@data$index),]
-              res$ind.covariates<-ucov
-              }
-#              res$covariates<-object@ocov
-              # if(dim(object@data)[1]==dim(object@ocov)[1]) {
-              #   ucov<-cbind(object@data[,object@name.group],object@ocov)
-              #   colnames(ucov)[1]<-object@name.group
-              #   ucov<-ucov[match(unique(object@data$index),object@data$index),]
-              #   res$ind.covariates<-ucov
-              # }
-            invisible(res)
-          }
-)
-
-####################################################################################
-####			SaemixData class - method to plot			####
-####################################################################################
-### #' @export
-### #' @docType methods
-### #' @rdname plot-methods
-### #' @aliases plot,SaemixData 
-
-
-saemix.data.setoptions<-function(saemix.data) {
-  # setting default plot options
-  plot.opt<-list(
-    # General graphical options
-    new=TRUE,				# whether a new page should be called
-    ask=FALSE,				# whether the program should ask before creating a new page
-    ilist=c(1:saemix.data["N"]),
-    separate=FALSE,	# if TRUE, plots individual subjects (a la nlme), if FALSE plots a single plot with all the subjects
-    # Options for individual plots
-    nmax=12,					  # maximum number of subjects
-    limit=TRUE,					# limit to nmax plots
-    sample=FALSE,				# if FALSE=use the (nmax) first subjects; TRUE=randomly sample (nmax) subjects from the dataset
-    interactive=FALSE,  # whether the program should prompt the user for the number of subjects to plot in the individual plots if this number exceeds nmax
-    which.cov="none",  # whether to split over covariates
-    # Layout and plots options
-    mfrow=c(),				# page layout (if empty, defaults to the default layout for each graph type)
-    main=" ",				# title
-    xlab=" ",
-    ylab=" ",
-    units=saemix.data@units,
-    col="black",
-    pch=20,
-    lty=1,
-    lwd=1,
-    xlim=c(),
-    ylim=c(),
-    xlog=FALSE,
-    ylog=FALSE,
-    type="b",
-    cex=1,
-    cex.axis=1,
-    cex.lab=1,
-    cex.main=1)
-  
-  if(is.null(saemix.data@name.X))
-    plot.opt$name.X<-saemix.data["name.predictors"][1] else plot.opt$name.X<-saemix.data@name.X
-  plot.opt$xlab<-paste(plot.opt$name.X," (",ifelse(plot.opt$units$x=="","-",plot.opt$units$x),")", sep="")
-  if(length(saemix.data["name.response"])>0)
-    plot.opt$ylab<-paste(saemix.data["name.response"]," (",ifelse(plot.opt$units$y=="","-",plot.opt$units$y),")", sep="")
-  return(plot.opt)
-}
-
-replace.data.options<-function(plot.opt,...) {
-  args1<-match.call(expand.dots=TRUE)
-  # These arguments are used by other functions and may be passed on via "...", so we want to ignore them. Other arguments not in list will raise warnings
-  legacy<-c("plot.type","individual")
-  if(length(args1)>2) {
-    # Other arguments
-    for(i in 3:length(args1)) {
-      if(match(names(args1)[i],names(plot.opt),nomatch=0)>0) {
-        #    plot.opt[[names(args1)[i]]]<-args1[[i]] else {
-        if(!is.null(eval(args1[[i]]))) plot.opt[[names(args1)[i]]]<-eval(args1[[i]])
-      } else {
-        if(is.na(match(names(args1)[i],legacy))) message(paste("Argument",names(args1)[i],"not available, check spelling"))
-      }
-    }
-  }
-  return(plot.opt)
-}
-
-#' Plot of longitudinal data 
-#' 
-#' This function will plot a longitudinal dataframe contained in an SaemixData object. By default it produces a spaghetti plot, but arguments can be passed on to modify this behaviour. 
-#' 
-## #' @name plot-SaemixData
-#' 
-#' @param x an SaemixData object or an SaemixSimData object
-#' @param y unused, present for compatibility with base plot function
-#' @param ... additional arguments to be passed on to plot (titles, legends, ...)
-#' 
-#' @aliases plot,SaemixData-methods 
-#' @aliases plot-SaemixData
-#' @aliases plot,SaemixData plot,SaemixData,ANY-method
-#' @keywords plot
-### #' @docType methods
-#' @rdname plot-SaemixData
-#' 
-#' @import ggplot2 grid gridExtra
-#' @importFrom graphics plot
-#' @importFrom rlang is_missing
-#' @method plot SaemixData
-#' @export 
-
-
-# Plot the data, either as points or as lines grouped by x@name.group
-plot.SaemixData<-function(x,y,...) {
-  if(length(x@data)==0) {
-    message("No data to plot.\n")
-    return("Missing data")
-  }
-  # Eco: commented, otherwise was resetting the graphical layout on exit and preventing the graphs to be set on the same page
-  #    oldpar <- par(no.readonly = TRUE)    # code line i
-  #    on.exit(par(oldpar))            # code line i + 1
-  
-  # User-defined options
-  userPlotOptions<-list(...)
-  if(!is_missing(y) && is.list(y)) {
-    userPlotOptions<-c(y,userPlotOptions)
-  }
-  i1<-match("individual",names(userPlotOptions))
-  if(!is.na(i1)) {
-    individual<-as.logical(eval(userPlotOptions[[i1]]))
-  } else individual<-FALSE
-  i1<-match("type",names(userPlotOptions))
-  if(!is.na(i1)) {
-    plot.type<-as.character(userPlotOptions[[i1]])
-    plot.type<-plot.type[plot.type!="c"]
-  } else plot.type<-c()
-  if(length(plot.type)==0) plot.type<-ifelse(individual,"b","l")
-  
-  # Default options for data plot
-  plot.opt <- saemix.data.setoptions(x)
-  plot.opt$xlab<-paste(x@name.X," (",x@units$x,")",sep="")
-  plot.opt$ylab<-paste(x@name.response," (",x@units$y,")",sep="")
-  plot.opt$type<-ifelse(individual,"b","l")
-  
-  # Replace default options by options passed explicitly
-  if(length(userPlotOptions)>0)
-    plot.opt <- modifyList(plot.opt, userPlotOptions[intersect(names(userPlotOptions), names(plot.opt))])
-  
-  #plot.opt<-replace.data.options(plot.opt,...)
-  logtyp<-paste(ifelse(plot.opt$xlog,"x",""),ifelse(plot.opt$ylog,"y",""),sep="")
-  if(individual) { # separate plots subject per subject
-    if(length(plot.opt$ilist)>plot.opt$nmax & plot.opt$limit) {
-      if(plot.opt$interactive) {
-        x1<-readline(prompt=paste("The number of subjects may be too large to be plotted. Should I plot only",plot.opt$nmax,"subjects ? (Y/n) \n"))
-        if(tolower(x1)=="y") {
-          plot.opt$limit<-TRUE
-          plot.opt$ilist<-plot.opt$ilist[1:plot.opt$nmax]
-          if(plot.opt$sample) plot.opt$ilist<-sort(sample(plot.opt$ilist, plot.opt$nmax)) else plot.opt$ilist<-plot.opt$ilist[1:plot.opt$nmax]
-          if(!plot.opt$ask) {
-            x1<-readline(prompt="Stop after each page of plot ? (Y/n) \n")
-            if(tolower(x1)=="y") plot.opt$ask<-TRUE
-          }
-        }
-      } else {
-        if(plot.opt$interactive) {
-          cat("The number of subjects is too large, I will plot only")
-          if(plot.opt$sample) cat(" the data for",plot.opt$nmax,"subjects sampled randomly;") else cat(" only the data for the first",plot.opt$nmax,"subjects;")
-          cat(" use limit=FALSE in the call to plot to force plotting all the subjects.\n")
-        }
-        if(plot.opt$sample) plot.opt$ilist<-sort(sample(plot.opt$ilist, plot.opt$nmax)) else plot.opt$ilist<-plot.opt$ilist[1:plot.opt$nmax]
-      }
-    } # end of test on length(ilist)
-    if(plot.opt$new) {
-      if(length(plot.opt$mfrow)==0) {
-        np<-length(plot.opt$ilist)
-        if(np>12) np<-12
-        n1<-round(sqrt(np))
-        n2<-ceiling(np/n1)
-        par(mfrow=c(n1,n2),ask=plot.opt$ask)
-      } else par(mfrow=plot.opt$mfrow,ask=plot.opt$ask)
-    }
-    xind<-x["data"][,x["name.predictors"], drop=FALSE]
-    id<-x["data"][,"index"]
-    yobs<-x["data"][,x["name.response"]]
-    for(isuj in plot.opt$ilist) {
-      if(plot.opt$main=="") main<-paste("Subject",isuj) else main<-plot.opt$main
-      plot(xind[id==isuj,x@name.X],yobs[id==isuj],type=plot.type, xlab=plot.opt$xlab,ylab=plot.opt$ylab,col=plot.opt$col,pch=plot.opt$pch,log=logtyp, xlim=plot.opt$xlim,ylim=plot.opt$ylim,main=main,cex=plot.opt$cex, cex.axis=plot.opt$cex.axis,cex.lab=plot.opt$cex.lab,lty=plot.opt$lty, lwd=plot.opt$lwd)
-    }
-  } else {	# One plot for all the data
-    if(plot.opt$new) par(mfrow=c(1,1))
-    if(plot.type=="p" | plot.type=="b") {
-      plot(x@data[,x@name.X],x@data[,x@name.response],xlab=plot.opt$xlab, ylab=plot.opt$ylab,col=plot.opt$col,pch=plot.opt$pch,log=logtyp,xlim=plot.opt$xlim, ylim=plot.opt$ylim,main=plot.opt$main,cex=plot.opt$cex,cex.axis=plot.opt$cex.axis, cex.lab=plot.opt$cex.lab) }
-    if(plot.type=="l") {
-      plot(x@data[,x@name.X],x@data[,x@name.response],xlab=plot.opt$xlab, ylab=plot.opt$ylab,col=plot.opt$col,lty=plot.opt$lty,lwd=plot.opt$lwd,type="n", log=logtyp,xlim=plot.opt$xlim,ylim=plot.opt$ylim,main=plot.opt$main, cex=plot.opt$cex,cex.axis=plot.opt$cex.axis, cex.lab=plot.opt$cex.lab)
-    }
-    if(plot.type=="l" | plot.type=="b") {
-      for(isuj in unique(x@data[,x@name.group])) {
-        lines(x@data[x@data[,x@name.group]==isuj,x@name.X], x@data[x@data[,x@name.group]==isuj,x@name.response],col=plot.opt$col, lty=plot.opt$lty,lwd=plot.opt$lwd)
-      }
-    }
-  }
-}
-
-
-#' When applied to an SaemixSimData object, mirror plots are produced which help assess whether the simulated data has similar features when compared to the original data.
-#'
-#' @name plot-SaemixData
-#' 
-#' @param irep which replicate datasets to use in the mirror plot (defaults to -1, causing a random simulated dataset to be sampled from the nsim
-#' simulated datasets)
-#' @param prediction if TRUE, plot the predictions without residual variability (ypred instead of ysim). Defaults to FALSE.
-#' 
-#' @aliases plot,SaemixSimData-method plot,SaemixSimData plot,SaemixSimData,ANY-method
-#' 
-#' @details this function can also be used to visualise the predictions for simulated values of the individual parameters,
-#' using the ypred element instead of the ysim element normally used here
-#' 
-### #' @docType methods
-#' @rdname plot-SaemixData
-#' @importFrom graphics plot
-#' @method plot SaemixSimData
-#' @export 
-
-# Check simulations using mirror plots
-plot.SaemixSimData<-function(x, y, irep=-1, prediction=FALSE, ...) {
-  #    oldpar <- par(no.readonly = TRUE)    # code line i
-  #    on.exit(par(oldpar))            # code line i + 1
-  # User-defined options
-  userPlotOptions<-list(...)
-  if(!is_missing(y) && is.list(y)) {
-    userPlotOptions<-c(y,userPlotOptions)
-  }
-  i1<-match("interactive",names(userPlotOptions))
-  if(!is.na(i1)) interactive<-as.logical(userPlotOptions[[i1]]) else interactive<-FALSE
-  
-  if(prediction) yplot <- x@datasim$ypred else yplot<-x@datasim$ysim
-  if(length(yplot)==0) {
-    message("No simulated data to plot\n")
-    return()
-  }
-  
-  i1<-match("warnings",names(userPlotOptions))
-  if(!is.na(i1)) printwarnings<-as.logical(userPlotOptions[[i1]]) else printwarnings<-FALSE
-  if(dim(x@datasim)[1]==0) {
-    if(interactive | printwarnings) message("No simulated data.\n")} else {  
-      i1<-match("type",names(userPlotOptions))
-      if(!is.na(i1)) {
-        plot.type<-as.character(userPlotOptions[[i1]])
-        plot.type<-plot.type[plot.type!="c"]
-      } else plot.type<-"l"
-      # Default options for data plot
-      plot.opt <- saemix.data.setoptions(x)
-      plot.opt$new<-FALSE
-      plot.opt$plot.type<-"b"
-      plot.opt$xlab<-paste(x@name.X," (",x@units$x,")",sep="")
-      plot.opt$ylab<-paste(x@name.response," (",x@units$y,")",sep="")
-      # Replace default options by options passed explicitly
-      if(length(userPlotOptions)>0)
-        plot.opt <- modifyList(plot.opt, userPlotOptions[intersect(names(userPlotOptions), names(plot.opt))])
-      logtyp<-paste(ifelse(plot.opt$xlog,"x",""),ifelse(plot.opt$ylog,"y",""),sep="")
-      
-      if(irep[1]<0) irep<-sample(unique(x@nsim),1)
-      for(irep1 in irep) {
-        if(plot.opt$main==" ") tit<-paste("Mirror plot (replication ",irep1,")",sep="") else tit<-plot.opt$main
-        tab<-data.frame(id=x@data[,x@name.group],x=x@data[,x@name.X], y=yplot[x@datasim$irep==irep1])
-        if(plot.type=="p" | plot.type=="b") {
-          plot(tab[,"x"],tab[,"y"],xlab=plot.opt$xlab, ylab=plot.opt$ylab, col=plot.opt$col,pch=plot.opt$pch,log=logtyp,xlim=plot.opt$xlim, ylim=plot.opt$ylim,main=tit,cex=plot.opt$cex,cex.axis=plot.opt$cex.axis, cex.lab=plot.opt$cex.lab) }
-        if(plot.type=="l") {
-          plot(tab[,"x"],tab[,"y"],type="n",xlab=plot.opt$xlab, ylab=plot.opt$ylab,col=plot.opt$col,lty=plot.opt$lty,lwd=plot.opt$lwd, log=logtyp,xlim=plot.opt$xlim,ylim=plot.opt$ylim,main=tit, cex=plot.opt$cex,cex.axis=plot.opt$cex.axis, cex.lab=plot.opt$cex.lab)
-        }
-        if(plot.type=="l" | plot.type=="b") {
-          for(isuj in unique(tab[,"id"])) {
-            lines(tab[tab[,"id"]==isuj,"x"],tab[tab[,"id"]==isuj,"y"])
-          }
-        }
-        
-      }
-    }
-}
 
 ####################################################################################
 ####		Creating an object of SaemixData class - User-level function	####
@@ -876,7 +388,7 @@ plot.SaemixSimData<-function(x, y, irep=-1, prediction=FALSE, ...) {
 #' plot(saemix.data)
 #' @export 
 
-saemixData<-function(name.data,header,sep,na,name.group, name.predictors, name.response,  name.X, outcome=character(), name.covariates=c(), name.genetic.covariates=c(), name.mdv="", name.cens="", name.occ=character(0), varlevel=c(), name.ytype="", units=list(x="",y="",covariates=c()), verbose=TRUE, automatic=TRUE) {
+saemixData<-function(name.data,header,sep,na,name.group, name.predictors, name.response,  name.X, outcome=character(), name.covariates=c(), name.genetic.covariates=c(), name.mdv="", name.cens="", name.occ=character(0), varlevel=c(), covariate.varlevel=c(), name.ytype="", units=list(x="",y="",covariates=c()), verbose=TRUE, automatic=TRUE) {
   # setting proper types for the SaemixData class
   if(missing(name.data)) {
     if(verbose) cat("Error in saemixData: please provide the name of the datafile or dataframe (between quotes)\n")
@@ -914,14 +426,17 @@ saemixData<-function(name.data,header,sep,na,name.group, name.predictors, name.r
   if(missing(name.X)) name.X<-"" else name.X<-as.character(name.X)
   if(!is.character(outcome)) outcome<-as.character(outcome)
   name.covariates<-c(as.character(name.covariates),as.character(name.genetic.covariates))
-  x<-new(Class="SaemixData",name.data=name.data,header=header,sep=sep,na=na, name.predictors=name.predictors,name.X=name.X, name.response=name.response,name.covariates=name.covariates,units=units, name.mdv=name.mdv, name.cens=name.cens, name.ytype=name.ytype, varlevel=varlevel, verbose=verbose, automatic=automatic)
+  x<-new(Class="SaemixData",name.data=name.data,header=header,sep=sep,na=na, name.predictors=name.predictors,name.X=name.X, name.response=name.response,name.covariates=name.covariates, units=units, name.mdv=name.mdv, name.cens=name.cens, name.ytype=name.ytype, varlevel=varlevel, covariate.varlevel=covariate.varlevel, verbose=verbose, automatic=automatic)
   #  showall(x)
   if(data_from_name.data) {
     x1<-readSaemix(x, dat)
   } else
     x1<-readSaemix(x)
-  if(x@name.X=="") x@name.X<-x@name.predictors[1]
   if(is(x1,"SaemixData")) {
+    if(x@name.X=="") {
+      x@name.X<-x@name.predictors[1]
+      if(length(x@name.predictors)>1) x@log<-paste0(x@log, "   Assuming ",x@name.X," is the predictor on the X-axis\n")
+    }
     # Genetic covariates
     igen<-rep(FALSE,length(name.covariates))
     igen[match(name.genetic.covariates,name.covariates)]<-TRUE
@@ -965,6 +480,7 @@ saemixData<-function(name.data,header,sep,na,name.group, name.predictors, name.r
       }
       x1@outcome<-outcome
     }
+    x1 <- extractVarlevelCovariates(x1,verbose=verbose)
     if(verbose) cat("\n\nThe following SaemixData object was successfully created:\n\n")
   }
   if(verbose) print(x1,nlines=0)

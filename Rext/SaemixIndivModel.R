@@ -220,6 +220,9 @@ setMethod("showall","SaemixIndivModel",
 ## transpsi (with param=psi and transform=model@invtransform)
 ## dtransphi (with param=phi and transform=model@dtransform) [check format and maybe create different function]
 
+# ToDo: test computational efficiency ?
+## lost vectorisation with the loop, not sure how we can improve that and keep flexibility to choose individual tranformations
+
 transformPar <- function(param, transform) {
   # param needs to be a matrix (not a vector)
   tparam<-param
@@ -236,4 +239,6 @@ transformPar <- function(param, transform) {
   return(tparam)
 }
 
+# maybe different functions for dtransphi (and the other one for primitive (?))
+# derivPar  <- function(param, transform) {}
 
