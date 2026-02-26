@@ -42,9 +42,9 @@ createStructData <- function(saemix.data, nb.chains=1) {
   if(length(which.lpdf)>0) 
     is.lpdf[saemix.data@data$ytype %in% which.lpdf]<-1
   is.lpdfM<-rep(is.lpdf,nb.chains)
-  Dargs<-list(IdM=IdM, XM=XM, yM=yM, NM=NM, N=N, nobs=saemix.data["ntot.obs"],
-              yobs=saemix.data["data"][,saemix.data["name.response"]], is.lpdfM=is.lpdfM,
-              ind.ioM=ind.ioM)
+  Dargs<-list(IdM=IdM, XM=XM, yM=yM, NM=NM, N=N, nb.chains=nb.chains,
+              nobs=saemix.data["ntot.obs"],yobs=saemix.data["data"][,saemix.data["name.response"]], 
+              is.lpdfM=is.lpdfM,ind.ioM=ind.ioM)
   return(list(Dargs=Dargs, DYF=DYF))
 }
 

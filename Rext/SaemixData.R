@@ -138,6 +138,7 @@ setClass(
     ind.gen="logical",	# vector of booleans (same size as name.covariates); TRUE=genetic covariate, FALSE=non-genetic covariates
     ntot.obs="numeric",		# total number of observations (=dim(tab)[1])
     var.index = "list", # list of the indices at each varlevel (match phi_ik to data from ik)
+    var.N = "list", # list of the number of units at each varlevel (eg: IIV: N, IOV: nocc_i)
     var.nobs = "list", # list of the number of observations per unit at each varlevel (individual number of y_ik)
     var.covmat = "list", # list of covariate matrices at each level of variability
     nind.obs="numeric"		# number of observations for each subject
@@ -474,6 +475,7 @@ setMethod(
     "ind.gen"={return(x@ind.gen)},
     "ntot.obs"={return(x@ntot.obs)},
     "var.index"={return(x@var.index)},
+    "var.N"={return(x@var.N)},
     "var.nobs"={return(x@var.nobs)},
     "var.covmat"={return(x@var.covmat)},
     "nind.obs"={return(x@nind.obs)},
@@ -517,6 +519,7 @@ setReplaceMethod(
     "ntot.obs"={x@ntot.obs<-value},
     "var.index"={x@var.index<-value},
     "var.nobs"={x@var.nobs<-value},
+    "var.N"={x@var.N<-value},
     "var.covmat"={x@var.covmat<-value},
     "nind.obs"={x@nind.obs<-value},
     stop("No such attribute\n")

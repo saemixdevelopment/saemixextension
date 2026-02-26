@@ -569,6 +569,9 @@ lungtab.parestim <- df2
 
 ```
 
+#### Diagnostic plots
+
+ToDo: add stratification to VPC plots to produce VPC stratified by sex or ECOG status.
 
 ### RTTE model
 

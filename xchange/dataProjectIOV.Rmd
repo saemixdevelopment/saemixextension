@@ -1,0 +1,556 @@
+---
+title: "Changing classes in saemix - introducing IOV"
+author: "Emmanuelle Comets"
+date: "2026-02-13"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+# Objective
+
+```{r setup, include=FALSE}
+# Setting working directory
+require("knitr")
+knitr::opts_chunk$set(echo = TRUE)
+
+# Libraries
+library(rlang)
+library(ggplot2) 
+library(RColorBrewer) 
+library(gridExtra)
+library(viridis)
+library(testthat)
+
+#library(dplyr)
+# library(Cairo)
+
+# Working directory
+saemixDir<-"/home/eco/work/saemix/saemixextension"
+workDir <-getwd()
+setwd(workDir)
+knitr::opts_chunk$set(root.dir = workDir)
+
+# Load function generics (same for both versions)
+progDir.current<-file.path(saemixDir,"R")
+progDir.next<-file.path(saemixDir,"Rext")
+source(file.path(progDir.current,"aaa_generics.R"))
+
+# directory for new data
+datDir<-file.path(saemixDir,"data40")
+
+```
+
+# Simulation of IOV with theophylline PK
+
+- Features
+  - theophylline PK
+  - covariates
+    - sex, weight changing with subject
+    - CRCL, comedication changing with occasion
+  - design
+    - N=100 subjects
+    - 1 to 3 occasion per subject (random)
+    - sampling times for each occasion: 0.25, 1.5, 3.35, 12 and 24 h (sparse design in Dubois et al.)
+    - dose: D=4mg
+    - time between two occasions: 4 weeks (assume washout so no drug left)
+- Model
+  - PK response: 1 cpt model with absorption
+
+    $$ Cpred = \frac{D}{V} \frac{k_a}{(k_a-CL/V)} \left( e^{- CL/V t} - e^{-k_a t} \right)$$
+  - log-normal parameter distribution
+  - population parameter values (Dubois et al.)
+    - ka=1.48 h-1
+    - CL=0.04 L/h
+    - V=0.48 L
+  - variabilities
+    - IIV 
+      - 30% on all parameters
+      - correlation between CL and V (0.7)
+    - IOV
+      - IOV on CL only with 25% IOV
+    - different from Dubois, where 2 scenarios, no correlation and no covariate effect
+      - low IIV: 0.2 on ka and CL, 0.1 on V; half of IIV for IOV
+      - regular BSV: 0.5 on ka, V, CL and 0.15 on IOV
+    - combined residual error model with a=0.1 and b=0.1 (low IIV scenario from Dubois)
+  - covariate models
+    - subject-level:
+      - weight: allometry on V and CL
+      - gender: V decreased by 30% in women
+    - occasion level
+      - CRCL: correlation with CL ($\beta_{CRCL, CL}=0.5$)
+      - comedication: increase in CL by 30\%
+- Not included in the simulation
+  - NA values in the covariates
+  - LOQ values
+
+### Read datasets
+
+- Theophylline without IOV on CL
+  - but small differences due to covariates for the second simulation
+
+```{r readSimulatedTheoDataIIV}
+# Dataset without covariates
+theonocov <- read.csv(file=file.path(datDir,"theoSimul_nocov.csv"), header=T, sep=",")
+psinocov <- read.csv(file=file.path(datDir,"theoSimul_psinocov.csv"), header=T, sep=",")
+
+# Dataset with covariates (different psi across occasions but only due to covariates)
+theocov <- read.csv(file=file.path(datDir,"theoSimul_cov.csv"), header=T, sep=",")
+psicov <- read.csv(file=file.path(datDir,"theoSimul_psicov.csv"), header=T, sep=",")
+```
+
+### SaemixData object (new class)
+
+- done
+  - read data
+  - define variability levels
+  - associate indices at the different levels
+- **ToDo**
+  - need to modify SaemixRepData so that it takes on the highest level of variability for matching
+- **ToDo after matching with model**
+  - check consistency with covariates that are in the model (keep in @data for graphs, adjust model with warnings if covariates not found)
+  - check consistency of variability levels with model (presence of levels of variability)
+  - check consistency of covariate models at different levels of variability
+    - warning if inconsistency (eg covariate at IIV level but varying across occasions, covariate at IOV level but in fact related to IIV)
+  - extract matrix of covariates at each variability level
+    - add to SaemixData object ? (probably, but not sure whether to keep only the covariates specified in the model... or maybe add also a slot at lowest variability level with the all the covariate values)
+  - redefine SaemixRepData if the levels of variability have changed
+
+```{r newSaemixData, results='hide', echo=FALSE, warnings=FALSE}
+source(file.path(progDir.next,"SaemixData.R"))
+source(file.path(progDir.next,"SaemixData-printmethods.R"))
+source(file.path(progDir.next,"SaemixData-covariatemethods.R"))
+source(file.path(progDir.next,"SaemixData-methods.R"))
+source(file.path(progDir.next,"SaemixData-plotmethods.R"))
+
+theodat.iov <-  saemixData(name.data=file.path(datDir,"theoSimul_nocov.csv"), header=T,na=".", sep=",", varlevel=c("id","occ"),name.predictors=c("tim", "dose"),name.response=c("ysim"), unit=list(x="hr",y="mg/L"), verbose=TRUE)
+
+xdata <- theodat.iov@data
+occ.labs <-paste("Occasion",1:3)
+names(occ.labs) <- c("1", "2", "3")
+
+ggplot(xdata, aes(x=tim, y=ysim, group=id, colour=as.factor(occ))) + geom_point() + geom_line(data = subset(xdata)) + xlab("Time (hr)") + ylab("Concentrations (mg/L)")  + scale_color_viridis("Occasion",discrete = TRUE) +  facet_wrap(.~occ, labeller = labeller(occ=occ.labs, .multi_line=FALSE))
+
+# No covariates, no iov
+theodat.iiv <-  saemixData(name.data=file.path(datDir,"theoSimul_nocov.csv"), header=T,na=".", sep=",", varlevel=c("id"),name.predictors=c("tim", "dose"),name.response=c("ysim"), unit=list(x="hr",y="mg/L"), verbose=TRUE)
+cat("Not ordered in the same way when occasion is ignored (sorted by time, otherwise sorted by occ then time\n")
+summary(theodat.iiv@data$ysim - theodat.iov@data$ysim)
+head(theodat.iov@data[theodat.iov@data$id==2,],10)
+head(theodat.iiv@data[theodat.iiv@data$id==2,],10)
+
+# With covariates and IOV
+theocovdat <-  saemixData(name.data=file.path(datDir,"theoSimul_cov.csv"), header=T,na=".", sep=",", varlevel=c("id","occ"),name.predictors=c("tim", "dose"),name.response=c("ysim"), name.covariates=c("wt","sex","crcl","comed"), covariate.varlevel = c(rep("id",2),rep("occ",2)), unit=list(x="hr",y="mg/L",covariates=c("kg","-","g/dL","-")), verbose=TRUE)
+
+# ToDo: 
+## Done: automate: done is readSaemix, calling extractVarlevelCovariates
+### ToDo: check variability levels in data object 
+### automatically ascribe variability levels (currently goes to lowest variability level, ie occ here if we don't specify covariate.varlevel)
+## ToDo: match data and model, matching covariates in data with popmodel matrices in saemix.model
+if(FALSE){
+  idx.iiv <-which(!duplicated(theocovdat@data$id))
+  Mcov.iiv <- cbind(pop=1,theocovdat@data[idx.iiv,c("wt","sex")])
+  ilab<-paste0(theocovdat@data$id,"-",theocovdat@data$occ)
+  # Here no mu_occ (otherwise also need a column of 1's)
+  idx.iov <-which(!duplicated(ilab))
+  Mcov.iov <- theocovdat@data[idx.iov,c("crcl","comed")]
+  Mcovar <- list(Mcov.iiv, Mcov.iov)
+  names(Mcovar) <- theocovdat@varlevel
+}
+Mcovar<-theocovdat@var.covmat
+head(Mcovar$id)
+head(Mcovar$occ)
+
+head(theodat.iov@data,12)
+head(theodat.iiv@data,12)
+
+cat("Expect 0:\n")
+print(summary(theodat.iov@var.index[[2]]-theodat.iov@data$index))
+print(summary(theodat.iiv@var.index[[1]]-theodat.iiv@data$index))
+```
+
+### SaemixModel object (new class)
+
+
+```{r newSaemixModel, results='hide', echo=FALSE, warnings=FALSE}
+# Load subclasses for outcome, parameter, error model, variability model, individual, population and statistical models
+source(file.path(progDir.next,"SaemixErrorModel.R"))
+source(file.path(progDir.next,"SaemixOutcome.R"))
+source(file.path(progDir.next,"SaemixParameter.R"))
+source(file.path(progDir.next,"SaemixParameter-methods.R"))
+source(file.path(progDir.next,"SaemixVarModel.R"))
+source(file.path(progDir.next,"SaemixVarModel-methods.R"))
+source(file.path(progDir.next,"SaemixPopModel.R"))
+source(file.path(progDir.next,"SaemixIndivModel.R"))
+source(file.path(progDir.next,"SaemixModel.R"))
+source(file.path(progDir.next,"SaemixModel-methods.R"))
+
+# model function
+theo1cpt <- function(psi,id,xidep) {
+  tim<-xidep[,1]
+  dose<-xidep[,2]
+  ka<-psi[id,1]
+  V<-psi[id,2]
+  CL<-psi[id,3]
+  ypred <- dose*ka/V/(ka-CL/V)*(exp(-CL/V*tim) - exp(-ka*tim))
+  return(ypred)
+}
+
+############### New definition, no IOV in the model
+param.noiov <- list(ka=saemixParam(mu.init=1.5),
+                vd=saemixParam(mu.init=0.5, sd.init=0.7,varlevel=c("iiv")),
+                cl=saemixParam(name="cl",mu.init=0.04, varlevel=c("iiv"), sd.init=c(0.6), corr = list(iiv=c("vd")))
+                )
+theomodel.iiv <- saemixModel(model=theo1cpt, parameters=param.noiov)
+
+############### New definition, with IOV and covariates in the model
+# Model without covariates
+param.iov <- list(ka=saemixParam(mu.init=1.5),
+                vd=saemixParam(mu.init=0.5, sd.init=0.7,varlevel=c("iiv","iov")),
+                cl=saemixParam(name="cl",mu.init=0.04, varlevel=c("iiv","iov"), sd.init=c(0.6,0.3), corr = list(iiv=c("vd")))
+)
+theomodel.iov <- saemixModel(model=theo1cpt, parameters=param.iov)
+
+# Model with covariates
+param.cov <- list(ka=saemixParam(mu.init=1.5),
+                vd=saemixParam(mu.init=0.5, sd.init=0.7, covariate=c("wt","comed"), covariate.init=c(1,0), covariate.estim=c("fixed","estimated"), covariate.varlevel=c("iiv","iov")),  
+                cl=saemixParam(name="cl",mu.init=2, varlevel=c("iiv","iov"), sd.init=c(0.6,0.3), corr = list(iiv=c("vd")), covariate=c("wt","sex","crcl"), covariate.init=c(0.75,0,0), covariate.estim=c("fixed","estimated","estimated"), corr.init=list(iiv=c(-0.5,0.7), iov=0.7), covariate.varlevel=c("iiv","iiv","iov"))
+)
+theomodel.coviov <- saemixModel(model=theo1cpt, parameters=param.cov)
+theomodel.coviov@popmodel
+
+# Extraction of parameters
+```
+
+### Initialisation
+
+- Create lists needed by the algorithm
+  - Margs: model-related elements (passed on to functions, unchanged)
+    - structural model
+    - residual error models/discrete nature of outcomes
+  - Dargs: data-related elements (passed on to functions, unchanged)
+    - observed data (yobs) and predictors
+    - indices of non-zero elements in DYF
+    -...
+  - Vargs
+    - omega matrices
+    - indices
+- compute.LLy: computes the log-likelihood given individual parameters phiM
+  - uses data in Dargs (initialised in createStructData)
+  - uses model features in Margs (initialised in createStructModel)
+- **ToDo M2 Lille**
+  - check if extends to IOV (should not change the computation)
+    - seems to work, but need to check
+  - check if extends to covariates (should not change the computation)
+    - seems to work, but need to check
+  - check if extends to multiple chains (need to expand phiM)
+- **ToDo M2 Lille**
+  - matching functions
+    - check matching between
+    - create design matrices to hold the individual covariate structures
+  - complete createStructData to extract covariate matrices
+- **ToDo** Eco
+  - add initialisation of Vargs (variables updated during the fit) to createStructModel (variables extracted initially from the model)
+  - for the moment specific function *createVarlist()*, see if need to regroup
+
+```{r initialLists, results='hide', echo=FALSE, warnings=FALSE}
+# Computational functions
+source(file.path(progDir.next,"func_aux.R"))
+# Initialise functions 
+source(file.path(progDir.next,"func_initialise.R"))
+
+# IIV only
+# Dargs from theodat.iiv (no covariates)
+dlist <- createStructData(theodat.iiv, nb.chains=1)
+Dargs.iiv <- dlist$Dargs
+DYF.iiv <- dlist$DYF
+cat("Expect 0:\n")
+print(summary(Dargs.iiv$IdM-theodat.iiv@var.index[[1]]))
+# Margs from theomodel.iiv (no covariates, only IIV)
+mlist <- createStructModel(theomodel.iiv)
+Margs.iiv <- mlist$Margs
+
+# IOV + IIV
+# Dargs from theodat.iov (no covariates)
+dlist <- createStructData(theodat.iov, nb.chains=1)
+Dargs.iov <- dlist$Dargs
+DYF.iov <- dlist$DYF
+cat("Expect 0:\n")
+print(summary(Dargs.iov$IdM-theodat.iov@var.index[[2]]))
+# Margs from theomodel.iiv (no covariates, only IIV)
+mlist <- createStructModel(theomodel.iiv)
+Margs.iov <- mlist$Margs
+
+
+```
+
+
+### Computational functions
+
+- model predictions
+  - need to use the second level of indices (var.index[[2]]) to match the occasion-level parameters (extracted in Dargs)
+  - recovers the same values as ypred (without residual error)
+- error
+  - note how this function is used
+  - see also testthat_auxFunc.R
+- ssq
+  - compare yobs with fpred
+  - see also testthat_auxFunc.R
+- computation of likelihood associated to observations
+  - input
+    - phiM (individual parameters on the eta scale, as a matrix)
+    - lists Dargs (elements related to data) and Margs (elements related to model): created by specific functions (see above)
+    - matrix DYF also created in the same function
+  - **ToDo:** check (compute fpred and gpred by hand and compare for each subject)
+
+```{r auxFunctions, results='hide', echo=FALSE, warnings=FALSE}
+# Using Dargs to predict 
+psiM <- as.matrix(psinocov[,c(2:4)])
+#fpred <- theomodel@model(psiM, theodat.iov@var.index[[2]], Dargs$XM)
+fpred <- theomodel.iov@model(psiM, Dargs.iov$IdM, Dargs.iov$XM)
+expect_true(max(fpred-theonocov$ypred)<10-6) # almost zero
+
+# Error model
+gpred<-error(fpred,list(theomodel.iov@outcome[[1]]@error.model), theodat.iov@data$ytype)
+expect_equal(min(gpred),1)
+expect_equal(max(gpred),1)
+summary(gpred) # should be 1 (constant variance with parameter initialised at 1)
+
+# Sum of squares (see also the associated testtaht (WiP))
+xcal <- ssq(theomodel.iov@outcome[[1]]@error.model@param, Dargs.iov$yobs, fpred, theomodel.iov@outcome[[1]]@error.model)
+xcal
+
+# Computation of likelihood associated to observations - IIV
+psiM.iiv <- as.matrix(psinocov[!duplicated(psinocov$id),c(2:4)])
+expect_equal(dim(psiM.iiv)[1],dim(DYF.iiv)[2])
+phiM.iiv <- transformPar(psiM.iiv,Margs.iiv$invtransform)
+LLy.iiv <- compute.LLy(phiM.iiv, Margs.iiv, Dargs.iiv, DYF.iiv) 
+sum(LLy.iiv)
+
+# Computation of likelihood associated to observations - IIV + IOV
+psiM.iov <- as.matrix(psinocov[,c(2:4)])
+phiM.iov <- transformPar(psiM.iov,Margs.iov$invtransform)
+LLy.iov <- compute.LLy(phiM.iov, Margs.iov, Dargs.iov, DYF.iov) 
+sum(LLy.iov)
+
+cat("Quick check: model with IOV should have better LL than the model without, here ")
+if(expect_true(sum(LLy.iiv)>sum(LLy.iov))) cat("TRUE \n")
+# Should be true for all subjects 
+## same dataset, one model has 'better' parameters adjusted to occasions, but the order of observations is differnet in both datasets so can't compare element to element ? (should still be the same subject order...
+# data.frame(LLy.iiv[which(LLy.iiv<LLy.iov)],LLy.iov[which(LLy.iiv<LLy.iov)])
+```
+
+### Simulation (E-step)
+
+#### Simulations in the extended matrix
+
+- simulation at the level of the full vector of individual parameters
+  - not at the eta level
+  - uses the extended matrix (denoted $\Gamma$ in the Panhard and Samson paper)
+- list Vargs holding omega matrices (created by *createVarList()*)
+  - WiP: will probably need additional elements previously contained in list varList
+  - note: elements of the residual error now in error.model, either update them there or keep track of them in Vargs
+- **ToDo** simulation
+  - simulation of etas
+    - simulate in extended matrix
+    - here use svd decomposition as cholesky doesn't work (the extended matrix isn't invertible)
+    - **ToDo**: check if the simulation is correct
+  - extend to different number of occasions across subjects
+    - possible solution: simulate as a block then keep only occasions present for each subject
+    - may need a second series of indices as lists in ind.ioM
+  - extend to covariates
+- **ToDo** E-step
+  - simulation in each kernel
+  - kernel with block structure (simulation of a subset of parameters): not obvious how to do
+    - think about solutions (repeated blocks across the nocc ?)
+
+```{r simulEta, results='hide', echo=FALSE, warnings=FALSE}
+# Model without covariates,  IIV + IOV
+smx.model <- theomodel.iov
+smx.data <- theodat.iov
+
+dlist <- createStructData(smx.data, nb.chains=1)
+Dargs <- dlist$Dargs
+DYF <- dlist$DYF
+
+# Margs from theomodel.iov
+mlist <- createStructModel(smx.model)
+Margs <- mlist$Margs
+
+vlist <- createVarlist(smx.model, smx.data)
+Vargs <- vlist$Vargs
+omega.sim <- vlist$Vargs$omega.sim
+ind.eta <- vlist$ind.eta
+nb.etas <- length(ind.eta)
+ind.eta.ext <- vlist$ind.eta.ext
+nb.etas.sim <- length(ind.eta.ext)
+domega <- cutoff(mydiag(omega.sim[ind.eta.ext,ind.eta.ext]),.Machine$double.eps)
+omega.eta <- omega.sim[ind.eta.ext,ind.eta.ext, drop=FALSE]
+omega.eta <- omega.eta-mydiag(mydiag(omega.sim[ind.eta.ext,ind.eta.ext]))+mydiag(domega)
+
+# Can't really simulate like in the E-step without IOV because the blocks make the matrix not invertible
+if(FALSE) {
+  chol.omega<-try(chol(omega.eta))
+	somega<-solve(omega.eta)
+  nb.etas.sim<-length(ind.eta.ext)
+	etaMc<-try(matrix(rnorm(Dargs$NM*nb.etas.sim),ncol=nb.etas.sim)%*%chol.omega)
+}
+
+# chol.omega<-try(chol(omega.eta))
+# Cholesky decomposition fails with extended matrix => using svd (alternative approach implemented in rmvtnorm)
+# 2-3 times slower
+svd.omega<-svd(omega.eta)
+rmat.omega <- t(svd.omega$v %*% (t(svd.omega$u) * sqrt(pmax(svd.omega$d, 0))))
+etaMc<-matrix(rnorm(Dargs$NM*nb.etas.sim),ncol=nb.etas.sim)%*%rmat.omega
+head(etaMc)
+## now need to compute mean.phi for phiM then
+## U.y <- compute.LLy(phiM, Margs, Dargs, DYF) 
+
+```
+
+
+#### Trying to compute the mean of simulated etas over all occasions
+
+- Simulation of etas $\phi_{ik}$ in the extended matrix (nb.etas x nocc.max)
+- Storage structure for etas $\phi_{ik}$
+  - DYF.eta: N x nocc.max x nb.chains lines and nb.etas columns
+  - ind.ieta: lines with non-zero elements
+- note: here done with eta but same idea could apply to phi (eg phiMc in the e-step)
+- note: done directly as the mean over the nb.chains, not sure that in the code we don't need to keep the nb.chains separate during the E-step and only average them in the M-step
+
+```{r etaStructure, results='hide', echo=FALSE, warnings=FALSE}
+# Add to Dargs as re-used many times
+nocc.max <- max(smx.data@var.N[[2]]) # max nb of occasions (to create a square matrix DYF.eta, with 0s for missing occasions)
+
+# indices of lines with occasions present in the dataset
+iocc<-rep(smx.data@var.N[[2]],each=nocc.max)
+iall<-rep(1:nocc.max,Dargs$NM)
+ind.ieta<-which(iall <= iocc)
+
+# square matrix with (nocc*N*nb.chains) lines and nb.etas columns
+DYF.eta <- matrix(0,nrow=Dargs$NM*nocc.max, ncol=nb.etas)
+
+# generate random effects for all subjects for nocc.max occasions => etaMc has size Dargs$NM x (nb.etas*nocc.max)
+etaMc<-matrix(rnorm(Dargs$NM*nb.etas.sim),ncol=nb.etas.sim)%*%rmat.omega
+# transform etaMc to stack the occasions for each subject => size (Dargs$NM*nocc.max) x nb.etas
+etaMc.occ <- matrix(etaMc, ncol=nb.etas, byrow=T)
+DYF.eta[ind.ieta,] <- etaMc.occ[ind.ieta,]
+
+# rescale the matrix into (nocc.max*nb.chains) rows x (nb.eta*N) subjects
+# now we have all phi1, then all phi2, etc...
+DYF.eta.tr<-matrix(DYF.eta,nrow=nocc.max*Dargs$nb.chains)
+
+# compute the mean of each column, over only the available occasions (=mean(phi_ik) over the k occasions and the nb.chains chains)
+inunits <- rep(smx.data@var.N[[2]],nb.etas) # nb of occasions for each subjects, repeated nb.etas times
+mphi <- colSums(DYF.eta.tr)/Dargs$nb.chains/inunits
+
+# If needed, we can put these back into a matrix N*nb.chains x nb.etas
+mean.etaM <- matrix(mphi,ncol=nb.etas)
+
+```
+
+#### Computing likelihood for parameters (U.eta) 
+  
+- **ToDo**
+  - figure out formula to replace 
+        U.eta<-0.5*rowSums(etaM*(etaM%*%somega))
+    - here etaM=$\phi_{ik}$
+  - can we compare directly to extended matrix (but not invertible) ? probably not
+  - do we need to compute $\phi_i$ and $\phi_{ik}$ and sum $\phi_i \; \Omega_1^{-1} \; \phi_i^T$ and $\sum_k \phi_{ik} \; \Omega_2^{-1} \; \phi_{ik}^T$ ? (probably)
+  - here we also need to sum only on the levels of variability for each subject...
+    - is there a clever way to do it ? (using indices, then using colSums and associated ni.occ)
+- **maybe ToDo**
+  - add nocc.max to the data object (currently computed in createVarlist)
+  - add an element niocc to the levels of variability
+    - here an obvious question: do we need to track the number of occasions or do we assume occasions are necessarily consecutive, 1, 2, 3 ?
+  - add an index for the parameters corresponding to occasions (probably a list of size nocc.max)
+    - maybe also need an equivalent of DYF for eta ? TBD
+
+```{r simulPhi, results='hide', echo=FALSE, warnings=FALSE}
+# Computing U.eta
+etaM <- etaMc
+
+if(FALSE) {
+  # for the same reason, can't invert omega.eta
+  somega<-solve(omega.eta)
+  U.eta<-0.5*rowSums(etaM*(etaM%*%somega))
+}
+
+```
+
+### Other
+
+- *TBD: extension to more than 2 levels of variability (future)*
+
+## Case-studies (isolated)
+
+Matching data and object
+
+- ToDo:
+  - create functions to match data and object and check validity, updating with warning messages if need be
+
+### Data and model without IOV, no covariates
+
+
+```{r caseIIVnocov, results='hide', echo=FALSE, warnings=FALSE}
+
+# Dargs from theodat.iiv (no covariates)
+dlist <- createStructData(theodat.iiv, nb.chains=1)
+Dargs.iiv <- dlist$Dargs
+DYF.iiv <- dlist$DYF
+
+# Margs from theomodel.iiv (IIV only)
+mlist <- createStructModel(theomodel.iiv)
+Margs.iiv <- mlist$Margs
+
+vlist <- createVarlist(theomodel.iiv, theodat.iiv)
+Vargs.iiv <- vlist$Vargs
+
+```
+
+### Data and model with IOV, no covariates
+
+
+```{r caseIOVnocov, results='hide', echo=FALSE, warnings=FALSE}
+
+# Dargs from theodat.iov (no covariates)
+dlist <- createStructData(theodat.iov, nb.chains=1)
+Dargs.iov <- dlist$Dargs
+DYF.iov <- dlist$DYF
+
+# Margs from theomodel.iov (IIV + IOV)
+mlist <- createStructModel(theomodel.iov)
+Margs.iov <- mlist$Margs
+
+vlist <- createVarlist(theomodel.iov, theodat.iov)
+Vargs.iov <- vlist$Vargs
+
+```
+
+
+
+### Sufficient statistics
+
+- ToDo: M2 Lille
+  - sufficient statistics should need only 
+    - individual parameters (simulated or from psinocov) 
+    - associated model predictions ()
+    - observations from Dargs$yobs
+    - residual error parameters from Margs$error.model
+  - IOV model without covariates (formulas in paper by Panhard and Samson)
+  - base model (no covariates, no IOV)
+    - formulas in Kuhn and Lavielle TBC
+  - model with covariates
+    - linear regression to solve mu+beta.Ci = phi_i - eta_i ? TBD
+    - without IIV: see formula in previous saemix
+    - with IOV: not sure where/what level we apply this (probably at each variability level, needs to reconstitute the associated systems)
+   
+```{r suffStats, results='hide', echo=FALSE, warnings=FALSE}
+# input: phiM
+# Vargs: omega matrices 
+
+psiM.iov <- as.matrix(psinocov[,c(2:4)])
+phiM.iov <- transformPar(psiM.iov,Margs.iov$invtransform)
+
+```
+
+

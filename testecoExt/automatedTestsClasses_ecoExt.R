@@ -30,15 +30,26 @@ myreporter <- default_reporter()
 # myreporter <- "location"
 
 
-#####################################################
+###############################################################################################################
 ###### Testing Data Class
 # New functions (Rext)
 source(file.path(progDirExt,"SaemixData.R"))
+source(file.path(progDirExt,"SaemixData-printmethods.R"))
 source(file.path(progDirExt,"SaemixData-methods.R"))
-source(file.path(progDirExt,"SaemixData-methods_covariates.R"))
+source(file.path(progDirExt,"SaemixData-covariatemethods.R"))
+source(file.path(progDirExt,"SaemixData-plotmethods.R"))
+
+#### creating an SaemixData object from files or dataframes
+#### automatic recognition of column names
+ifile <- "testthat_saemixData-read.R"
+test_file(file.path(testDirExt,ifile), reporter=myreporter)
+
+#### datasets with more complex covariates
+ifile <- "testthat_saemixData-covariates.R"
+test_file(file.path(testDirExt,ifile), reporter=myreporter)
 
 #############################
-# Legacy tests for Data
+# Legacy tests for Data (copied from previous classes, should still work/pass)
 # expect many warnings (NA due to conversion)
 #### saemixData class - legacy code
 ## caution: need to copy tests to a different directory otherwise old functions are reloaded :-/
@@ -47,31 +58,17 @@ ifile <- "testthat_saemixData-class.R"
 file.copy(from=file.path(testDir,ifile), to=testDirLegacy, overwrite=TRUE)
 test_file(file.path(testDirLegacy,ifile), reporter=myreporter)
 
-#### creating an SaemixData object from files or dataframes
-#### automatic recognition of column names
-
-## ToDo: check FAIL
-ifile <- "testthat_saemixData-read.R"
-file.copy(from=file.path(testDir,ifile), to=testDirLegacy, overwrite=TRUE)
-test_file(file.path(testDirLegacy,ifile), reporter=myreporter)
-
-#### datasets with more complex covariates
-## ToDo: check FAIL
-ifile <- "testthat_saemixData-covariates.R"
-file.copy(from=file.path(testDir,ifile), to=testDirLegacy, overwrite=TRUE)
-test_file(file.path(testDirLegacy,ifile), reporter=myreporter)
-
 #### transforming continuous and categorical covariates
 ifile <- "testthat_saemixData-transform.R"
 file.copy(from=file.path(testDir,ifile), to=testDirLegacy, overwrite=TRUE)
 test_file(file.path(testDirLegacy,ifile), reporter=myreporter)
 
-#### plots
+#### plots - ToDo
 ifile <- "testthat_saemixData-plot.R"
 file.copy(from=file.path(testDir,ifile), to=testDirLegacy, overwrite=TRUE)
 test_file(file.path(testDirLegacy,ifile), reporter=myreporter)
 
-#############################
+##########################################################
 # New tests for Data
 
 #### class created with outcome (character vector in the data class)
@@ -82,7 +79,8 @@ test_file(file.path(testDirExt,"testthat_saemixData.R"), reporter=myreporter)
 ## add tests with covariates read and associated to different varlevels
 ## debug the last 3 tests
 
-#####################################################
+###############################################################################################################
+
 ###### Testing new Classes for model
 
 #############################
@@ -93,6 +91,9 @@ source(file.path(progDirExt,"SaemixOutcome.R"))
 # 
 test_file(file.path(testDirExt,"testthat_saemixErrorModel.R"), reporter=myreporter)
 test_file(file.path(testDirExt,"testthat_saemixOutcome-class.R"), reporter=myreporter)
+
+# ToDo - why do I get this warning when executing the last test file ?
+# dans la méthode pour ‘print’ avec la signature ‘"SaemixContinuousOutcome"’ : aucune définition de la classe “SaemixContinuousOutcome” n'est trouvée
 
 #############################
 # Parameter
@@ -135,6 +136,26 @@ source(file.path(progDirExt,"SaemixModel-methods.R"))
 #############################
 test_file(file.path(testDirExt,"testthat_saemixModel-class.R"))
 
+
+#####################################################
+###### Testing Individual parameter Class
+source(file.path(progDirExt,"SaemixVarPhi.R"))
+source(file.path(progDirExt,"SaemixIndivPar.R"))
+
+#############################
+test_file(file.path(testDirExt,"testthat_saemixIndivPar-class.R"))
+
+
+###############################################################################################################
+##########################                   WiP             ##################################################
+###############################################################################################################
+
+###### Testing computational functions
+source(file.path(progDirExt,"func_initialise.R"))
+source(file.path(progDirExt,"func_aux.R"))
+
 test_file(file.path(testDirExt,"testthat_auxFunc.R"))
+
+###### Testing initialisation
 
 #####################################################

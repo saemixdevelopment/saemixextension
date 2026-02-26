@@ -305,6 +305,13 @@ context("Multiple levels of variability")
 ## add more tests for the class with IOV
 ## add tests with covariates read and associated to different varlevels
 
+test_that("IIV + IOV, one response", {
+  theonocov<-read.csv(file.path(datDir,"../","data40","theoSimul_nocov.csv"),header=T,na=".")
+  x<-saemixData(name.data=theonocov, name.predictors=c("tim","dose"), name.response="ysim",varlevel=c("id","occ")) 
+  expect_equal(x@varlevel,c("id","occ"))
+})
+
+
 test_that("IIV + IOV given in class constructor through varlevel", {
   x<-new(Class="SaemixData",name.data=file.path(datDir,"../","data40","complexSimulation_nocov.csv"), header=T,na=".",sep=",",varlevel=c("id","occ"),name.predictors=c("time","dose"), name.response="y", units=list(x="hr",y="mg/L"),verbose=TRUE)
   expect_is(x, "SaemixData") # tests for particular class
@@ -312,9 +319,67 @@ test_that("IIV + IOV given in class constructor through varlevel", {
   
 })
 
-
 test_that("IIV + IOV", {
   datanocov<-read.csv(file.path(datDir,"../","data40","complexSimulation_nocov.csv"),header=T,na=".")
   x<-saemixData(name.data=datanocov, name.predictors=c("time","dose"), name.response="y", name.ytype="ytype",varlevel=c("id","occ")) 
   expect_equal(x@varlevel,c("id","occ"))
 })
+
+
+test_that("IIV + IOV with covariates, one response", {
+  theocov<-read.csv(file.path(datDir,"../","data40","theoSimul_cov.csv"),header=T,na=".")
+  xtheo<-saemixData(name.data=theocov, name.predictors=c("tim","dose"), name.response="ysim",varlevel=c("id","occ"), name.covariates = c("sex","wt","crcl","comed"), covariate.varlevel = c("id","id","occ","occ")) 
+  expect_equal(xtheo@varlevel,c("id","occ"))
+  expect_equal(unique(xtheo@covariate.varlevel),c("id","occ"))
+  expect_equal(dim(xtheo@var.covmat$id) , c(100,2))
+  expect_equal(sum(xtheo@var.covmat$id[,"sex"]) , 50)
+  expect_equal(dim(xtheo@var.covmat$occ) , c(189,2))
+  expect_equal(sum(xtheo@var.covmat$occ[,"comed"]) , 53)
+})
+
+
+test_that("IIV + IOV with covariates, multiple responses", {
+  datacov<-read.csv(file.path(datDir,"../","data40","complexSimulation_cov.csv"),header=T,na=".")
+  x<-saemixData(name.data=datacov, name.predictors=c("time","dose"), name.response="y", name.ytype="ytype",varlevel=c("id","occ"),name.covariates = c("age","sex","wt","scr","crcl","comed"), covariate.varlevel = c("id","id","id","occ","occ","occ")) 
+  ilab<-paste0(datacov$id,"-",datacov$occ)
+  expect_equal(which(!duplicated(x@data$id)),which(!duplicated(x@var.index$id)))
+  expect_equal(which(!duplicated(ilab)),which(!duplicated(x@var.index$occ)))
+  
+  cov.id <- datacov[!duplicated(datacov$id),c("id","age","sex","wt")]
+  cov.occ <- datacov[!duplicated(ilab),c("id","occ","scr","crcl","comed")]
+  expect_equal(x@varlevel,c("id","occ"))
+  expect_equal(dim(x@var.covmat$id) , c(length(unique(datacov$id)),3))
+  expect_equal(sum(x@var.covmat$id[,"sex"]) , sum(cov.id$sex))
+  expect_equal(dim(x@var.covmat$occ) , c(length(unique(ilab)),3))
+  expect_equal(sum(x@var.covmat$occ[,"comed"]) , sum(cov.occ$comed))
+})
+
+
+context("Checking automatic creatinn of indices and covariate matrices")
+
+test_that("Theophilline, IIV only", {
+  x<-saemixData(name.data=file.path(datDir,"theo.saemix.tab"),header=T,na=".", varlevel=c("Id"),name.predictors=c("Dose","Time"),name.response=c("Concentration"),units=list(x="hr",y="mg/L"), name.X="Time", name.covariates=c("Weight","Sex"),verbose=F)
+  expect_equal(x@N,12)
+  expect_equal(x@ntot.obs,120)
+  expect_equal(x@varlevel,"Id")
+  expect_equal(c(x@nind.obs),c(x@var.nobs$Id))
+  expect_equal(which(!duplicated(x@data$Id)),which(!duplicated(x@var.index$Id)))
+  expect_equal(as.matrix(x@data[which(!duplicated(x@data$Id)),c("Weight","Sex")]),x@var.covmat$Id)
+})
+
+
+test_that("Simulated data, IIV + IOV", {
+  theocov<-read.csv(file.path(datDir,"../","data40","theoSimul_cov.csv"),header=T,na=".")
+  xtheo<-saemixData(name.data=theocov, name.predictors=c("tim","dose"), name.response="ysim",varlevel=c("id","occ"), name.covariates = c("sex","wt","crcl","comed"), covariate.varlevel = c("id","id","occ","occ")) 
+  ilab<-paste0(theocov$id,"-",theocov$occ)
+  cov.id <- theocov[!duplicated(theocov$id),c("id","sex","wt")]
+  cov.occ <- theocov[!duplicated(ilab),c("id","occ","crcl","comed")]
+  # Matching indices
+  expect_equal(c(xtheo@nind.obs),c(xtheo@var.nobs$id))
+  expect_equal(which(!duplicated(xtheo@data$id)),which(!duplicated(xtheo@var.index$id)))
+  expect_equal(which(!duplicated(ilab)),which(!duplicated(xtheo@var.index$occ)))
+  # Matching extracted matrices
+  expect_equal(as.matrix(cov.id[,c("sex","wt")]),xtheo@var.covmat$id)
+  expect_equal(as.matrix(cov.occ[,c("crcl","comed")]),xtheo@var.covmat$occ)
+})
+

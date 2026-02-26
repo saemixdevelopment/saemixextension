@@ -46,3 +46,50 @@ test_that("Generating individual phi for one parameter, with covariates", {
   expect_equal(dim(phipop),c(nsuj,1))
   print(indivmodel@transform[[1]](phipop))
 })
+
+
+context("Transforming function - transformPar applied with transform and invtransform")
+
+test_that("Converting from phi to psi and back using transphi", {
+  param2<-list(ka=saemixParam(mu.init=c(2), sd.init=c(0.5), covariate=c("lage"),covariate.init=c(0.2)),
+               vd=saemixParam(mu.init=c(20), sd.init=0.7, covariate="lwt", covariate.init=c(1), covariate.estim=c("fixed")))
+  indivmodel <- new(Class="SaemixIndivModel", param2)
+  nsuj<-10
+  cdesign <- matrix(c(rep(1,nsuj), log(seq(from=50,to=(50+2*(nsuj-1)), by=2)/60),
+                      log(seq(from=90, to=(90-4*(nsuj-1)), by=-4)/70)), ncol=3)
+  colnames(cdesign)<-c("pop","lage","lwt")
+  phipop <- cdesign %*% indivmodel@popmodel[[1]]@phi
+  psipop<- matrix(c(indivmodel@transform[[1]](phipop[,1]),indivmodel@transform[[2]](phipop[,2])), ncol=2)
+  print(head(phipop))
+  
+  expect_equivalent(transformPar(phipop, indivmodel@transform), psipop)
+  expect_equivalent(transformPar(psipop, indivmodel@invtransform), phipop)
+})
+
+test_that("Testing transformPar with transform function, with parameters given as matrices", {
+  param4<-list(ka=saemixParam(mu.init=c(1,3), sd.init=c(0.8,0.5), varlevel=c("iiv","iov")),vd=saemixParam(sd.init=0.7, covariate="wt", covariate.init=c(1), covariate.estim=c("fixed")),  
+               cl=saemixParam(name="cl",mu.init=2, varlevel=c("iiv","iov"), sd.init=c(0.6,0.3), corr = list(iiv=c("ka","vd"),iov=c("vd")), covariate=c("wt","sex","age"), covariate.init=c(0.75,0,0), covariate.estim=c("fixed","estimated","estimated"), corr.init=list(iiv=c(-0.5,0.7), iov=0.7), covariate.varlevel=c("iiv","iiv","iov")))
+  indivmodel <- new(Class="SaemixIndivModel", param4)
+  phi1<-matrix(rnorm(9999),ncol=3)
+  psi1 <- transformPar(phi1, indivmodel@transform)
+  x1<-mean(psi1)
+  x2<-mean(exp(rnorm(10000)))
+  expect_true(abs(x1-x2)<0.1)
+  phi2 <- transformPar(psi1, indivmodel@invtransform)
+  expect_true(abs(max(c(phi1-phi2)))<10-6)
+})
+
+test_that("Testing transformPar with transform function - parameters given as dataframes need to be changed to matrices", {
+  param4<-list(ka=saemixParam(mu.init=c(1,3), sd.init=c(0.8,0.5), varlevel=c("iiv","iov")),vd=saemixParam(sd.init=0.7, covariate="wt", covariate.init=c(1), covariate.estim=c("fixed")),  
+               cl=saemixParam(name="cl",mu.init=2, varlevel=c("iiv","iov"), sd.init=c(0.6,0.3), corr = list(iiv=c("ka","vd"),iov=c("vd")), covariate=c("wt","sex","age"), covariate.init=c(0.75,0,0), covariate.estim=c("fixed","estimated","estimated"), corr.init=list(iiv=c(-0.5,0.7), iov=0.7), covariate.varlevel=c("iiv","iiv","iov")))
+  indivmodel <- new(Class="SaemixIndivModel", param4)
+  phi1<-data.frame(ka=rnorm(1000,sd=0.5),v=rnorm(1000,sd=0.5),cl=rnorm(1000,sd=0.3))
+  psi1 <- transformPar(as.matrix(phi1), indivmodel@transform)
+  expect_true(abs(mean(psi1[,1]-mean(exp(rnorm(10000,sd=0.5)))))<0.1)
+  expect_true(abs(mean(psi1[,2]-mean(exp(rnorm(10000,sd=0.5)))))<0.1)
+  expect_true(abs(mean(psi1[,3]-mean(exp(rnorm(10000,sd=0.3)))))<0.1)
+  phi2 <- transformPar(psi1, indivmodel@invtransform)
+  expect_true(abs(max(c(as.matrix(phi1)-phi2)))<10-6)
+})
+
+

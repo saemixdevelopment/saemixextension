@@ -1,7 +1,7 @@
 ---
 title: "Package compilation for saemix 3.5 and basic run"
 author: "Emmanuelle Comets"
-date: "15/10/2023"
+date: "25/02/2026"
 output:
   pdf_document: null
   latex_engine: xelatex
@@ -51,6 +51,20 @@ cmd<-paste("cp ",file.path(saemixDir,"inst","CITATION")," ", file.path(workDir,"
 system(cmd)
 
 ```
+## Submission message
+
+This is an udpate to the saemix package.
+
+Please ignore the warning concerning the following "possibly mis-spelled words in DESCRIPTION:"
+  IAME (17:930)
+  al (17:663)
+  et (17:660)
+  github (17:954)
+  saemix (17:965)
+
+The examples in this package have been commented out for the CRAN submission as they take too long to run, but they have been checked before submission.
+
+Reverse dependencies have also been checked.
 
 ## Compilation
 
@@ -82,17 +96,6 @@ which likely give several index terms:
 ... (others)
 ```
 ````
-
-- Examples with CPU or elapsed time > 5s
-                 user system elapsed
-rapi.saemix    47.006  0.096  47.115
-cow.saemix     25.185  0.120  25.311
-PD1.saemix     18.925  0.048  19.108
-toenail.saemix 16.656  0.020  16.676
-compare.saemix  9.152  0.020   9.171
-theo.saemix     6.481  0.008   6.490
-yield.saemix    5.419  0.016   5.435
-
 - new NOTE (October 2023)
 
 * checking HTML version of manual ... NOTE
@@ -166,24 +169,34 @@ if(installPackage) {
 }
 ```
 
-
 #### Examples on CRAN
 
-Examples with CPU or elapsed time > 5s
-                 user system elapsed
-rapi.saemix    32.510  0.092  32.602
-cow.saemix     17.020  0.072  17.093
-toenail.saemix 13.531  0.000  13.532
-PD1.saemix     12.789  0.035  12.910
-compare.saemix  6.331  0.016   6.347
-theo.saemix     5.171  0.000   5.172
+Examples with CPU (user + system) or elapsed time > 5s
+                    user system elapsed
+saemix.bootstrap 250.647  0.944 251.698
+rapi.saemix       32.251  0.159  32.416
+cow.saemix        18.148  0.634  18.817
+PD1.saemix        13.211  0.147  13.369
+toenail.saemix    10.560  0.003  10.564
+compare.saemix     7.266  0.015   7.353
+yield.saemix       5.602  0.011   5.612
+theo.saemix        5.585  0.007   5.593
 
 ### Warnings
+
+* checking for future file timestamps ... NOTE
+unable to verify current time
+
+* checking HTML version of manual ... NOTE
+Skipping checking HTML validation: no command 'tidy' found
+
+* checking examples ... [386s/387s] NOTE
+Examples with CPU (user + system) or elapsed time > 5s
 
 ## Check
 
 ### Install package in development mode
-  
+
 ```{r devModeInstall}
 dev_mode() # development mode
 install.packages(pkgs=file.path(workDir,"saemix_3.5.tar.gz"),repos=NULL)
@@ -193,12 +206,16 @@ library(testthat)
 
 ### Running theopp example
 
+For some weird reason, this does not work as of 3.5 (man pages are not found in dev_mode, or in this session after the code above has been run, but they are in the package and can be used in a new session if the library is installed...)
+
 ```{r helpTheo}
 ?theo.saemix
 ?saemix
 ```
 
-Run on the theophylline example
+Run on the theophylline example (works, same results as documentation (corrected error in covariate model, was on V instead of CL as in the doc)
+
+Note: p-value of .38 instead of .19 in the doc for beta, not sure why as estimates didn't change
 
 ```{r runTheo, echo=FALSE}
 data(theo.saemix)
@@ -225,7 +242,7 @@ saemix.model<-saemixModel(model=model1cpt,
   description="One-compartment model with first-order absorption", 
   psi0=matrix(c(1.,20,0.5,0.1,0,-0.01),ncol=3, byrow=TRUE,
   dimnames=list(NULL, c("ka","V","CL"))),transform.par=c(1,1,1),
-  covariate.model=matrix(c(0,1,0,0,0,0),ncol=3,byrow=TRUE),fixed.estim=c(1,1,1),
+  covariate.model=matrix(c(0,0,1,0,0,0),ncol=3,byrow=TRUE),fixed.estim=c(1,1,1),
   covariance.model=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE),
   omega.init=matrix(c(1,0,0,0,1,0,0,0,1),ncol=3,byrow=TRUE),error.model="constant", verbose=FALSE)
 print(saemix.model)

@@ -291,10 +291,13 @@ setMethod("readSaemix",
             object@varlevel <- varlevel
             index<-list(dat$index)
             nb.obs<-list(nind.obs)
+            Nunit<-list(object@N) # or list(rep(1,object@N)) ?
             if(length(varlevel)>1) {
               ilab<-dat[,object@varlevel[1]]
               for(ilev in 2:length(varlevel)) {
                 ilab<-cbind(ilab,dat[,object@varlevel[ilev]])
+                ilab1<- ilab[!duplicated(ilab),]
+                Nunit[[ilev]] <- tapply(ilab1[,1],ilab1[,1],length)
                 idx<-c(which(!duplicated(ilab)),dim(ilab)[1]+1)
                 x1<-diff(idx) # individual numbers of observations per unit at that varlevel
                 print(head(x1),20)
@@ -310,6 +313,7 @@ setMethod("readSaemix",
             names(nb.obs)<-varlevel
             object@var.index<-index
             object@var.nobs<-nb.obs
+            object@var.N<-Nunit
             options(ow) # reset
             validObject(object)
             return(object)
@@ -480,6 +484,8 @@ saemixData<-function(name.data,header,sep,na,name.group, name.predictors, name.r
       }
       x1@outcome<-outcome
     }
+    # Extract covariate matrices corresponding to variability levels defined in the data
+    # ToDo: automated sorting of variability levels (eg: if no variability at occ level, set to iiv)
     x1 <- extractVarlevelCovariates(x1,verbose=verbose)
     if(verbose) cat("\n\nThe following SaemixData object was successfully created:\n\n")
   }

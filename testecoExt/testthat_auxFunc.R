@@ -1,21 +1,29 @@
 
-context("Testing computational functions")
 
-test_that("Converting from phi to psi and back using transphi", {
-  param2<-list(ka=saemixParam(mu.init=c(2), sd.init=c(0.5), covariate=c("lage"),covariate.init=c(0.2)),
-               vd=saemixParam(mu.init=c(20), sd.init=0.7, covariate="lwt", covariate.init=c(1), covariate.estim=c("fixed")))
-  indivmodel <- new(Class="SaemixIndivModel", param2)
-  nsuj<-10
-  cdesign <- matrix(c(rep(1,nsuj), log(seq(from=50,to=(50+2*(nsuj-1)), by=2)/60),
-                      log(seq(from=90, to=(90-4*(nsuj-1)), by=-4)/70)), ncol=3)
-  colnames(cdesign)<-c("pop","lage","lwt")
-  phipop <- cdesign %*% indivmodel@popmodel[[1]]@phi
-  psipop<- matrix(c(indivmodel@transform[[1]](phipop[,1]),indivmodel@transform[[2]](phipop[,2])), ncol=2)
-  
-  expect_equivalent(transphi(phipop, indivmodel@transform), psipop)
-  expect_equivalent(transphi(psipop, indivmodel@invtransform), phipop)
+context("Computing error and ssq")
+test_that("Testing function error", {
+  lerr <- list(new(Class="SaemixErrorModel"))
+  fpred<-1:10
+  gpred <- error(fpred,lerr,rep(1,length(fpred)))
+  expect_equal(rep(1,10),gpred)
+  lerr <- list(new(Class="SaemixErrorModel", name="proportional", param=0.2))
+  gpred <- error(fpred,lerr,rep(1,length(fpred)))
+  expect_equal(gpred,0.2*fpred)
 })
 
+test_that("Testing function ssq", {
+  xerr <- new(Class="SaemixErrorModel")
+  fpred<-1:10
+  yobs<-fpred+0.2
+  xcal <- ssq(xerr@param, yobs, fpred, xerr)
+  expect_equal(xcal, 10*(.2**2))
+  xerr <- new(Class="SaemixErrorModel", name="proportional", param=0.2)
+  xcal <- ssq(xerr@param, yobs, fpred, xerr)
+  gpred <- error(fpred,list(xerr),rep(1,length(fpred)))
+  expect_equal(xcal, sum((yobs-fpred)**2/(gpred**2) + 2*log(gpred)))
+})
+
+context("Testing computational functions")
 
 ############################################ Recoding func_aux.R
 # Generate design matrices at each varlevel
@@ -46,35 +54,53 @@ if(FALSE) {
                 error.model = list.error.model)
 }
 
-context("Computing error and ssq")
-test_that("Testing function error", {
-  lerr <- list(new(Class="SaemixErrorModel"))
-  fpred<-1:10
-  gpred <- error(fpred,lerr,rep(1,length(fpred)))
-  expect_equal(fpred,gpred)
-  lerr <- list(new(Class="SaemixErrorModel", name="proportional", param=0.2))
-  gpred <- error(fpred,lerr,rep(1,length(fpred)))
-  expect_equal(gpred,0.2*fpred)
-})
-  
-test_that("Testing function ssq", {
-  xerr <- new(Class="SaemixErrorModel")
-  fpred<-1:10
-  yobs<-fpred+0.2
-  xcal <- ssq(xerr@param, yobs, fpred, xerr)
-  expect_equal(xcal, 10*(.2**2))
-  xerr <- new(Class="SaemixErrorModel", name="proportional", param=0.2)
-  xcal <- ssq(xerr@param, yobs, fpred, xerr)
-  gpred <- error(fpred,list(xerr),rep(1,length(fpred)))
-  expect_equal(xcal, sum((yobs-fpred)**2/(gpred**2) + 2*log(gpred)))
-})
-
-
 # WiP
 ## define elements needed from Dargs and args
+## change to Dargs (data), Margs (model), and potentially other args (Vargs for variances ?)
 context("Computing LL_y")
 
-test_that("Testing compute.LLy", {
+datDir <- "/home/eco/work/saemix/saemixextension/data"
+
+test_that("Testing compute.LLy, IIV only - computing likelihood of predicted (not simulated) data, expecting roughly 0", {
+  theonocov<-read.csv(file.path(datDir,"../","data40","theoSimul_nocov.csv"),header=T,na=".")
+  x<-saemixData(name.data=theonocov, name.predictors=c("tim","dose"), name.response="ypred",varlevel=c("id","occ")) 
+  psinocov<-read.csv(file.path(datDir,"../","data40","theoSimul_psinocov.csv"),header=T,na=".")
+  # Data related list
+  dlist <- createStructData(x, nb.chains=1)
+  Dargs <- dlist$Dargs
+  DYF <- dlist$DYF
+  # Defining matching model
+  parameters<-list(ka=saemixParam(mu.init=1.5),
+                   vd=saemixParam(mu.init=35, covariate="wt", covariate.init=c(1), covariate.estim=c("fixed")),  
+                   cl=saemixParam(name="cl",mu.init=1.5, corr = list(iiv=c("vd")), covariate=c("wt","sex"), covariate.init=c(0.75,0), covariate.estim=c("fixed","estimated"), corr.init=list(iiv=c(0.5))))
+  model1cpt<-function(psi,id,xidep) { 
+    dose<-xidep[,1]
+    tim<-xidep[,2]  
+    ka<-psi[id,1]
+    V<-psi[id,2]
+    CL<-psi[id,3]
+    k<-CL/V
+    ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
+    return(ypred)
+  }
+  xmodel <- saemixModel(model=theo1cpt, parameters=parameters)
+  mlist <- createStructModel(xmodel)
+  Margs <- mlist$Margs
+  psiM<-as.matrix(psinocov[,2:4])
+  phiM<-transformPar(psiM, Margs$invtransform)
+  LLy <- compute.LLy(phiM, Margs, Dargs, DYF) 
+  expect_equal(round(sum(LLy),digits=2),0)
+})
+
+test_that("Testing compute.LLy, IIV only", {
+  theo.saemix<-read.table(file.path(datDir,"theo.saemix.tab"),header=T,na=".")
+  x<-saemixData(name.data=theo.saemix, name.group="wrongid",name.predictors=c("Dose","Time"), name.response="Concentration")
+  # Data related list
+  dlist <- createStructData(x, nb.chains=1)
+  Dargs <- dlist$Dargs
+  DYF <- dlist$DYF
+  expect_true(max(summary(Dargs$IdM-x@var.index[[1]]))<10-6)
+  
   parameters<-list(ka=saemixParam(),
                vd=saemixParam(mu.init=20, covariate="wt", covariate.init=c(1), covariate.estim=c("fixed")),  
                cl=saemixParam(name="cl",mu.init=2, corr = list(iiv=c("vd")), covariate=c("wt","sex"), covariate.init=c(0.75,0), covariate.estim=c("fixed","estimated"), corr.init=list(iiv=c(0.5))))
@@ -88,21 +114,10 @@ test_that("Testing compute.LLy", {
     ypred<-dose*ka/(V*(ka-k))*(exp(-k*tim)-exp(-ka*tim))
     return(ypred)
   }
-  saemix.model <- new(Class="SaemixModel", parameters=parameters, model=model1cpt)
-  
-  IdM
-  XM
-  yM
-  ind.ioM
-  
-  list.error.model<-vector(mode="list",length=saemix.model@noutcome)
-  for(i in 1:saemix.model@noutcome)
-    if(saemix.model@outcome[[i]]@type.outcome=="continuous") list.error.model[[i]]<-saemix.model@outcome[[i]]@error.model else list.error.model[[i]]<-"none"
-    
-    Dargs <- list(IdM=IdM, XM=XM, yM=yM,
-                  transform.par = saemix.model@transform,
-                  structural.model=saemix.model@model, 
-                  error.model = list.error.model)
-    args<-list(ind.ioM=ind.ioM)
-    
+  theomodel.iiv <- saemixModel(model=theo1cpt, parameters=parameters)
+  mlist <- createStructModel(theomodel.iiv)
+  Margs <- mlist$Margs
+  phiM<-as.matrix(data.frame(ka=log(seq(1,2,length.out=x@N)), V=log(seq(25,35,length.out=x@N)), CL=log(seq(1.7,1.3,length.out=x@N))))
+  LLy <- compute.LLy(phiM, Margs, Dargs, xstr$DYF) 
+  expect_equal(round(sum(LLy),digits=2),2162.2)
 })

@@ -164,12 +164,13 @@ ggplot(reepl, aes(x=variable, y=value)) + geom_violin() +
   facet_grid(scenario~setting)
 
 reepl1 <- reepl[reepl$setting=="True",]
-plot1 <- ggplot(reepl1, aes(x=variable, y=value, fill=variable)) + geom_violin() + 
+plot1 <- ggplot(reepl1, aes(x=variable, y=value, fill=variable)) + geom_violin() +  geom_boxplot(width=0.1) +
   stat_summary(fun.data=mean_sdl, mult=1,  geom="pointrange", color="DarkRed") + 
-  geom_abline(intercept=0, slope=0) + geom_abline(intercept=10, slope=0, linetype="dashed") + geom_abline(intercept=-10, slope=0, linetype="dashed") +
+  geom_abline(intercept=0, slope=0) + geom_abline(intercept=10, slope=0, linetype="dashed") + 
+  geom_abline(intercept=-10, slope=0, linetype="dashed") +
   geom_abline(intercept=5, slope=0, linetype="dotted") + geom_abline(intercept=-5, slope=0, linetype="dotted")  +
   xlab("Parameter") + ylab("Relative estimation error (%)") + scale_fill_brewer(palette="Blues") + 
-  theme_bw() + 
+  theme_bw() + lims(y=c(-100,100)) +
   #theme(legend.position = "none", base_size=14) + 
    theme(legend.position = "none") +   facet_grid(.~scenario)
 
@@ -185,12 +186,12 @@ if(saveFigure) {
 
 # Supplementary Figure 1
 # Can't figure out how to add mean per group :-/
-plot2 <- ggplot(reepl, aes(x=variable, y=value, fill=setting)) + geom_violin() + 
+plot2 <- ggplot(reepl, aes(x=variable, y=value, fill=setting)) + geom_violin() + #geom_boxplot(width=0.1) +
 #  stat_summary(fun.data=mean_sdl, mult=1,  geom="pointrange", color="DarkRed") + 
   geom_abline(intercept=0, slope=0) + geom_abline(intercept=10, slope=0, linetype="dashed") + geom_abline(intercept=-10, slope=0, linetype="dashed") +
   geom_abline(intercept=5, slope=0, linetype="dotted") + geom_abline(intercept=-5, slope=0, linetype="dotted")  +
   xlab("Parameter") + ylab("Relative estimation error (%)") + scale_fill_brewer(palette="Blues") +  theme_bw() +    
-  theme(legend.position = "top") +  facet_grid(.~scenario)
+  theme(legend.position = "top") + lims(y=c(-100,100)) + facet_grid(.~scenario)
 
 # plot2 <- plot2+theme(text = element_text(size=rel(4)), legend.text=element_text(size=rel(4)), strip.text.x = element_text(size=rel(3.5)), strip.text.y = element_text(size=rel(3.5)))
 

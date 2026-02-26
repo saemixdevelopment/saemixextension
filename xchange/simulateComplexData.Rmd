@@ -71,7 +71,7 @@ saveSimData <- FALSE
     - IIV 
       - 30% on all parameters
     - IOV
-      - IOV on CL only with 20% IOV
+      - IOV on CL only with 25% IOV
     - note Dubois:
       - low IIV: 0.2 on ka and CL, 0.1 on V; half of IIV for IOV
       - regular BSV: 0.5 on ka, V, CL and 0.15 on IOV
@@ -120,7 +120,7 @@ omega.iiv <- rep(0.3,3)
 varcovmat<-diag(c(omega.iiv[2],omega.iiv[3])**2) # correlation between delta and CL
 varcovmat[1,2]<-varcovmat[2,1]<-0.7*omega.iiv[2]*omega.iiv[3]
 ## IOV
-omega.iov <- c(0.15)
+omega.iov <- c(0.25)
 ## Residual variability
 par.sig <- c(0.1,0.1)
 
@@ -176,7 +176,7 @@ for(isuj in 1:nsuj) {
   psisuj <- do.call(rbind,rep(list(psi1.nocov[isuj,]),nocc[isuj]))
   psisuj$occ<-1:nocc[isuj]
 #  eta.iov<-rmvnorm(nocc[isuj],sigma=iovmat)
-  eta.iov<-rnorm(1,mean=0,sd=omega.iov)
+  eta.iov<-rnorm(nocc[isuj],mean=0,sd=omega.iov)
 #  psisuj$CL <-psisuj$CL*exp(eta.iov[,2])
   psisuj$CL <-psisuj$CL*exp(eta.iov)
   psi1.iov<-rbind(psi1.iov, psisuj)
@@ -252,6 +252,10 @@ datsim.cov <- simdata
 if(saveSimData) write.csv(datsim.nocov, file=file.path(datDir,"theoSimul_nocov.csv"), quote=F, row.names = FALSE)
 
 if(saveSimData) write.csv(datsim.cov, file=file.path(datDir,"theoSimul_cov.csv"), quote=F, row.names = FALSE)
+
+if(saveSimData) write.csv(psi1.iov.nocov, file=file.path(datDir,"theoSimul_psinocov.csv"), quote=F, row.names = FALSE)
+
+if(saveSimData) write.csv(psi1.iov.cov, file=file.path(datDir,"theoSimul_psicov.csv"), quote=F, row.names = FALSE)
 
 ```
 

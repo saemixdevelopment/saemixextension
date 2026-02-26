@@ -189,7 +189,7 @@ datDir<-file.path(saemixDir,"data40")
       - 30% on all parameters
       - correlation between CL and V (0.7)
     - IOV
-      - IOV on CL only with 20% IOV
+      - IOV on CL only with 20% IOV [Error: simulated without IOV]
     - different from Dubois, where 2 scenarios, no correlation and no covariate effect
       - low IIV: 0.2 on ka and CL, 0.1 on V; half of IIV for IOV
       - regular BSV: 0.5 on ka, V, CL and 0.15 on IOV
