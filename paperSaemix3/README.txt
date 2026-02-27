@@ -1,4 +1,4 @@
-This folder contains the examples and simulations included in the paper "Extending the saemix package for R to fit non Gaussian outcomes" (title TBD).
+This folder contains the examples and simulations included in the paper "Extending the saemix package for R to fit non Gaussian outcomes"
 
 The code requires the following packages to be installed:
 - saemix (version 3.5 or higher)
@@ -46,4 +46,4 @@ The results related to the covariate selection for the lung dataset (TTE case-st
 We are always happy to welcome new contributors to the saemix package. The development version can be found on the github:
 https://github.com/saemixdevelopment/saemixextension.git
 
-Pull requests can be made directly on github, or you can contact the main maintainer to be added as a contributor (Emmanuelle Comets: emmanuelle.comets@inserm.fr).
+Pull requests can be made directly on github, or you can contact the main maintainer to be added as a contributor if you wish to make more substantial contributions (Emmanuelle Comets: emmanuelle.comets@inserm.fr).

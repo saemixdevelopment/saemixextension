@@ -1,6 +1,6 @@
 #################################### Setup
 # When in my directory - set to FALSE to run from getwd(), must be paperSaemix3 (all paths relative)
-EcoAtHome <- TRUE
+EcoAtHome <- FALSE
 
 # Libraries
 library(saemix)
@@ -19,7 +19,6 @@ if(EcoAtHome) {
   # Load updated files
   # pending compilation and CRAN upload
   workDir<-"/home/eco/work/saemix/saemixextension/paperSaemix3"
-  source("/home/eco/work/saemix/saemixextension/R/func_exploreData.R")
 } else {
   workDir<-getwd() 
 }

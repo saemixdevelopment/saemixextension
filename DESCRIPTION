@@ -1,6 +1,6 @@
 Package: saemix
 Title: Stochastic Approximation Expectation Maximization (SAEM) Algorithm
-Version: 3.4
+Version: 3.5
 Authors@R: c(
     person("Emmanuelle", "Comets", role = c("aut", "cre"),
            email = "emmanuelle.comets@inserm.fr"),
