@@ -350,6 +350,7 @@ stepwise.procedure <-
         modeltype = saemixObject@model@modeltype,
         description = saemixObject@model@description,
         psi0 = saemixObject@model@psi0,
+        transform.par = saemixObject@model@transform.par,
         fixed.estim = saemixObject@model@fixed.estim,
         covariate.model = best.model[[length(best.model)]],
         covariance.model = best.model[[length(best.model) -
@@ -688,6 +689,7 @@ stepwise.procedure <-
         modeltype = saemixObject@model@modeltype,
         description = saemixObject@model@description,
         psi0 = saemixObject@model@psi0,
+        transform.par = saemixObject@model@transform.par,
         fixed.estim = saemixObject@model@fixed.estim,
         covariate.model = best.model[[length(best.model)]],
         covariance.model = best.model[[length(best.model) -

@@ -314,6 +314,7 @@ forward.procedure <- function(saemixObject, trace = TRUE) {
       model = saemixObject@model@model,
       modeltype = saemixObject@model@modeltype,
       description = saemixObject@model@description,
+      transform.par = saemixObject@model@transform.par,
       psi0 = saemixObject@model@psi0,
       fixed.estim = saemixObject@model@fixed.estim,
       covariate.model = best.model[[length(best.model)]],

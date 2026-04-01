@@ -1,4 +1,8 @@
-* 05/2025
+# 03/2026
+- bugfix in automated model selection procedures (Maud): corrected but need to push
+- ToDo: remplacer par une fonction update qui pourrait s'appliquer à différents types de modèles (entrée=un objet + des arguments, sortie=la copie de l'objet avec les arguments modifiés)
+
+# 05/2025
 - fonctions de transformation de variables
   * fait: securiser les fonctions
   * fait: noms si on renomme, discrepancy in ocov...

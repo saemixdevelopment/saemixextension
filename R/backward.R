@@ -310,6 +310,7 @@ backward.procedure <- function(saemixObject, trace = TRUE) {
     best.fit <- saemixModel(
       model = saemixObject@model@model,
       modeltype = saemixObject@model@modeltype,
+      transform.par = saemixObject@model@transform.par,
       description = saemixObject@model@description,
       psi0 = saemixObject@model@psi0,
       fixed.estim = saemixObject@model@fixed.estim,
