@@ -1,0 +1,109 @@
+# Context: check Data class first
+if(FALSE)
+  source("automatedTests_classData.R")
+
+#####################################################
+rm(list = ls())
+library(testthat)
+library(rlang) # is_missing
+
+# Testing where we are :-)
+saemixDir<-"/home/eco/work/saemix/saemixextension"
+#if(is.na(file.info(saemixDir)[1])) {
+#  saemixDir<-"/Users/karimimohammedbelhal/Desktop/Phd/R_Package/contributions/FinalsaemixExtension/ecomets/saemix"
+#}
+
+setwd(saemixDir)
+
+#####################################################
+# Defining folders with code and data
+progDir<-file.path(saemixDir,"R")
+progDirExt<-file.path(saemixDir,"Rext")
+datDir<-file.path(saemixDir,"data")
+datDir40<-file.path(saemixDir,"data40")
+testDirExt <- file.path(saemixDir,"testecoExt")
+testDir <- file.path(saemixDir,"testeco")
+testDirLegacy <- file.path(testDirExt,"legacyTests")
+
+# Loading generic definitions
+source(file.path(progDir,"aaa_generics.R"))
+
+#####################################################
+# Reporter (location=each individual expect_xx, default=progress report)
+myreporter <- default_reporter()
+# myreporter <- "location"
+
+
+###############################################################################################################
+###### Sourcing SaemixData class and methods
+# New functions (Rext)
+source(file.path(progDirExt,"SaemixData.R"))
+source(file.path(progDirExt,"SaemixData-printmethods.R"))
+source(file.path(progDirExt,"SaemixData-methods.R"))
+source(file.path(progDirExt,"SaemixData-covariatemethods.R"))
+source(file.path(progDirExt,"SaemixData-plotmethods.R"))
+
+###############################################################################################################
+###### Testing new Classes for SaemixModel
+#############################
+# Outcome
+source(file.path(progDirExt,"SaemixOutcome.R"))
+source(file.path(progDirExt,"SaemixErrorModel.R"))
+
+# 
+test_file(file.path(testDirExt,"testthat_saemixErrorModel.R"), reporter=myreporter)
+test_file(file.path(testDirExt,"testthat_saemixOutcome-class.R"), reporter=myreporter)
+
+# ToDo - why do I get this warning when executing the last test file ?
+# dans la méthode pour ‘print’ avec la signature ‘"SaemixContinuousOutcome"’ : aucune définition de la classe “SaemixContinuousOutcome” n'est trouvée
+
+#############################
+# Parameter
+source(file.path(progDirExt,"SaemixParameter.R"))
+source(file.path(progDirExt,"SaemixParameter-methods.R"))
+
+# ToDo
+## Add parameters with covariates on different variability levels
+# ToDo: add tests for list matching
+
+test_file(file.path(testDirExt,"testthat_saemixParameter-class.R"), reporter=myreporter)
+
+#############################
+# VarLevel
+source(file.path(progDirExt,"SaemixVarModel.R"))
+source(file.path(progDirExt,"SaemixVarModel-methods.R"))
+
+# ToDo
+## add more test in particular with invalid correlaton structures
+## add tests for indices
+test_file(file.path(testDirExt,"testthat_saemixVarModel-class.R"), reporter=myreporter)
+
+#############################
+# Model for fixed effects ("population individual model", ie mu+sum_cov beta.cov without eta)
+source(file.path(progDirExt,"SaemixPopModel.R"))
+
+test_file(file.path(testDirExt,"testthat_saemixPopModel-class.R"), reporter=myreporter)
+
+#####################################################
+###### Testing Individual Model Class
+source(file.path(progDirExt,"SaemixIndivModel.R"))
+
+test_file(file.path(testDirExt,"testthat_saemixIndivModel-class.R"), reporter=myreporter)
+
+#####################################################
+###### Testing Model Class
+source(file.path(progDirExt,"SaemixModel.R"))
+source(file.path(progDirExt,"SaemixModel-methods.R"))
+
+#############################
+test_file(file.path(testDirExt,"testthat_saemixModel-class.R"))
+
+
+#####################################################
+###### Testing Individual parameter Class
+source(file.path(progDirExt,"SaemixVarPhi.R"))
+source(file.path(progDirExt,"SaemixIndivPar.R"))
+
+#############################
+test_file(file.path(testDirExt,"testthat_saemixIndivPar-class.R"))
+

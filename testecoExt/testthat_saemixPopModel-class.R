@@ -27,12 +27,19 @@ test_that("Create fixed effect structures from parameters - no covariates, one l
   expect_equal(colnames(xmod$iiv@phi.model),c("ka","vd","cl"))
 })
 
+# Check structure of fixed and estimated parameters
 test_that("Create fixed effect structures from parameters", {
   param4<-list(ka=saemixParam(mu.init=c(1,3), sd.init=c(0.8,0.5), varlevel=c("iiv","iov")),vd=saemixParam(sd.init=0.7, covariate="wt", covariate.init=c(1), covariate.estim=c("fixed")),  
                cl=saemixParam(name="cl",mu.init=2, varlevel=c("iiv","iov"), sd.init=c(0.6,0.3), corr = list(iiv=c("ka","vd"),iov=c("vd")), covariate=c("wt","sex","age"), covariate.init=c(0.75,0,0), covariate.estim=c("fixed","estimated","estimated"), corr.init=list(iiv=c(-0.5,0.7), iov=0.7), covariate.varlevel=c("iiv","iiv","iov")))
   xmod <- extractFixedEffectModel(param4)
   print(xmod)
   expect_equal(xmod$iiv@param, c(log(param4$ka@mu.init[1]),log(param4$vd@mu.init),1,log(param4$cl@mu.init[1]),0.75,0))
+  expect_equal(sum(xmod$iiv@phi.estim=="estimated"),7)
+  expect_equal(sum(xmod$iov@phi.estim=="estimated"),4)
+  expect_equal(unname(xmod$iiv@phi.estim[1,]),rep("estimated",3))
+  expect_equal(unname(xmod$iiv@phi.estim[2,]),c("estimated","fixed","fixed"))
+  expect_equal(unname(xmod$iov@phi.estim[1,]),c("estimated","fixed","fixed"))
+  expect_equal(unname(xmod$iov@phi.estim[2,]),rep("estimated",3))
   expect_equal(colnames(xmod$iiv@phi.model),c("ka","vd","cl"))
   expect_equal(rownames(xmod$iiv@phi.model),c("pop","wt","sex"))
   expect_equal(rownames(xmod$iov@phi.model),c("pop","age"))

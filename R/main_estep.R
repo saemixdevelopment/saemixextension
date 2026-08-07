@@ -244,7 +244,7 @@ estep<-function(kiter, Uargs, Dargs, opt, mean.phi, varList, DYF, phiM) {
 			}
 
 			phiMc[,varList$ind.eta]<-mean.phiM[,varList$ind.eta]+etaMc[,varList$ind.eta]
-			Uc.y<-compute.LLy(phiM,Uargs,Dargs,DYF,varList$pres)
+			Uc.y<-compute.LLy(phiMc,Uargs,Dargs,DYF,varList$pres)
 			Uc.eta<-0.5*rowSums(etaMc[,varList$ind.eta]*(etaMc[,varList$ind.eta]%*%somega))
 
 			for (i in 1:(Dargs$NM)){

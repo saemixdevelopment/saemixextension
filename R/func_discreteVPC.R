@@ -8,6 +8,7 @@
 #' The object must include simulated data under the empirical design, using the model and 
 #' estimated parameters from a fit, produced via the \code{\link{simulateDiscreteSaemix}} function.
 #' @param outcome type of outcome (valid types are "TTE", "binary", "categorical", "count")
+#' @param ytype response to plot (defaults to the first response)
 #' @param verbose whether to print messages (defaults to FALSE)
 #' @param \dots additional arguments, used to pass graphical options (to be implemented, currently not available)
 #' 
@@ -94,11 +95,12 @@
 #' 
 #' @export 
 
-discreteVPC <- function(object, outcome="categorical", verbose=FALSE, ...) {
+discreteVPC <- function(object, outcome="categorical", ytype=1, verbose=FALSE, ...) {
   # object
   ## an object resulting from a call to saemix
   ## must have a sim.data object containing data simulated under the model
   # outcome: type of outcome (valid types are TTE, binary, categorical, count)
+  # ytype: response to be plotted (defaults to 1)
   # verbose: whether to print messages
   # ...: to pass additional plot options (such as title, colours, etc...) which will supersede the options in the prefs slot of object
   if(!is(object,"SaemixObject")) {
@@ -119,17 +121,17 @@ discreteVPC <- function(object, outcome="categorical", verbose=FALSE, ...) {
   }
   if(outcome=="tte") {
     # TODO: set ngrid from plot options
-    xplot <- discreteVPCTTE(object, ngrid=200, verbose=verbose, ...)
+    xplot <- discreteVPCTTE(object, ngrid=200, ytype=ytype, verbose=verbose, ...)
   }
   if(outcome=="count")
-    xplot <- discreteVPCcount(object, verbose=verbose, ...)
+    xplot <- discreteVPCcount(object, ytype=ytype, verbose=verbose, ...)
   if(outcome %in% c("binary","categorical")) {
     if(outcome=="binary") {
       max.cat<-2
     } else {
       max.cat<-length(unique(object@data@data[,object@data@name.response]))
     }
-    xplot <- discreteVPCcat(object, max.cat=max.cat, verbose=verbose, ...)
+    xplot <- discreteVPCcat(object, ytype=ytype, max.cat=max.cat, verbose=verbose, ...)
   }
   
   return(xplot)
@@ -152,6 +154,7 @@ discreteVPC <- function(object, outcome="categorical", verbose=FALSE, ...) {
 #' @param interpolation.method method to use for the interpolation of the KM for the simulated datasets. Available methods are 
 #' "step": the value of the survival function for a given grid point is set to the value of the last time
 #' "lin": a linear approximation is used between two consecutive times (defaults to "step")
+#' @param ytype response to plot (defaults to the first response)
 #' @param verbose whether to print messages (defaults to FALSE)
 #' @param \dots additional arguments, used to pass graphical options (to be implemented, currently not available)
 #' 
@@ -171,9 +174,10 @@ discreteVPC <- function(object, outcome="categorical", verbose=FALSE, ...) {
 #' @importFrom scales trans_format  math_format pretty_breaks trans_breaks
 #' @export 
 
-discreteVPCTTE <- function(object, ngrid=200, interpolation.method="step", verbose=FALSE, ...) {
+discreteVPCTTE <- function(object, ngrid=200, interpolation.method="step", ytype=1, verbose=FALSE, ...) {
   # object: a saemixObject including simulated data
   # ngrid: number of grid points for interpolation of the PI
+  # ytype: response to be plotted (defaults to 1)
   # verbose: whether to print messages
   # ...: to pass additional plot options (such as title, colours, etc...)
   
@@ -187,10 +191,21 @@ discreteVPCTTE <- function(object, ngrid=200, interpolation.method="step", verbo
   ## irep: simulation number
   ## id: subject id (replicated)
   ## time: simulated times
-  obsdat <- data.frame(id=object@data@data[,object@data@name.group], time=object@data@data[,object@data@name.X], event=object@data@data[,object@data@name.response])
+  if(length(ytype)>1) {
+    ytype<-ytype[1]
+    if(verbose) msg("Only the first response given will be plotted, please make separate plots for different responses\n")
+  }
+  if(!is.integer(ytype) || ytype<1 || ytype>max(object@data@data$ytype)) {
+    if(verbose) msg(paste0("Response",ytype,"not recognised, defaulting to response 1\n"))
+  }
+  is.ytype<- (object@data@data$ytype==ytype)
+  obsdat <- data.frame(id=object@data@data[is.ytype,object@data@name.group], 
+                       time=object@data@data[is.ytype,object@data@name.X], 
+                       event=object@data@data[is.ytype,object@data@name.response])
   if(length(object@data@name.cens)>0)
-    obsdat$cens <- object@data@data[,object@data@name.cens]
-  simdat <- data.frame(irep=object@sim.data@datasim$irep, id=object@sim.data@datasim$idsim, time=object@sim.data@datasim$ysim)
+    obsdat$cens <- object@data@data[is.ytype,object@data@name.cens]
+  simdat <- data.frame(irep=object@sim.data@datasim$irep[is.ytype], id=object@sim.data@datasim$idsim[is.ytype], 
+                       time=object@sim.data@datasim$ysim[is.ytype])
   # Observed KM
   event.obs<-obsdat[obsdat$time>0,]
   t1<-table(event.obs$time) # nb of subjects dropping off at different times (event or censoring)
@@ -240,13 +255,15 @@ discreteVPCTTE <- function(object, ngrid=200, interpolation.method="step", verbo
   
   # Plot options - TODO
   plot.opt<-object@prefs
+  # Specific plot options for VPC TTE
   plot.opt$bands <- TRUE # plot PI
   plot.opt$alpha.bands <-0.3
   plot.opt$col.pcens <- "steelblue3"
   plot.opt$breaks.x <- plot.opt$breaks.y <- 10
   plot.opt$plot.censTTE <- TRUE
-  
   plot.opt$ylab <- "Survival (%)"
+  
+  plot.opt<-replace.plot.options(plot.opt,...)
   # Future: stratify over eg covariates or groups ?
   numberCategories <- 1
   
@@ -311,9 +328,10 @@ discreteVPCTTE <- function(object, ngrid=200, interpolation.method="step", verbo
 ###########################	VPC for Count data		#############################
 # TODO: plot options (colours, line types, ...)
 
-discreteVPCcount <- function(object, max.cat=10, breaks=NULL, catlabel=NULL, verbose=FALSE, ...) {
+discreteVPCcount <- function(object, max.cat=10, ytype=1, breaks=NULL, catlabel=NULL, verbose=FALSE, ...) {
   # object: a saemixObject including simulated data
   # ngrid: number of grid points for interpolation of the PI
+  # ytype: response to be plotted (defaults to the first response)
   # verbose: whether to print messages
   # ...: to pass additional plot options (such as title, colours, etc...)
   
@@ -333,8 +351,9 @@ discreteVPCcount <- function(object, max.cat=10, breaks=NULL, catlabel=NULL, ver
   #   if(length(mfrow)==0) mfrow<-c(1,1)
   #   par(mfrow=mfrow,ask=plot.opt$ask)
   # }
+  
   object@prefs$ylab <- "Proportion of counts (-)"
-  x<-discreteVPC.aux(object, max.cat=max.cat, breaks=breaks, verbose=verbose, ...)
+  x<-discreteVPC.aux(object, max.cat=max.cat, breaks=breaks, ytype=ytype, verbose=verbose, ...)
   xtab<-x$xtab
   stab<-x$stab
   plot.opt<-x$plot.opt
@@ -367,9 +386,10 @@ discreteVPCcount <- function(object, max.cat=10, breaks=NULL, catlabel=NULL, ver
 
 ###########################	VPC for Categorical data		#############################
 
-discreteVPCcat <- function(object, max.cat=10, breaks=NULL, catlabel=NULL, verbose=FALSE, ...) {
+discreteVPCcat <- function(object, max.cat=10, ytype=1, breaks=NULL, catlabel=NULL, verbose=FALSE, ...) {
   # object: a saemixObject including simulated data
   # ngrid: number of grid points for interpolation of the PI
+  # ytype: response to be plotted (defaults to the first response)
   # verbose: whether to print messages
   # ...: to pass additional plot options (such as title, colours, etc...)
   
@@ -396,7 +416,7 @@ discreteVPCcat <- function(object, max.cat=10, breaks=NULL, catlabel=NULL, verbo
   } else {
     object@prefs$ylab <- "Proportion of category (-)"
   }
-  x<-discreteVPC.aux(object, max.cat=max.cat, breaks=breaks, catlabel=catlabel, verbose=verbose, ...)
+  x<-discreteVPC.aux(object, max.cat=max.cat, breaks=breaks, catlabel=catlabel, ytype=ytype, verbose=verbose, ...)
   xtab<-x$xtab
   stab<-x$stab
   plot.opt<-x$plot.opt
@@ -444,9 +464,10 @@ interpol.lin <- function(x, y) {
 }
 
 # Binning and computing PI
-discreteVPC.aux <- function(object, max.cat=10, breaks=NULL, catlabel=NULL, verbose=FALSE, ...) {
+discreteVPC.aux <- function(object, max.cat=10, ytype=1, breaks=NULL, catlabel=NULL, verbose=FALSE, ...) {
   # object: a saemixObject including simulated data
   # ngrid: number of grid points for interpolation of the PI
+  # ytype: response to be plotted (defaults to the first response)
   # verbose: whether to print messages
   # ...: to pass additional plot options (such as title, colours, etc...)
   
@@ -472,11 +493,20 @@ discreteVPC.aux <- function(object, max.cat=10, breaks=NULL, catlabel=NULL, verb
   ### group, x.group, y.group: same as for xtab
   ### lower, median, upper: lower, median and upper values of the PI (upper and lower correspond to the PI defined by the plot.opt$vpc.interval)
   ## updated plot.opt
+  if(length(ytype)>1) {
+    ytype<-ytype[1]
+    if(verbose) msg("Only the first response given will be plotted, please make separate plots for different responses\n")
+  }
+  if(!is.integer(ytype) || ytype<1 || ytype>max(object@data@data$ytype)) {
+    if(verbose) msg(paste0("Response",ytype,"not recognised, defaulting to response 1\n"))
+  }
+  is.ytype<- (object@data@data$ytype==ytype)
+  
   ydat <- object@data
-  ysim <- object@sim.data@datasim$ysim
-  obsdat<-data.frame(id=ydat@data[,ydat@name.group], x=ydat@data[,ydat@name.X], y=ydat@data[,ydat@name.response])
+  ysim <- object@sim.data@datasim$ysim[is.ytype]
+  obsdat<-data.frame(id=ydat@data[is.ytype,ydat@name.group], x=ydat@data[is.ytype,ydat@name.X], y=ydat@data[is.ytype,ydat@name.response])
   #  if(length(ydat@name.covariates)>0) obsdat<-cbind(obsdat, covariate.group=ydat@data[,ydat@name.covariates,drop=FALSE])
-  nsim<-length(ysim)/dim(ydat@data)[1]
+  nsim<-object@sim.data@nsim # length(ysim)/dim(obsdat)[1]
   #  simdat <- data.frame(irep=object@sim.data@datasim$irep, id=object@sim.data@datasim$idsim, y=object@sim.data@datasim$ysim)
   
   plot.opt<-object["prefs"]

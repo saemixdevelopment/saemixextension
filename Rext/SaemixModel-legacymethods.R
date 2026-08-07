@@ -54,6 +54,10 @@
 #' parameters in the model, giving the variance-covariance matrix of the model:
 #' 1s correspond to estimated variances (in the diagonal) or covariances
 #' (off-diagonal elements). Defaults to the identity matrix
+#' @note This legacy constructor does not support inter-occasion variability (IOV).
+#' The covariance.model and omega.init arguments correspond to Omega (IIV) only.
+#' For IOV models, use the new constructor with saemixParam objects specifying
+#' varlevel=c("iiv","iov").
 #' @param omega.init a square matrix of size equal to the number of parameters
 #' in the model, giving the initial estimate for the variance-covariance matrix
 #' of the model.

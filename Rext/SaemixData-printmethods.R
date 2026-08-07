@@ -139,6 +139,12 @@ setMethod("showall",signature="SaemixData",
             if(object@N>0) {
               cat("    number of observations:",object@ntot.obs,"\n")
               cat("    average/min/max nb obs:",format(mean(object@nind.obs),digits=digits, nsmall=nsmall), " / ", min(object@nind.obs)," / ",max(object@nind.obs),"\n")
+              if(length(object@varlevel) > 1 && length(object@var.N) >1) {
+                nocc <- object@var.N[[2]]
+                cat("    variability levels:    ",paste(object@varlevel, collapse=" > "),"\n")
+                cat("    occasions per subject: ",format(mean(nocc),digits=digits, nsmall=nsmall), " / ", min(nocc)," / ",max(nocc)," (mean/min/max)\n")
+                cat("    total subject x occasion pairs:",sum(nocc),"\n")
+              }
               #    if(length(object@data)>0) print(object@data)
             }
             if(length(object@data)>0) {
@@ -220,7 +226,8 @@ setMethod("summary","SaemixData",
               cat("Object of class SaemixData\n")
               cat("    longitudinal data for use with the SAEM algorithm\n")
               cat("Dataset",object@name.data,"\n")
-              st1<-paste(object@name.response," ~ ",paste(object@name.predictors,collapse=" + ")," | ", object@name.group,sep="")
+              st1<-paste(object@name.response," ~ ",paste(object@name.predictors,collapse=" + "),sep="")
+              for(i in length(object@varlevel):1) st1<-paste(st1," | ",object@varlevel[i])
               cat("    Structured data:",st1,"\n")
               if(length(object@name.predictors)>1) cat("    X variable for graphs:",object@name.X,paste("(",object@units$x,")",sep=""),"\n")
               if(length(object@name.covariates)>0) {
@@ -231,23 +238,26 @@ setMethod("summary","SaemixData",
               if(object@N>0) {
                 cat("    number of observations:",object@ntot.obs,"\n")
                 cat("    average/min/max nb obs:",format(mean(object@nind.obs),digits=digits, nsmall=nsmall), " / ", min(object@nind.obs)," / ",max(object@nind.obs),"\n")
-                #    if(length(object@data)>0) print(object@data)
+                if(length(object@varlevel) > 1 && length(object@var.N) >1) {
+                  nocc <- object@var.N[[2]]
+                  cat("    variability levels:    ",paste(object@varlevel, collapse=" > "),"\n")
+#                  cat("    occasions per subject: ",format(mean(nocc),digits=digits, nsmall=nsmall), " / ", min(nocc)," / ",max(nocc)," (mean/min/max)\n")
+#                  cat("    total subject x occasion pairs:",sum(nocc),"\n")
+                }
               }
             }
             res<-list(N=object@N,nobs=list(ntot=object@ntot.obs,nind=object@nind.obs), id=object@data[,object@name.group],x=object@data[,object@name.predictors,drop=FALSE], y=object@data[,object@name.response])
+            if(length(object@varlevel) > 1 && length(object@var.N) >1) {
+              res$varlevel <- object@varlevel
+              res$nocc <- object@var.N[[2]]
+              res$ntot.occ <- sum(object@var.N[[2]])
+            }
             if(length(object@name.covariates)>0) {
               res$covariates<-object@data[,object@name.covariates]
               ucov<-object@data[,c(object@name.group,object@name.covariates)]
               ucov<-ucov[match(unique(object@data$index),object@data$index),]
               res$ind.covariates<-ucov
             }
-            #              res$covariates<-object@ocov
-            # if(dim(object@data)[1]==dim(object@ocov)[1]) {
-            #   ucov<-cbind(object@data[,object@name.group],object@ocov)
-            #   colnames(ucov)[1]<-object@name.group
-            #   ucov<-ucov[match(unique(object@data$index),object@data$index),]
-            #   res$ind.covariates<-ucov
-            # }
             invisible(res)
           }
 )

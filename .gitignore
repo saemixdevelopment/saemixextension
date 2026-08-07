@@ -4,3 +4,10 @@
 .Ruserdata
 saemix*.tar.gz
 saemix.Rcheck
+ecoSimul
+git_cmd.txt
+documentation/docsaem.log
+documentation/docsaem.out
+documentation/docsaem.toc
+documentation/docsaem.aux
+

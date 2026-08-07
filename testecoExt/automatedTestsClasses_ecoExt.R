@@ -80,9 +80,7 @@ test_file(file.path(testDirExt,"testthat_saemixData.R"), reporter=myreporter)
 ## debug the last 3 tests
 
 ###############################################################################################################
-
 ###### Testing new Classes for model
-
 #############################
 # Outcome
 source(file.path(progDirExt,"SaemixErrorModel.R"))

@@ -1644,7 +1644,7 @@ saemix.plot.distpsi<-function(saemixObject,...) {
     } else
       ypl<-dnorm(xpl)*derivphi(matrix(xpl1,ncol=1), saemixObject["model"]["transform.par"][ipar])
     if(plot.opt$indiv.histo) {
-      vec<-c(indiv.par[,(ipar+1)],xpl2)
+      vec<-c(indiv.par[,(ipar)],xpl2)
       limx<-c(min(vec),max(vec))
     } else limx<-c(min(xpl2),max(xpl2))
     if(limx[1]<0) limx[1]<-limx[1]*1.05 else limx[1]<-limx[1]*0.95
@@ -1652,7 +1652,7 @@ saemix.plot.distpsi<-function(saemixObject,...) {
     if(plot.opt$indiv.histo) {
       laby<-"Counts"
       if(change.ylab) laby<-plot.opt$ylab
-      h1<-hist(indiv.par[,(ipar+1)],xlim=limx,main=tit,xlab=labx,ylab=laby, col=plot.opt$fillcol)
+      h1<-hist(indiv.par[,(ipar)],xlim=limx,main=tit,xlab=labx,ylab=laby, col=plot.opt$fillcol)
       ypl<-ypl/max(ypl)*max(h1$counts)
       lines(xpl2,ypl,lty=plot.opt$lty,col=plot.opt$lcol,lwd=plot.opt$lwd)
     } else {

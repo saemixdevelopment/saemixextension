@@ -355,7 +355,7 @@ test_that("IIV + IOV with covariates, multiple responses", {
 })
 
 
-context("Checking automatic creatinn of indices and covariate matrices")
+context("Checking automatic creating of indices and covariate matrices")
 
 test_that("Theophilline, IIV only", {
   x<-saemixData(name.data=file.path(datDir,"theo.saemix.tab"),header=T,na=".", varlevel=c("Id"),name.predictors=c("Dose","Time"),name.response=c("Concentration"),units=list(x="hr",y="mg/L"), name.X="Time", name.covariates=c("Weight","Sex"),verbose=F)

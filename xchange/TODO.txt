@@ -1,3 +1,27 @@
+# 07/2026 - preparing workshop
+** Bugfixes
+- checkInitialFixedEffects
+  - not updated yet (bug: Erreur dans if (model@modeltype == "structural")
+  - ToDo:
+    - fix condition
+    - separate both plots as facet plots OR plot them separately for each response (one page per response)
+- compare.saemix
+  - not updated yet (bug: Erreur dans if (model@modeltype == "structural")
+- data: issue with the discrete data datasets
+  - rapi.saemix not included in the package
+  - toenail.saemix not included in the package
+
+** Improvements
+- SaemixData
+  - transformCatConv, transformContCov: create versions applicable to datasets which would use the colnames
+    - change beginning of handson_pkpd.qmd to apply these functions before the creation of the object
+  - plot with multiple responses
+    - add the number of the response (eg Obs 1, Obs 2)
+    - add a default facet plot option
+- npde final diagnostic plots
+  - stratify plot with Dose (currently only covariates)
+    
+
 # 03/2026
 - bugfix in automated model selection procedures (Maud): corrected but need to push
 - ToDo: remplacer par une fonction update qui pourrait s'appliquer à différents types de modèles (entrée=un objet + des arguments, sortie=la copie de l'objet avec les arguments modifiés)

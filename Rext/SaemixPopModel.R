@@ -368,7 +368,7 @@ extractFixedEffectModel <- function(parameters, varlevel=c()) {
     vlev <-  new(Class="SaemixPopModel", phi.model=covmodel, name.level=varlevel[ilev])
     vlev@phi.estim <- covmodel.estim
     vlev@phi <- covmodel.init
-    print(vlev@phi)
+#    print(vlev@phi)
     if(dim(vlev@phi.model)[1]>0) vlev <- addSaemixIndices(vlev)
     list.indmodel[[ilev]] <- vlev
     
@@ -397,7 +397,7 @@ setMethod("addSaemixIndices",
             x1 <- grep("mu",object@param.names)
             if(length(x1)>0) object@idvec.mu<-x1
             x1 <- grep("beta",object@param.names)
-            if(length(x1)>0) object@idvec.beta<-1
+            if(length(x1)>0) object@idvec.beta<-x1
             x1<-which(object@phi.estim[idmat.par]=="estimated")
             if(length(x1)>0) object@idvec.estim<-x1
             

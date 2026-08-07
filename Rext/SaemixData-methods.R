@@ -300,7 +300,7 @@ setMethod("readSaemix",
                 Nunit[[ilev]] <- tapply(ilab1[,1],ilab1[,1],length)
                 idx<-c(which(!duplicated(ilab)),dim(ilab)[1]+1)
                 x1<-diff(idx) # individual numbers of observations per unit at that varlevel
-                print(head(x1),20)
+#                print(head(x1),20)
                 #  x1<-tapply(ilab,ilab,length) # weird sort issue !!
                 index[[ilev]]<-rep(1:length(x1),times=x1)
                 nb.obs[[ilev]]<-x1
